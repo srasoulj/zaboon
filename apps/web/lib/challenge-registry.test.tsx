@@ -20,16 +20,19 @@ describe('challenge registry', () => {
     expect(rendererFor('story')).toBeNull()
   })
 
-  it('takes optional Wave 3 renderers (listen_type, cloze_type, letter_trace)', () => {
+  it('has a renderer for every Wave 3 type (listen_type, cloze_type, letter_trace)', () => {
+    const p2: P2ChallengeType[] = ['listen_type', 'cloze_type', 'letter_trace']
+    for (const t of p2) expect(rendererFor(t), t).not.toBeNull()
+  })
+
+  it('keeps the Wave 3 slots optional and closed to other types', () => {
+    const { listen_type: _l, cloze_type: _c, letter_trace: _t, ...mvp } = renderers
     const Trace: ChallengeRenderer<ChallengeOf<'letter_trace'>> = () => null
-    const ListenType: ChallengeRenderer<ChallengeOf<'listen_type'>> = () => null
-    const map: RendererMap = { ...renderers, letter_trace: Trace, listen_type: ListenType }
+    const map: RendererMap = { ...mvp, letter_trace: Trace }
     expect(map.letter_trace).toBe(Trace)
     expect(map.cloze_type).toBeUndefined()
-    const p2: P2ChallengeType[] = ['listen_type', 'cloze_type', 'letter_trace']
-    expect(p2).toHaveLength(3)
     // @ts-expect-error speak is not a Wave 3 renderer slot
-    const notP2: RendererMap = { ...renderers, speak: Trace }
+    const notP2: RendererMap = { ...mvp, speak: Trace }
     expect(notP2).toBeTruthy()
   })
 

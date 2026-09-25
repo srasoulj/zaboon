@@ -1,6 +1,6 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T21:40:00Z",
+  "updatedAt": "2026-09-25T23:55:00Z",
   "wave": 3,
   "integrationPr": 2,
   "aiBudget": {
@@ -111,6 +111,22 @@
         28,
         29
       ]
+    },
+    "ws-engagement": {
+      "status": "merged by the owner (#48, 23:39 UTC); post-merge review",
+      "prs": [
+        48
+      ]
+    },
+    "ws-typing": {
+      "status": "merged by the owner (#49, 23:40 UTC); post-merge review",
+      "prs": [
+        49
+      ]
+    },
+    "ws-qa-2": {
+      "status": "pending: starts after the Wave 3 post-merge review",
+      "prs": []
     }
   },
   "workstreams": {
@@ -221,7 +237,11 @@
     42,
     43,
     44,
-    45
+    45,
+    46,
+    47,
+    48,
+    49
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -234,9 +254,10 @@
     "Message a worker session: create a poke-only Routine with persistent_session_id=<session>, fire_trigger, then delete_trigger.",
     "The user merges worker PRs quickly; always run a post-merge verify on main and a reviewer subagent on merged code.",
     "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active.",
-    "Worker specs live in ops/prompts/<ws>.md (prepended with _preamble.md); session ids only in /root/.config/zaboon/orchestrator.json."
+    "Worker specs live in ops/prompts/<ws>.md (prepended with _preamble.md); session ids only in /root/.config/zaboon/orchestrator.json.",
+    "The owner merged #48 and #49 (merge commits) at 23:40 UTC before the orchestrator's review: post-merge verify on main, the registry seam test fixed by the orchestrator, post-merge reviews."
   ],
-  "sessionsSpawned": 12,
+  "sessionsSpawned": 14,
   "goldenPath": {
     "status": "pass",
     "checkedAt": "2026-09-25T15:55:00Z",

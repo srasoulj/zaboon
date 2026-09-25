@@ -12,8 +12,8 @@
 | skeleton | Server framework (`withRoute`, auth, clock, content loader), dev auth, lesson API, e2e; app shell (auth + API clients, chrome, renderer registry, fixtures) | ✅ done (#9, #12, #18) |
 | 1 | farsi+grader, session engine+srs+game rules, database, UI kit, content CLI + AI client | ✅ done (#6, #7, #10, #11, #14; review fixes #15, #16) |
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
-| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | 🔄 prep PR (contracts, seams, oracle, specs); then ws-engagement and ws-typing |
-| 4 | Stretch: speak, stories, placement, offline, energy, Plus/email/push behind flags | ⏳ |
+| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49 (the owner merged both at 23:40 UTC). 🔄 post-merge review, QA with the flags on (ws-qa-2) |
+| 4 | Stretch: speak, stories, placement, offline, energy, Plus/email/push behind flags | 🔄 prep being designed; four workers: ws-speak, ws-stories, ws-placement-offline, ws-plus |
 | 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ⏳ |
 
 ## Workstreams
@@ -32,8 +32,9 @@
 | ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged, incl. round 2; the dropped-merge notice is mounted in the shell ([spec](../ops/prompts/ws-pages.md)) | #35, #41, #44 |
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
-| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ⏳ starts after the prep PR ([spec](../ops/prompts/ws-engagement.md)) | |
-| ws-typing | 3 | Persian keyboard, typed Persian, letter tracing, renderers, UI kit, session engine | ⏳ starts after the prep PR ([spec](../ops/prompts/ws-typing.md)) | |
+| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ merged; post-merge review in progress ([spec](../ops/prompts/ws-engagement.md)) | #48 |
+| ws-typing | 3 | Persian keyboard, typed Persian, letter tracing, renderers, UI kit, session engine | ✅ merged; post-merge review in progress ([spec](../ops/prompts/ws-typing.md)) | #49 |
+| ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ⏳ starts after the post-merge review ([spec](../ops/prompts/ws-qa-2.md)) | |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**
 
@@ -62,7 +63,7 @@ variables (names in `.env.example`; list in #34). Deploy runbook notes:
 
 - The Vercel project's Root Directory must be `apps/web`. `apps/web/vercel.json` holds the Monday 00:00 UTC league-rollover cron.
 - Set `CRON_SECRET`, or the cron route refuses every call.
-- Until ws-engagement adds the route, the cron gets a harmless 404.
+- The rollover route exists since #48. It is idempotent and closes missed weeks oldest first.
 - `CONTENT_BASE_URL` must be set at build time and at runtime. The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
 
 **Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
