@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MatchPairs } from '../MatchPairs'
@@ -56,17 +56,50 @@ describe('match_pairs', () => {
     expect(h.verdict()).toBe('correct')
     expect(h.onSubmit).toHaveBeenCalledTimes(1)
     expect(h.onMismatch).not.toHaveBeenCalled()
-    expect(status()).toHaveTextContent('All pairs matched.')
+    await waitFor(() => expect(status()).toHaveTextContent('All pairs matched.'))
   })
 
   it('announces matches and mismatches politely', async () => {
     const h = renderChallenge(c)
     await h.user.click(faCard(0))
     await h.user.click(enCard(0))
-    expect(status()).toHaveTextContent(`Matched. 1 of ${c.pairs.length} pairs done.`)
+    await waitFor(() =>
+      expect(status()).toHaveTextContent(`Matched. 1 of ${c.pairs.length} pairs done.`),
+    )
     await h.user.click(faCard(1))
     await h.user.click(enCard(2))
-    expect(status()).toHaveTextContent('Not a match. Try again.')
+    await waitFor(() => expect(status()).toHaveTextContent('Not a match. Try again.'))
+  })
+
+  it('announces a second identical mismatch again (the region is cleared, then set)', async () => {
+    const h = renderChallenge(c)
+    const texts: string[] = []
+    const observer = new MutationObserver(() => texts.push(status().textContent ?? ''))
+    observer.observe(status(), { childList: true, characterData: true, subtree: true })
+    for (let round = 0; round < 2; round++) {
+      await h.user.click(faCard(1))
+      await h.user.click(enCard(2))
+      await waitFor(() => expect(status()).toHaveTextContent('Not a match. Try again.'))
+    }
+    observer.disconnect()
+    const shown = texts.filter((t) => t === 'Not a match. Try again.')
+    expect(shown).toHaveLength(2)
+    expect(texts[texts.lastIndexOf('Not a match. Try again.') - 1]).toBe('')
+    expect(h.onMismatch).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not swallow Enter on a selected card (the player turns it into CHECK)', async () => {
+    const seen = vi.fn()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') seen(e.defaultPrevented)
+    }
+    window.addEventListener('keydown', onKey)
+    const h = renderChallenge(c)
+    await tabTo(h.user, faCard(0))
+    await h.user.keyboard('{Enter}{Enter}')
+    window.removeEventListener('keydown', onKey)
+    expect(seen).toHaveBeenCalledTimes(2)
+    expect(seen).toHaveBeenLastCalledWith(false)
   })
 
   it('a wrong pair shakes, calls onMismatch and reports nothing (a wrong draft cannot be built)', async () => {
