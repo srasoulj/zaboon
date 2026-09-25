@@ -1,0 +1,46 @@
+# Provenance of assets/characters/hodhod/turnaround.png (art run, draft). Set status: approved and approvedBy after art-director review.
+asset: characters/hodhod/turnaround.png
+model: openai/gpt-5.4-image-2
+prompt: art/character-turnaround@1
+references:
+  - style-bible/shape-language.png
+generatedAt: 2026-09-25T12:13:26.261Z
+status: draft
+generation:
+  id: gen-1790338406-I26FXReHlYE5kD7HAmiO
+  costUsd: 0.250523
+postProcessing: "sharp: near-white background removed by a flood fill from the image border (white details inside the figure are kept), cut edge un-blended from white, specks dropped, trimmed, padded to a transparent square, max 1024 px; PNG plus a WebP copy (quality 85). White wing and tail stripes that reach the silhouette edge were restored (closing of the ink mask)."
+notes: "Hodhod's head and body use cinnamon #D98A00 (token zaferan-600): the brand 500 palette has no brown. Crest #FFB020 with ink tips; wings ink with white stripes."
+promptText: |-
+  Create a character turnaround reference sheet for an original mascot: Hodhod, a friendly cartoon hoopoe bird who guides learners in a cheerful language-learning app.
+
+  The attached image is the style reference: match its flat shape language, its soft corner radius, its exact colors and its clean white background.
+
+  Canvas: square, plain pure white background (#FFFFFF), generous margins, nothing touching the edges.
+
+  Layout: the same character four times in one horizontal row, evenly spaced, all the same size, standing on the same invisible baseline, each in a neutral standing pose with a calm, kind face: (1) front view, (2) three-quarter view facing left, (3) side profile facing left, (4) back view. Proportions, colors and details are identical in all four views. No ground line and no shadows.
+
+  Hodhod's design (identical in every view):
+  - Silhouette: a small, upright, friendly bird with a distinct round head, a short neck, a pear-shaped body a little taller than it is wide, a short rounded ink tail and two short ink legs with rounded feet. Nothing like an owl: no ear tufts, no huge goggle eyes, no ball-shaped body.
+  - Crest: a tall fan-shaped crest on top of the head made of six rounded, pill-shaped saffron (#FFB020) feathers, each ending in a rounded ink (#2F2F2F) tip. The crest is the most recognizable part of the silhouette.
+  - Head and body: warm cinnamon (#D98A00), one flat color.
+  - Wings: ink (#2F2F2F) wings folded against the sides, crossed by three bold white stripes; each white stripe stays inside the ink wing shape and never reaches the wing's outer edge. The tail has one white stripe inside it.
+  - Beak: long, slender, gently down-curved ink beak with a clearly rounded, blunt tip (no point).
+  - Eyes: medium-small ink oval eyes, each with one tiny white highlight dot, set on the sides of the head.
+
+  Colors: use ONLY these exact solid colors:
+  - #0E9F99 turquoise
+  - #FFB020 saffron
+  - #2D5BD7 lapis blue
+  - #E5484D pomegranate red
+  - #7B4BC4 eggplant purple
+  - #8CC63F pistachio green
+  - #2F2F2F ink (dark charcoal)
+  - #FFFFFF white
+  - #D98A00 cinnamon (Hodhod's head and body only)
+
+  Style rules (strict):
+  - Flat vector illustration built only from circles, pills (fully rounded rectangles), rounded rectangles and rounded triangles.
+  - Every corner is rounded: no sharp points or pointed tips anywhere.
+  - No outlines or strokes of any kind. No gradients, no shading, no textures, no drop shadows, no 3D effects, no glow. Every shape is one flat solid fill.
+  - Absolutely no text, letters, numbers, labels, captions, logos, signatures or watermarks anywhere in the image.

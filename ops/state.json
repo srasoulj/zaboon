@@ -1,12 +1,20 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in.",
-  "updatedAt": "2026-09-25T10:50:00Z",
-  "wave": "0b/1",
+  "updatedAt": "2026-09-25T12:40:00Z",
+  "wave": 2,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
     "keyLimitUsd": 10,
-    "spentUsd": 0
+    "keyUsageUsd": 2.78,
+    "accountBalanceUsd": 0.35,
+    "accountTotalCreditsUsd": 60,
+    "note": "The OpenRouter ACCOUNT is the binding limit (\u2248$0.35 left); calls fail with 402 before the key limit. Check GET /api/v1/credits before paid calls.",
+    "spent": {
+      "textPilot": 0.0018,
+      "art": 1.0168,
+      "text": "in progress (ae2230ee agent)"
+    }
   },
   "limits": {
     "maxConcurrentWorkers": 4,
@@ -21,24 +29,59 @@
     "note": "jobs fail in ~4s with runner_id 0 (no runner assigned) on PR, rerun and push-to-main; CI switched to workflow_dispatch only; pnpm verify is the gate"
   },
   "sessions": {
-    "canary": {
-      "id": "session_01Fx9PzDpMNGy2kTgo56EGZV",
-      "purpose": "verify Wave 0a environment",
-      "status": "completed: CANARY PASS (hook auto-ran, pnpm verify 17s, idempotent)"
-    },
     "ws-db": {
       "id": "session_0172d5pN43xji8PgEBpoeWLJ",
-      "branch": "claude/zaboon-ws-db",
-      "startedAt": "2026-09-25T10:43:32Z",
-      "restarts": 0,
-      "status": "working"
+      "status": "done",
+      "prs": [
+        6,
+        15
+      ]
     },
     "ws-ui": {
       "id": "session_019e4DiSNMURTw63RfcC9YtL",
-      "branch": "claude/zaboon-ws-ui",
-      "startedAt": "2026-09-25T10:44:08Z",
-      "restarts": 0,
-      "status": "working"
+      "status": "done",
+      "prs": [
+        7,
+        16
+      ]
+    },
+    "ws-farsi-grader": {
+      "id": "session_01ERE37gxebVt7zXkSj41e7V",
+      "status": "done",
+      "prs": [
+        11
+      ]
+    },
+    "ws-engine": {
+      "id": "session_01GMAFKhR9awbrv2NZvy8Vad",
+      "status": "done",
+      "prs": [
+        10
+      ]
+    },
+    "ws-content-cli": {
+      "id": "session_01DFr9q2YY9UL6zAWrjKShQ6",
+      "status": "done",
+      "prs": [
+        14
+      ]
+    },
+    "ws-api": {
+      "id": "session_01K8QSgsrTYth9yMMVyykHU6",
+      "status": "pr-open",
+      "prs": [
+        17
+      ]
+    },
+    "ws-renderers": {
+      "id": "session_012hNJar8avALKv7z5A4zfqD",
+      "status": "working",
+      "prs": []
+    },
+    "ws-player": {
+      "id": "session_01JnuRkWaXLyrTU9ShoPt22K",
+      "status": "working",
+      "prs": []
     }
   },
   "workstreams": {
@@ -98,13 +141,28 @@
     "Rive animator for character rigs",
     "Legal review: trade dress, sanctions (contractors in Iran)",
     "Accounts for deploy: Supabase, Vercel, Stripe, email, Turnstile, domain",
-    "More OpenRouter credit (key limit is $10) for Units 2-5 media",
-    "Add OPENROUTER_API_KEY_BUILD/APP to the environment settings so keys survive this container"
+    "Top up the OpenRouter account (\u2248$0.35 left of $60): ~$5 finishes the 5 cast portraits, Unit 1 illustrations and audio; more for Units 2\u20135 media",
+    "Add OPENROUTER_API_KEY_BUILD/APP to the environment settings so keys survive this container",
+    "GitHub Actions runners never start (billing/account): CI is workflow_dispatch only; pnpm verify is the gate"
   ],
   "mergedPrs": [
     1,
     2,
-    3
+    3,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    18,
+    19
   ],
   "routines": {
     "hourly": "trig_01Kp8fBefCCmUMchhp34dDWY",
@@ -113,6 +171,9 @@
   "trackerIssue": 4,
   "notes": [
     "User merges orchestrator PRs quickly (PR #1-#3 merged by srasoulj within minutes); always restart the branch from main after a merge.",
-    "Never `git add -A` while local subagents write into the tree; stage explicit paths."
+    "Never `git add -A` while local subagents write into the tree; stage explicit paths.",
+    "Message a worker session: create a poke-only Routine with persistent_session_id=<session>, fire_trigger, then delete_trigger.",
+    "The user merges worker PRs quickly; always run a post-merge verify on main and a reviewer subagent on merged code.",
+    "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active."
   ]
 }
