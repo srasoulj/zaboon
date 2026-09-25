@@ -163,9 +163,9 @@ describe('audio processing', () => {
       }).stdout,
     ) as { streams: { codec_name: string; channels: number }[]; format: { duration: string } }
     expect(probe.streams[0]).toMatchObject({ codec_name: 'mp3', channels: 1 })
-    // 2.3 s in; about 0.05 + 0.5 + 0.25 s out (plus MP3 encoder padding).
+    // 2.3 s in; about 0.1 + 0.5 + 0.3 s out (plus MP3 encoder padding).
     expect(Number(probe.format.duration)).toBeGreaterThan(0.7)
-    expect(Number(probe.format.duration)).toBeLessThan(1)
+    expect(Number(probe.format.duration)).toBeLessThan(1.2)
   }, 30_000)
 
   it('runs the real ffmpeg when it is installed, and says so clearly when it is not', async () => {

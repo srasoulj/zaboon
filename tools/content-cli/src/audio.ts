@@ -60,13 +60,15 @@ export function slowArgs(input: string, output: string): string[] {
 }
 
 /**
- * gpt-audio pads its clips with near-digital silence (up to ~2 s after the speech). Both ends are
- * trimmed on the raw audio, before loudnorm raises the noise floor, keeping 50 ms before the
- * speech and 250 ms after it, so playback and lip-sync end when the voice does.
+ * gpt-audio pads its clips with near-digital silence (up to ~3 s), sometimes with a faint click or
+ * breath far from the speech. Both ends are trimmed on the raw audio, before loudnorm raises the
+ * noise floor, at −35 dB (speech peaks near −3 dBFS; the artifacts stay below −40 dB RMS),
+ * keeping 100 ms before the speech and 300 ms after it for soft onsets and releases, so playback
+ * and lip-sync end when the voice does.
  */
 export const TTS_TRIM =
-  'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05,areverse,' +
-  'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.25,areverse'
+  'silenceremove=start_periods=1:start_threshold=-35dB:start_silence=0.1,areverse,' +
+  'silenceremove=start_periods=1:start_threshold=-35dB:start_silence=0.3,areverse'
 
 /** A TTS clip → the house MP3: trimmed, −16 LUFS, mono, 64 kbps. */
 export function ttsArgs(input: string, output: string): string[] {

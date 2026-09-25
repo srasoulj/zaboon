@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join, relative, sep } from 'node:path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import {
+  AiResponseError,
   extensionFor,
   mediaProvenance,
   MODELS,
@@ -23,6 +24,7 @@ import {
   type ChatMessage,
   type ContentPart,
   type MediaProvenance,
+  type SpeechResult,
 } from '@zaboon/ai'
 import type { DryRunCall } from './ai-context'
 import { encodeTtsMp3, type FfmpegRunner } from './audio'
@@ -284,12 +286,21 @@ export async function generateTts(opts: TtsOptions): Promise<TtsResult> {
   const written: string[] = []
   let costUsd = 0
   for (const j of jobs) {
-    const r = await opts.ai.speech(j.text, j.voice, {
-      model,
-      instructions: TTS_LINE.instructions,
-      promptVersion: promptId(TTS_LINE),
-      label: `tts ${j.id}`,
-    })
+    let r: SpeechResult
+    try {
+      r = await opts.ai.speech(j.text, j.voice, {
+        model,
+        instructions: TTS_LINE.instructions,
+        promptVersion: promptId(TTS_LINE),
+        label: `tts ${j.id}`,
+      })
+    } catch (e) {
+      // An unusable answer (e.g. silent audio) skips this clip; budget and HTTP errors still stop.
+      if (!(e instanceof AiResponseError)) throw e
+      skipped.push({ id: j.id, reason: `not written, unusable audio: ${e.message}` })
+      opts.log?.(`tts ${j.id}: ✘ ${e.message}`)
+      continue
+    }
     costUsd += r.costUsd
     writeMedia(
       course,

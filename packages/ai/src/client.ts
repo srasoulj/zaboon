@@ -124,6 +124,9 @@ export interface TranscribeOptions extends CallOptions {
   language?: string
 }
 
+/** 16-bit sample peak below which speech output counts as silent: −40 dBFS (speech peaks near −3). */
+const SILENT_PEAK = Math.round(32768 * 10 ** (-40 / 20))
+
 export const DEFAULT_TTS_INSTRUCTIONS =
   'You are a text-to-speech voice. Read the user message aloud exactly as written, once, in natural ' +
   'colloquial Tehrani Persian at a calm, clear learner-friendly pace. Vowel marks show the intended ' +
@@ -371,6 +374,14 @@ export class AiClient {
       const pcm = Buffer.from(audio.data, 'base64')
       if (pcm.length % 2 !== 0)
         throw new AiResponseError(`audio is not 16-bit PCM (${pcm.length} bytes)`)
+      // gpt-audio sometimes streams only silence for a very short input (its transcript is still
+      // right). Rejecting it here keeps it out of the cache, so a rerun asks again.
+      let peak = 0
+      for (let i = 0; i < pcm.length; i += 2) peak = Math.max(peak, Math.abs(pcm.readInt16LE(i)))
+      if (peak < SILENT_PEAK)
+        throw new AiResponseError(
+          `the audio is silent (peak ${(20 * Math.log10(Math.max(peak, 1) / 32768)).toFixed(1)} dBFS)`,
+        )
       return {
         bytes: pcm16ToWav(pcm),
         mime: 'audio/wav' as const,

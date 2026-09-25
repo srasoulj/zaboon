@@ -291,6 +291,37 @@ describe('tts', () => {
     ])
   })
 
+  it('skips a clip whose audio is silent and voices the rest', async () => {
+    const dir = seedCopy()
+    const silent = Buffer.alloc(4800) // what gpt-audio sometimes streams for a one-word input
+    const { ai: client } = ai((req) =>
+      chatResponse(null, {
+        audio: { data: (req.messages.at(-1)!.content === 'چی' ? silent : PCM).toString('base64') },
+      }),
+    )
+    const run: FfmpegRunner = async (args) => {
+      writeFileSync(args.at(-1)!, MP3)
+      return Buffer.alloc(0)
+    }
+    const r = await generateTts({
+      course: loadCourse(dir),
+      unit: 'u01-hello',
+      ids: ['lx_chi', 'lx_salam'],
+      lexemes: true,
+      ai: client,
+      run,
+    })
+    expect(r.written).toEqual(['audio/lx_salam.mp3'])
+    expect(r.skipped).toEqual([
+      {
+        id: 'lx_chi',
+        reason: 'not written, unusable audio: the audio is silent (peak -90.3 dBFS)',
+      },
+    ])
+    expect(existsSync(join(dir, 'assets/audio/lx_chi.mp3'))).toBe(false)
+    expect(loadCourse(dir).lexemes.find((l) => l.id === 'lx_chi')!.audio).toBeUndefined()
+  })
+
   it('never replaces a human recording, even with --force', async () => {
     const dir = seedCopy()
     mkdirSync(join(dir, 'assets/audio'), { recursive: true })

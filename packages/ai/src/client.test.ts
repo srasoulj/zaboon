@@ -227,6 +227,25 @@ describe('speech() and transcribe()', () => {
     await expect(none.ai.speech('x', 'coral')).rejects.toThrow(/no audio/)
   })
 
+  it('rejects silent audio and does not cache it, so a rerun asks again', async () => {
+    // Samples of ±300 (about −41 dBFS): what gpt-audio streams when it "says" nothing.
+    const hiss = Buffer.alloc(4800)
+    for (let i = 0; i < hiss.length; i += 2) hiss.writeInt16LE(i % 4 ? 300 : -300, i)
+    const cache = new MemoryResponseCache()
+    const { ai, transport } = client(
+      () => chatResponse(null, { audio: { data: hiss.toString('base64'), transcript: 'چی' } }),
+      { cache },
+    )
+    await expect(ai.speech('چی', 'alloy', { promptVersion: 'tts-line@1' })).rejects.toThrow(
+      /audio is silent \(peak -40\.8 dBFS\)/,
+    )
+    await expect(ai.speech('چی', 'alloy', { promptVersion: 'tts-line@1' })).rejects.toThrow(
+      /silent/,
+    )
+    expect(transport.calls).toHaveLength(2)
+    expect(cache.entries.size).toBe(0)
+  })
+
   it('transcribes audio input', async () => {
     const { ai, transport } = client(() => chatResponse(' سلام، خوبی؟ '))
     const r = await ai.transcribe({ bytes: MP3, format: 'mp3' })
