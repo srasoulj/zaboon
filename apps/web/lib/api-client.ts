@@ -124,4 +124,9 @@ export const queryKeys = {
   profile: ['profile'],
   settings: ['settings'],
   guidebook: (unitId: string) => ['guidebook', unitId] as const,
+  // P2 (Wave 3): invalidate after a lesson completes (leaderboard, quests) and after purchases.
+  leaderboard: ['leaderboard'],
+  quests: ['quests'],
+  shop: ['shop'],
+  practice: ['practice'],
 } as const
