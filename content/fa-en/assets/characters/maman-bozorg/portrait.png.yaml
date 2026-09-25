@@ -1,0 +1,42 @@
+# Provenance of assets/characters/maman-bozorg/portrait.png (art run, draft). Set status: approved and approvedBy after art-director review.
+asset: characters/maman-bozorg/portrait.png
+model: openai/gpt-5.4-image-2
+prompt: art/character-portrait@1
+references:
+  - style-bible/shape-language.png
+  - assets/characters/hodhod/turnaround.png
+generatedAt: 2026-09-25T12:25:25.901Z
+status: draft
+generation:
+  id: gen-1790339126-4fgYYm9oWhn0XqwHP6No
+  costUsd: 0.260132
+postProcessing: "sharp: near-white background removed by a flood fill from the image border (white details inside the figure are kept), cut edge un-blended from white, specks dropped, trimmed, padded to a transparent square, max 1024 px; PNG plus a WebP copy (quality 85); the bust is aligned to the bottom edge."
+notes: "Skin #F2C7A5 (nose and ear #E0A882) and hair colors are outside the brand palette (people need skin tones); clothing and props use palette colors. The model added a few flat darker fold shapes on the clothing (flat fills, no gradients). Hair silver-grey #B8B8B8 (neutral token mist)."
+promptText: |-
+  Create a friendly head-and-shoulders portrait of an original character for a cheerful app that teaches Persian (Farsi) to English speakers.
+
+  The attached images are references: the first defines the flat shape language, corner radius and palette; the second shows the app's mascot drawn in the same style. Match their clean flat style, simplicity and soft rounded shapes. The mascot bird must NOT appear in this image.
+
+  Canvas: square, plain pure white background (#FFFFFF). One bust, centered, generous margins above and at the sides; the shoulders are cut off by a straight horizontal line near the bottom of the image. The character faces slightly toward the viewer (three-quarter view) with a warm, friendly expression.
+
+  Character: Maman Bozorg, a warm, cheerful Iranian grandmother in her early seventies. She has a soft round face, kind smiling eyes and a big welcoming smile. Short silver-grey hair shows at the front of a loose, softly draped saffron (#FFB020) headscarf with a few small white dots, pushed back on her head. She wears a turquoise (#0E9F99) cardigan over a lapis-blue (#2D5BD7) top, and small round saffron earrings. In one hand she holds up a small tulip-shaped tea glass (a pomegranate-red glass shape with a saffron rim) on a small lapis saucer, offering it to the viewer.
+
+  Colors: the clothing is mostly turquoise (#0E9F99), the character's signature color. Other details use only these palette colors:
+  - #0E9F99 turquoise
+  - #FFB020 saffron
+  - #2D5BD7 lapis blue
+  - #E5484D pomegranate red
+  - #7B4BC4 eggplant purple
+  - #8CC63F pistachio green
+  - #2F2F2F ink (dark charcoal)
+  - #FFFFFF white
+  Skin: light warm skin #F2C7A5 (flat), with #E0A882 only for the nose and ear shapes. Hair: silver-grey #B8B8B8.
+  White is used only for small details inside the figure (eye highlights, teeth, a collar); the outer edge of the figure is never white.
+
+  Construction: the head is a rounded shape; eyes are ink ovals with one tiny white highlight each; eyebrows are short ink pills; the mouth is a simple rounded ink shape; hair and clothing are built from large rounded shapes. A respectful, contemporary Iranian person in everyday modern clothing, natural proportions, no caricature or exaggerated features.
+
+  Style rules (strict):
+  - Flat vector illustration built only from circles, pills (fully rounded rectangles), rounded rectangles and rounded triangles.
+  - Every corner is rounded: no sharp points or pointed tips anywhere.
+  - No outlines or strokes of any kind. No gradients, no shading, no textures, no drop shadows, no 3D effects, no glow. Every shape is one flat solid fill.
+  - Absolutely no text, letters, numbers, labels, captions, logos, signatures or watermarks anywhere in the image.

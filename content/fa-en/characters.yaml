@@ -10,6 +10,7 @@
     Conference of the Birds. His saffron crest flares when you get something right and droops when
     you don't.
   color: zaferan
+  image: characters/hodhod/expressions.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -21,6 +22,7 @@
     Maman Bozorg has the tea poured before you've taken off your shoes, and she is a grandmaster
     of ta'ārof. She will insist you eat more, no matter how many times you say no.
   color: firouzeh
+  image: characters/maman-bozorg/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
