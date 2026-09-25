@@ -433,6 +433,11 @@ export type ChallengeResponse = z.infer<typeof ChallengeResponse>
 
 /** Bounds keep every value inside a Postgres `integer` column (and sane): 400, never 500. */
 export const MAX_CHALLENGES = 200
+/**
+ * Attempts one /complete may carry: wrong answers and skips re-queue a challenge, and every
+ * matching mismatch is an attempt, so a long practice session can far exceed its challenge count.
+ */
+export const MAX_ANSWERS = 1_000
 export const MAX_ATTEMPT_SEQ = 10_000
 export const MAX_ANSWER_MS = 3_600_000
 
@@ -677,7 +682,7 @@ export const SessionEventRequest = z.object({
 export const SessionEventResponse = z.object({ lives: LivesView, duplicate: z.boolean() })
 
 export const CompleteSessionRequest = z.object({
-  answers: z.array(AnswerRecord).min(1).max(MAX_CHALLENGES),
+  answers: z.array(AnswerRecord).min(1).max(MAX_ANSWERS),
   completedAt: IsoDateTime,
   graderVersion: z.number().int().positive(),
 })
