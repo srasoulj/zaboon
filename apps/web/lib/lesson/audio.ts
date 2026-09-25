@@ -43,7 +43,7 @@ export function createSilentAudio(): LessonAudio {
   }
 }
 
-type HowlCtor = typeof import('howler').Howl
+type HowlCtor = typeof HowlType
 
 const PRELOAD_TIMEOUT_MS = 8_000
 
