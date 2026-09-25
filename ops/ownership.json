@@ -122,13 +122,17 @@
       "paths": [
         "apps/web/lib/lesson/**",
         "apps/web/app/lesson/**",
-        "apps/web/components/lesson/**"
+        "apps/web/components/lesson/**",
+        "apps/web/public/sounds/**",
+        "e2e/lesson/**"
       ]
     },
     "ws-renderers": {
       "wave": 2,
       "paths": [
-        "apps/web/components/challenges/**"
+        "apps/web/components/challenges/**",
+        "apps/web/app/(dev)/challenges/**",
+        "e2e/renderers/**"
       ]
     },
     "ws-path-letters": {
