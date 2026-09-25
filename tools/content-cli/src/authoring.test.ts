@@ -129,6 +129,8 @@ describe('suggest', () => {
 describe('art', () => {
   it('generates a character sheet with style-bible references, a sidecar and a draft image ref', async () => {
     const dir = seedCopy()
+    // Hermetic: the copied course may already have a real style bible.
+    rmSync(join(dir, 'style-bible'), { recursive: true, force: true })
     mkdirSync(join(dir, 'style-bible'))
     writeFileSync(join(dir, 'style-bible/shape-language.png'), PNG)
     writeFileSync(join(dir, 'style-bible/hodhod-turnaround.png'), PNG)
