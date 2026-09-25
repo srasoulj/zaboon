@@ -1,9 +1,8 @@
-// Placeholder (owned by ws-pages, who replaces it).
+import type { Metadata } from 'next'
+import { ProfileScreen } from '@/components/pages/ProfileScreen'
+
+export const metadata: Metadata = { title: 'Profile', robots: { index: false } }
+
 export default function ProfilePage() {
-  return (
-    <section>
-      <h1 className="text-2xl font-extrabold">Profile</h1>
-      <p className="text-stone">Coming soon.</p>
-    </section>
-  )
+  return <ProfileScreen />
 }
