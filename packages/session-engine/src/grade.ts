@@ -20,12 +20,13 @@ export interface ResponseGrade {
 }
 
 /**
- * letter_trace pass thresholds (the client's scorer reports both scores, apps/web/lib/typing).
- * Tuned on synthetic strokes: a careful trace of the guide scores ~0.9/0.95, a trace that follows
- * the letter loosely ~0.75/0.7, a scribble across the canvas stays well under 0.5 precision.
+ * letter_trace pass thresholds; the client's scorer (apps/web/lib/typing/trace.ts) reports both
+ * scores with a tolerance of ~6% of the canvas. Tuned on synthetic strokes: a faithful trace,
+ * even a wobbly one, scores ~1/1; three quarters of the letter ~0.8 coverage (0.7 of it ~0.76,
+ * which fails); a scribble across the canvas ~0.45 precision.
  */
-export const TRACE_MIN_COVERAGE = 0.7
-export const TRACE_MIN_PRECISION = 0.6
+export const TRACE_MIN_COVERAGE = 0.8
+export const TRACE_MIN_PRECISION = 0.7
 
 const WRONG: ResponseGrade = { verdict: 'wrong' }
 const verdictOf = (ok: boolean): ResponseGrade => ({ verdict: ok ? 'correct' : 'wrong' })
