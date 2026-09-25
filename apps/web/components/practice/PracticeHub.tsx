@@ -31,6 +31,8 @@ export function PracticeHub() {
     queryKey: queryKeys.words,
     queryFn: () => api('words'),
     enabled: signedIn,
+    // A finished lesson changes word strengths, and the player doesn't invalidate this key.
+    refetchOnMount: 'always',
   })
   const courseId = home.data?.course.id
 
