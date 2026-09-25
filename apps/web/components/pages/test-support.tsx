@@ -16,6 +16,7 @@ import {
 import { ApiClientError, type ApiClient } from '@/lib/api-client'
 import { AppServicesProvider } from '@/lib/app-services'
 import type { AuthClient, AuthSession, LinkResult, SignInResult } from '@/lib/auth-client'
+import type { OutboxPort } from './identity'
 
 export const GUEST_ID = '11111111-1111-4111-8111-111111111111'
 export const MEMBER_ID = '22222222-2222-4222-8222-222222222222'
@@ -179,3 +180,27 @@ export function renderWith(
 }
 
 export const noopNavigate = () => vi.fn<(href: string) => void>()
+
+/**
+ * A scripted lesson outbox: `waiting` entries of the current user stay undelivered (or `deliver`
+ * throws); every call is logged to `log` (shared with the fake auth, to check the order).
+ */
+export function fakeOutbox(
+  log: string[],
+  opts: { waiting?: number | 'throws' } = {},
+): OutboxPort & { retagged: [string, string][] } {
+  const retagged: [string, string][] = []
+  return {
+    retagged,
+    deliver: async (userId) => {
+      log.push(`flush:${userId.slice(0, 4)}`)
+      if (opts.waiting === 'throws') throw new Error('idb broken')
+      return opts.waiting ?? 0
+    },
+    retag: async (from, to) => {
+      log.push('retag')
+      retagged.push([from, to])
+      return 0
+    },
+  }
+}

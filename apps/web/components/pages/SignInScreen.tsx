@@ -10,30 +10,30 @@ import { Button3D } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useAuth, useSession } from '@/lib/app-services'
 import { ButtonLink } from './ButtonLink'
-import { errorMessage, useFlushOutbox } from './hooks'
-import { OutboxBlockedError, signInAndMerge, type FlushOutbox } from './identity'
+import { errorMessage, useOutboxPort } from './hooks'
+import { OutboxBlockedError, signInAndMerge, type OutboxPort } from './identity'
 
 const Email = z.string().trim().email()
 
 export function SignInScreen({
   navigate,
-  flushOutbox,
+  outbox: outboxProp,
 }: {
   navigate: (href: string) => void
-  flushOutbox?: FlushOutbox
+  outbox?: OutboxPort
 }) {
   const api = useApi()
   const auth = useAuth()
   const session = useSession()
   const queryClient = useQueryClient()
-  const defaultFlush = useFlushOutbox()
-  const flush = flushOutbox ?? defaultFlush
+  const defaultOutbox = useOutboxPort()
+  const outbox = outboxProp ?? defaultOutbox
   const [email, setEmail] = useState('')
   const [sentTo, setSentTo] = useState<string | null>(null)
   const inputId = useId()
 
   const run = useMutation({
-    mutationFn: (address: string) => signInAndMerge({ auth, api, flush }, address),
+    mutationFn: (address: string) => signInAndMerge({ auth, api, outbox }, address),
     onSuccess: (r, address) => {
       if (r.status === 'email_sent') {
         setSentTo(address)

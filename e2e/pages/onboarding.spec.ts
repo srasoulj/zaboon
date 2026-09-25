@@ -44,8 +44,11 @@ test('a new visitor onboards from /learn and lands in the first lesson', async (
   expect(body.settings).toMatchObject({ reason: 'culture', selfLevel: 'new' })
 
   // The shell no longer sends this learner to onboarding, and onboarding sends them away.
+  const homeLoaded = page.waitForResponse((r) => r.url().endsWith('/api/home') && r.ok())
   await page.goto('/learn')
-  await expect(page.getByRole('heading', { name: 'Learn', exact: true })).toBeVisible()
+  await homeLoaded
+  const nav = page.getByRole('navigation', { name: 'Main' }).filter({ visible: true })
+  await expect(nav.getByRole('link', { name: /learn/i })).toHaveAttribute('aria-current', 'page')
   await expect(page).toHaveURL(/\/learn$/)
   await page.goto('/onboarding')
   await expect(page).toHaveURL(/\/learn$/)

@@ -5,14 +5,20 @@
  * Before ANY switch the lesson outbox is flushed, so the guest's pending writes land under the guest
  * first (the outbox only sends entries of the signed-in user). If it can't deliver everything
  * (offline, server failing), the switch is refused with OUTBOX_BLOCKED_MESSAGE instead of stranding
- * the guest's lessons under an identity that is about to disappear.
+ * the guest's lessons under an identity that is about to disappear. After a merge, anything still
+ * queued for the guest is re-tagged to the account.
  */
 import type { HomeResponse } from '@zaboon/contracts'
 import type { ApiClient } from '@/lib/api-client'
 import type { AuthClient, AuthSession } from '@/lib/auth-client'
-import type { FlushReport } from '@/lib/lesson/outbox'
 
-export type FlushOutbox = () => Promise<FlushReport>
+/** What the identity switches need from the lesson outbox (components/lesson/services). */
+export interface OutboxPort {
+  /** Sends what it can; resolves to how many of `userId`'s entries are still waiting. */
+  deliver(userId: string): Promise<number>
+  /** Moves `fromUserId`'s queued entries to `toUserId` (after a guest merged into an account). */
+  retag(fromUserId: string, toUserId: string): Promise<number>
+}
 
 export const OUTBOX_BLOCKED_MESSAGE = 'Connect to the internet to save your progress first.'
 
@@ -23,15 +29,31 @@ export class OutboxBlockedError extends Error {
   }
 }
 
-/** Resolves when every pending lesson write of the current user was delivered (or dropped as invalid). */
-export async function ensureOutboxDelivered(flush: FlushOutbox): Promise<void> {
-  let report: FlushReport
+/**
+ * Resolves when every pending lesson write of the signed-in user was delivered (or given up as
+ * invalid). Other users' leftovers on this device don't block anything.
+ */
+export async function ensureOutboxDelivered(
+  deps: Pick<Deps, 'auth' | 'outbox'>,
+): Promise<void> {
+  const session = await deps.auth.getSession()
+  if (!session) return
+  let waiting: number
   try {
-    report = await flush()
+    waiting = await deps.outbox.deliver(session.userId)
   } catch {
     throw new OutboxBlockedError()
   }
-  if (report.stalled || report.remaining > 0) throw new OutboxBlockedError()
+  if (waiting > 0) throw new OutboxBlockedError()
+}
+
+/** Re-tags the guest's queue after a merge; never fails the merge itself. */
+async function retagAfterMerge(outbox: OutboxPort, guestUserId: string, accountUserId: string) {
+  try {
+    await outbox.retag(guestUserId, accountUserId)
+  } catch {
+    // The entries stay with the guest id; nothing is lost that the merge didn't already move.
+  }
 }
 
 export type SwitchResult =
@@ -44,7 +66,7 @@ export type SwitchResult =
 interface Deps {
   auth: AuthClient
   api: ApiClient
-  flush: FlushOutbox
+  outbox: OutboxPort
 }
 
 // ------------------------------------------------------------------------ pending merge (email link)
@@ -95,7 +117,8 @@ function clearPendingMerge(): void {
 export async function completePendingMerge({
   auth,
   api,
-}: Pick<Deps, 'auth' | 'api'>): Promise<HomeResponse | null> {
+  outbox,
+}: Deps): Promise<HomeResponse | null> {
   const pending = takePendingMerge()
   if (!pending) return null
   const session = await auth.getSession()
@@ -106,6 +129,7 @@ export async function completePendingMerge({
   }
   try {
     const res = await api('mergeAccount', { body: { guestToken: pending.guestToken } })
+    await retagAfterMerge(outbox, pending.guestUserId, session.userId)
     return res.home
   } catch {
     return null
@@ -126,7 +150,7 @@ async function currentGuest(auth: AuthClient): Promise<AuthSession | null> {
  */
 export async function signInAndMerge(deps: Deps, email: string): Promise<SwitchResult> {
   const { auth, api } = deps
-  await ensureOutboxDelivered(deps.flush)
+  await ensureOutboxDelivered(deps)
   // Keep the guest's token: after the sign-in it is the only proof that we own the guest.
   const guest = await currentGuest(auth)
   const signIn = await auth.signInWithEmail(email)
@@ -136,6 +160,7 @@ export async function signInAndMerge(deps: Deps, email: string): Promise<SwitchR
   }
   if (!guest || guest.userId === signIn.session.userId) return { status: 'merged', home: null }
   const res = await api('mergeAccount', { body: { guestToken: guest.accessToken } })
+  await retagAfterMerge(deps.outbox, guest.userId, signIn.session.userId)
   return { status: 'merged', home: res.home }
 }
 
@@ -145,15 +170,13 @@ export async function signInAndMerge(deps: Deps, email: string): Promise<SwitchR
  */
 export async function linkOrMerge(deps: Deps, email: string): Promise<SwitchResult> {
   const { auth } = deps
-  await ensureOutboxDelivered(deps.flush)
+  await ensureOutboxDelivered(deps)
   const link = await auth.linkEmail(email)
   if (link.status === 'signed_in') return { status: 'linked' }
   if (link.status === 'email_sent') return { status: 'email_sent' }
-  // identity_already_exists: the outbox is already empty, so go straight to sign-in + merge.
-  return signInAndMerge({ ...deps, flush: async () => emptyReport }, email)
+  // identity_already_exists: still the guest, so the sign-in + merge path applies as is.
+  return signInAndMerge(deps, email)
 }
-
-const emptyReport: FlushReport = { delivered: 0, dropped: 0, stalled: false, remaining: 0 }
 
 /**
  * Leaves the app for `href`, then signs out. The order matters: while an app screen is mounted, the
@@ -177,11 +200,11 @@ export async function leaveThenSignOut(
 
 /** Signs out after the outbox is delivered, from the home page (see leaveThenSignOut). */
 export async function signOutSafely(
-  deps: Pick<Deps, 'auth' | 'flush'> & {
+  deps: Pick<Deps, 'auth' | 'outbox'> & {
     navigate: (href: string) => void
     currentPath: () => string
   },
 ): Promise<void> {
-  await ensureOutboxDelivered(deps.flush)
+  await ensureOutboxDelivered(deps)
   await leaveThenSignOut(deps)
 }

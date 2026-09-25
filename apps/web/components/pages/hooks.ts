@@ -1,17 +1,28 @@
 'use client'
 /** Small hooks shared by the ws-pages screens. */
-import { useCallback } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { MetaResponse } from '@zaboon/contracts'
-import { sharedLessonStores } from '@/components/lesson/services'
+import { retagOutboxUser, sharedLessonStores } from '@/components/lesson/services'
 import { queryKeys } from '@/lib/api-client'
 import { useApi } from '@/lib/app-services'
-import type { FlushOutbox } from './identity'
+import type { OutboxPort } from './identity'
 
-/** Flushes the page-wide lesson outbox (the one the app replays; see components/lesson/services). */
-export function useFlushOutbox(): FlushOutbox {
+/** The page-wide lesson outbox (the one the app replays; see components/lesson/services). */
+export function useOutboxPort(): OutboxPort {
   const api = useApi()
-  return useCallback(async () => (await sharedLessonStores(api)).outbox.flush(), [api])
+  return useMemo(
+    () => ({
+      deliver: async (userId) => {
+        const { outbox } = await sharedLessonStores(api)
+        await outbox.flush()
+        // Dead letters are never sent again, so they don't hold anything up.
+        return (await outbox.pending()).filter((e) => e.userId === userId && !e.dead).length
+      },
+      retag: (from, to) => retagOutboxUser(api, from, to),
+    }),
+    [api],
+  )
 }
 
 /** GET /api/meta (public): feature flags and versions. */

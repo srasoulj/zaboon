@@ -1,6 +1,5 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FlushReport } from '@/lib/lesson/outbox'
 import { AccountScreen } from './AccountScreen'
 import {
   OUTBOX_BLOCKED_MESSAGE,
@@ -9,13 +8,25 @@ import {
   ensureOutboxDelivered,
   signInAndMerge,
 } from './identity'
-import { MEMBER_ID, apiError, fakeApi, fakeAuth, home, renderWith, session, type FakeAuth } from './test-support'
+import {
+  GUEST_ID,
+  MEMBER_ID,
+  apiError,
+  fakeApi,
+  fakeAuth,
+  fakeOutbox,
+  home,
+  renderWith,
+  session,
+  type FakeAuth,
+} from './test-support'
 
 beforeEach(() => localStorage.clear())
 afterEach(() => cleanup())
 
-const DELIVERED: FlushReport = { delivered: 2, dropped: 0, stalled: false, remaining: 0 }
-const STALLED: FlushReport = { delivered: 0, dropped: 0, stalled: true, remaining: 2 }
+// fakeOutbox logs `flush:<first 4 chars of the user id>`.
+const FLUSH_GUEST = `flush:${GUEST_ID.slice(0, 4)}`
+const FLUSH_MEMBER = `flush:${MEMBER_ID.slice(0, 4)}`
 const GUEST = session()
 const MEMBER = session({
   userId: MEMBER_ID,
@@ -26,7 +37,7 @@ const MEMBER = session({
 
 function setup(opts: {
   auth?: FakeAuth
-  flush?: FlushReport | 'throws'
+  waiting?: number | 'throws'
   merge?: () => unknown
 }) {
   const auth = opts.auth ?? fakeAuth(GUEST)
@@ -42,11 +53,7 @@ function setup(opts: {
       return { deleted: true }
     },
   })
-  const flushOutbox = vi.fn(async () => {
-    auth.calls.push('flush')
-    if (opts.flush === 'throws') throw new Error('idb broken')
-    return opts.flush ?? DELIVERED
-  })
+  const outbox = fakeOutbox(auth.calls, { waiting: opts.waiting ?? 0 })
   // The URL changes only when the app navigates (the sign-out must wait for it).
   let path = '/settings/account'
   const navigate = vi.fn<(href: string) => void>((href) => {
@@ -57,13 +64,13 @@ function setup(opts: {
   const utils = renderWith(
     <AccountScreen
       navigate={navigate}
-      flushOutbox={flushOutbox}
+      outbox={outbox}
       saveFile={saveFile}
       currentPath={() => path}
     />,
     { api: fake.api, auth },
   )
-  return { ...utils, ...fake, auth, flushOutbox, navigate, saveFile }
+  return { ...utils, ...fake, auth, outbox, navigate, saveFile }
 }
 
 async function submitEmail(email: string, button: string) {
@@ -78,38 +85,41 @@ describe('AccountScreen: a guest creates a profile', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       "Profile created. You're signed in as new@example.com.",
     )
-    expect(auth.calls).toEqual(['flush', 'link:new@example.com'])
+    expect(auth.calls).toEqual([FLUSH_GUEST, 'link:new@example.com'])
     expect(auth.current).toMatchObject({ isAnonymous: false, email: 'new@example.com' })
   })
 
-  it('an email that already has an account: flush → link → sign in → merge with the guest token', async () => {
+  it('an email that already has an account: flush → link → sign in → merge → re-tag the queue', async () => {
     const auth = fakeAuth(GUEST, { link: () => ({ status: 'identity_already_exists' }) })
-    const { called } = setup({ auth })
+    const { called, outbox } = setup({ auth })
     await submitEmail('sara@example.com', 'Create a profile')
     expect(await screen.findByRole('status')).toHaveTextContent(/guest progress was added/)
     expect(auth.calls).toEqual([
-      'flush',
+      FLUSH_GUEST,
       'link:sara@example.com',
+      FLUSH_GUEST,
       'signIn:sara@example.com',
       'merge',
+      'retag',
     ])
     expect(called('mergeAccount')).toEqual([{ body: { guestToken: GUEST.accessToken } }])
+    expect(outbox.retagged).toEqual([[GUEST_ID, MEMBER_ID]])
   })
 
   it('refuses to switch while the outbox cannot be delivered', async () => {
-    const { auth, called } = setup({ flush: STALLED })
+    const { auth, called } = setup({ waiting: 2 })
     await submitEmail('new@example.com', 'Create a profile')
     expect(await screen.findByRole('alert')).toHaveTextContent(OUTBOX_BLOCKED_MESSAGE)
-    expect(auth.calls).toEqual(['flush'])
+    expect(auth.calls).toEqual([FLUSH_GUEST])
     expect(auth.current).toEqual(GUEST)
     expect(called('mergeAccount')).toEqual([])
   })
 
   it('also refuses when the outbox itself fails', async () => {
-    const { auth } = setup({ flush: 'throws' })
+    const { auth } = setup({ waiting: 'throws' })
     await submitEmail('new@example.com', 'Create a profile')
     expect(await screen.findByRole('alert')).toHaveTextContent(OUTBOX_BLOCKED_MESSAGE)
-    expect(auth.calls).toEqual(['flush'])
+    expect(auth.calls).toEqual([FLUSH_GUEST])
   })
 
   it('"I already have an account" signs in and merges the guest', async () => {
@@ -117,7 +127,7 @@ describe('AccountScreen: a guest creates a profile', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'I already have an account' }))
     await submitEmail('sara@example.com', 'Sign in')
     expect(await screen.findByRole('status')).toHaveTextContent(/guest progress was added/)
-    expect(auth.calls).toEqual(['flush', 'signIn:sara@example.com', 'merge'])
+    expect(auth.calls).toEqual([FLUSH_GUEST, 'signIn:sara@example.com', 'merge', 'retag'])
     expect(called('mergeAccount')).toEqual([{ body: { guestToken: GUEST.accessToken } }])
   })
 
@@ -147,15 +157,15 @@ describe('AccountScreen: a member', () => {
     expect(await screen.findByText('sara@example.com')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
     // Signing out while an app screen is mounted would make the shell create a new guest.
-    await waitFor(() => expect(auth.calls).toEqual(['flush', 'navigate:/', 'signOut']))
+    await waitFor(() => expect(auth.calls).toEqual([FLUSH_MEMBER, 'navigate:/', 'signOut']))
     expect(auth.current).toBeNull()
   })
 
   it('stays signed in while the outbox is stuck', async () => {
-    const { auth, navigate } = setup({ auth: fakeAuth(MEMBER), flush: STALLED })
+    const { auth, navigate } = setup({ auth: fakeAuth(MEMBER), waiting: 1 })
     fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(OUTBOX_BLOCKED_MESSAGE)
-    expect(auth.calls).toEqual(['flush'])
+    expect(auth.calls).toEqual([FLUSH_MEMBER])
     expect(navigate).not.toHaveBeenCalled()
   })
 })
@@ -185,36 +195,44 @@ describe('AccountScreen: your data', () => {
 })
 
 describe('identity helpers', () => {
-  it('ensureOutboxDelivered accepts a clean flush and dropped entries', async () => {
-    await expect(ensureOutboxDelivered(async () => DELIVERED)).resolves.toBeUndefined()
+  it('blocks only on the signed-in user\'s undelivered entries', async () => {
+    const log: string[] = []
+    const auth = fakeAuth(GUEST)
+    await expect(ensureOutboxDelivered({ auth, outbox: fakeOutbox(log) })).resolves.toBeUndefined()
     await expect(
-      ensureOutboxDelivered(async () => ({ delivered: 0, dropped: 1, stalled: false, remaining: 0 })),
+      ensureOutboxDelivered({ auth, outbox: fakeOutbox(log, { waiting: 1 }) }),
+    ).rejects.toThrow(OUTBOX_BLOCKED_MESSAGE)
+    expect(log).toEqual([FLUSH_GUEST, FLUSH_GUEST])
+    // Signed out: there is nobody whose writes could be stranded.
+    await expect(
+      ensureOutboxDelivered({ auth: fakeAuth(null), outbox: fakeOutbox(log, { waiting: 3 }) }),
     ).resolves.toBeUndefined()
-    await expect(ensureOutboxDelivered(async () => STALLED)).rejects.toThrow(OUTBOX_BLOCKED_MESSAGE)
   })
 
   it('an emailed sign-in link keeps the guest token and merges once the member arrives', async () => {
     const auth = fakeAuth(GUEST, { signIn: () => ({ status: 'email_sent' }) })
     const merged = home({ xpTotal: 99 })
     const fake = fakeApi({ mergeAccount: () => ({ merged: true, home: merged }) })
-    const r = await signInAndMerge({ auth, api: fake.api, flush: async () => DELIVERED }, 's@x.io')
+    const outbox = fakeOutbox([])
+    const r = await signInAndMerge({ auth, api: fake.api, outbox }, 's@x.io')
     expect(r).toEqual({ status: 'email_sent' })
     expect(localStorage.getItem(PENDING_MERGE_KEY)).toContain(GUEST.accessToken)
     // Still the guest: nothing to do yet.
-    expect(await completePendingMerge({ auth, api: fake.api })).toBeNull()
+    expect(await completePendingMerge({ auth, api: fake.api, outbox })).toBeNull()
     expect(fake.called('mergeAccount')).toEqual([])
     // The link was opened: now a member.
     auth.current = MEMBER
-    expect(await completePendingMerge({ auth, api: fake.api })).toEqual(merged)
+    expect(await completePendingMerge({ auth, api: fake.api, outbox })).toEqual(merged)
     expect(fake.called('mergeAccount')).toEqual([{ body: { guestToken: GUEST.accessToken } }])
+    expect(outbox.retagged).toEqual([[GUEST_ID, MEMBER_ID]])
     expect(localStorage.getItem(PENDING_MERGE_KEY)).toBeNull()
-    expect(await completePendingMerge({ auth, api: fake.api })).toBeNull()
+    expect(await completePendingMerge({ auth, api: fake.api, outbox })).toBeNull()
   })
 
   it('a plain sign-in without a guest does not merge', async () => {
     const auth = fakeAuth(null)
     const fake = fakeApi({})
-    const r = await signInAndMerge({ auth, api: fake.api, flush: async () => DELIVERED }, 's@x.io')
+    const r = await signInAndMerge({ auth, api: fake.api, outbox: fakeOutbox([]) }, 's@x.io')
     expect(r).toEqual({ status: 'merged', home: null })
     expect(fake.calls).toEqual([])
   })

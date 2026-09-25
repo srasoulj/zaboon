@@ -1,15 +1,23 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { FlushReport } from '@/lib/lesson/outbox'
 import { OUTBOX_BLOCKED_MESSAGE } from './identity'
 import { SignInScreen } from './SignInScreen'
-import { MEMBER_ID, fakeApi, fakeAuth, home, renderWith, session } from './test-support'
+import {
+  GUEST_ID,
+  MEMBER_ID,
+  fakeApi,
+  fakeAuth,
+  fakeOutbox,
+  home,
+  renderWith,
+  session,
+} from './test-support'
 
 afterEach(() => cleanup())
 
-const ok: FlushReport = { delivered: 0, dropped: 0, stalled: false, remaining: 0 }
+const FLUSH_GUEST = `flush:${GUEST_ID.slice(0, 4)}`
 
-function setup(auth = fakeAuth(session()), flush: FlushReport = ok) {
+function setup(auth = fakeAuth(session()), waiting = 0) {
   const fake = fakeApi({
     mergeAccount: () => {
       auth.calls.push('merge')
@@ -17,11 +25,8 @@ function setup(auth = fakeAuth(session()), flush: FlushReport = ok) {
     },
   })
   const navigate = vi.fn<(href: string) => void>()
-  const flushOutbox = vi.fn(async () => {
-    auth.calls.push('flush')
-    return flush
-  })
-  renderWith(<SignInScreen navigate={navigate} flushOutbox={flushOutbox} />, { api: fake.api, auth })
+  const outbox = fakeOutbox(auth.calls, { waiting })
+  renderWith(<SignInScreen navigate={navigate} outbox={outbox} />, { api: fake.api, auth })
   return { auth, navigate, ...fake }
 }
 
@@ -35,21 +40,22 @@ describe('SignInScreen', () => {
     const { auth, navigate } = setup()
     await signIn('sara@example.com')
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/learn'))
-    expect(auth.calls).toEqual(['flush', 'signIn:sara@example.com', 'merge'])
+    expect(auth.calls).toEqual([FLUSH_GUEST, 'signIn:sara@example.com', 'merge', 'retag'])
   })
 
   it('without a guest it only signs in', async () => {
     const { auth, navigate } = setup(fakeAuth(null))
     await signIn('sara@example.com')
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/learn'))
-    expect(auth.calls).toEqual(['flush', 'signIn:sara@example.com'])
+    // Nobody signed in: nothing to flush.
+    expect(auth.calls).toEqual(['signIn:sara@example.com'])
   })
 
   it('is blocked while lesson writes are stuck in the outbox', async () => {
-    const { auth, navigate } = setup(fakeAuth(session()), { ...ok, stalled: true, remaining: 1 })
+    const { auth, navigate } = setup(fakeAuth(session()), 1)
     await signIn('sara@example.com')
     expect(await screen.findByRole('alert')).toHaveTextContent(OUTBOX_BLOCKED_MESSAGE)
-    expect(auth.calls).toEqual(['flush'])
+    expect(auth.calls).toEqual([FLUSH_GUEST])
     expect(navigate).not.toHaveBeenCalled()
   })
 

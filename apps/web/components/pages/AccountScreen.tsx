@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { Button3D } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useAuth, useSession } from '@/lib/app-services'
-import { errorMessage, useFlushOutbox } from './hooks'
+import { errorMessage, useOutboxPort } from './hooks'
 import {
   OutboxBlockedError,
   completePendingMerge,
@@ -18,7 +18,7 @@ import {
   linkOrMerge,
   signInAndMerge,
   signOutSafely,
-  type FlushOutbox,
+  type OutboxPort,
   type SwitchResult,
 } from './identity'
 
@@ -40,8 +40,8 @@ export function saveJsonFile(data: unknown, filename: string): void {
 
 export interface AccountScreenProps {
   navigate: (href: string) => void
-  /** Flushes the lesson outbox (defaults to the app's shared outbox). */
-  flushOutbox?: FlushOutbox
+  /** The lesson outbox (defaults to the app's shared one). */
+  outbox?: OutboxPort
   /** Saves the export (defaults to a browser download). */
   saveFile?: (data: unknown, filename: string) => void
   /** The current URL path (defaults to window.location.pathname). */
@@ -65,7 +65,7 @@ function failure(error: unknown): string {
 
 export function AccountScreen({
   navigate,
-  flushOutbox,
+  outbox: outboxProp,
   saveFile = saveJsonFile,
   currentPath = windowPath,
 }: AccountScreenProps) {
@@ -73,8 +73,8 @@ export function AccountScreen({
   const auth = useAuth()
   const queryClient = useQueryClient()
   const session = useSession()
-  const defaultFlush = useFlushOutbox()
-  const flush = flushOutbox ?? defaultFlush
+  const defaultOutbox = useOutboxPort()
+  const outbox = outboxProp ?? defaultOutbox
   // Outcome of the last identity switch. Kept here, not in the form: a switch unmounts the guest form.
   const [notice, setNotice] = useState<Notice | null>(null)
 
@@ -83,7 +83,7 @@ export function AccountScreen({
   useEffect(() => {
     if (!signedInMember) return
     let alive = true
-    void completePendingMerge({ auth, api }).then((merged) => {
+    void completePendingMerge({ auth, api, outbox }).then((merged) => {
       if (!alive || !merged) return
       queryClient.setQueryData(queryKeys.home, merged)
       void queryClient.invalidateQueries()
@@ -92,7 +92,7 @@ export function AccountScreen({
     return () => {
       alive = false
     }
-  }, [signedInMember, auth, api, queryClient])
+  }, [signedInMember, auth, api, outbox, queryClient])
 
   if (session.status !== 'signed_in')
     return (
@@ -117,11 +117,11 @@ export function AccountScreen({
         </p>
       )}
       {s.isAnonymous ? (
-        <GuestIdentity flush={flush} onResult={setNotice} />
+        <GuestIdentity outbox={outbox} onResult={setNotice} />
       ) : (
         <MemberIdentity
           email={s.email}
-          flush={flush}
+          outbox={outbox}
           navigate={navigate}
           currentPath={currentPath}
         />
@@ -153,10 +153,10 @@ function Card({ title, children, danger = false }: { title: string; children: Re
 type Notice = { tone: 'ok' | 'error'; text: string }
 
 function GuestIdentity({
-  flush,
+  outbox,
   onResult,
 }: {
-  flush: FlushOutbox
+  outbox: OutboxPort
   onResult: (notice: Notice | null) => void
 }) {
   const api = useApi()
@@ -169,8 +169,8 @@ function GuestIdentity({
   const run = useMutation({
     mutationFn: (address: string) =>
       mode === 'create'
-        ? linkOrMerge({ auth, api, flush }, address)
-        : signInAndMerge({ auth, api, flush }, address),
+        ? linkOrMerge({ auth, api, outbox }, address)
+        : signInAndMerge({ auth, api, outbox }, address),
     onMutate: () => onResult(null),
     onSuccess: (r, address) => {
       if (r.status === 'merged' && r.home) queryClient.setQueryData(queryKeys.home, r.home)
@@ -228,18 +228,18 @@ function GuestIdentity({
 
 function MemberIdentity({
   email,
-  flush,
+  outbox,
   navigate,
   currentPath,
 }: {
   email: string | null
-  flush: FlushOutbox
+  outbox: OutboxPort
   navigate: (href: string) => void
   currentPath: () => string
 }) {
   const auth = useAuth()
   const signOut = useMutation({
-    mutationFn: () => signOutSafely({ auth, flush, navigate, currentPath }),
+    mutationFn: () => signOutSafely({ auth, outbox, navigate, currentPath }),
   })
   return (
     <Card title="Signed in">
