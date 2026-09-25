@@ -1,0 +1,166 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+# Token surfaces carry no punctuation; `fa` keeps the Persian punctuation (، ؟).
+- id: s_u01_0001
+  fa: سلام، خوبی؟
+  faFormal: سلام، خوب هستی؟
+  faVocalized: سَلام، خوبی؟
+  translit: "salām, khubi?"
+  translitFormal: "salām, khub hasti?"
+  tokens:
+    - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: hello }
+    - { surface: خوبی, lexeme: lx_khub, translit: khubi, gloss: "(you're) good" }
+  en:
+    - "[Hello,/Hi,] how are you?"
+    - "[Hello,/Hi,] are you [good/well/okay/OK/fine]"
+  audio:
+    normal: audio/s_u01_0001.mp3
+    slow: audio/s_u01_0001.slow.mp3
+    envelope: audio/s_u01_0001.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0002
+  fa: من آب می‌خوام
+  faFormal: من آب می‌خواهم
+  faVocalized: مَن آب می‌خوام
+  translit: man āb mikhām
+  translitFormal: man āb mikhāham
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: I }
+    - { surface: آب, lexeme: lx_ab, translit: āb, gloss: water }
+    - { surface: می‌خوام, lexeme: lx_mikham, translit: mikhām, gloss: "(I) want" }
+  en: "[I want/I'd like] [some/] water"
+  faAccept: "من آب می‌خوام"
+  audio:
+    normal: audio/s_u01_0002.mp3
+    slow: audio/s_u01_0002.slow.mp3
+    envelope: audio/s_u01_0002.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0003
+  fa: نون می‌خوام
+  faFormal: نان می‌خواهم
+  translit: nun mikhām
+  translitFormal: nān mikhāham
+  tokens:
+    - { surface: نون, lexeme: lx_nun, translit: nun, gloss: bread }
+    - { surface: می‌خوام, lexeme: lx_mikham, translit: mikhām, gloss: "(I) want" }
+  en: "[I want/I'd like] [some/] bread"
+  faAccept: "[من/] نون می‌خوام"
+  audio:
+    normal: audio/s_u01_0003.mp3
+    slow: audio/s_u01_0003.slow.mp3
+    envelope: audio/s_u01_0003.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0004
+  fa: مرسی
+  faVocalized: مِرسی
+  translit: mersi
+  tokens:
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: thanks }
+  en: "[Thanks/Thank you]"
+  faAccept: "[مرسی/ممنون/متشکرم]"
+  audio:
+    normal: audio/s_u01_0004.mp3
+    slow: audio/s_u01_0004.slow.mp3
+    envelope: audio/s_u01_0004.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0005
+  fa: چای می‌خوای؟
+  faFormal: چای می‌خواهی؟
+  translit: "chāy mikhāy?"
+  translitFormal: "chāy mikhāhi?"
+  tokens:
+    - { surface: چای, lexeme: lx_chay, translit: chāy, gloss: tea }
+    - { surface: می‌خوای, lexeme: lx_mikham, translit: mikhāy, gloss: "(you) want" }
+  en:
+    - "[Do you want/Would you like] [some/] tea?"
+    - "[You want/Want] [some/] tea?"
+  audio:
+    normal: audio/s_u01_0005.mp3
+    slow: audio/s_u01_0005.slow.mp3
+    envelope: audio/s_u01_0005.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0006
+  fa: مامان خوبه
+  faFormal: مامان خوب است
+  translit: māmān khube
+  translitFormal: māmān khub ast
+  tokens:
+    - { surface: مامان, lexeme: lx_maman, translit: māmān, gloss: mom }
+    - { surface: خوبه, lexeme: lx_khub, translit: khube, gloss: "is good" }
+  en:
+    - "[Mom/Mum/Mother/Mama] is [good/well/fine/okay/OK]"
+    - "[Mom's/Mum's/Mama's] [good/well/fine/okay/OK]"
+  audio:
+    normal: audio/s_u01_0006.mp3
+    slow: audio/s_u01_0006.slow.mp3
+    envelope: audio/s_u01_0006.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0007
+  fa: من سیب می‌خوام
+  faFormal: من سیب می‌خواهم
+  faVocalized: مَن سیب می‌خوام
+  translit: man sib mikhām
+  translitFormal: man sib mikhāham
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: I }
+    - { surface: سیب, lexeme: lx_sib, translit: sib, gloss: apple }
+    - { surface: می‌خوام, lexeme: lx_mikham, translit: mikhām, gloss: "(I) want" }
+  en:
+    - "[I want/I'd like] an apple"
+    - "[I want/I'd like] [some/] apples"
+  audio:
+    normal: audio/s_u01_0007.mp3
+    slow: audio/s_u01_0007.slow.mp3
+    envelope: audio/s_u01_0007.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: s_u01_0008
+  fa: خوبم، مرسی
+  faVocalized: خوبَم، مِرسی
+  translit: "khubam, mersi"
+  tokens:
+    - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "(I'm) good" }
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: thanks }
+  en: "I'm [good,/well,/fine,/okay,/OK,] [thanks/thank you]"
+  audio:
+    normal: audio/s_u01_0008.mp3
+    slow: audio/s_u01_0008.slow.mp3
+    envelope: audio/s_u01_0008.envelope.json
+    speaker: leila
+    signedOffBy: null
+  unit: u01-fixture
+  status: approved
+  provenance: { author: fixtures }

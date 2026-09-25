@@ -2,7 +2,7 @@
 # Imaged nouns (select_image): lx_ab, lx_nun, lx_chay, lx_sib. Every lexeme has audio.
 - id: lx_salam
   fa: سلام
-  faVocalized: س%FATHA%لام
+  faVocalized: سَلام
   translit: salām
   pos: interjection
   glosses: [hello, hi]
@@ -13,7 +13,7 @@
 
 - id: lx_mersi
   fa: مرسی
-  faVocalized: م%KASRA%رسی
+  faVocalized: مِرسی
   translit: mersi
   pos: interjection
   glosses: [thanks, thank you]
@@ -35,7 +35,7 @@
 
 - id: lx_man
   fa: من
-  faVocalized: م%FATHA%ن
+  faVocalized: مَن
   translit: man
   pos: pronoun
   glosses: [I, me]
@@ -101,13 +101,13 @@
   provenance: { author: fixtures }
 
 - id: lx_mikham
-  fa: می%ZWNJ%خوام
-  faFormal: می%ZWNJ%خواهم
+  fa: می‌خوام
+  faFormal: می‌خواهم
   translit: mikhām
   translitFormal: mikhāham
   pos: verb
   glosses: [I want]
-  forms: { 2sg: می%ZWNJ%خوای }
+  forms: { 2sg: می‌خوای }
   audio: audio/lx_mikham.mp3
   introducedIn: u01-fixture
   status: approved
@@ -135,7 +135,7 @@
 
 - id: lx_bad
   fa: بد
-  faVocalized: ب%FATHA%د
+  faVocalized: بَد
   translit: bad
   pos: adjective
   glosses: [bad]

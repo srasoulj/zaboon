@@ -1,0 +1,18 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+- id: leila
+  name: Leila
+  nameFa: لیلا
+  role: chef
+  bio: A warm, quick-witted chef who runs a small kitchen and teaches food and bazaar Persian.
+  color: anar
+  status: approved
+  provenance: { author: fixtures }
+
+- id: hodhod
+  name: Hodhod
+  nameFa: هدهد
+  role: mascot
+  bio: Hodhod the hoopoe guides learners along the path; his saffron crest flares when proud and droops when sad.
+  color: zaferan
+  status: approved
+  provenance: { author: fixtures }

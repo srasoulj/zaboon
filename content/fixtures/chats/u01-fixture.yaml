@@ -1,0 +1,9 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+# Leila: "Hello, how are you?" The best reply is option 1, "I'm good, thanks".
+- id: c_u01_001
+  speaker: leila
+  prompt: s_u01_0001
+  options: [s_u01_0003, s_u01_0008, s_u01_0006]
+  answer: 1
+  status: approved
+  provenance: { author: fixtures }

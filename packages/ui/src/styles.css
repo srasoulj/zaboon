@@ -1,0 +1,8 @@
+/* Generated from packages/ui/tokens.json by `pnpm --filter @zaboon/ui tokens` (ws-ui).
+   Wave 0 placeholder: ws-ui replaces this file with the generated tokens and utilities. */
+:root {
+  --color-bg: #ffffff;
+  --color-ink: #2f2f2f;
+  --font-latin: Nunito, system-ui, sans-serif;
+  --font-persian: Vazirmatn, Nunito, sans-serif;
+}
