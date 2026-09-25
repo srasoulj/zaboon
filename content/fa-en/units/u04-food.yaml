@@ -1,12 +1,49 @@
-# Stub so the path renders all of Section 1. Full content comes later.
+# Unit 4: wanting, eating and praising food; ta'ārof at the table. Each lesson level introduces new
+# items and may reuse anything from the levels and units before it. AI draft (openai/gpt-6-astra,
+# prompt draft-v1); status: draft until native review.
 id: u04-food
-title: "Food & tea"
-subtitle: "Order, offer and politely refuse food"
+title: Food & tea
+subtitle: Order, offer and politely refuse food
 register: colloquial
 color: anar
+guidebook: guidebooks/u04-food.md
 characters: [leila, maman-bozorg]
 levels:
   - id: u04-l1
     kind: lesson
+    title: I'd like tea
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_khastan, lx_kabab, lx_berenj, lx_ba, lx_lotfan, lx_ghahve, lx_shir, lx_ghand, lx_ghaza]
+        sentences: [s_u04_0001, s_u04_0002, s_u04_0003, s_u04_0004, s_u04_0005, s_u04_0016, s_u04_0017, s_u04_0018]
+        chats: [c_u04_001, c_u04_005]
+      mix: intro
+  - id: u04-l2
+    kind: lesson
+    title: Delicious!
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_goshne, lx_tahdig, lx_khordan, lx_khoshmaze, lx_sir, lx_che, lx_bishtar]
+        sentences: [s_u04_0006, s_u04_0007, s_u04_0008, s_u04_0009, s_u04_0010, s_u04_0019, s_u04_0020, s_u04_0021]
+        chats: [c_u04_002, c_u04_006]
+      mix: standard
+  - id: u04-c1
+    kind: chest
+  - id: u04-l3
+    kind: lesson
+    title: Ta'ārof at the table
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_dige, lx_dastetun_dard_nakone, lx_nush_jan, lx_bas]
+        sentences: [s_u04_0011, s_u04_0012, s_u04_0013, s_u04_0014, s_u04_0015, s_u04_0022, s_u04_0023, s_u04_0024]
+        chats: [c_u04_003, c_u04_004]
+      mix: standard
+  - id: u04-p1
+    kind: practice
+  - id: u04-review
+    kind: unit_review
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Level titles and focus lists from the model's draft (Food & tea); lessons: 4 per lesson level; chest after level 2." }

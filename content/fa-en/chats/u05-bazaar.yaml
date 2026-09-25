@@ -1,0 +1,51 @@
+# Unit 5 complete_chat items. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked
+# against STYLE.md; every item is status: draft until a native reviewer approves it. `speaker` says
+# `prompt`; the learner picks the best reply; `answer` is the index in `options`.
+
+- id: c_u05_001
+  speaker: leila
+  prompt: s_u05_0004
+  options: [s_u05_0006, s_u05_0005, s_u05_0008]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Answer Leila's question about the number of teas. }
+
+- id: c_u05_002
+  speaker: kian
+  prompt: s_u05_0010
+  options: [s_u05_0017, s_u05_0012, s_u05_0011]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Give the price of the item Kian points to. }
+
+- id: c_u05_003
+  speaker: shirin
+  prompt: s_u05_0012
+  options: [s_u05_0013, s_u05_0005, s_u05_0006]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Seller quotes the price per kilo. }
+
+- id: c_u05_004
+  speaker: kian
+  prompt: s_u05_0018
+  options: [s_u05_0019, s_u05_0021, s_u05_0023]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Seller agrees to lower the quoted price. }
+
+- id: c_u05_005
+  speaker: kian
+  prompt: s_u05_0023
+  options: [s_u05_0006, s_u05_0019, s_u05_0024]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "At the destination, Dariush responds to the passenger's fare question with ta'ārof." }
+
+- id: c_u05_006
+  speaker: dariush
+  prompt: s_u05_0024
+  options: [s_u05_0025, s_u05_0017, s_u05_0026]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Passenger insists on paying and hands over the fare. }

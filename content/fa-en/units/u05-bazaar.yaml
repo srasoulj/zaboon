@@ -1,12 +1,49 @@
-# Stub so the path renders all of Section 1. Full content comes later.
+# Unit 5: numbers, prices, bargaining and ta'ārof when paying. Each lesson level introduces new
+# items and may reuse anything from the levels and units before it. AI draft (openai/gpt-6-astra,
+# prompt draft-v1); status: draft until native review.
 id: u05-bazaar
-title: "Numbers & the bazaar"
-subtitle: "Count, ask prices and bargain"
+title: Numbers & the bazaar
+subtitle: Count, ask prices and bargain
 register: colloquial
 color: bademjan
+guidebook: guidebooks/u05-bazaar.md
 characters: [dariush, leila]
 levels:
   - id: u05-l1
     kind: lesson
+    title: One, two, three
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_yek, lx_do, lx_se, lx_char, lx_panj, lx_shish, lx_haft, lx_hasht, lx_noh, lx_dah, lx_ta, lx_chand]
+        sentences: [s_u05_0001, s_u05_0002, s_u05_0003, s_u05_0004, s_u05_0005, s_u05_0006, s_u05_0007, s_u05_0008, s_u05_0009]
+        chats: [c_u05_001]
+      mix: intro
+  - id: u05-l2
+    kind: lesson
+    title: How much is it?
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_hezar, lx_toman, lx_gerun, lx_arzun, lx_kilo, lx_bist, lx_panjah, lx_sad, lx_cheghadr]
+        sentences: [s_u05_0010, s_u05_0011, s_u05_0012, s_u05_0013, s_u05_0014, s_u05_0015, s_u05_0016, s_u05_0017]
+        chats: [c_u05_002, c_u05_003]
+      mix: standard
+  - id: u05-c1
+    kind: chest
+  - id: u05-l3
+    kind: lesson
+    title: Bargaining
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_takhfif, lx_dadan, lx_akhar, lx_ghabel_nadare, lx_kharidan, lx_shodan]
+        sentences: [s_u05_0018, s_u05_0019, s_u05_0020, s_u05_0021, s_u05_0022, s_u05_0023, s_u05_0024, s_u05_0025, s_u05_0026]
+        chats: [c_u05_004, c_u05_005, c_u05_006]
+      mix: standard
+  - id: u05-p1
+    kind: practice
+  - id: u05-review
+    kind: unit_review
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Level titles and focus lists from the model's draft (Numbers & the bazaar); lessons: 4 per lesson level; chest after level 2." }

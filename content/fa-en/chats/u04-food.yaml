@@ -1,0 +1,51 @@
+# Unit 4 complete_chat items. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked
+# against STYLE.md; every item is status: draft until a native reviewer approves it. `speaker` says
+# `prompt`; the learner picks the best reply; `answer` is the index in `options`.
+
+- id: c_u04_001
+  speaker: leila
+  prompt: s_u04_0002
+  options: [s_u04_0005, s_u04_0001, s_u01_0005]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Assembly edit: the draft offered the prompt itself as an option; replaced by خداحافظ!." }
+
+- id: c_u04_002
+  speaker: maman-bozorg
+  prompt: s_u04_0010
+  options: [s_u04_0002, s_u04_0005, s_u04_0009]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: c_u04_003
+  speaker: kian
+  prompt: s_u04_0012
+  options: [s_u04_0013, s_u04_0008, s_u04_0014]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Choose the host's customary insistence after a polite refusal. }
+
+- id: c_u04_004
+  speaker: kian
+  prompt: s_u04_0014
+  options: [s_u04_0006, s_u04_0015, s_u04_0012]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: c_u04_005
+  speaker: leila
+  prompt: s_u04_0017
+  options: [s_u04_0002, s_u04_0005, s_u04_0018]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Choose the customer's refusal and request, not another offer or a serving announcement." }
+
+- id: c_u04_006
+  speaker: maman-bozorg
+  prompt: s_u04_0021
+  options: [s_u04_0008, s_u04_0019, s_u04_0007]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Being full directly declines more food; the praise options do not answer the offer. }

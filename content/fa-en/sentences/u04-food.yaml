@@ -1,0 +1,405 @@
+# Unit 4 sentences. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: s_u04_0001
+  fa: چایی می‌خوام.
+  faFormal: چای می‌خواهم.
+  translit: "chāyi mikhām."
+  translitFormal: "chāy mikhāham."
+  tokens:
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "tea" }
+    - { surface: می‌خوام, lexeme: lx_khastan, translit: mikhām, gloss: "I want" }
+  en:
+    - "I'd like [some/] tea"
+    - "I want [some/] tea"
+  faAccept: "[من/] چایی می‌خوام"
+  audio: { speaker: shirin }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0002
+  fa: چایی می‌خواین؟
+  faFormal: چای می‌خواهید؟
+  translit: "chāyi mikhāyn?"
+  translitFormal: "chāy mikhāhid?"
+  tokens:
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "tea" }
+    - { surface: می‌خواین, lexeme: lx_khastan, translit: mikhāyn, gloss: "do you want" }
+  en:
+    - "Would you like [some/] tea?"
+    - "Do you want [some/] tea?"
+  faAccept: "[شما/] چایی [می‌خواین/می‌خواید]"
+  audio: { speaker: leila }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0003
+  fa: چایی نمی‌خوام.
+  faFormal: چای نمی‌خواهم.
+  translit: "chāyi nemikhām."
+  translitFormal: "chāy nemikhāham."
+  tokens:
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "tea" }
+    - { surface: نمی‌خوام, lexeme: lx_khastan, translit: nemikhām, gloss: "I don't want" }
+  en: "I don't want [any/] tea"
+  audio: { speaker: kian }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0004
+  fa: یه کباب با برنج، لطفا.
+  faFormal: یک کباب با برنج، لطفا.
+  translit: "ye kabāb bā berenj, lotfan."
+  translitFormal: "yek kabāb bā berenj, lotfan."
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: کباب, lexeme: lx_kabab, translit: kabāb, gloss: "kebab" }
+    - { surface: با, lexeme: lx_ba, translit: bā, gloss: "with" }
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "[A/One] [kebab/kabob/kabab] with rice, please"
+    - "[Please,/] [a/one] [kebab/kabob/kabab] with rice"
+    - "[Kebab/Kabob/Kabab] with rice, please"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [ordering]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0005
+  fa: بفرمایید، کباب با برنج!
+  translit: "befarmāyid, kabāb bā berenj!"
+  tokens:
+    - { surface: بفرمایید, lexeme: lx_befarmayid, translit: befarmāyid, gloss: "here you are" }
+    - { surface: کباب, lexeme: lx_kabab, translit: kabāb, gloss: "kebab" }
+    - { surface: با, lexeme: lx_ba, translit: bā, gloss: "with" }
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+  en:
+    - "Here you [are,/go,] [a/one/your/] [kebab/kabob/kabab] with rice"
+    - "[Here's/Here is] [a/your/the/] [kebab/kabob/kabab] with rice"
+  audio: { speaker: leila }
+  unit: u04-food
+  tags: [hospitality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Leila serves the dish. Assembly edit: rewritten: the draft duplicated s_u01_0022 (بفرمایید چایی!)." }
+
+- id: s_u04_0006
+  fa: گشنمه، ته‌دیگ می‌خورم.
+  faFormal: گرسنه هستم، ته‌دیگ می‌خورم.
+  translit: "goshname, tahdig mikhoram."
+  translitFormal: "gorosne hastam, tahdig mikhoram."
+  tokens:
+    - { surface: گشنمه, lexeme: lx_goshne, translit: goshname, gloss: "I'm hungry" }
+    - { surface: ته‌دیگ, lexeme: lx_tahdig, translit: tahdig, gloss: "tahdig" }
+    - { surface: می‌خورم, lexeme: lx_khordan, translit: mikhoram, gloss: "I'll eat" }
+  en:
+    - "I'm hungry, I'll [eat/have] [some/] [tahdig/crispy rice]"
+    - "I'm hungry, I'm going to [eat/have] [some/] [tahdig/crispy rice]"
+    - "I'm hungry, I'm eating [some/] [tahdig/crispy rice]"
+  audio: { speaker: kian }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Assembly edit: fixed a corrupted transliteration (goshn ame)." }
+
+- id: s_u04_0007
+  fa: خیلی خوشمزه بود.
+  translit: "kheyli khoshmaze bud."
+  tokens:
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very" }
+    - { surface: خوشمزه, lexeme: lx_khoshmaze, translit: khoshmaze, gloss: "tasty" }
+    - { surface: بود, lexeme: lx_budan, translit: bud, gloss: "it was" }
+  en: "It was [very/really/so] [tasty/delicious/good]"
+  audio: { speaker: shirin }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0008
+  fa: سیرم.
+  faFormal: سیر هستم.
+  translit: "siram."
+  translitFormal: "sir hastam."
+  tokens:
+    - { surface: سیرم, lexeme: lx_sir, translit: siram, gloss: "I'm full" }
+  en: "I'm full"
+  audio: { speaker: kian }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0009
+  fa: برنج نمی‌خورم.
+  translit: "berenj nemikhoram."
+  tokens:
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: نمی‌خورم, lexeme: lx_khordan, translit: nemikhoram, gloss: "I don't eat" }
+  en:
+    - "I don't eat rice"
+    - "I'm not eating rice"
+    - "I won't [eat/have] [any/] rice"
+  audio: { speaker: shirin }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0010
+  fa: برنج بخور!
+  translit: "berenj bokhor!"
+  tokens:
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: بخور, lexeme: lx_khordan, translit: bokhor, gloss: "eat" }
+  en: "[Eat/Have] [some/] rice"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0011
+  fa: یه کم دیگه چایی می‌خوای؟
+  faFormal: یک کم دیگر چای می‌خواهی؟
+  translit: "ye kam dige chāyi mikhāy?"
+  translitFormal: "yek kam digar chāy mikhāhi?"
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: کم, lexeme: lx_kam, translit: kam, gloss: "little" }
+    - { surface: دیگه, lexeme: lx_dige, translit: dige, gloss: "more" }
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "tea" }
+    - { surface: می‌خوای, lexeme: lx_khastan, translit: mikhāy, gloss: "do you want" }
+  en:
+    - "Would you like [a little/a bit/some] more tea?"
+    - "Do you want [a little/a bit/some] more tea?"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0012
+  fa: نه، مرسی، سیرم.
+  faFormal: نه، متشکرم، سیر هستم.
+  translit: "na, mersi, siram."
+  translitFormal: "na, motashakkeram, sir hastam."
+  tokens:
+    - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+    - { surface: سیرم, lexeme: lx_sir, translit: siram, gloss: "I'm full" }
+  en: "No, [thanks,/thank you,] I'm full"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0013
+  fa: تعارف نکن! بخور!
+  translit: "ta'ārof nakon! bokhor!"
+  tokens:
+    - { surface: تعارف, lexeme: lx_taarof, translit: ta'ārof, gloss: "ceremonial politeness" }
+    - { surface: نکن, lexeme: lx_kardan, translit: nakon, gloss: "don't do" }
+    - { surface: بخور, lexeme: lx_khordan, translit: bokhor, gloss: "eat" }
+  en:
+    - "Don't be shy, [eat/have some]"
+    - "Don't stand on ceremony, [eat/have some]"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0014
+  fa: باشه، دستتون درد نکنه!
+  faFormal: باشد، دستتان درد نکند!
+  translit: "bāshe, dastetun dard nakone!"
+  translitFormal: "bāshad, dastetān dard nakonad!"
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: دستتون, lexeme: lx_dast, translit: dastetun, gloss: "your hands" }
+    - { surface: درد, lexeme: lx_dard, translit: dard, gloss: "pain" }
+    - { surface: نکنه, lexeme: lx_kardan, translit: nakone, gloss: "may not do" }
+  en:
+    - "[Okay,/OK,/All right,] thank you [for the food/for your effort/]"
+    - "[Okay,/OK,/All right,] thanks [for the food/]"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0015
+  fa: نوش جان!
+  translit: "nush-e jān!"
+  tokens:
+    - { surface: نوش, lexeme: lx_nush, translit: nush-e, gloss: "pleasure of" }
+    - { surface: جان, lexeme: lx_jan, translit: jān, gloss: "the soul" }
+  en:
+    - "Enjoy [it/your food/your meal]"
+    - "Bon appétit"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  tags: [hospitality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: s_u04_0016
+  fa: قهوه با شیر می‌خوام، لطفا.
+  faFormal: قهوه با شیر می‌خواهم، لطفا.
+  translit: "ghahve bā shir mikhām, lotfan."
+  translitFormal: "ghahve bā shir mikhāham, lotfan."
+  tokens:
+    - { surface: قهوه, lexeme: lx_ghahve, translit: ghahve, gloss: "coffee" }
+    - { surface: با, lexeme: lx_ba, translit: bā, gloss: "with" }
+    - { surface: شیر, lexeme: lx_shir, translit: shir, gloss: "milk" }
+    - { surface: می‌خوام, lexeme: lx_khastan, translit: mikhām, gloss: "I'd like" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "I'd like [a coffee/coffee/some coffee] with milk, please"
+    - "I want [a coffee/coffee/some coffee] with milk, please"
+  audio: { speaker: shirin }
+  unit: u04-food
+  tags: [ordering]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Shirin orders from Leila. }
+
+- id: s_u04_0017
+  fa: قند می‌خواین؟
+  faFormal: قند می‌خواهید؟
+  translit: "ghand mikhāyn?"
+  translitFormal: "ghand mikhāhid?"
+  tokens:
+    - { surface: قند, lexeme: lx_ghand, translit: ghand, gloss: "sugar cubes" }
+    - { surface: می‌خواین, lexeme: lx_khastan, translit: mikhāyn, gloss: "do you want" }
+  en: "[Would you like/Do you want] [some sugar cubes?/a sugar cube?/some lump sugar?/some sugar?]"
+  audio: { speaker: leila }
+  unit: u04-food
+  tags: [offering, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Leila offers sugar to a customer; polite plural ending. }
+
+- id: s_u04_0018
+  fa: نه، غذا می‌خوام، لطفا.
+  faFormal: نه، غذا می‌خواهم، لطفا.
+  translit: "na, ghazā mikhām, lotfan."
+  translitFormal: "na, ghazā mikhāham, lotfan."
+  tokens:
+    - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
+    - { surface: غذا, lexeme: lx_ghaza, translit: ghazā, gloss: "food" }
+    - { surface: می‌خوام, lexeme: lx_khastan, translit: mikhām, gloss: "I'd like" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "No, I'd like [some food,/food,/a meal,] please"
+    - "No, I want [some food,/food,/a meal,] please"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [ordering, refusal]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Kian declines the offered accompaniment and asks for a meal. }
+
+- id: s_u04_0019
+  fa: چه خوشمزه!
+  translit: "che khoshmaze!"
+  tokens:
+    - { surface: چه, lexeme: lx_che, translit: che, gloss: "how" }
+    - { surface: خوشمزه, lexeme: lx_khoshmaze, translit: khoshmaze, gloss: "delicious" }
+  en:
+    - "How [delicious/tasty]"
+    - "So [delicious/tasty]"
+  audio: { speaker: shirin }
+  unit: u04-food
+  tags: [praise]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: A natural exclamation on tasting the food. }
+
+- id: s_u04_0020
+  fa: گشنمه، نون می‌خوام.
+  faFormal: گرسنه هستم، نان می‌خواهم.
+  translit: "goshname, nun mikhām."
+  translitFormal: "gorosne hastam, nān mikhāham."
+  tokens:
+    - { surface: گشنمه, lexeme: lx_goshne, translit: goshname, gloss: "I'm hungry" }
+    - { surface: نون, lexeme: lx_nun, translit: nun, gloss: "bread" }
+    - { surface: می‌خوام, lexeme: lx_khastan, translit: mikhām, gloss: "I want" }
+  en:
+    - "I'm hungry, [I want/I'd like] [some/] bread"
+    - "I'm hungry and [I want/I'd like] [some/] bread"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [hunger]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Kian speaks to his grandmother at the table. }
+
+- id: s_u04_0021
+  fa: بیشتر می‌خوری؟
+  translit: "bishtar mikhori?"
+  tokens:
+    - { surface: بیشتر, lexeme: lx_bishtar, translit: bishtar, gloss: "more" }
+    - { surface: می‌خوری, lexeme: lx_khordan, translit: mikhori, gloss: "will you eat" }
+  en:
+    - "[Will you eat/Would you like to eat/Do you want to eat] [some more?/more?]"
+    - "[Will you have/Would you like] [some more?/more?]"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  tags: [offering, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Grandma offers Kian another helping during the meal. }
+
+- id: s_u04_0022
+  fa: یه کم دیگه برنج بخور!
+  faFormal: یک کم دیگر برنج بخور!
+  translit: "ye kam dige berenj bokhor!"
+  translitFormal: "yek kam digar berenj bokhor!"
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: کم, lexeme: lx_kam, translit: kam, gloss: "little" }
+    - { surface: دیگه, lexeme: lx_dige, translit: dige, gloss: "more" }
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: بخور, lexeme: lx_khordan, translit: bokhor, gloss: "eat" }
+  en:
+    - "[Have/Eat] a little more rice"
+    - "[Have/Eat] a bit more rice"
+  audio: { speaker: maman-bozorg }
+  unit: u04-food
+  tags: [taarof, insistence]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Grandma warmly encourages Kian to take more rice. }
+
+- id: s_u04_0023
+  fa: نه، ممنون، بسه.
+  faFormal: نه، ممنون، بس است.
+  translit: "na, mamnun, base."
+  translitFormal: "na, mamnun, bas ast."
+  tokens:
+    - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
+    - { surface: ممنون, lexeme: lx_mamnun, translit: mamnun, gloss: "thanks" }
+    - { surface: بسه, lexeme: lx_bas, translit: base, gloss: "that's enough" }
+  en: "No, [thanks,/thank you,] [that's enough/that is enough/it's enough]"
+  faAccept: "نه [ممنون/مرسی/ممنونم] بسه"
+  audio: { speaker: kian }
+  unit: u04-food
+  tags: [taarof, refusal]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: A gentle tone makes this a polite request to stop serving. }
+
+- id: s_u04_0024
+  fa: دستتون درد نکنه، خیلی خوشمزه بود!
+  faFormal: دستتان درد نکند، خیلی خوشمزه بود!
+  translit: "dastetun dard nakone, kheyli khoshmaze bud!"
+  translitFormal: "dastetān dard nakonad, kheyli khoshmaze bud!"
+  tokens:
+    - { surface: دستتون, lexeme: lx_dast, translit: dastetun, gloss: "your hands" }
+    - { surface: درد, lexeme: lx_dard, translit: dard, gloss: "pain" }
+    - { surface: نکنه, lexeme: lx_kardan, translit: nakone, gloss: "may not do" }
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very" }
+    - { surface: خوشمزه, lexeme: lx_khoshmaze, translit: khoshmaze, gloss: "tasty" }
+    - { surface: بود, lexeme: lx_budan, translit: bud, gloss: "it was" }
+  en:
+    - "[Thank you/Thanks] for the food, it was [very tasty/really delicious/very delicious]"
+    - "[Thank you,/Thanks,] it was [very tasty/really delicious/very delicious]"
+  audio: { speaker: shirin }
+  unit: u04-food
+  tags: [gratitude, praise, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Thanks the cook for her effort; literally wishes her hands no pain. نوش جان is a natural reply. }

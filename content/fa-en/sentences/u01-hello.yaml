@@ -1,9 +1,6 @@
-# Unit 1 sentences (STYLE.md). `fa` keeps Persian punctuation; token surfaces carry none.
-# `en`: the first path of the first pattern is the model answer; commas and a final ? live inside
-# tokens/alternatives, never right after a ]. `faAccept` has no punctuation and its first pattern
-# accepts `fa`; formal register, pronoun drop, ZWNJ and orthography variants are merged automatically.
+# Unit 1 sentences. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
 
-# --- u01-l1: hello and thanks -------------------------------------------------------------------
 - id: s_u01_0001
   fa: سلام!
   translit: "salām!"
@@ -14,7 +11,7 @@
   unit: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0002
   fa: سلام، خوبی؟
@@ -25,14 +22,14 @@
     - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hi" }
     - { surface: خوبی, lexeme: lx_khubi, translit: khubi, gloss: "how are you? (lit. are you well?)" }
   en:
-    - "[Hello,/Hi,] [how are you?/how are you doing?/how's it going?/how is it going?]"
-    - "[Hello,/Hi,] are you [good?/well?/okay?/OK?/all right?/fine?/doing well?]"
+    - "[Hi,/Hello,] [how are you?/how are you doing?/how's it going?/how is it going?]"
+    - "[Hi,/Hello,] are you [well?/good?/okay?/OK?/all right?/fine?/doing well?]"
   faAccept: "سلام [خوبی/چطوری]"
   audio: { speaker: shirin }
   unit: u01-hello
   tags: [greeting, question]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Shirin greets Kian informally. Assembly edit: token خوبی relinked to the focus chunk lx_khubi (seed design)." }
 
 - id: s_u01_0003
   fa: مرسی!
@@ -47,7 +44,7 @@
   unit: u01-hello
   tags: [politeness]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0004
   fa: مرسی، خوبم.
@@ -67,7 +64,7 @@
   unit: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0005
   fa: خداحافظ!
@@ -79,7 +76,7 @@
   unit: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0006
   fa: بله، خوبم.
@@ -89,12 +86,12 @@
   tokens:
     - { surface: بله, lexeme: lx_bale, translit: bale, gloss: "yes" }
     - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "I'm fine" }
-  en: "Yes, I'm [good/fine/well/okay/OK/doing well]"
+  en: "Yes, I'm [fine/good/well/okay/OK/all right/doing well]"
   faAccept: "بله [من/] خوبم"
   audio: { speaker: kian }
   unit: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Assembly edit: restored the seed faAccept (an explicit من is not added automatically)." }
 
 - id: s_u01_0007
   fa: نه، مرسی.
@@ -105,14 +102,12 @@
     - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
     - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
   en: "No, [thanks/thank you]"
-  faAccept: "نه [مرسی/ممنون]"
+  faAccept: "نه [مرسی/ممنون/ممنونم]"
   audio: { speaker: kian }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. The polite first refusal of an offer (ta'ārof)."
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: A polite refusal; context determines whether it is ta'ārof or a genuine refusal. }
 
 - id: s_u01_0008
   fa: مرسی، خداحافظ!
@@ -128,9 +123,8 @@
   unit: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# --- u01-l2: good morning, you, excuse me ---------------------------------------------------------
 - id: s_u01_0009
   fa: خیلی ممنون!
   translit: "kheyli mamnun!"
@@ -146,7 +140,7 @@
   unit: u01-hello
   tags: [politeness]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0010
   fa: ببخشید!
@@ -159,7 +153,7 @@
   unit: u01-hello
   tags: [politeness]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0011
   fa: سلام، شما خوبین؟
@@ -178,9 +172,7 @@
   unit: u01-hello
   tags: [greeting, question, politeness]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. Polite شما with the colloquial 2pl ending -in."
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Polite شما with the colloquial 2pl ending -in. }
 
 - id: s_u01_0012
   fa: من خوبم، تو چطوری؟
@@ -198,7 +190,7 @@
   unit: u01-hello
   tags: [greeting, question]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0013
   fa: صبح بخیر!
@@ -211,22 +203,22 @@
   unit: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0014
   fa: شب بخیر!
   translit: "shab bekheyr!"
   tokens:
     - { surface: شب, lexeme: lx_shab, translit: shab, gloss: "night" }
-    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (lit. with goodness)" }
-  en: "Good [night/evening]"
+    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (in greetings)" }
+  en:
+    - "Good night"
+    - "[Night/Goodnight]"
   audio: { speaker: maman-bozorg }
   unit: u01-hello
-  tags: [greeting]
+  tags: [greeting, parting]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. Mostly said when parting at night; 'good evening' accepted as a translation."
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Said at bedtime or when parting at night, not an evening arrival greeting." }
 
 - id: s_u01_0015
   fa: صبح بخیر، مامان‌بزرگ!
@@ -241,7 +233,7 @@
   unit: u01-hello
   tags: [greeting, family]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0016
   fa: ممنونم، شما چطورین؟
@@ -258,9 +250,8 @@
   unit: u01-hello
   tags: [politeness, question]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# --- u01-l3: names and ta'ārof --------------------------------------------------------------------
 - id: s_u01_0017
   fa: اسمم شیرینه.
   faFormal: اسم من شیرین است.
@@ -275,7 +266,7 @@
   unit: u01-hello
   tags: [name]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0018
   fa: اسمت چیه؟
@@ -291,7 +282,7 @@
   unit: u01-hello
   tags: [name, question]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0019
   fa: اسمتون چیه؟
@@ -307,9 +298,7 @@
   unit: u01-hello
   tags: [name, question, politeness]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. Colloquial -tun for written -tān (the -ān → -un shift)."
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Grandma addresses Leila, an adult guest she is meeting for the first time. Colloquial -tun for written -tān (the -ān → -un shift)." }
 
 - id: s_u01_0020
   fa: اسمم لیلاست.
@@ -325,9 +314,7 @@
   unit: u01-hello
   tags: [name]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. After a vowel the colloquial 'is' is -st (لیلاست), after a consonant -e (شیرینه)."
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "After ā, the colloquial copula is -st: لیلاست." }
 
 - id: s_u01_0021
   fa: بفرمایید!
@@ -335,14 +322,14 @@
   tokens:
     - { surface: بفرمایید, lexeme: lx_befarmayid, translit: befarmāyid, gloss: "please, go ahead" }
   en:
-    - "[Please,/] [go ahead/come in/have a seat/sit down/help yourself/after you]"
-    - "[Here you are/Here you go/Please]"
+    - "[Please,/] [go ahead/come in/have a seat/sit down/help yourself]"
+    - "[After you/Here you are/Here you go/Please]"
   faAccept: "[بفرمایید/بفرمایین/بفرما]"
   audio: { speaker: maman-bozorg }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: A context-dependent invitation or offering formula. }
 
 - id: s_u01_0022
   fa: بفرمایید چایی!
@@ -363,7 +350,7 @@
   unit: u01-hello
   tags: [taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0023
   fa: خواهش می‌کنم.
@@ -378,27 +365,25 @@
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
 - id: s_u01_0024
   fa: تعارف نکن!
   translit: "ta'ārof nakon!"
   tokens:
-    - { surface: تعارف, lexeme: lx_taarof, translit: "ta'ārof", gloss: "ta'ārof (polite formality)" }
+    - { surface: تعارف, lexeme: lx_taarof, translit: ta'ārof, gloss: "polite formality" }
     - { surface: نکن, lexeme: lx_kardan, translit: nakon, gloss: "don't do" }
   en:
     - "Don't be [shy/so polite/formal]"
     - "Don't stand on ceremony"
     - "No need to be [polite/shy/formal]"
-    - "[No/Don't/Don't do] [ta'ārof/ta'arof/taarof/tarof]"
+    - "[No/Don't do] [ta'ārof/ta'arof/taarof/tarof]"
   faAccept: "تعارف [نکن/نکنین/نکنید]"
   audio: { speaker: maman-bozorg }
   unit: u01-hello
   tags: [taarof]
   status: draft
-  provenance:
-    author: claude-seed
-    notes: "hand-written seed; needs native review. Said by the host after a polite refusal: 'no ta'ārof, take it!'"
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Grandma encourages Kian to accept an offer; informal singular نکن. Assembly edit: restored the seed model answer and the plural/polite faAccept forms." }
 
 - id: s_u01_0025
   fa: باشه، مرسی!
@@ -414,4 +399,94 @@
   unit: u01-hello
   tags: [taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+
+- id: s_u01_0026
+  fa: خوبی؟
+  faFormal: خوب هستی؟
+  translit: "khubi?"
+  translitFormal: "khub hasti?"
+  tokens:
+    - { surface: خوبی, lexeme: lx_khubi, translit: khubi, gloss: "how are you? (lit. are you well?)" }
+  en:
+    - "How are you?"
+    - "How are you doing?"
+    - "Are you [well?/okay?/OK?/all right?/good?/fine?]"
+  faAccept: "[خوبی/چطوری]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [greeting, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "An informal check-in with Kian. Assembly edit: token relinked to the focus chunk lx_khubi." }
+
+- id: s_u01_0027
+  fa: خوبم، ممنون.
+  faFormal: خوب هستم، ممنون.
+  translit: "khubam, mamnun."
+  translitFormal: "khub hastam, mamnun."
+  tokens:
+    - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "I'm fine" }
+    - { surface: ممنون, lexeme: lx_mamnun, translit: mamnun, gloss: "thanks" }
+  en:
+    - "I'm [fine,/good,/well,/okay,/OK,/all right,] [thanks/thank you]"
+    - "[Thanks,/Thank you,] I'm [fine/good/well/okay/OK/all right]"
+  faAccept:
+    - "[من/] خوبم [ممنون/ممنونم/مرسی]"
+    - "[ممنون/ممنونم/مرسی] [من/] خوبم"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [greeting, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Grandma replies to Shirin's polite greeting. Assembly edit: faAccept also allows an explicit من." }
+
+- id: s_u01_0028
+  fa: شب بخیر، مامان‌بزرگ!
+  translit: "shab bekheyr, māmānbozorg!"
+  tokens:
+    - { surface: شب, lexeme: lx_shab, translit: shab, gloss: "night" }
+    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (in greetings)" }
+    - { surface: مامان‌بزرگ, lexeme: lx_maman_bozorg, translit: māmānbozorg, gloss: "Grandma" }
+  en: "[Good night,/Goodnight,/Night,] [Grandma/Granny/Grandmother/Nana/Maman Bozorg]"
+  faAccept:
+    - "شب بخیر [مامان‌بزرگ/مادربزرگ]"
+    - "[مامان‌بزرگ/مادربزرگ] شب بخیر"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [greeting, family, parting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Kian says good night to Grandma before bed. }
+
+- id: s_u01_0029
+  fa: بله، مرسی.
+  faFormal: بله، متشکرم.
+  translit: "bale, mersi."
+  translitFormal: "bale, motashakkeram."
+  tokens:
+    - { surface: بله, lexeme: lx_bale, translit: bale, gloss: "yes" }
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thank you" }
+  en: "Yes, [thank you/thanks]"
+  faAccept: "بله [مرسی/ممنون/ممنونم]"
+  audio: { speaker: leila }
+  unit: u01-hello
+  tags: [politeness, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Leila accepts Grandma's offer of tea. }
+
+- id: s_u01_0030
+  fa: باشه، خیلی ممنون!
+  faFormal: باشد، خیلی ممنون!
+  translit: "bāshe, kheyli mamnun!"
+  translitFormal: "bāshad, kheyli mamnun!"
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very much" }
+    - { surface: ممنون, lexeme: lx_mamnun, translit: mamnun, gloss: "thanks" }
+  en:
+    - "[Okay,/OK,/All right,/Alright,] thank you [very much/so much]"
+    - "[Okay,/OK,/All right,/Alright,] thanks [a lot/so much/very much]"
+  faAccept: "باشه خیلی [ممنون/ممنونم/مرسی]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [politeness, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Kian accepts an offer with warm thanks. }

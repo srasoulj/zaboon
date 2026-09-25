@@ -1,0 +1,237 @@
+# Unit 4 lexemes. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: lx_khastan
+  fa: خواستن
+  translit: khāstan
+  pos: verb
+  glosses: [to want]
+  forms: { pres-1sg: می‌خوام, pres-2sg: می‌خوای, pres-3sg: می‌خواد, pres-2pl: می‌خواین, neg-pres-1sg: نمی‌خوام }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_kabab
+  fa: کباب
+  translit: kabāb
+  pos: noun
+  glosses: [kebab, kabob]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_berenj
+  fa: برنج
+  translit: berenj
+  pos: noun
+  glosses: [rice]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_ba
+  fa: با
+  translit: bā
+  pos: preposition
+  glosses: [with]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_lotfan
+  fa: لطفا
+  translit: lotfan
+  pos: adverb
+  glosses: [please]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_goshne
+  fa: گشنه
+  faFormal: گرسنه
+  translit: goshne
+  translitFormal: gorosne
+  pos: adjective
+  glosses: [hungry]
+  forms: { pred-1sg: گشنمه }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Assembly edit: fixed a corrupted transliteration (g orosne)." }
+
+- id: lx_tahdig
+  fa: ته‌دیگ
+  translit: tahdig
+  pos: noun
+  glosses: [tahdig, crispy rice]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_khordan
+  fa: خوردن
+  translit: khordan
+  pos: verb
+  glosses: [to eat, to drink]
+  forms: { pres-1sg: می‌خورم, pres-2sg: می‌خوری, neg-pres-1sg: نمی‌خورم, imp-2sg: بخور }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_khoshmaze
+  fa: خوشمزه
+  translit: khoshmaze
+  pos: adjective
+  glosses: [delicious, tasty]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_sir
+  fa: سیر
+  translit: sir
+  pos: adjective
+  glosses: [full]
+  forms: { pred-1sg: سیرم }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_dige
+  fa: دیگه
+  faFormal: دیگر
+  translit: dige
+  translitFormal: digar
+  pos: adverb
+  glosses: [else, more]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Assembly edit: distinct first gloss from lx_bishtar." }
+
+- id: lx_dast
+  fa: دست
+  translit: dast
+  pos: noun
+  glosses: [hand]
+  forms: { poss-2pl: دستتون }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_dard
+  fa: درد
+  translit: dard
+  pos: noun
+  glosses: [pain, hurt]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_dastetun_dard_nakone
+  fa: دستتون درد نکنه
+  faFormal: دستتان درد نکند
+  translit: dastetun dard nakone
+  translitFormal: dastetān dard nakonad
+  pos: phrase
+  glosses: [thank you for the food, thank you for your effort]
+  introducedIn: u04-food
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Thanks for food or effort; literally wishes hands no pain. }
+
+- id: lx_nush
+  fa: نوش
+  translit: nush
+  pos: noun
+  glosses: [pleasure]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Learn within نوش جان, not as an independent command." }
+
+- id: lx_jan
+  fa: جان
+  translit: jān
+  pos: noun
+  glosses: [soul, life]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_nush_jan
+  fa: نوش جان
+  translit: nush-e jān
+  pos: phrase
+  glosses: [enjoy it, enjoy your food]
+  introducedIn: u04-food
+  tags: [hospitality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: Host's food-related reply to thanks; also said before eating. }
+
+- id: lx_ghahve
+  fa: قهوه
+  translit: ghahve
+  pos: noun
+  glosses: [coffee]
+  introducedIn: u04-food
+  tags: [drink]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_shir
+  fa: شیر
+  translit: shir
+  pos: noun
+  glosses: [milk]
+  introducedIn: u04-food
+  tags: [drink]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_ghand
+  fa: قند
+  translit: ghand
+  pos: noun
+  glosses: [sugar cube, lump sugar]
+  introducedIn: u04-food
+  tags: [food]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Sugar served in cubes or pieces, often with tea." }
+
+- id: lx_ghaza
+  fa: غذا
+  translit: ghazā
+  pos: noun
+  glosses: [food, meal]
+  introducedIn: u04-food
+  tags: [food]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_che
+  fa: چه
+  translit: che
+  pos: adverb
+  glosses: ["how …!", "what (a) …!"]
+  introducedIn: u04-food
+  tags: [exclamation]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: "Exclamatory چه, distinct from interrogative چی; introduces praise here. Assembly edit: distinct from interrogative چی." }
+
+- id: lx_bishtar
+  fa: بیشتر
+  translit: bishtar
+  pos: adverb
+  glosses: [more]
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z }
+
+- id: lx_bas
+  fa: بس
+  translit: bas
+  pos: adjective
+  glosses: [enough]
+  forms: { 3sg: بسه }
+  introducedIn: u04-food
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:39:03Z, notes: بسه means 'that's enough'; paired with thanks here to soften the refusal. }

@@ -1,12 +1,49 @@
-# Stub so the path renders all of Section 1. Full content comes later.
+# Unit 2: who you are, where you're from, languages. Each lesson level introduces new items and may
+# reuse anything from the levels and units before it. AI draft (openai/gpt-6-astra, prompt
+# draft-v1); status: draft until native review.
 id: u02-about-me
-title: "About me"
-subtitle: "Say who you are and where you're from"
+title: About me
+subtitle: Say who you are and where you're from
 register: colloquial
 color: zaferan
+guidebook: guidebooks/u02-about-me.md
 characters: [kian, shirin]
 levels:
   - id: u02-l1
     kind: lesson
+    title: I'm Kian
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_budan, lx_irani, lx_amrikayi, lx_are, lx_khoshbakhtam, lx_ki, lx_in]
+        sentences: [s_u02_0001, s_u02_0002, s_u02_0003, s_u02_0004, s_u02_0005, s_u02_0006, s_u02_0007, s_u02_0008]
+        chats: [c_u02_001]
+      mix: intro
+  - id: u02-l2
+    kind: lesson
+    title: Where are you from?
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_ahl, lx_koja, lx_tehran, lx_losanjeles, lx_iran, lx_amrika, lx_zendegi_kardan, lx_tu, lx_alan, lx_inja]
+        sentences: [s_u02_0009, s_u02_0010, s_u02_0011, s_u02_0012, s_u02_0013, s_u02_0014, s_u02_0015, s_u02_0016, s_u02_0017]
+        chats: [c_u02_002, c_u02_003]
+      mix: standard
+  - id: u02-c1
+    kind: chest
+  - id: u02-l3
+    kind: lesson
+    title: Do you speak Persian?
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_farsi, lx_engelisi, lx_ye_kam, lx_harf_zadan, lx_balad, lx_fahmidan, lx_dunestan, lx_vali, lx_daneshju, lx_khundan]
+        sentences: [s_u02_0018, s_u02_0019, s_u02_0020, s_u02_0021, s_u02_0022, s_u02_0023, s_u02_0024, s_u02_0025, s_u02_0026]
+        chats: [c_u02_004, c_u02_005]
+      mix: standard
+  - id: u02-p1
+    kind: practice
+  - id: u02-review
+    kind: unit_review
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Level titles and focus lists from the model's draft (About me); lessons: 4 per lesson level; chest after level 2." }

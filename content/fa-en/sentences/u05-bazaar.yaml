@@ -1,0 +1,458 @@
+# Unit 5 sentences. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: s_u05_0001
+  fa: یک، دو، سه، چهار.
+  translit: "yek, do, se, chār."
+  translitFormal: "yek, do, se, chahār."
+  tokens:
+    - { surface: یک, lexeme: lx_yek, translit: yek, gloss: "one" }
+    - { surface: دو, lexeme: lx_do, translit: do, gloss: "two" }
+    - { surface: سه, lexeme: lx_se, translit: se, gloss: "three" }
+    - { surface: چهار, lexeme: lx_char, translit: chār, gloss: "four" }
+  en: "One, two, three, four"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Kian counts items aloud at the stall. }
+
+- id: s_u05_0002
+  fa: پنج، شش، هفت.
+  translit: "panj, shish, haft."
+  translitFormal: "panj, shesh, haft."
+  tokens:
+    - { surface: پنج, lexeme: lx_panj, translit: panj, gloss: "five" }
+    - { surface: شش, lexeme: lx_shish, translit: shish, gloss: "six" }
+    - { surface: هفت, lexeme: lx_haft, translit: haft, gloss: "seven" }
+  en: "Five, six, seven"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Continues counting items. }
+
+- id: s_u05_0003
+  fa: هشت، نه، ده.
+  translit: "hasht, noh, dah."
+  tokens:
+    - { surface: هشت, lexeme: lx_hasht, translit: hasht, gloss: "eight" }
+    - { surface: نه, lexeme: lx_noh, translit: noh, gloss: "nine" }
+    - { surface: ده, lexeme: lx_dah, translit: dah, gloss: "ten" }
+  en: "Eight, nine, ten"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0004
+  fa: چند تا چایی می‌خواین؟
+  faFormal: چند تا چای می‌خواهید؟
+  translit: "chand tā chāyi mikhāyn?"
+  translitFormal: "chand tā chāy mikhāhid?"
+  tokens:
+    - { surface: چند, lexeme: lx_chand, translit: chand, gloss: "how many" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "teas" }
+    - { surface: می‌خواین, lexeme: lx_khastan, translit: mikhāyn, gloss: "do you want" }
+  en:
+    - "How many teas [do you want?/would you like?]"
+    - "How many cups of tea [do you want?/would you like?]"
+  faAccept: "چند تا چایی [می‌خواین/می‌خواید]"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [question, counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Leila addresses a customer politely. Assembly edit: replaced the hybrid form می‌خواهین." }
+
+- id: s_u05_0005
+  fa: دو تا چایی، لطفا.
+  faFormal: دو تا چای، لطفا.
+  translit: "do tā chāyi, lotfan."
+  translitFormal: "do tā chāy, lotfan."
+  tokens:
+    - { surface: دو, lexeme: lx_do, translit: do, gloss: "two" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "teas" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "Two [teas,/cups of tea,] please"
+    - "Please, two [teas/cups of tea]"
+  faAccept:
+    - "دو تا چایی لطفا"
+    - "لطفا دو تا چایی"
+  audio: { speaker: shirin }
+  unit: u05-bazaar
+  tags: [ordering, counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0006
+  fa: چند تا سیب می‌خواین؟
+  faFormal: چند تا سیب می‌خواهید؟
+  translit: "chand tā sib mikhāyn?"
+  translitFormal: "chand tā sib mikhāhid?"
+  tokens:
+    - { surface: چند, lexeme: lx_chand, translit: chand, gloss: "how many" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+    - { surface: سیب, lexeme: lx_sib, translit: sib, gloss: "apples" }
+    - { surface: می‌خواین, lexeme: lx_khastan, translit: mikhāyn, gloss: "do you want" }
+  en: "How many apples [do you want?/would you like?]"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [question, counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Leila asks how many apples to buy for the customer. }
+
+- id: s_u05_0007
+  fa: پنج تا سیب می‌خوام.
+  faFormal: پنج تا سیب می‌خواهم.
+  translit: "panj tā sib mikhām."
+  translitFormal: "panj tā sib mikhāham."
+  tokens:
+    - { surface: پنج, lexeme: lx_panj, translit: panj, gloss: "five" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+    - { surface: سیب, lexeme: lx_sib, translit: sib, gloss: "apples" }
+    - { surface: می‌خوام, lexeme: lx_khastan, translit: mikhām, gloss: "I want" }
+  en: "[I want/I'd like] five apples"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [counting, shopping]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0008
+  fa: سه تا نون، لطفا.
+  faFormal: سه تا نان، لطفا.
+  translit: "se tā nun, lotfan."
+  translitFormal: "se tā nān, lotfan."
+  tokens:
+    - { surface: سه, lexeme: lx_se, translit: se, gloss: "three" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+    - { surface: نون, lexeme: lx_nun, translit: nun, gloss: "breads" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "Three [breads,/loaves of bread,/flatbreads,] please"
+    - "Please, three [breads/loaves of bread/flatbreads]"
+  faAccept:
+    - "سه تا نون لطفا"
+    - "لطفا سه تا نون"
+  audio: { speaker: shirin }
+  unit: u05-bazaar
+  tags: [shopping, counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Counts individual breads, not slices." }
+
+- id: s_u05_0009
+  fa: چند تا؟
+  translit: "chand tā?"
+  tokens:
+    - { surface: چند, lexeme: lx_chand, translit: chand, gloss: "how many" }
+    - { surface: تا, lexeme: lx_ta, translit: tā, gloss: "counter" }
+  en:
+    - "How many?"
+    - "How many [do you want?/would you like?]"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [question, counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Elliptical quantity question while taking an order. }
+
+- id: s_u05_0010
+  fa: این چنده؟
+  faFormal: این چند است؟
+  translit: "in chande?"
+  translitFormal: "in chand ast?"
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: چنده, lexeme: lx_chand, translit: chande, gloss: "how much is" }
+  en:
+    - "How much is this?"
+    - "How much does this cost?"
+    - "[What's/What is] the price of this?"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [prices, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0011
+  fa: پنجاه هزار تومنه.
+  faFormal: پنجاه هزار تومان است.
+  translit: "panjāh hezār tomane."
+  translitFormal: "panjāh hezār tomān ast."
+  tokens:
+    - { surface: پنجاه, lexeme: lx_panjah, translit: panjāh, gloss: "fifty" }
+    - { surface: هزار, lexeme: lx_hezar, translit: hezār, gloss: "thousand" }
+    - { surface: تومنه, lexeme: lx_toman, translit: tomane, gloss: "tomans (it is)" }
+  en:
+    - "It's [fifty thousand/50000] tomans"
+    - "It costs [fifty thousand/50000] tomans"
+    - "[Fifty thousand/50000] tomans"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0012
+  fa: کیلویی چنده؟
+  faFormal: کیلویی چند است؟
+  translit: "kiloyi chande?"
+  translitFormal: "kiloyi chand ast?"
+  tokens:
+    - { surface: کیلویی, lexeme: lx_kilo, translit: kiloyi, gloss: "per kilo" }
+    - { surface: چنده, lexeme: lx_chand, translit: chande, gloss: "how much is" }
+  en:
+    - "How much [is it/] [per kilo?/a kilo?/per kilogram?/a kilogram?]"
+    - "How much does it cost [per kilo?/per kilogram?]"
+  audio: { speaker: shirin }
+  unit: u05-bazaar
+  tags: [prices, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Assembly edit: kilo, not kilu." }
+
+- id: s_u05_0013
+  fa: صد هزار تومنه.
+  faFormal: صد هزار تومان است.
+  translit: "sad hezār tomane."
+  translitFormal: "sad hezār tomān ast."
+  tokens:
+    - { surface: صد, lexeme: lx_sad, translit: sad, gloss: "hundred" }
+    - { surface: هزار, lexeme: lx_hezar, translit: hezār, gloss: "thousand" }
+    - { surface: تومنه, lexeme: lx_toman, translit: tomane, gloss: "tomans (it is)" }
+  en:
+    - "It's [a hundred thousand/one hundred thousand/100000] tomans"
+    - "It costs [a hundred thousand/one hundred thousand/100000] tomans"
+    - "[A hundred thousand/One hundred thousand/100000] tomans"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0014
+  fa: خیلی گرونه!
+  faFormal: خیلی گران است!
+  translit: "kheyli gerune!"
+  translitFormal: "kheyli gerān ast!"
+  tokens:
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very" }
+    - { surface: گرونه, lexeme: lx_gerun, translit: gerune, gloss: "it's expensive" }
+  en: "[It's/That's] [very/really/so/too] [expensive/pricey]"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0015
+  fa: این ارزونه.
+  faFormal: این ارزان است.
+  translit: "in arzune."
+  translitFormal: "in arzān ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: ارزونه, lexeme: lx_arzun, translit: arzune, gloss: "is cheap" }
+  en:
+    - "This is [cheap/inexpensive]"
+    - "This one is [cheap/inexpensive]"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0016
+  fa: بیست هزار تومنه.
+  faFormal: بیست هزار تومان است.
+  translit: "bist hezār tomane."
+  translitFormal: "bist hezār tomān ast."
+  tokens:
+    - { surface: بیست, lexeme: lx_bist, translit: bist, gloss: "twenty" }
+    - { surface: هزار, lexeme: lx_hezar, translit: hezār, gloss: "thousand" }
+    - { surface: تومنه, lexeme: lx_toman, translit: tomane, gloss: "tomans (it is)" }
+  en:
+    - "It's [twenty thousand/20000] tomans"
+    - "It costs [twenty thousand/20000] tomans"
+    - "[Twenty thousand/20000] tomans"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0017
+  fa: چقدر برنج می‌خواین؟
+  faFormal: چقدر برنج می‌خواهید؟
+  translit: "cheghadr berenj mikhāyn?"
+  translitFormal: "cheghadr berenj mikhāhid?"
+  tokens:
+    - { surface: چقدر, lexeme: lx_cheghadr, translit: cheghadr, gloss: "how much" }
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: می‌خواین, lexeme: lx_khastan, translit: mikhāyn, gloss: "do you want" }
+  en: "How much rice [do you want?/would you like?]"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [quantity, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0018
+  fa: تخفیف می‌دین؟
+  faFormal: تخفیف می‌دهید؟
+  translit: "takhfif midin?"
+  translitFormal: "takhfif midahid?"
+  tokens:
+    - { surface: تخفیف, lexeme: lx_takhfif, translit: takhfif, gloss: "discount" }
+    - { surface: می‌دین, lexeme: lx_dadan, translit: midin, gloss: "will you give" }
+  en:
+    - "[Will/Can/Would] you give me a discount?"
+    - "Do you [give/offer] discounts?"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [bargaining, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Polite request to a seller. }
+
+- id: s_u05_0019
+  fa: یه کم تخفیف بدین، لطفا.
+  faFormal: یک کم تخفیف بدهید، لطفا.
+  translit: "ye kam takhfif bedin, lotfan."
+  translitFormal: "yek kam takhfif bedahid, lotfan."
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: کم, lexeme: lx_kam, translit: kam, gloss: "little" }
+    - { surface: تخفیف, lexeme: lx_takhfif, translit: takhfif, gloss: "discount" }
+    - { surface: بدین, lexeme: lx_dadan, translit: bedin, gloss: "give" }
+    - { surface: لطفا, lexeme: lx_lotfan, translit: lotfan, gloss: "please" }
+  en:
+    - "Give me a [small/little] discount, please"
+    - "Please give me a [small/little] discount"
+    - "[A small/A little] discount, please"
+  faAccept:
+    - "یه کم تخفیف بدین لطفا"
+    - "لطفا یه کم تخفیف بدین"
+  audio: { speaker: shirin }
+  unit: u05-bazaar
+  tags: [bargaining]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: s_u05_0020
+  fa: آخرش چند؟
+  translit: "ākharesh chand?"
+  tokens:
+    - { surface: آخرش, lexeme: lx_akhar, translit: ākharesh, gloss: "in the end" }
+    - { surface: چند, lexeme: lx_chand, translit: chand, gloss: "how much" }
+  en:
+    - "[What's/What is] your [final/best/lowest] price?"
+    - "[What's/What is] the final price?"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [bargaining, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Elliptical bargaining question; written dialogue can retain the same wording. }
+
+- id: s_u05_0021
+  fa: باشه، بیست هزار تومن.
+  faFormal: باشد، بیست هزار تومان.
+  translit: "bāshe, bist hezār toman."
+  translitFormal: "bāshad, bist hezār tomān."
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: بیست, lexeme: lx_bist, translit: bist, gloss: "twenty" }
+    - { surface: هزار, lexeme: lx_hezar, translit: hezār, gloss: "thousand" }
+    - { surface: تومن, lexeme: lx_toman, translit: toman, gloss: "tomans" }
+  en: "[Okay,/All right,/Fine,] [twenty thousand/20000] tomans"
+  audio: { speaker: leila }
+  unit: u05-bazaar
+  tags: [bargaining, prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Seller agrees to a reduced price. }
+
+- id: s_u05_0022
+  fa: باشه، می‌خرم.
+  faFormal: باشد، می‌خرم.
+  translit: "bāshe, mikharam."
+  translitFormal: "bāshad, mikharam."
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: می‌خرم, lexeme: lx_kharidan, translit: mikharam, gloss: "I'll buy it" }
+  en: "[Okay,/All right,/Fine,] I'll [buy it/take it]"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [shopping, bargaining]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Customer accepts the agreed price. }
+
+- id: s_u05_0023
+  fa: چقدر می‌شه؟
+  faFormal: چقدر می‌شود؟
+  translit: "cheghadr mishe?"
+  translitFormal: "cheghadr mishavad?"
+  tokens:
+    - { surface: چقدر, lexeme: lx_cheghadr, translit: cheghadr, gloss: "how much" }
+    - { surface: می‌شه, lexeme: lx_shodan, translit: mishe, gloss: "does it come to" }
+  en:
+    - "How much is it?"
+    - "How much [does it come to?/will it be?/do I owe you?]"
+    - "[What's/What is] the total?"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [payment, taxi, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Passenger asks Dariush for the fare at the destination. }
+
+- id: s_u05_0024
+  fa: قابل نداره!
+  faFormal: قابل ندارد!
+  translit: "ghābel nadāre!"
+  translitFormal: "ghābel nadārad!"
+  tokens:
+    - { surface: قابل, lexeme: lx_ghabel, translit: ghābel, gloss: "worthy" }
+    - { surface: نداره, lexeme: lx_dashtan, translit: nadāre, gloss: "it doesn't have" }
+  en:
+    - "It's nothing"
+    - "Be my guest"
+    - "Don't mention it"
+  audio: { speaker: dariush }
+  unit: u05-bazaar
+  tags: [payment, taxi, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Payment courtesy, not a literal promise of a free ride." }
+
+- id: s_u05_0025
+  fa: خواهش می‌کنم، بفرمایید.
+  translit: "khāhesh mikonam, befarmāyid."
+  tokens:
+    - { surface: خواهش, lexeme: lx_khahesh, translit: khāhesh, gloss: "request" }
+    - { surface: می‌کنم, lexeme: lx_kardan, translit: mikonam, gloss: "I make" }
+    - { surface: بفرمایید, lexeme: lx_befarmayid, translit: befarmāyid, gloss: "here you are" }
+  en:
+    - "Please, [here you are/here you go/take it]"
+    - "I insist, [here you are/here you go/please take it]"
+  faAccept: "خواهش می‌کنم [بفرمایید/بفرمایین]"
+  audio: { speaker: kian }
+  unit: u05-bazaar
+  tags: [payment, taxi, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Kian insists and hands Dariush the fare. }
+
+- id: s_u05_0026
+  fa: دو کیلو برنج می‌خرم.
+  translit: "do kilo berenj mikharam."
+  tokens:
+    - { surface: دو, lexeme: lx_do, translit: do, gloss: "two" }
+    - { surface: کیلو, lexeme: lx_kilo, translit: kilo, gloss: "kilos" }
+    - { surface: برنج, lexeme: lx_berenj, translit: berenj, gloss: "rice" }
+    - { surface: می‌خرم, lexeme: lx_kharidan, translit: mikharam, gloss: "I'll buy" }
+  en:
+    - "I'll buy two [kilos/kilograms] of rice"
+    - "I'm buying two [kilos/kilograms] of rice"
+  audio: { speaker: shirin }
+  unit: u05-bazaar
+  tags: [shopping, quantity]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Shirin states her purchase decision. Assembly edit: kilo, not kilu." }

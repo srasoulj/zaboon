@@ -1,0 +1,43 @@
+# Unit 2 complete_chat items. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked
+# against STYLE.md; every item is status: draft until a native reviewer approves it. `speaker` says
+# `prompt`; the learner picks the best reply; `answer` is the index in `options`.
+
+- id: c_u02_001
+  speaker: kian
+  prompt: s_u02_0007
+  options: [s_u02_0006, s_u02_0002, s_u02_0008]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian asks who someone in a photo is. Only the third reply identifies that person. }
+
+- id: c_u02_002
+  speaker: shirin
+  prompt: s_u02_0009
+  options: [s_u02_0011, s_u02_0006, s_u02_0008]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Only the first option gives Kian's place of origin. }
+
+- id: c_u02_003
+  speaker: kian
+  prompt: s_u02_0015
+  options: [s_u02_0008, s_u02_0016, s_u02_0006]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Only the second option states a place of residence. }
+
+- id: c_u02_004
+  speaker: kian
+  prompt: s_u02_0018
+  options: [s_u02_0010, s_u02_0008, s_u02_0019]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Only the third option answers whether Shirin is a student. }
+
+- id: c_u02_005
+  speaker: shirin
+  prompt: s_u02_0020
+  options: [s_u02_0021, s_u02_0011, s_u02_0008]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Only the first option answers the question about speaking Persian. }

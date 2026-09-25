@@ -1,0 +1,43 @@
+# Unit 3 complete_chat items. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked
+# against STYLE.md; every item is status: draft until a native reviewer approves it. `speaker` says
+# `prompt`; the learner picks the best reply; `answer` is the index in `options`.
+
+- id: c_u03_001
+  speaker: maman-bozorg
+  prompt: s_u03_0001
+  options: [s_u03_0002, s_u03_0008, s_u03_0009]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Grandma asks who is in a photo; Kian identifies his mom. }
+
+- id: c_u03_002
+  speaker: maman-bozorg
+  prompt: s_u03_0010
+  options: [s_u03_0018, s_u03_0011, s_u03_0013]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: c_u03_003
+  speaker: maman-bozorg
+  prompt: s_u03_0017
+  options: [s_u03_0012, s_u03_0016, s_u03_0018]
+  answer: 2
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Grandma asks for the name of a person Kian mentioned. }
+
+- id: c_u03_004
+  speaker: maman-bozorg
+  prompt: s_u03_0019
+  options: [s_u03_0020, s_u03_0018, s_u03_0003]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: c_u03_005
+  speaker: maman-bozorg
+  prompt: s_u03_0021
+  options: [s_u03_0012, s_u03_0022, s_u03_0018]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Kian agrees to pass on Grandma's greeting. }
