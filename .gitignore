@@ -8,9 +8,17 @@ node_modules/
 .turbo/
 dist/
 coverage/
+*.tsbuildinfo
+next-env.d.ts
 
-# content-cli caches (AI responses, TTS renders)
+# Local runtime state (DB data lives outside the repo; logs/caches here)
+.local/
 .cache/
+
+# Test output
+test-results/
+playwright-report/
+blob-report/
 
 # OS / editor
 .DS_Store

@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Tools (ffmpeg, detect-secrets)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+          pipx install detect-secrets
+
+      - name: Local Postgres (same script as dev sessions)
+        run: bash scripts/db-local.sh ensure
+
+      - name: Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Path ownership
+        if: github.event_name == 'pull_request' && hashFiles('scripts/check-ownership.ts') != ''
+        run: pnpm ownership --base "origin/${{ github.base_ref }}" --branch "${{ github.head_ref }}"
+
+      - name: Verify
+        run: pnpm verify
+        env:
+          ZABOON_E2E_BROWSERS: chromium,webkit
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

@@ -1,0 +1,16 @@
+{
+  "name": "@zaboon/srs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@zaboon/contracts": "workspace:*",
+    "ts-fsrs": "5.4.2"
+  }
+}
