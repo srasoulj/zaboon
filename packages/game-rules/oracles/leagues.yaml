@@ -1,0 +1,816 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): league placement and weekly rollover.
+# Config: leagues.cohortSize 30, promote 7, demote 5. Tiers low -> high: mes, noqreh, tala,
+# firouzeh, aqiq, lajvard, yaqut, zomorrod, morvarid, almas.
+#
+# rule placement: input {cohorts: open cohorts of one (week, tier) as {id, size, createdOrder}}
+#   -> expected {cohortId, newCohort}: the fullest cohort with size < 30 (ties: lowest
+#   createdOrder), or {cohortId: null, newCohort: true} when none is open.
+# rule rollover: input {tier, members: [{userId, weeklyXp}]} -> expected {promoteCount,
+#   demoteCount, promotedTo, demotedTo, ranking, promoted, demoted}. ranking = weeklyXp desc, ties
+#   by userId ascending (string order). promoteCount = min(7, ceil(n/4)), 0 in almas; demoteCount =
+#   min(5, floor(n/5)), 0 in mes. promoted/demoted are in rank order and move one tier; the rest
+#   stay. Promotion wins if a member would be both (unreachable with these defaults).
+
+- id: lp-01-no-cohort-yet
+  rule: placement
+  note: >-
+    No open cohort for (week, tier): create a new one.
+  input:
+    cohorts: []
+  expected:
+    cohortId: null
+    newCohort: true
+
+- id: lp-02-single-open-cohort
+  rule: placement
+  note: >-
+    The only open cohort is joined.
+  input:
+    cohorts:
+      - { id: c1, size: 12, createdOrder: 1 }
+  expected:
+    cohortId: c1
+    newCohort: false
+
+- id: lp-03-fullest-open-wins
+  rule: placement
+  note: >-
+    The fullest cohort with size < 30 wins (29), whatever its position.
+  input:
+    cohorts:
+      - { id: c1, size: 12, createdOrder: 1 }
+      - { id: c2, size: 29, createdOrder: 2 }
+      - { id: c3, size: 5, createdOrder: 3 }
+  expected:
+    cohortId: c2
+    newCohort: false
+
+- id: lp-04-full-cohort-skipped
+  rule: placement
+  note: >-
+    A cohort at 30 is full and skipped. The fullest open one is 25.
+  input:
+    cohorts:
+      - { id: c1, size: 30, createdOrder: 1 }
+      - { id: c2, size: 18, createdOrder: 2 }
+      - { id: c3, size: 25, createdOrder: 3 }
+  expected:
+    cohortId: c3
+    newCohort: false
+
+- id: lp-05-all-full
+  rule: placement
+  note: >-
+    Every cohort is full: create a new one.
+  input:
+    cohorts:
+      - { id: c1, size: 30, createdOrder: 1 }
+      - { id: c2, size: 30, createdOrder: 2 }
+  expected:
+    cohortId: null
+    newCohort: true
+
+- id: lp-06-tie-lowest-createdOrder
+  rule: placement
+  note: >-
+    Size tie (20, 20): the lowest createdOrder (3) wins.
+  input:
+    cohorts:
+      - { id: c7, size: 20, createdOrder: 7 }
+      - { id: c3, size: 20, createdOrder: 3 }
+      - { id: c5, size: 11, createdOrder: 5 }
+  expected:
+    cohortId: c3
+    newCohort: false
+
+- id: lp-07-tie-after-skipping-full
+  rule: placement
+  note: >-
+    The full cohort is skipped. Among the open ones, 17 vs 17 is decided by createdOrder 2 < 4.
+  input:
+    cohorts:
+      - { id: a1, size: 30, createdOrder: 1 }
+      - { id: b4, size: 17, createdOrder: 4 }
+      - { id: c2, size: 17, createdOrder: 2 }
+      - { id: d3, size: 9, createdOrder: 3 }
+  expected:
+    cohortId: c2
+    newCohort: false
+
+- id: lp-08-empty-cohort-is-open
+  rule: placement
+  note: >-
+    A cohort with 0 members is open (0 < 30).
+  input:
+    cohorts:
+      - { id: c1, size: 0, createdOrder: 1 }
+  expected:
+    cohortId: c1
+    newCohort: false
+
+- id: lp-09-size-beats-age
+  rule: placement
+  note: >-
+    createdOrder only breaks ties. The fuller cohort (29) wins over an older one.
+  input:
+    cohorts:
+      - { id: c2, size: 28, createdOrder: 1 }
+      - { id: c1, size: 29, createdOrder: 5 }
+  expected:
+    cohortId: c1
+    newCohort: false
+
+- id: lr-01-full-cohort-mid-tier
+  rule: rollover
+  note: >-
+    Full cohort (n 30) in tala: promote min(7, ceil(30/4) = 8) = 7 to firouzeh, demote min(5,
+    floor(30/5) = 6) = 5 to noqreh.
+  input:
+    tier: tala
+    members:
+      - { userId: u14, weeklyXp: 1065 }
+      - { userId: u02, weeklyXp: 1813 }
+      - { userId: u16, weeklyXp: 1843 }
+      - { userId: u05, weeklyXp: 2008 }
+      - { userId: u13, weeklyXp: 898 }
+      - { userId: u09, weeklyXp: 889 }
+      - { userId: u18, weeklyXp: 1749 }
+      - { userId: u01, weeklyXp: 1674 }
+      - { userId: u10, weeklyXp: 277 }
+      - { userId: u26, weeklyXp: 2228 }
+      - { userId: u28, weeklyXp: 1355 }
+      - { userId: u11, weeklyXp: 817 }
+      - { userId: u24, weeklyXp: 873 }
+      - { userId: u22, weeklyXp: 811 }
+      - { userId: u21, weeklyXp: 679 }
+      - { userId: u08, weeklyXp: 998 }
+      - { userId: u20, weeklyXp: 804 }
+      - { userId: u03, weeklyXp: 1201 }
+      - { userId: u15, weeklyXp: 218 }
+      - { userId: u30, weeklyXp: 1521 }
+      - { userId: u23, weeklyXp: 1489 }
+      - { userId: u07, weeklyXp: 308 }
+      - { userId: u06, weeklyXp: 2082 }
+      - { userId: u27, weeklyXp: 1781 }
+      - { userId: u19, weeklyXp: 1933 }
+      - { userId: u12, weeklyXp: 1367 }
+      - { userId: u29, weeklyXp: 2220 }
+      - { userId: u17, weeklyXp: 1952 }
+      - { userId: u04, weeklyXp: 383 }
+      - { userId: u25, weeklyXp: 928 }
+  expected:
+    promoteCount: 7
+    demoteCount: 5
+    promotedTo: firouzeh
+    demotedTo: noqreh
+    ranking:
+      - u26
+      - u29
+      - u06
+      - u05
+      - u17
+      - u19
+      - u16
+      - u02
+      - u27
+      - u18
+      - u01
+      - u30
+      - u23
+      - u12
+      - u28
+      - u03
+      - u14
+      - u08
+      - u25
+      - u13
+      - u09
+      - u24
+      - u11
+      - u22
+      - u20
+      - u21
+      - u04
+      - u07
+      - u10
+      - u15
+    promoted: [u26, u29, u06, u05, u17, u19, u16]
+    demoted: [u21, u04, u07, u10, u15]
+
+- id: lr-02-top-tier-tie-at-demotion-cutoff
+  rule: rollover
+  note: >-
+    almas is the top tier: nobody is promoted, bottom 5 demoted to morvarid. u02 and u06 tie on 822
+    XP at ranks 25/26. The lower userId (u02) ranks first and stays; u06 is demoted.
+  input:
+    tier: almas
+    members:
+      - { userId: u06, weeklyXp: 822 }
+      - { userId: u12, weeklyXp: 1850 }
+      - { userId: u30, weeklyXp: 170 }
+      - { userId: u04, weeklyXp: 845 }
+      - { userId: u20, weeklyXp: 1970 }
+      - { userId: u26, weeklyXp: 992 }
+      - { userId: u19, weeklyXp: 2181 }
+      - { userId: u28, weeklyXp: 167 }
+      - { userId: u17, weeklyXp: 1650 }
+      - { userId: u21, weeklyXp: 831 }
+      - { userId: u01, weeklyXp: 1355 }
+      - { userId: u14, weeklyXp: 1951 }
+      - { userId: u29, weeklyXp: 1868 }
+      - { userId: u15, weeklyXp: 2044 }
+      - { userId: u08, weeklyXp: 2159 }
+      - { userId: u18, weeklyXp: 1697 }
+      - { userId: u25, weeklyXp: 1358 }
+      - { userId: u09, weeklyXp: 545 }
+      - { userId: u07, weeklyXp: 1599 }
+      - { userId: u13, weeklyXp: 1038 }
+      - { userId: u03, weeklyXp: 1763 }
+      - { userId: u24, weeklyXp: 1940 }
+      - { userId: u27, weeklyXp: 1061 }
+      - { userId: u05, weeklyXp: 2162 }
+      - { userId: u23, weeklyXp: 1772 }
+      - { userId: u10, weeklyXp: 1924 }
+      - { userId: u02, weeklyXp: 822 }
+      - { userId: u22, weeklyXp: 1667 }
+      - { userId: u16, weeklyXp: 250 }
+      - { userId: u11, weeklyXp: 1833 }
+  expected:
+    promoteCount: 0
+    demoteCount: 5
+    promotedTo: null
+    demotedTo: morvarid
+    ranking:
+      - u19
+      - u05
+      - u08
+      - u15
+      - u20
+      - u14
+      - u24
+      - u10
+      - u29
+      - u12
+      - u11
+      - u23
+      - u03
+      - u18
+      - u22
+      - u17
+      - u07
+      - u25
+      - u01
+      - u27
+      - u13
+      - u26
+      - u04
+      - u21
+      - u02
+      - u06
+      - u09
+      - u16
+      - u30
+      - u28
+    promoted: []
+    demoted: [u06, u09, u16, u30, u28]
+
+- id: lr-03-bottom-tier-tie-at-promotion-cutoff
+  rule: rollover
+  note: >-
+    mes is the bottom tier: nobody is demoted, top 7 promoted to noqreh. u02 and u16 tie on 1956 XP
+    at ranks 7/8. The lower userId (u02) is promoted; u16 stays.
+  input:
+    tier: mes
+    members:
+      - { userId: u06, weeklyXp: 36 }
+      - { userId: u03, weeklyXp: 1651 }
+      - { userId: u18, weeklyXp: 2134 }
+      - { userId: u01, weeklyXp: 1003 }
+      - { userId: u19, weeklyXp: 151 }
+      - { userId: u13, weeklyXp: 1167 }
+      - { userId: u30, weeklyXp: 1698 }
+      - { userId: u08, weeklyXp: 585 }
+      - { userId: u09, weeklyXp: 818 }
+      - { userId: u14, weeklyXp: 2341 }
+      - { userId: u16, weeklyXp: 1956 }
+      - { userId: u15, weeklyXp: 1079 }
+      - { userId: u22, weeklyXp: 901 }
+      - { userId: u24, weeklyXp: 958 }
+      - { userId: u12, weeklyXp: 1403 }
+      - { userId: u04, weeklyXp: 396 }
+      - { userId: u02, weeklyXp: 1956 }
+      - { userId: u11, weeklyXp: 1622 }
+      - { userId: u28, weeklyXp: 2339 }
+      - { userId: u05, weeklyXp: 1207 }
+      - { userId: u26, weeklyXp: 381 }
+      - { userId: u29, weeklyXp: 2247 }
+      - { userId: u20, weeklyXp: 1070 }
+      - { userId: u25, weeklyXp: 2038 }
+      - { userId: u21, weeklyXp: 665 }
+      - { userId: u23, weeklyXp: 517 }
+      - { userId: u17, weeklyXp: 628 }
+      - { userId: u10, weeklyXp: 177 }
+      - { userId: u27, weeklyXp: 2184 }
+      - { userId: u07, weeklyXp: 149 }
+  expected:
+    promoteCount: 7
+    demoteCount: 0
+    promotedTo: noqreh
+    demotedTo: null
+    ranking:
+      - u14
+      - u28
+      - u29
+      - u27
+      - u18
+      - u25
+      - u02
+      - u16
+      - u30
+      - u03
+      - u11
+      - u12
+      - u05
+      - u13
+      - u15
+      - u20
+      - u01
+      - u24
+      - u22
+      - u09
+      - u21
+      - u17
+      - u08
+      - u23
+      - u04
+      - u26
+      - u10
+      - u19
+      - u07
+      - u06
+    promoted: [u14, u28, u29, u27, u18, u25, u02]
+    demoted: []
+
+- id: lr-04-single-member-promoted
+  rule: rollover
+  note: >-
+    n 1: promote ceil(1/4) = 1, demote floor(1/5) = 0. A lone member is promoted.
+  input:
+    tier: aqiq
+    members:
+      - { userId: u01, weeklyXp: 35 }
+  expected:
+    promoteCount: 1
+    demoteCount: 0
+    promotedTo: lajvard
+    demotedTo: null
+    ranking: [u01]
+    promoted: [u01]
+    demoted: []
+
+- id: lr-05-single-member-top-tier
+  rule: rollover
+  note: >-
+    n 1 in almas: no promotion (top tier), no demotion.
+  input:
+    tier: almas
+    members:
+      - { userId: u01, weeklyXp: 900 }
+  expected:
+    promoteCount: 0
+    demoteCount: 0
+    promotedTo: null
+    demotedTo: null
+    ranking: [u01]
+    promoted: []
+    demoted: []
+
+- id: lr-06-two-members
+  rule: rollover
+  note: >-
+    n 2: promote 1, demote 0.
+  input:
+    tier: lajvard
+    members:
+      - { userId: u02, weeklyXp: 40 }
+      - { userId: u01, weeklyXp: 75 }
+  expected:
+    promoteCount: 1
+    demoteCount: 0
+    promotedTo: yaqut
+    demotedTo: null
+    ranking: [u01, u02]
+    promoted: [u01]
+    demoted: []
+
+- id: lr-07-four-members-tie-below-cutoff
+  rule: rollover
+  note: >-
+    n 4: promote 1, demote 0. The 60 XP tie (u01 before u03 by userId) only affects ranking.
+  input:
+    tier: noqreh
+    members:
+      - { userId: u03, weeklyXp: 60 }
+      - { userId: u01, weeklyXp: 60 }
+      - { userId: u04, weeklyXp: 10 }
+      - { userId: u02, weeklyXp: 200 }
+  expected:
+    promoteCount: 1
+    demoteCount: 0
+    promotedTo: tala
+    demotedTo: null
+    ranking: [u02, u01, u03, u04]
+    promoted: [u02]
+    demoted: []
+
+- id: lr-08-five-members
+  rule: rollover
+  note: >-
+    n 5: promote ceil(5/4) = 2, demote floor(5/5) = 1. u02 and u03 tie on 310 and are both promoted.
+  input:
+    tier: yaqut
+    members:
+      - { userId: u05, weeklyXp: 120 }
+      - { userId: u03, weeklyXp: 310 }
+      - { userId: u04, weeklyXp: 95 }
+      - { userId: u01, weeklyXp: 45 }
+      - { userId: u02, weeklyXp: 310 }
+  expected:
+    promoteCount: 2
+    demoteCount: 1
+    promotedTo: zomorrod
+    demotedTo: lajvard
+    ranking: [u02, u03, u05, u04, u01]
+    promoted: [u02, u03]
+    demoted: [u01]
+
+- id: lr-09-nine-members
+  rule: rollover
+  note: >-
+    n 9: promote ceil(9/4) = 3, demote floor(9/5) = 1.
+  input:
+    tier: firouzeh
+    members:
+      - { userId: u05, weeklyXp: 989 }
+      - { userId: u04, weeklyXp: 863 }
+      - { userId: u08, weeklyXp: 59 }
+      - { userId: u06, weeklyXp: 2125 }
+      - { userId: u07, weeklyXp: 1204 }
+      - { userId: u02, weeklyXp: 1687 }
+      - { userId: u09, weeklyXp: 892 }
+      - { userId: u03, weeklyXp: 1647 }
+      - { userId: u01, weeklyXp: 1556 }
+  expected:
+    promoteCount: 3
+    demoteCount: 1
+    promotedTo: aqiq
+    demotedTo: tala
+    ranking: [u06, u02, u03, u01, u07, u05, u09, u04, u08]
+    promoted: [u06, u02, u03]
+    demoted: [u08]
+
+- id: lr-10-three-way-tie-at-promotion-cutoff
+  rule: rollover
+  note: >-
+    n 8: promote 2, demote 1. u02, u03 and u07 tie on 450 at ranks 2-4. Only u02 (lowest userId) is
+    promoted.
+  input:
+    tier: zomorrod
+    members:
+      - { userId: u07, weeklyXp: 450 }
+      - { userId: u01, weeklyXp: 300 }
+      - { userId: u03, weeklyXp: 450 }
+      - { userId: u08, weeklyXp: 200 }
+      - { userId: u05, weeklyXp: 610 }
+      - { userId: u02, weeklyXp: 450 }
+      - { userId: u06, weeklyXp: 90 }
+      - { userId: u04, weeklyXp: 120 }
+  expected:
+    promoteCount: 2
+    demoteCount: 1
+    promotedTo: morvarid
+    demotedTo: yaqut
+    ranking: [u05, u02, u03, u07, u01, u08, u04, u06]
+    promoted: [u05, u02]
+    demoted: [u06]
+
+- id: lr-11-three-way-tie-at-demotion-cutoff
+  rule: rollover
+  note: >-
+    n 10 in morvarid: promote 3 to almas, demote 2 to zomorrod. u03, u07 and u08 tie on 60 at ranks
+    7-9. u08 (highest userId) is demoted with u10.
+  input:
+    tier: morvarid
+    members:
+      - { userId: u08, weeklyXp: 60 }
+      - { userId: u01, weeklyXp: 500 }
+      - { userId: u10, weeklyXp: 20 }
+      - { userId: u03, weeklyXp: 60 }
+      - { userId: u04, weeklyXp: 700 }
+      - { userId: u07, weeklyXp: 60 }
+      - { userId: u02, weeklyXp: 480 }
+      - { userId: u05, weeklyXp: 300 }
+      - { userId: u09, weeklyXp: 150 }
+      - { userId: u06, weeklyXp: 250 }
+  expected:
+    promoteCount: 3
+    demoteCount: 2
+    promotedTo: almas
+    demotedTo: zomorrod
+    ranking: [u04, u01, u02, u05, u06, u09, u03, u07, u08, u10]
+    promoted: [u04, u01, u02]
+    demoted: [u08, u10]
+
+- id: lr-12-all-tied
+  rule: rollover
+  note: >-
+    n 6, everyone on 100 XP: the ranking is by userId ascending. Promote 2, demote 1.
+  input:
+    tier: tala
+    members:
+      - { userId: u04, weeklyXp: 100 }
+      - { userId: u06, weeklyXp: 100 }
+      - { userId: u01, weeklyXp: 100 }
+      - { userId: u05, weeklyXp: 100 }
+      - { userId: u03, weeklyXp: 100 }
+      - { userId: u02, weeklyXp: 100 }
+  expected:
+    promoteCount: 2
+    demoteCount: 1
+    promotedTo: firouzeh
+    demotedTo: noqreh
+    ranking: [u01, u02, u03, u04, u05, u06]
+    promoted: [u01, u02]
+    demoted: [u06]
+
+- id: lr-13-uuid-tie-order
+  rule: rollover
+  note: >-
+    Real user ids are UUIDs and ties sort by the lowercase string ascending. n 5: promote 2, demote
+    1. Among the three on 120 XP, f47ac10b-... sorts last and is demoted.
+  input:
+    tier: noqreh
+    members:
+      - { userId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d', weeklyXp: 300 }
+      - { userId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', weeklyXp: 120 }
+      - { userId: '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed', weeklyXp: 300 }
+      - { userId: 'c9bf9e57-1685-4c89-bafb-ff5af830be8a', weeklyXp: 120 }
+      - { userId: '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b', weeklyXp: 120 }
+  expected:
+    promoteCount: 2
+    demoteCount: 1
+    promotedTo: tala
+    demotedTo: mes
+    ranking:
+      - '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'
+      - '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+      - '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'
+      - 'c9bf9e57-1685-4c89-bafb-ff5af830be8a'
+      - 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+    promoted: ['1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed', '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d']
+    demoted: ['f47ac10b-58cc-4372-a567-0e02b2c3d479']
+
+- id: lr-14-promotion-cap
+  rule: rollover
+  note: >-
+    n 29: ceil(29/4) = 8 is capped at 7; floor(29/5) = 5.
+  input:
+    tier: aqiq
+    members:
+      - { userId: u12, weeklyXp: 862 }
+      - { userId: u27, weeklyXp: 162 }
+      - { userId: u02, weeklyXp: 558 }
+      - { userId: u17, weeklyXp: 1532 }
+      - { userId: u07, weeklyXp: 828 }
+      - { userId: u10, weeklyXp: 1594 }
+      - { userId: u03, weeklyXp: 55 }
+      - { userId: u06, weeklyXp: 837 }
+      - { userId: u13, weeklyXp: 1507 }
+      - { userId: u28, weeklyXp: 1844 }
+      - { userId: u26, weeklyXp: 1263 }
+      - { userId: u22, weeklyXp: 1445 }
+      - { userId: u15, weeklyXp: 1173 }
+      - { userId: u11, weeklyXp: 1942 }
+      - { userId: u14, weeklyXp: 403 }
+      - { userId: u16, weeklyXp: 1088 }
+      - { userId: u24, weeklyXp: 1983 }
+      - { userId: u21, weeklyXp: 971 }
+      - { userId: u08, weeklyXp: 33 }
+      - { userId: u23, weeklyXp: 2309 }
+      - { userId: u25, weeklyXp: 1526 }
+      - { userId: u09, weeklyXp: 1553 }
+      - { userId: u18, weeklyXp: 281 }
+      - { userId: u29, weeklyXp: 22 }
+      - { userId: u19, weeklyXp: 1982 }
+      - { userId: u20, weeklyXp: 511 }
+      - { userId: u01, weeklyXp: 589 }
+      - { userId: u04, weeklyXp: 1977 }
+      - { userId: u05, weeklyXp: 362 }
+  expected:
+    promoteCount: 7
+    demoteCount: 5
+    promotedTo: lajvard
+    demotedTo: firouzeh
+    ranking:
+      - u23
+      - u24
+      - u19
+      - u04
+      - u11
+      - u28
+      - u10
+      - u09
+      - u17
+      - u25
+      - u13
+      - u22
+      - u26
+      - u15
+      - u16
+      - u21
+      - u12
+      - u06
+      - u07
+      - u01
+      - u02
+      - u20
+      - u14
+      - u05
+      - u18
+      - u27
+      - u03
+      - u08
+      - u29
+    promoted: [u23, u24, u19, u04, u11, u28, u10]
+    demoted: [u18, u27, u03, u08, u29]
+
+- id: lr-15-twenty-members
+  rule: rollover
+  note: >-
+    n 20: promote ceil(20/4) = 5, demote floor(20/5) = 4.
+  input:
+    tier: lajvard
+    members:
+      - { userId: u07, weeklyXp: 1966 }
+      - { userId: u16, weeklyXp: 315 }
+      - { userId: u08, weeklyXp: 1571 }
+      - { userId: u01, weeklyXp: 1534 }
+      - { userId: u03, weeklyXp: 1863 }
+      - { userId: u05, weeklyXp: 137 }
+      - { userId: u14, weeklyXp: 1213 }
+      - { userId: u10, weeklyXp: 1311 }
+      - { userId: u11, weeklyXp: 2040 }
+      - { userId: u17, weeklyXp: 1363 }
+      - { userId: u20, weeklyXp: 451 }
+      - { userId: u15, weeklyXp: 1483 }
+      - { userId: u12, weeklyXp: 2093 }
+      - { userId: u19, weeklyXp: 1055 }
+      - { userId: u13, weeklyXp: 1754 }
+      - { userId: u09, weeklyXp: 2373 }
+      - { userId: u02, weeklyXp: 929 }
+      - { userId: u18, weeklyXp: 1671 }
+      - { userId: u06, weeklyXp: 2187 }
+      - { userId: u04, weeklyXp: 1841 }
+  expected:
+    promoteCount: 5
+    demoteCount: 4
+    promotedTo: yaqut
+    demotedTo: aqiq
+    ranking:
+      - u09
+      - u06
+      - u12
+      - u11
+      - u07
+      - u03
+      - u04
+      - u13
+      - u18
+      - u08
+      - u01
+      - u15
+      - u17
+      - u10
+      - u14
+      - u19
+      - u02
+      - u20
+      - u16
+      - u05
+    promoted: [u09, u06, u12, u11, u07]
+    demoted: [u02, u20, u16, u05]
+
+- id: lr-16-promotion-into-top-tier
+  rule: rollover
+  note: >-
+    n 12 in morvarid: promote 3 into almas, demote 2 to zomorrod.
+  input:
+    tier: morvarid
+    members:
+      - { userId: u11, weeklyXp: 2362 }
+      - { userId: u10, weeklyXp: 1363 }
+      - { userId: u04, weeklyXp: 686 }
+      - { userId: u08, weeklyXp: 1175 }
+      - { userId: u12, weeklyXp: 578 }
+      - { userId: u07, weeklyXp: 1229 }
+      - { userId: u06, weeklyXp: 607 }
+      - { userId: u03, weeklyXp: 1889 }
+      - { userId: u05, weeklyXp: 1312 }
+      - { userId: u09, weeklyXp: 1515 }
+      - { userId: u02, weeklyXp: 1510 }
+      - { userId: u01, weeklyXp: 2324 }
+  expected:
+    promoteCount: 3
+    demoteCount: 2
+    promotedTo: almas
+    demotedTo: zomorrod
+    ranking: [u11, u01, u03, u09, u02, u10, u05, u07, u08, u04, u06, u12]
+    promoted: [u11, u01, u03]
+    demoted: [u06, u12]
+
+- id: lr-17-bottom-tier-small
+  rule: rollover
+  note: >-
+    n 12 in mes: promote 3 to noqreh, demote 0 (bottom tier).
+  input:
+    tier: mes
+    members:
+      - { userId: u11, weeklyXp: 497 }
+      - { userId: u08, weeklyXp: 207 }
+      - { userId: u10, weeklyXp: 908 }
+      - { userId: u06, weeklyXp: 616 }
+      - { userId: u01, weeklyXp: 1174 }
+      - { userId: u07, weeklyXp: 957 }
+      - { userId: u04, weeklyXp: 933 }
+      - { userId: u12, weeklyXp: 1858 }
+      - { userId: u05, weeklyXp: 2219 }
+      - { userId: u03, weeklyXp: 726 }
+      - { userId: u02, weeklyXp: 2171 }
+      - { userId: u09, weeklyXp: 2260 }
+  expected:
+    promoteCount: 3
+    demoteCount: 0
+    promotedTo: noqreh
+    demotedTo: null
+    ranking: [u09, u05, u02, u12, u01, u07, u04, u10, u03, u06, u11, u08]
+    promoted: [u09, u05, u02]
+    demoted: []
+
+- id: lr-18-top-tier-small
+  rule: rollover
+  note: >-
+    n 12 in almas: promote 0 (top tier), demote 2 to morvarid.
+  input:
+    tier: almas
+    members:
+      - { userId: u08, weeklyXp: 651 }
+      - { userId: u01, weeklyXp: 1483 }
+      - { userId: u05, weeklyXp: 2125 }
+      - { userId: u11, weeklyXp: 650 }
+      - { userId: u03, weeklyXp: 1423 }
+      - { userId: u04, weeklyXp: 929 }
+      - { userId: u12, weeklyXp: 850 }
+      - { userId: u10, weeklyXp: 2138 }
+      - { userId: u02, weeklyXp: 2326 }
+      - { userId: u07, weeklyXp: 422 }
+      - { userId: u06, weeklyXp: 694 }
+      - { userId: u09, weeklyXp: 2242 }
+  expected:
+    promoteCount: 0
+    demoteCount: 2
+    promotedTo: null
+    demotedTo: morvarid
+    ranking: [u02, u09, u10, u05, u01, u03, u04, u12, u06, u08, u11, u07]
+    promoted: []
+    demoted: [u11, u07]
+
+- id: lr-19-demotion-into-bottom-tier
+  rule: rollover
+  note: >-
+    n 15 in noqreh: promote ceil(15/4) = 4 to tala, demote 3 to mes.
+  input:
+    tier: noqreh
+    members:
+      - { userId: u13, weeklyXp: 927 }
+      - { userId: u09, weeklyXp: 1138 }
+      - { userId: u08, weeklyXp: 802 }
+      - { userId: u12, weeklyXp: 761 }
+      - { userId: u15, weeklyXp: 985 }
+      - { userId: u04, weeklyXp: 416 }
+      - { userId: u03, weeklyXp: 2050 }
+      - { userId: u11, weeklyXp: 601 }
+      - { userId: u05, weeklyXp: 532 }
+      - { userId: u10, weeklyXp: 1692 }
+      - { userId: u06, weeklyXp: 1569 }
+      - { userId: u02, weeklyXp: 2030 }
+      - { userId: u14, weeklyXp: 1405 }
+      - { userId: u07, weeklyXp: 406 }
+      - { userId: u01, weeklyXp: 1227 }
+  expected:
+    promoteCount: 4
+    demoteCount: 3
+    promotedTo: tala
+    demotedTo: mes
+    ranking: [u03, u02, u10, u06, u14, u01, u09, u15, u13, u08, u12, u11, u05, u04, u07]
+    promoted: [u03, u02, u10, u06]
+    demoted: [u05, u04, u07]

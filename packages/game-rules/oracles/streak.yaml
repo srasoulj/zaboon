@@ -1,0 +1,980 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): streak updates and the read-only view.
+# State {current, longest, lastActiveDate, freezes}; a new user is {0, 0, null, 1}.
+# Config: maxFreezes 2, signupFreezes 1, freezeEveryDays 7.
+#
+# rule applyActivity: input {initial, events: [local date of each completed session, in commit
+#   order]} -> expected {steps, final}. steps[i] = {state after events[i], frozenDates,
+#   freezeGranted}; final = state after the last event.
+#   freezeGranted is true only when the milestone actually adds a freeze (false at the cap of 2).
+# rule streakView: input {state, today} -> expected {current, status, freezes, freezesNeeded
+#   (frozen only)}. freezes is the stored count, before any pending consumption. lastActiveDate
+#   after today (westward tz change) reads as extended. Pure: it must not mutate state.
+
+- id: st-01-first-activity
+  rule: applyActivity
+  note: >-
+    A new user (signup state: 1 freeze) completes a first session.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events: ['2026-01-05']
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+
+- id: st-02-second-session-same-day
+  rule: applyActivity
+  note: >-
+    Only the first completed session of a local day counts. The second one changes nothing.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events: ['2026-01-05', '2026-01-05']
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+
+- id: st-03-consecutive-days
+  rule: applyActivity
+  note: >-
+    Three consecutive local days give a streak of 3.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events: ['2026-01-05', '2026-01-06', '2026-01-07']
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-01-06', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-01-07', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 3, longest: 3, lastActiveDate: '2026-01-07', freezes: 1 }
+
+- id: st-04-day-seven-grants-freeze
+  rule: applyActivity
+  note: >-
+    Reaching current 7 grants a freeze: 1 -> 2 (freezeEveryDays 7).
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events:
+      - '2026-01-05'
+      - '2026-01-06'
+      - '2026-01-07'
+      - '2026-01-08'
+      - '2026-01-09'
+      - '2026-01-10'
+      - '2026-01-11'
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-01-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-01-06', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-01-07', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-01-08', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 5, longest: 5, lastActiveDate: '2026-01-09', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-01-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-01-11', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+    final: { current: 7, longest: 7, lastActiveDate: '2026-01-11', freezes: 2 }
+
+- id: st-05-milestone-at-freeze-cap
+  rule: applyActivity
+  note: >-
+    Milestone 7 while already holding 2 freezes: nothing can be added, so freezes stay at the cap of
+    2 and freezeGranted is false (it is true only when a freeze is actually added).
+  input:
+    initial: { current: 6, longest: 6, lastActiveDate: '2026-01-10', freezes: 2 }
+    events: ['2026-01-11']
+  expected:
+    steps:
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-01-11', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 7, longest: 7, lastActiveDate: '2026-01-11', freezes: 2 }
+
+- id: st-06-two-milestones
+  rule: applyActivity
+  note: >-
+    A restarted streak with 0 freezes earns one freeze at 7 (0 -> 1) and another at 14 (1 -> 2).
+    longest follows current once it passes the old record of 4.
+  input:
+    initial: { current: 1, longest: 4, lastActiveDate: '2026-02-01', freezes: 0 }
+    events:
+      - '2026-02-02'
+      - '2026-02-03'
+      - '2026-02-04'
+      - '2026-02-05'
+      - '2026-02-06'
+      - '2026-02-07'
+      - '2026-02-08'
+      - '2026-02-09'
+      - '2026-02-10'
+      - '2026-02-11'
+      - '2026-02-12'
+      - '2026-02-13'
+      - '2026-02-14'
+  expected:
+    steps:
+      - state: { current: 2, longest: 4, lastActiveDate: '2026-02-02', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 4, lastActiveDate: '2026-02-03', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-02-04', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 5, longest: 5, lastActiveDate: '2026-02-05', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-02-06', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-02-07', freezes: 1 }
+        frozenDates: []
+        freezeGranted: true
+      - state: { current: 8, longest: 8, lastActiveDate: '2026-02-08', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 9, longest: 9, lastActiveDate: '2026-02-09', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 10, longest: 10, lastActiveDate: '2026-02-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 11, longest: 11, lastActiveDate: '2026-02-11', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 12, longest: 12, lastActiveDate: '2026-02-12', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 13, longest: 13, lastActiveDate: '2026-02-13', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 14, longest: 14, lastActiveDate: '2026-02-14', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+    final: { current: 14, longest: 14, lastActiveDate: '2026-02-14', freezes: 2 }
+
+- id: st-07-one-missed-day-covered
+  rule: applyActivity
+  note: >-
+    One missed day (Mar 11) with 1 freeze: the freeze is consumed, reported in frozenDates, and the
+    streak continues to 6.
+  input:
+    initial: { current: 5, longest: 5, lastActiveDate: '2026-03-10', freezes: 1 }
+    events: ['2026-03-12']
+  expected:
+    steps:
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-03-12', freezes: 0 }
+        frozenDates: ['2026-03-11']
+        freezeGranted: false
+    final: { current: 6, longest: 6, lastActiveDate: '2026-03-12', freezes: 0 }
+
+- id: st-08-one-missed-day-no-freeze
+  rule: applyActivity
+  note: >-
+    One missed day and no freezes: the streak restarts at 1 and longest is kept.
+  input:
+    initial: { current: 5, longest: 9, lastActiveDate: '2026-03-10', freezes: 0 }
+    events: ['2026-03-12']
+  expected:
+    steps:
+      - state: { current: 1, longest: 9, lastActiveDate: '2026-03-12', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 1, longest: 9, lastActiveDate: '2026-03-12', freezes: 0 }
+
+- id: st-09-two-missed-days-two-freezes
+  rule: applyActivity
+  note: >-
+    gap 2 <= 2 freezes: both are consumed (Apr 2, Apr 3) and the streak continues.
+  input:
+    initial: { current: 10, longest: 10, lastActiveDate: '2026-04-01', freezes: 2 }
+    events: ['2026-04-04']
+  expected:
+    steps:
+      - state: { current: 11, longest: 11, lastActiveDate: '2026-04-04', freezes: 0 }
+        frozenDates: ['2026-04-02', '2026-04-03']
+        freezeGranted: false
+    final: { current: 11, longest: 11, lastActiveDate: '2026-04-04', freezes: 0 }
+
+- id: st-10-two-missed-days-one-freeze
+  rule: applyActivity
+  note: >-
+    gap 2 > 1 freeze: the freeze is still consumed (consumed = min(gap, freezes), so frozenDates =
+    [Apr 2]) and the streak restarts at 1. longest 12 is kept.
+  input:
+    initial: { current: 10, longest: 12, lastActiveDate: '2026-04-01', freezes: 1 }
+    events: ['2026-04-04']
+  expected:
+    steps:
+      - state: { current: 1, longest: 12, lastActiveDate: '2026-04-04', freezes: 0 }
+        frozenDates: ['2026-04-02']
+        freezeGranted: false
+    final: { current: 1, longest: 12, lastActiveDate: '2026-04-04', freezes: 0 }
+
+- id: st-11-three-missed-days-two-freezes
+  rule: applyActivity
+  note: >-
+    gap 3 > 2 freezes: both freezes are consumed on the first two missed days (Apr 11, Apr 12) and
+    the streak restarts at 1.
+  input:
+    initial: { current: 20, longest: 20, lastActiveDate: '2026-04-10', freezes: 2 }
+    events: ['2026-04-14']
+  expected:
+    steps:
+      - state: { current: 1, longest: 20, lastActiveDate: '2026-04-14', freezes: 0 }
+        frozenDates: ['2026-04-11', '2026-04-12']
+        freezeGranted: false
+    final: { current: 1, longest: 20, lastActiveDate: '2026-04-14', freezes: 0 }
+
+- id: st-12-one-missed-day-two-freezes
+  rule: applyActivity
+  note: >-
+    gap 1 with 2 freezes consumes exactly one (2 -> 1).
+  input:
+    initial: { current: 3, longest: 3, lastActiveDate: '2026-05-01', freezes: 2 }
+    events: ['2026-05-03']
+  expected:
+    steps:
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-05-03', freezes: 1 }
+        frozenDates: ['2026-05-02']
+        freezeGranted: false
+    final: { current: 4, longest: 4, lastActiveDate: '2026-05-03', freezes: 1 }
+
+- id: st-13-late-commit-for-earlier-day
+  rule: applyActivity
+  note: >-
+    A late commit for a day before lastActiveDate leaves the streak unchanged (the day still gets XP
+    elsewhere). lastActiveDate stays May 10.
+  input:
+    initial: { current: 4, longest: 4, lastActiveDate: '2026-05-10', freezes: 1 }
+    events: ['2026-05-08']
+  expected:
+    steps:
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-05-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 4, longest: 4, lastActiveDate: '2026-05-10', freezes: 1 }
+
+- id: st-14-late-commit-for-frozen-day
+  rule: applyActivity
+  note: >-
+    May 11 was covered by a freeze when the May 12 session committed. A late commit for May 11
+    arriving afterwards changes nothing, and the freeze is not refunded.
+  input:
+    initial: { current: 5, longest: 5, lastActiveDate: '2026-05-10', freezes: 1 }
+    events: ['2026-05-12', '2026-05-11']
+  expected:
+    steps:
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-05-12', freezes: 0 }
+        frozenDates: ['2026-05-11']
+        freezeGranted: false
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-05-12', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 6, longest: 6, lastActiveDate: '2026-05-12', freezes: 0 }
+
+- id: st-15-freeze-consumed-then-granted
+  rule: applyActivity
+  note: >-
+    Consumption happens before the grant: gap 1 consumes the only freeze (1 -> 0), current becomes
+    7, and the milestone grants one back (0 -> 1).
+  input:
+    initial: { current: 6, longest: 6, lastActiveDate: '2026-06-01', freezes: 1 }
+    events: ['2026-06-03']
+  expected:
+    steps:
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-06-03', freezes: 1 }
+        frozenDates: ['2026-06-02']
+        freezeGranted: true
+    final: { current: 7, longest: 7, lastActiveDate: '2026-06-03', freezes: 1 }
+
+- id: st-16-consumption-before-cap
+  rule: applyActivity
+  note: >-
+    With 2 freezes, gap 1 consumes one (2 -> 1). Reaching 7 then grants one (1 -> 2). The cap is
+    checked after consumption, so the grant really adds a freeze and freezeGranted is true.
+  input:
+    initial: { current: 6, longest: 6, lastActiveDate: '2026-06-01', freezes: 2 }
+    events: ['2026-06-03']
+  expected:
+    steps:
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-06-03', freezes: 2 }
+        frozenDates: ['2026-06-02']
+        freezeGranted: true
+    final: { current: 7, longest: 7, lastActiveDate: '2026-06-03', freezes: 2 }
+
+- id: st-17-break-keeps-longest
+  rule: applyActivity
+  note: >-
+    A 13-day streak breaks (gap 1, no freezes): current 1, longest stays 13.
+  input:
+    initial: { current: 13, longest: 13, lastActiveDate: '2026-06-10', freezes: 0 }
+    events: ['2026-06-12']
+  expected:
+    steps:
+      - state: { current: 1, longest: 13, lastActiveDate: '2026-06-12', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 1, longest: 13, lastActiveDate: '2026-06-12', freezes: 0 }
+
+- id: st-18-new-streak-overtakes-longest
+  rule: applyActivity
+  note: >-
+    longest grows only once current exceeds it (3 ties the record, 4 beats it).
+  input:
+    initial: { current: 2, longest: 3, lastActiveDate: '2026-06-20', freezes: 0 }
+    events: ['2026-06-21', '2026-06-22']
+  expected:
+    steps:
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-06-21', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-06-22', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 4, longest: 4, lastActiveDate: '2026-06-22', freezes: 0 }
+
+- id: st-19-milestone-day-second-session
+  rule: applyActivity
+  note: >-
+    The freeze for day 7 is granted once. A second session on the same day does not grant again.
+  input:
+    initial: { current: 6, longest: 6, lastActiveDate: '2026-07-05', freezes: 1 }
+    events: ['2026-07-06', '2026-07-06']
+  expected:
+    steps:
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-07-06', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-07-06', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 7, longest: 7, lastActiveDate: '2026-07-06', freezes: 2 }
+
+- id: st-20-milestone-counts-current-not-longest
+  rule: applyActivity
+  note: >-
+    Milestones follow current: a restarted streak (longest 30) earns a freeze when current reaches 7
+    again.
+  input:
+    initial: { current: 1, longest: 30, lastActiveDate: '2026-07-01', freezes: 0 }
+    events: ['2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05', '2026-07-06', '2026-07-07']
+  expected:
+    steps:
+      - state: { current: 2, longest: 30, lastActiveDate: '2026-07-02', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 30, lastActiveDate: '2026-07-03', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 30, lastActiveDate: '2026-07-04', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 5, longest: 30, lastActiveDate: '2026-07-05', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 6, longest: 30, lastActiveDate: '2026-07-06', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 7, longest: 30, lastActiveDate: '2026-07-07', freezes: 1 }
+        frozenDates: []
+        freezeGranted: true
+    final: { current: 7, longest: 30, lastActiveDate: '2026-07-07', freezes: 1 }
+
+- id: st-21-year-boundary
+  rule: applyActivity
+  note: >-
+    Dec 30 -> Dec 31 -> Jan 1 are consecutive local dates.
+  input:
+    initial: { current: 8, longest: 8, lastActiveDate: '2025-12-30', freezes: 1 }
+    events: ['2025-12-31', '2026-01-01']
+  expected:
+    steps:
+      - state: { current: 9, longest: 9, lastActiveDate: '2025-12-31', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 10, longest: 10, lastActiveDate: '2026-01-01', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 10, longest: 10, lastActiveDate: '2026-01-01', freezes: 1 }
+
+- id: st-22-leap-day-missed
+  rule: applyActivity
+  note: >-
+    2028 is a leap year: Feb 28 -> Mar 1 misses Feb 29, which the freeze covers.
+  input:
+    initial: { current: 4, longest: 4, lastActiveDate: '2028-02-28', freezes: 1 }
+    events: ['2028-03-01']
+  expected:
+    steps:
+      - state: { current: 5, longest: 5, lastActiveDate: '2028-03-01', freezes: 0 }
+        frozenDates: ['2028-02-29']
+        freezeGranted: false
+    final: { current: 5, longest: 5, lastActiveDate: '2028-03-01', freezes: 0 }
+
+- id: st-23-non-leap-february
+  rule: applyActivity
+  note: >-
+    2027 is not a leap year: Feb 28 -> Mar 1 are consecutive.
+  input:
+    initial: { current: 4, longest: 4, lastActiveDate: '2027-02-28', freezes: 0 }
+    events: ['2027-03-01']
+  expected:
+    steps:
+      - state: { current: 5, longest: 5, lastActiveDate: '2027-03-01', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 5, longest: 5, lastActiveDate: '2027-03-01', freezes: 0 }
+
+- id: st-24-us-spring-forward-weekend
+  rule: applyActivity
+  note: >-
+    Calendar-date arithmetic, not 24h steps: Mar 7 -> 8 -> 9 2026 (US spring-forward Sunday) are
+    consecutive days, even on a machine whose local tz observes DST.
+  input:
+    initial: { current: 1, longest: 1, lastActiveDate: '2026-03-07', freezes: 1 }
+    events: ['2026-03-08', '2026-03-09']
+  expected:
+    steps:
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-03-08', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-03-09', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 3, longest: 3, lastActiveDate: '2026-03-09', freezes: 1 }
+
+- id: st-25-frozen-day-is-fall-back-sunday
+  rule: applyActivity
+  note: >-
+    The missed day is 2025-11-02, the 25-hour US fall-back Sunday. It is still exactly one missed
+    calendar day.
+  input:
+    initial: { current: 3, longest: 3, lastActiveDate: '2025-11-01', freezes: 1 }
+    events: ['2025-11-03']
+  expected:
+    steps:
+      - state: { current: 4, longest: 4, lastActiveDate: '2025-11-03', freezes: 0 }
+        frozenDates: ['2025-11-02']
+        freezeGranted: false
+    final: { current: 4, longest: 4, lastActiveDate: '2025-11-03', freezes: 0 }
+
+- id: st-26-gap-across-month-end
+  rule: applyActivity
+  note: >-
+    Jan 30 -> Feb 2 misses Jan 31 and Feb 1. Two freezes cover both.
+  input:
+    initial: { current: 9, longest: 9, lastActiveDate: '2026-01-30', freezes: 2 }
+    events: ['2026-02-02']
+  expected:
+    steps:
+      - state: { current: 10, longest: 10, lastActiveDate: '2026-02-02', freezes: 0 }
+        frozenDates: ['2026-01-31', '2026-02-01']
+        freezeGranted: false
+    final: { current: 10, longest: 10, lastActiveDate: '2026-02-02', freezes: 0 }
+
+- id: st-27-long-absence
+  rule: applyActivity
+  note: >-
+    A 41-day gap (Feb 2 .. Mar 14, 2026) consumes both freezes on its first two days and restarts
+    the streak.
+  input:
+    initial: { current: 45, longest: 45, lastActiveDate: '2026-02-01', freezes: 2 }
+    events: ['2026-03-15']
+  expected:
+    steps:
+      - state: { current: 1, longest: 45, lastActiveDate: '2026-03-15', freezes: 0 }
+        frozenDates: ['2026-02-02', '2026-02-03']
+        freezeGranted: false
+    final: { current: 1, longest: 45, lastActiveDate: '2026-03-15', freezes: 0 }
+
+- id: st-28-out-of-order-first-commits
+  rule: applyActivity
+  note: >-
+    The first commit sets lastActiveDate Aug 10. A late Aug 8 commit is ignored for the streak, and
+    Aug 11 extends to 2.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events: ['2026-08-10', '2026-08-08', '2026-08-11']
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-08-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-08-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-08-11', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 2, longest: 2, lastActiveDate: '2026-08-11', freezes: 1 }
+
+- id: st-29-frozen-days-do-not-count
+  rule: applyActivity
+  note: >-
+    A frozen day keeps the streak alive but does not add to it: 7 active days over 8 calendar days
+    (Aug 6 frozen) reach current 7 on Aug 8, which grants a freeze back.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events:
+      - '2026-08-01'
+      - '2026-08-02'
+      - '2026-08-03'
+      - '2026-08-04'
+      - '2026-08-05'
+      - '2026-08-07'
+      - '2026-08-08'
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-08-01', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-08-02', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-08-03', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-08-04', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 5, longest: 5, lastActiveDate: '2026-08-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-08-07', freezes: 0 }
+        frozenDates: ['2026-08-06']
+        freezeGranted: false
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-08-08', freezes: 1 }
+        frozenDates: []
+        freezeGranted: true
+    final: { current: 7, longest: 7, lastActiveDate: '2026-08-08', freezes: 1 }
+
+- id: st-30-three-weeks
+  rule: applyActivity
+  note: >-
+    Days 1-7 grant a 2nd freeze. Sep 8 is missed and covered (2 -> 1). Current reaches 14 on Sep 15
+    (1 -> 2). Sep 16-18 are missed (gap 3 > 2): both freezes are consumed and the streak restarts on
+    Sep 19.
+  input:
+    initial: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    events:
+      - '2026-09-01'
+      - '2026-09-02'
+      - '2026-09-03'
+      - '2026-09-04'
+      - '2026-09-05'
+      - '2026-09-06'
+      - '2026-09-07'
+      - '2026-09-09'
+      - '2026-09-10'
+      - '2026-09-11'
+      - '2026-09-12'
+      - '2026-09-13'
+      - '2026-09-14'
+      - '2026-09-15'
+      - '2026-09-19'
+      - '2026-09-20'
+  expected:
+    steps:
+      - state: { current: 1, longest: 1, lastActiveDate: '2026-09-01', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 2, longest: 2, lastActiveDate: '2026-09-02', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-09-03', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-09-04', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 5, longest: 5, lastActiveDate: '2026-09-05', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-09-06', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-09-07', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+      - state: { current: 8, longest: 8, lastActiveDate: '2026-09-09', freezes: 1 }
+        frozenDates: ['2026-09-08']
+        freezeGranted: false
+      - state: { current: 9, longest: 9, lastActiveDate: '2026-09-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 10, longest: 10, lastActiveDate: '2026-09-11', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 11, longest: 11, lastActiveDate: '2026-09-12', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 12, longest: 12, lastActiveDate: '2026-09-13', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 13, longest: 13, lastActiveDate: '2026-09-14', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 14, longest: 14, lastActiveDate: '2026-09-15', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+      - state: { current: 1, longest: 14, lastActiveDate: '2026-09-19', freezes: 0 }
+        frozenDates: ['2026-09-16', '2026-09-17']
+        freezeGranted: false
+      - state: { current: 2, longest: 14, lastActiveDate: '2026-09-20', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 2, longest: 14, lastActiveDate: '2026-09-20', freezes: 0 }
+
+- id: st-31-late-then-same-day-then-next
+  rule: applyActivity
+  note: >-
+    A late commit for yesterday and a repeat of today change nothing. The next day extends the
+    streak.
+  input:
+    initial: { current: 3, longest: 3, lastActiveDate: '2026-05-10', freezes: 1 }
+    events: ['2026-05-09', '2026-05-10', '2026-05-11']
+  expected:
+    steps:
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-05-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 3, longest: 3, lastActiveDate: '2026-05-10', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 4, longest: 4, lastActiveDate: '2026-05-11', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 4, longest: 4, lastActiveDate: '2026-05-11', freezes: 1 }
+
+- id: st-32-out-of-order-commits-can-break
+  rule: applyActivity
+  note: >-
+    Commits from two devices arrive out of order: May 20 first (gap May 18-19 = 2 > 1 freeze, so May
+    18 is frozen and the streak restarts), then May 18 (< lastActiveDate, ignored). In date order
+    the same two sessions would have given 6 then 7: commit order matters.
+  input:
+    initial: { current: 5, longest: 5, lastActiveDate: '2026-05-17', freezes: 1 }
+    events: ['2026-05-20', '2026-05-18']
+  expected:
+    steps:
+      - state: { current: 1, longest: 5, lastActiveDate: '2026-05-20', freezes: 0 }
+        frozenDates: ['2026-05-18']
+        freezeGranted: false
+      - state: { current: 1, longest: 5, lastActiveDate: '2026-05-20', freezes: 0 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 1, longest: 5, lastActiveDate: '2026-05-20', freezes: 0 }
+
+- id: st-33-day-21-milestone
+  rule: applyActivity
+  note: >-
+    Every multiple of 7 grants a freeze (21: 1 -> 2).
+  input:
+    initial: { current: 20, longest: 20, lastActiveDate: '2026-09-01', freezes: 1 }
+    events: ['2026-09-02']
+  expected:
+    steps:
+      - state: { current: 21, longest: 21, lastActiveDate: '2026-09-02', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+    final: { current: 21, longest: 21, lastActiveDate: '2026-09-02', freezes: 2 }
+
+- id: st-34-second-milestone-at-cap
+  rule: applyActivity
+  note: >-
+    Day 7 adds a freeze (1 -> 2, freezeGranted true). On day 14 the user still holds 2, so nothing
+    is added and freezeGranted is false.
+  input:
+    initial: { current: 5, longest: 5, lastActiveDate: '2026-10-01', freezes: 1 }
+    events:
+      - '2026-10-02'
+      - '2026-10-03'
+      - '2026-10-04'
+      - '2026-10-05'
+      - '2026-10-06'
+      - '2026-10-07'
+      - '2026-10-08'
+      - '2026-10-09'
+      - '2026-10-10'
+  expected:
+    steps:
+      - state: { current: 6, longest: 6, lastActiveDate: '2026-10-02', freezes: 1 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 7, longest: 7, lastActiveDate: '2026-10-03', freezes: 2 }
+        frozenDates: []
+        freezeGranted: true
+      - state: { current: 8, longest: 8, lastActiveDate: '2026-10-04', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 9, longest: 9, lastActiveDate: '2026-10-05', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 10, longest: 10, lastActiveDate: '2026-10-06', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 11, longest: 11, lastActiveDate: '2026-10-07', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 12, longest: 12, lastActiveDate: '2026-10-08', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 13, longest: 13, lastActiveDate: '2026-10-09', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+      - state: { current: 14, longest: 14, lastActiveDate: '2026-10-10', freezes: 2 }
+        frozenDates: []
+        freezeGranted: false
+    final: { current: 14, longest: 14, lastActiveDate: '2026-10-10', freezes: 2 }
+
+- id: sv-01-no-activity-yet
+  rule: streakView
+  note: >-
+    No activity ever: status none, current 0.
+  input:
+    state: { current: 0, longest: 0, lastActiveDate: null, freezes: 1 }
+    today: '2026-01-05'
+  expected:
+    current: 0
+    status: none
+    freezes: 1
+
+- id: sv-02-active-today
+  rule: streakView
+  note: >-
+    Active today: extended.
+  input:
+    state: { current: 4, longest: 9, lastActiveDate: '2026-01-05', freezes: 1 }
+    today: '2026-01-05'
+  expected:
+    current: 4
+    status: extended
+    freezes: 1
+
+- id: sv-03-active-yesterday
+  rule: streakView
+  note: >-
+    Last active yesterday: at_risk, with current shown as stored.
+  input:
+    state: { current: 4, longest: 9, lastActiveDate: '2026-01-04', freezes: 1 }
+    today: '2026-01-05'
+  expected:
+    current: 4
+    status: at_risk
+    freezes: 1
+
+- id: sv-04-active-yesterday-no-freezes
+  rule: streakView
+  note: >-
+    at_risk does not depend on freezes.
+  input:
+    state: { current: 4, longest: 9, lastActiveDate: '2026-01-04', freezes: 0 }
+    today: '2026-01-05'
+  expected:
+    current: 4
+    status: at_risk
+    freezes: 0
+
+- id: sv-05-one-missed-day-one-freeze
+  rule: streakView
+  note: >-
+    Missed yesterday (gap 1) with 1 freeze: frozen, freezesNeeded 1. current and freezes are the
+    stored values (the freeze is only consumed at the next commit).
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-03', freezes: 1 }
+    today: '2026-01-05'
+  expected:
+    current: 12
+    status: frozen
+    freezes: 1
+    freezesNeeded: 1
+
+- id: sv-06-two-missed-days-two-freezes
+  rule: streakView
+  note: >-
+    gap 2 <= 2 freezes: frozen, freezesNeeded 2.
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-02', freezes: 2 }
+    today: '2026-01-05'
+  expected:
+    current: 12
+    status: frozen
+    freezes: 2
+    freezesNeeded: 2
+
+- id: sv-07-one-missed-day-two-freezes
+  rule: streakView
+  note: >-
+    gap 1 with 2 freezes: frozen, freezesNeeded 1 (the number needed, not the number held).
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-03', freezes: 2 }
+    today: '2026-01-05'
+  expected:
+    current: 12
+    status: frozen
+    freezes: 2
+    freezesNeeded: 1
+
+- id: sv-08-two-missed-days-one-freeze
+  rule: streakView
+  note: >-
+    gap 2 > 1 freeze: broken, and current reads 0.
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-02', freezes: 1 }
+    today: '2026-01-05'
+  expected:
+    current: 0
+    status: broken
+    freezes: 1
+
+- id: sv-09-one-missed-day-no-freeze
+  rule: streakView
+  note: >-
+    gap 1 with no freeze: broken.
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-03', freezes: 0 }
+    today: '2026-01-05'
+  expected:
+    current: 0
+    status: broken
+    freezes: 0
+
+- id: sv-10-three-missed-days-two-freezes
+  rule: streakView
+  note: >-
+    gap 3 > 2 freezes: broken. freezes still reads the stored 2, although the next commit will
+    consume both.
+  input:
+    state: { current: 20, longest: 25, lastActiveDate: '2026-04-10', freezes: 2 }
+    today: '2026-04-14'
+  expected:
+    current: 0
+    status: broken
+    freezes: 2
+
+- id: sv-11-long-absence
+  rule: streakView
+  note: >-
+    Weeks away: broken.
+  input:
+    state: { current: 30, longest: 30, lastActiveDate: '2025-12-01', freezes: 2 }
+    today: '2026-01-05'
+  expected:
+    current: 0
+    status: broken
+    freezes: 2
+
+- id: sv-12-month-boundary
+  rule: streakView
+  note: >-
+    Jan 31 -> Feb 1 is yesterday: at_risk.
+  input:
+    state: { current: 3, longest: 3, lastActiveDate: '2026-01-31', freezes: 0 }
+    today: '2026-02-01'
+  expected:
+    current: 3
+    status: at_risk
+    freezes: 0
+
+- id: sv-13-year-boundary-frozen
+  rule: streakView
+  note: >-
+    Dec 31 -> Jan 2 misses Jan 1 (gap 1) with 1 freeze: frozen.
+  input:
+    state: { current: 6, longest: 6, lastActiveDate: '2025-12-31', freezes: 1 }
+    today: '2026-01-02'
+  expected:
+    current: 6
+    status: frozen
+    freezes: 1
+    freezesNeeded: 1
+
+- id: sv-14-leap-day-missed
+  rule: streakView
+  note: >-
+    Feb 28 -> Mar 1 in 2028 misses Feb 29. No freezes, so broken.
+  input:
+    state: { current: 5, longest: 5, lastActiveDate: '2028-02-28', freezes: 0 }
+    today: '2028-03-01'
+  expected:
+    current: 0
+    status: broken
+    freezes: 0
+
+- id: sv-15-non-leap-february
+  rule: streakView
+  note: >-
+    Feb 28 -> Mar 1 in 2027 is yesterday: at_risk.
+  input:
+    state: { current: 5, longest: 5, lastActiveDate: '2027-02-28', freezes: 0 }
+    today: '2027-03-01'
+  expected:
+    current: 5
+    status: at_risk
+    freezes: 0
+
+- id: sv-16-frozen-over-dst-weekend
+  rule: streakView
+  note: >-
+    Missed 2026-03-08 (US spring-forward Sunday): exactly one missed calendar day, covered.
+  input:
+    state: { current: 7, longest: 7, lastActiveDate: '2026-03-07', freezes: 1 }
+    today: '2026-03-09'
+  expected:
+    current: 7
+    status: frozen
+    freezes: 1
+    freezesNeeded: 1
+
+- id: sv-17-last-active-after-today
+  rule: streakView
+  note: >-
+    Westward tz change: the last session counted for Jan 11 in Auckland, but today in Los Angeles is
+    still Jan 10. lastActiveDate after today reads as extended, with the stored current.
+  input:
+    state: { current: 5, longest: 9, lastActiveDate: '2026-01-11', freezes: 1 }
+    today: '2026-01-10'
+  expected:
+    current: 5
+    status: extended
+    freezes: 1
+
+- id: sv-18-last-active-two-days-after-today
+  rule: streakView
+  note: >-
+    Kiritimati (+14:00) and Pago Pago (-11:00) are 25 hours apart, so lastActiveDate can be 2 days
+    after today. Still extended, even with no freezes.
+  input:
+    state: { current: 12, longest: 12, lastActiveDate: '2026-01-12', freezes: 0 }
+    today: '2026-01-10'
+  expected:
+    current: 12
+    status: extended
+    freezes: 0

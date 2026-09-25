@@ -1,0 +1,502 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): session local date + tz changes.
+#
+# rule localDate: input {tz, startedAt, completedAt, now} -> expected {clampedAt, localDate}
+#   clampedAt = min(max(completedAt, startedAt), now); localDate = calendar date of clampedAt in
+#   tz, the IANA zone captured at session start. expected.clampedAt is written with the offset tz
+#   has at that instant, so its date part equals localDate. Timestamps compare as instants.
+#
+# rule tzChange: input {profileTz, tzChangedAt, requestedTz, now} -> expected {tz, tzChangedAt,
+#   changed}. A different tz is accepted iff tzChangedAt is null or now - tzChangedAt >= 24h
+#   (elapsed time, config tz.minChangeIntervalHours); accepting sets tzChangedAt = now. Otherwise,
+#   and when requestedTz == profileTz, nothing changes.
+
+- id: ld-01-in-window-utc
+  rule: localDate
+  note: >-
+    completedAt lies inside [startedAt, now], so nothing is clamped.
+  input:
+    tz: UTC
+    startedAt: '2026-05-10T09:00:00Z'
+    completedAt: '2026-05-10T09:07:30Z'
+    now: '2026-05-10T09:07:32Z'
+  expected:
+    clampedAt: '2026-05-10T09:07:30Z'
+    localDate: '2026-05-10'
+
+- id: ld-02-clamp-up-to-startedAt
+  rule: localDate
+  note: >-
+    Client clock 5 minutes behind: completedAt is earlier than the server-captured startedAt, so it
+    is clamped up to startedAt. London is on BST (+01:00) in May.
+  input:
+    tz: Europe/London
+    startedAt: '2026-05-10T09:00:00Z'
+    completedAt: '2026-05-10T08:55:00Z'
+    now: '2026-05-10T09:06:00Z'
+  expected:
+    clampedAt: '2026-05-10T10:00:00+01:00'
+    localDate: '2026-05-10'
+
+- id: ld-03-clamp-down-to-now
+  rule: localDate
+  note: >-
+    Client clock 2 hours ahead: completedAt is later than the server now, so it is clamped down to
+    now.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2026-05-10T16:00:00Z'
+    completedAt: '2026-05-10T18:30:00Z'
+    now: '2026-05-10T16:08:00Z'
+  expected:
+    clampedAt: '2026-05-10T09:08:00-07:00'
+    localDate: '2026-05-10'
+
+- id: ld-04-late-commit-tehran
+  rule: localDate
+  note: >-
+    Late outbox commit: the lesson finished at 23:55 Tehran time and the request landed at 00:10 the
+    next day. The completion instant is used, so it counts for June 10.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-06-10T23:41:00+03:30'
+    completedAt: '2026-06-10T23:55:00+03:30'
+    now: '2026-06-11T00:10:00+03:30'
+  expected:
+    clampedAt: '2026-06-10T23:55:00+03:30'
+    localDate: '2026-06-10'
+
+- id: ld-05-late-commit-los-angeles
+  rule: localDate
+  note: >-
+    The same late commit in Los Angeles (PDT, -07:00): finished 23:55 on July 4, landed 00:10 on
+    July 5, counts for July 4.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2026-07-04T23:40:00-07:00'
+    completedAt: '2026-07-04T23:55:00-07:00'
+    now: '2026-07-05T00:10:00-07:00'
+  expected:
+    clampedAt: '2026-07-04T23:55:00-07:00'
+    localDate: '2026-07-04'
+
+- id: ld-06-offline-overnight-replay
+  rule: localDate
+  note: >-
+    Offline: completed 23:52 GMT and the outbox replayed at 08:15 the next morning. It still counts
+    for Feb 14.
+  input:
+    tz: Europe/London
+    startedAt: '2026-02-14T23:30:00Z'
+    completedAt: '2026-02-14T23:52:00Z'
+    now: '2026-02-15T08:15:00Z'
+  expected:
+    clampedAt: '2026-02-14T23:52:00+00:00'
+    localDate: '2026-02-14'
+
+- id: ld-07-fast-clock-cannot-claim-tomorrow
+  rule: localDate
+  note: >-
+    A fast client clock claims 00:05 tomorrow, but the server now is 23:58 today. clampedAt = now,
+    so the session counts for today and a day cannot be banked early.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-06-10T23:45:00+03:30'
+    completedAt: '2026-06-11T00:05:00+03:30'
+    now: '2026-06-10T23:58:00+03:30'
+  expected:
+    clampedAt: '2026-06-10T23:58:00+03:30'
+    localDate: '2026-06-10'
+
+- id: ld-08-slow-clock-cannot-claim-yesterday
+  rule: localDate
+  note: >-
+    A slow client clock claims 23:50 yesterday, but the session only started at 00:02 today. Clamped
+    up to startedAt, so it counts for today and cannot back-fill yesterday.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2026-07-05T00:02:00-07:00'
+    completedAt: '2026-07-04T23:50:00-07:00'
+    now: '2026-07-05T00:14:00-07:00'
+  expected:
+    clampedAt: '2026-07-05T00:02:00-07:00'
+    localDate: '2026-07-05'
+
+- id: ld-09-session-spans-midnight
+  rule: localDate
+  note: >-
+    A session that starts before midnight and completes after it counts for the completion day.
+  input:
+    tz: Europe/London
+    startedAt: '2026-08-01T23:50:00+01:00'
+    completedAt: '2026-08-02T00:05:00+01:00'
+    now: '2026-08-02T00:05:02+01:00'
+  expected:
+    clampedAt: '2026-08-02T00:05:00+01:00'
+    localDate: '2026-08-02'
+
+- id: ld-10-exact-local-midnight
+  rule: localDate
+  note: >-
+    20:30Z is exactly 00:00 in Tehran (+03:30). Local midnight belongs to the new day.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-03-20T20:15:00Z'
+    completedAt: '2026-03-20T20:30:00Z'
+    now: '2026-03-20T20:31:00Z'
+  expected:
+    clampedAt: '2026-03-21T00:00:00+03:30'
+    localDate: '2026-03-21'
+
+- id: ld-11-last-millisecond-before-midnight
+  rule: localDate
+  note: >-
+    One millisecond before Tehran midnight still belongs to March 20 (sub-second precision).
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-03-20T20:15:00Z'
+    completedAt: '2026-03-20T20:29:59.999Z'
+    now: '2026-03-20T20:31:00Z'
+  expected:
+    clampedAt: '2026-03-20T23:59:59.999+03:30'
+    localDate: '2026-03-20'
+
+- id: ld-12-payload-offset-is-ignored
+  rule: localDate
+  note: >-
+    Only the instant matters. completedAt was serialized with the device offset -07:00 (it reads as
+    May 10), but the session tz is Asia/Tehran, where that instant is 10:00 on May 11.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-05-11T06:20:00Z'
+    completedAt: '2026-05-10T23:30:00-07:00'
+    now: '2026-05-11T06:31:00Z'
+  expected:
+    clampedAt: '2026-05-11T10:00:00+03:30'
+    localDate: '2026-05-11'
+
+- id: ld-13-la-evening-is-next-day-in-utc
+  rule: localDate
+  note: >-
+    At 03:30Z the UTC date is already June 16, but in Los Angeles it is 20:30 on June 15. The date
+    comes from the session tz, never from UTC.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2026-06-16T03:15:00Z'
+    completedAt: '2026-06-16T03:30:00Z'
+    now: '2026-06-16T03:30:01Z'
+  expected:
+    clampedAt: '2026-06-15T20:30:00-07:00'
+    localDate: '2026-06-15'
+
+- id: ld-14-auckland-summer-ahead-of-utc
+  rule: localDate
+  note: >-
+    Auckland in January is NZDT (+13:00): 11:30Z on Jan 10 is 00:30 on Jan 11 locally.
+  input:
+    tz: Pacific/Auckland
+    startedAt: '2026-01-10T11:10:00Z'
+    completedAt: '2026-01-10T11:30:00Z'
+    now: '2026-01-10T11:30:02Z'
+  expected:
+    clampedAt: '2026-01-11T00:30:00+13:00'
+    localDate: '2026-01-11'
+
+- id: ld-15-auckland-winter-offset
+  rule: localDate
+  note: >-
+    Auckland in June is NZST (+12:00): 11:30Z on June 15 is 23:30 on June 15. Compare ld-14: the
+    same UTC time of day falls on different local dates by season.
+  input:
+    tz: Pacific/Auckland
+    startedAt: '2026-06-15T11:10:00Z'
+    completedAt: '2026-06-15T11:30:00Z'
+    now: '2026-06-15T11:31:00Z'
+  expected:
+    clampedAt: '2026-06-15T23:30:00+12:00'
+    localDate: '2026-06-15'
+
+- id: ld-16-la-after-spring-forward
+  rule: localDate
+  note: >-
+    US DST began 2026-03-08 at 02:00. On March 9 Los Angeles is -07:00, so 07:30Z is 00:30 on March
+    9. A stale -08:00 (PST) offset would wrongly give March 8.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2026-03-09T07:10:00Z'
+    completedAt: '2026-03-09T07:30:00Z'
+    now: '2026-03-09T07:31:00Z'
+  expected:
+    clampedAt: '2026-03-09T00:30:00-07:00'
+    localDate: '2026-03-09'
+
+- id: ld-17-la-after-fall-back
+  rule: localDate
+  note: >-
+    US DST ended 2025-11-02 at 02:00. That evening Los Angeles is -08:00, so 07:30Z on Nov 3 is
+    23:30 on Nov 2. A stale -07:00 (PDT) offset would wrongly give Nov 3.
+  input:
+    tz: America/Los_Angeles
+    startedAt: '2025-11-03T07:10:00Z'
+    completedAt: '2025-11-03T07:30:00Z'
+    now: '2025-11-03T07:31:00Z'
+  expected:
+    clampedAt: '2025-11-02T23:30:00-08:00'
+    localDate: '2025-11-02'
+
+- id: ld-18-london-late-commit-across-spring-forward
+  rule: localDate
+  note: >-
+    UK clocks went forward at 01:00Z on 2026-03-29. Completed 23:30 GMT on March 28, committed the
+    next morning on BST: use the offset in force at clampedAt (+00:00), not at now (+01:00, which
+    would give March 29).
+  input:
+    tz: Europe/London
+    startedAt: '2026-03-28T23:20:00Z'
+    completedAt: '2026-03-28T23:30:00Z'
+    now: '2026-03-29T09:00:00Z'
+  expected:
+    clampedAt: '2026-03-28T23:30:00+00:00'
+    localDate: '2026-03-28'
+
+- id: ld-19-london-late-commit-across-fall-back
+  rule: localDate
+  note: >-
+    UK clocks went back at 01:00Z on 2025-10-26. 23:30Z on Oct 25 was still BST, i.e. 00:30 on Oct
+    26 locally. The offset at now (GMT) would wrongly give Oct 25.
+  input:
+    tz: Europe/London
+    startedAt: '2025-10-25T23:10:00Z'
+    completedAt: '2025-10-25T23:30:00Z'
+    now: '2025-10-26T09:00:00Z'
+  expected:
+    clampedAt: '2025-10-26T00:30:00+01:00'
+    localDate: '2025-10-26'
+
+- id: ld-20-auckland-dst-end-night
+  rule: localDate
+  note: >-
+    NZ DST ended 2026-04-05 (03:00 NZDT -> 02:00 NZST, at 14:00Z on Apr 4). At 11:30Z on Apr 4
+    Auckland is still +13:00, i.e. 00:30 on Apr 5. A fixed +12:00 would give Apr 4.
+  input:
+    tz: Pacific/Auckland
+    startedAt: '2026-04-04T11:10:00Z'
+    completedAt: '2026-04-04T11:30:00Z'
+    now: '2026-04-04T11:31:00Z'
+  expected:
+    clampedAt: '2026-04-05T00:30:00+13:00'
+    localDate: '2026-04-05'
+
+- id: ld-21-auckland-dst-start-night
+  rule: localDate
+  note: >-
+    NZ DST began 2025-09-28 (02:00 NZST -> 03:00 NZDT, at 14:00Z on Sep 27). At 11:30Z on Sep 28
+    Auckland is +13:00, i.e. 00:30 on Sep 29. A stale +12:00 would give Sep 28.
+  input:
+    tz: Pacific/Auckland
+    startedAt: '2025-09-28T11:10:00Z'
+    completedAt: '2025-09-28T11:30:00Z'
+    now: '2025-09-28T11:31:00Z'
+  expected:
+    clampedAt: '2025-09-29T00:30:00+13:00'
+    localDate: '2025-09-29'
+
+- id: ld-22-tehran-has-no-dst
+  rule: localDate
+  note: >-
+    Iran abolished DST in 2022 (tzdata 2022b+), so Tehran is +03:30 all year: 20:15Z on July 1 is
+    23:45 on July 1. The old +04:30 summer rule would give July 2.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-07-01T20:00:00Z'
+    completedAt: '2026-07-01T20:15:00Z'
+    now: '2026-07-01T20:16:00Z'
+  expected:
+    clampedAt: '2026-07-01T23:45:00+03:30'
+    localDate: '2026-07-01'
+
+- id: ld-23-tehran-ahead-of-utc
+  rule: localDate
+  note: >-
+    At 22:30Z the UTC date is June 15, but Tehran (+03:30) is at 02:00 on June 16.
+  input:
+    tz: Asia/Tehran
+    startedAt: '2026-06-15T22:15:00Z'
+    completedAt: '2026-06-15T22:30:00Z'
+    now: '2026-06-15T22:31:00Z'
+  expected:
+    clampedAt: '2026-06-16T02:00:00+03:30'
+    localDate: '2026-06-16'
+
+- id: ld-24-device-clock-reset-to-epoch
+  rule: localDate
+  note: >-
+    A device whose clock was reset reports completedAt in 1970. It is clamped up to startedAt.
+  input:
+    tz: Europe/London
+    startedAt: '2026-02-01T18:00:00Z'
+    completedAt: '1970-01-01T00:00:00Z'
+    now: '2026-02-01T18:09:00Z'
+  expected:
+    clampedAt: '2026-02-01T18:00:00+00:00'
+    localDate: '2026-02-01'
+
+- id: ld-25-degenerate-now-before-startedAt
+  rule: localDate
+  note: >-
+    Degenerate server clock step-back (now < startedAt). This case pins the formula order
+    min(max(completedAt, startedAt), now): min is applied last, so clampedAt = now.
+  input:
+    tz: UTC
+    startedAt: '2026-05-10T12:00:05Z'
+    completedAt: '2026-05-10T12:03:00Z'
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    clampedAt: '2026-05-10T12:00:00Z'
+    localDate: '2026-05-10'
+
+- id: tz-01-first-change-accepted
+  rule: tzChange
+  note: >-
+    The profile has never changed tz (tzChangedAt null), so the first change is accepted and
+    tzChangedAt becomes now.
+  input:
+    profileTz: America/Los_Angeles
+    tzChangedAt: null
+    requestedTz: Asia/Tehran
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Asia/Tehran
+    tzChangedAt: '2026-05-10T12:00:00Z'
+    changed: true
+
+- id: tz-02-change-after-25h-accepted
+  rule: tzChange
+  note: >-
+    The last change was 25 hours ago (at least 24h), so the change is accepted.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: '2026-05-09T11:00:00Z'
+    requestedTz: Europe/London
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Europe/London
+    tzChangedAt: '2026-05-10T12:00:00Z'
+    changed: true
+
+- id: tz-03-exactly-24h-accepted
+  rule: tzChange
+  note: >-
+    Exactly 24 hours since the last change: the boundary is inclusive, so the change is accepted.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: '2026-05-09T12:00:00Z'
+    requestedTz: Europe/London
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Europe/London
+    tzChangedAt: '2026-05-10T12:00:00Z'
+    changed: true
+
+- id: tz-04-one-second-short-rejected
+  rule: tzChange
+  note: >-
+    23h59m59s since the last change: rejected. The old tz and tzChangedAt are kept.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: '2026-05-09T12:00:01Z'
+    requestedTz: Europe/London
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Asia/Tehran
+    tzChangedAt: '2026-05-09T12:00:01Z'
+    changed: false
+
+- id: tz-05-flip-flop-rejected
+  rule: tzChange
+  note: >-
+    Switched to Tehran 3 hours ago and now asks for Los Angeles (a way to game the streak).
+    Rejected, so Tehran stays.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: '2026-05-10T09:00:00Z'
+    requestedTz: America/Los_Angeles
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Asia/Tehran
+    tzChangedAt: '2026-05-10T09:00:00Z'
+    changed: false
+
+- id: tz-06-same-tz-is-not-a-change
+  rule: tzChange
+  note: >-
+    Every POST /api/sessions carries the browser tz. Re-sending the current tz is not a change:
+    nothing is written and the 24h window is not restarted.
+  input:
+    profileTz: Europe/London
+    tzChangedAt: '2026-05-10T11:00:00Z'
+    requestedTz: Europe/London
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Europe/London
+    tzChangedAt: '2026-05-10T11:00:00Z'
+    changed: false
+
+- id: tz-07-same-tz-never-changed
+  rule: tzChange
+  note: >-
+    The same tz on a profile that never changed keeps tzChangedAt null, so a later real change is
+    still accepted immediately.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: null
+    requestedTz: Asia/Tehran
+    now: '2026-05-10T12:00:00Z'
+  expected:
+    tz: Asia/Tehran
+    tzChangedAt: null
+    changed: false
+
+- id: tz-08-dst-short-day-rejected
+  rule: tzChange
+  note: >-
+    24h is elapsed time, not wall-clock time. From 12:00 PST on 2026-03-07 to 12:00 PDT on
+    2026-03-08 is only 23 hours (spring forward), so the change is rejected.
+  input:
+    profileTz: America/Los_Angeles
+    tzChangedAt: '2026-03-07T12:00:00-08:00'
+    requestedTz: Europe/London
+    now: '2026-03-08T12:00:00-07:00'
+  expected:
+    tz: America/Los_Angeles
+    tzChangedAt: '2026-03-07T12:00:00-08:00'
+    changed: false
+
+- id: tz-09-dst-long-day-accepted
+  rule: tzChange
+  note: >-
+    From 12:00 PDT on 2025-11-01 to 11:00 PST on 2025-11-02 is only 23 wall-clock hours but exactly
+    24 elapsed hours (fall back), so the change is accepted.
+  input:
+    profileTz: America/Los_Angeles
+    tzChangedAt: '2025-11-01T12:00:00-07:00'
+    requestedTz: Asia/Tehran
+    now: '2025-11-02T11:00:00-08:00'
+  expected:
+    tz: Asia/Tehran
+    tzChangedAt: '2025-11-02T11:00:00-08:00'
+    changed: true
+
+- id: tz-10-instants-not-wall-clock
+  rule: tzChange
+  note: >-
+    tzChangedAt 08:00+03:30 on May 10 is 04:30Z, and now is 06:00Z on May 11: 25.5h elapsed, so
+    accepted. Comparing wall-clock digits (08:00 vs 06:00) would wrongly reject it.
+  input:
+    profileTz: Asia/Tehran
+    tzChangedAt: '2026-05-10T08:00:00+03:30'
+    requestedTz: Pacific/Auckland
+    now: '2026-05-11T06:00:00Z'
+  expected:
+    tz: Pacific/Auckland
+    tzChangedAt: '2026-05-11T06:00:00Z'
+    changed: true

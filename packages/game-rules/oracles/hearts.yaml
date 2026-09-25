@@ -1,0 +1,540 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): hearts (LivesPolicy "hearts" and
+# "unlimited"). Config: hearts.max 5, regenMinutes 240, practiceReward 1.
+#
+# rule hearts: input {initial: LivesState, ops} -> expected {steps (one per op), final}.
+# ops run in order; `at` is server time:
+#   view    {at}                                   -> {count, nextRegenAt}  (read-only)
+#   mistake {at, sessionId, kind, attemptSeq}      -> {duplicate, count, updatedAt}
+#   commit  {at, sessionId, kind, wrongAttempts}   -> {extra, count, updatedAt}
+# units(t) = max(0, floor((t - updatedAt) / 240 min)), so clock skew never subtracts.
+# effective(t) = min(5, count + units(t)). Applying at t first materializes: c = effective(t);
+# updatedAt = t if c == 5, else it advances by whole units only.
+# nextRegenAt = null when effective is 5, else updatedAt + (units + 1) * 240 min.
+# mistake: a repeated (sessionId, attemptSeq) does nothing; otherwise lose 1 (floor 0), except
+#   that practice sessions never lose hearts.
+# commit: extra = max(0, wrongAttempts - distinct recorded events of that session) is reported
+#   for every commit and charged first, except for practice; then a practice session earns +1
+#   (cap 5). Policy unlimited never changes the state.
+
+- id: ht-01-full-stays-full
+  rule: hearts
+  note: >-
+    Full hearts stay at 5 however much time passes; nextRegenAt is null.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-04-29T08:00:00Z' }
+    ops:
+      - { op: view, at: '2026-05-01T08:00:00Z' }
+  expected:
+    steps:
+      - { count: 5, nextRegenAt: null }
+    final: { policy: hearts, count: 5, updatedAt: '2026-04-29T08:00:00Z' }
+
+- id: ht-02-regen-unit-boundary
+  rule: hearts
+  note: >-
+    One heart per full 240 minutes: nothing at 3h59m59s, +1 at exactly 4h.
+  input:
+    initial: { policy: hearts, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: view, at: '2026-05-01T11:59:59Z' }
+      - { op: view, at: '2026-05-01T12:00:00Z' }
+  expected:
+    steps:
+      - { count: 2, nextRegenAt: '2026-05-01T12:00:00Z' }
+      - { count: 3, nextRegenAt: '2026-05-01T16:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-03-multiple-units-then-cap
+  rule: hearts
+  note: >-
+    After 8.5h: +2 (floor). After 16h: capped at 5, nextRegenAt null.
+  input:
+    initial: { policy: hearts, count: 1, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: view, at: '2026-05-01T16:30:00Z' }
+      - { op: view, at: '2026-05-02T00:00:00Z' }
+      - { op: view, at: '2026-05-03T08:00:00Z' }
+  expected:
+    steps:
+      - { count: 3, nextRegenAt: '2026-05-01T20:00:00Z' }
+      - { count: 5, nextRegenAt: null }
+      - { count: 5, nextRegenAt: null }
+    final: { policy: hearts, count: 1, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-04-regen-counts-elapsed-time-across-dst
+  rule: hearts
+  note: >-
+    Regen counts elapsed time, not wall-clock time. 01:00 PST -> 05:00 PDT on 2026-03-08 is 4
+    wall-clock hours but only 3 elapsed hours, so no heart yet. One arrives at 06:00 PDT.
+  input:
+    initial: { policy: hearts, count: 2, updatedAt: '2026-03-08T01:00:00-08:00' }
+    ops:
+      - { op: view, at: '2026-03-08T05:00:00-07:00' }
+      - { op: view, at: '2026-03-08T06:00:00-07:00' }
+  expected:
+    steps:
+      - { count: 2, nextRegenAt: '2026-03-08T06:00:00-07:00' }
+      - { count: 3, nextRegenAt: '2026-03-08T17:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-03-08T01:00:00-08:00' }
+
+- id: ht-05-loss-at-full-restarts-clock
+  rule: hearts
+  note: >-
+    Losing a heart at full sets updatedAt = t, even though the stored updatedAt was days old. The
+    next heart is due 240 min after the loss.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-04-28T19:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: view, at: '2026-05-01T12:59:00Z' }
+      - { op: view, at: '2026-05-01T13:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { count: 4, nextRegenAt: '2026-05-01T13:00:00Z' }
+      - { count: 5, nextRegenAt: null }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-06-loss-keeps-partial-progress
+  rule: hearts
+  note: >-
+    At 13:00 one heart has regenerated (08:00 -> 12:00), so the state is materialized to 4 @ 12:00
+    and then drops to 3. The 60 minutes of progress since 12:00 are kept, so the next heart is due
+    at 16:00, not 17:00.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T13:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: view, at: '2026-05-01T15:59:00Z' }
+      - { op: view, at: '2026-05-01T16:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T12:00:00Z' }
+      - { count: 3, nextRegenAt: '2026-05-01T16:00:00Z' }
+      - { count: 4, nextRegenAt: '2026-05-01T20:00:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T12:00:00Z' }
+
+- id: ht-07-loss-at-zero
+  rule: hearts
+  note: >-
+    A mistake at 0 hearts stays at 0 and does not reset the regen clock. A later mistake after a
+    heart has regenerated (12:10) materializes 1 @ 12:00 and spends it, keeping the 10 minutes of
+    progress.
+  input:
+    initial: { policy: hearts, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:40:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T12:10:00Z', sessionId: s1, kind: lesson, attemptSeq: 2 }
+      - { op: view, at: '2026-05-01T16:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: false, count: 0, updatedAt: '2026-05-01T12:00:00Z' }
+      - { count: 1, nextRegenAt: '2026-05-01T20:00:00Z' }
+    final: { policy: hearts, count: 0, updatedAt: '2026-05-01T12:00:00Z' }
+
+- id: ht-08-regen-reaches-full-then-loss
+  rule: hearts
+  note: >-
+    By 16:00 two hearts have regenerated (3 -> 5 = full), so updatedAt = t before the loss.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T16:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T16:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T16:00:00Z' }
+
+- id: ht-09-regen-overflow-discarded
+  rule: hearts
+  note: >-
+    By 18:00 there are 2 units (3 -> 5 would be 6, capped at 5). Being full, updatedAt = 18:00, so
+    the overflow progress is discarded and the next heart after the loss is due at 22:00.
+  input:
+    initial: { policy: hearts, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T18:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: view, at: '2026-05-01T21:59:00Z' }
+      - { op: view, at: '2026-05-01T22:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T18:00:00Z' }
+      - { count: 4, nextRegenAt: '2026-05-01T22:00:00Z' }
+      - { count: 5, nextRegenAt: null }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T18:00:00Z' }
+
+- id: ht-10-three-mistakes-one-session
+  rule: hearts
+  note: >-
+    Each distinct attemptSeq costs one heart. Only the first loss (from full) moves updatedAt.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-04-30T20:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:01:00Z', sessionId: s1, kind: lesson, attemptSeq: 2 }
+      - { op: mistake, at: '2026-05-01T09:03:00Z', sessionId: s1, kind: lesson, attemptSeq: 3 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-11-duplicate-event-ignored
+  rule: hearts
+  note: >-
+    The outbox re-sends (s1, 1). The duplicate does nothing (duplicate true).
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:00:05Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: true, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-12-requeued-retry-costs-again
+  rule: hearts
+  note: >-
+    A network retry of (s1, 3) is a duplicate. The re-queued challenge answered wrong again gets a
+    new attemptSeq (7) and costs a heart.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:02:00Z', sessionId: s1, kind: lesson, attemptSeq: 3 }
+      - { op: mistake, at: '2026-05-01T09:02:30Z', sessionId: s1, kind: lesson, attemptSeq: 3 }
+      - { op: mistake, at: '2026-05-01T09:05:00Z', sessionId: s1, kind: lesson, attemptSeq: 7 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:02:00Z' }
+      - { duplicate: true, count: 4, updatedAt: '2026-05-01T09:02:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:02:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T09:02:00Z' }
+
+- id: ht-13-same-seq-different-sessions
+  rule: hearts
+  note: >-
+    Idempotency is keyed on (sessionId, attemptSeq): seq 1 in two sessions is two events.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T10:00:00Z', sessionId: s2, kind: lesson, attemptSeq: 1 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-14-duplicate-does-not-materialize
+  rule: hearts
+  note: >-
+    A duplicate does nothing at all: even 5 hours later the stored state is not re-materialized. The
+    view still shows the regenerated heart.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T13:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: view, at: '2026-05-01T13:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: true, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+      - { count: 3, nextRegenAt: '2026-05-01T16:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-15-commit-charges-unrecorded-wrongs
+  rule: hearts
+  note: >-
+    The server re-grade finds 3 wrong attempts but only 1 event arrived, so extra = 2 more hearts
+    are charged at commit.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: commit, at: '2026-05-01T09:06:00Z', sessionId: s1, kind: lesson, wrongAttempts: 3 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { extra: 2, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-16-commit-counts-distinct-events
+  rule: hearts
+  note: >-
+    Two distinct events plus one duplicate, and 2 graded wrongs: extra = 2 - 2 = 0.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:00:10Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:02:00Z', sessionId: s1, kind: lesson, attemptSeq: 2 }
+      - { op: commit, at: '2026-05-01T09:05:00Z', sessionId: s1, kind: lesson, wrongAttempts: 2 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: true, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+      - { extra: 0, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-17-commit-offline-session
+  rule: hearts
+  note: >-
+    Offline session: no events arrived. All 3 graded wrongs are charged at commit, starting from
+    full (updatedAt = commit time).
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T06:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:10:00Z', sessionId: s1, kind: lesson, wrongAttempts: 3 }
+  expected:
+    steps:
+      - { extra: 3, count: 2, updatedAt: '2026-05-01T09:10:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T09:10:00Z' }
+
+- id: ht-18-commit-floors-at-zero
+  rule: hearts
+  note: >-
+    extra 4 with 1 heart left: the count floors at 0 and updatedAt stays as materialized.
+  input:
+    initial: { policy: hearts, count: 1, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, wrongAttempts: 4 }
+  expected:
+    steps:
+      - { extra: 4, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: hearts, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-19-commit-never-refunds
+  rule: hearts
+  note: >-
+    Two events were recorded but the re-grade finds only 1 wrong: extra is clamped to 0. Hearts
+    already lost are never refunded.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:01:00Z', sessionId: s1, kind: lesson, attemptSeq: 2 }
+      - { op: commit, at: '2026-05-01T09:05:00Z', sessionId: s1, kind: lesson, wrongAttempts: 1 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+      - { extra: 0, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-20-commit-counts-only-its-session
+  rule: hearts
+  note: >-
+    Events from session s2 do not count toward s1: extra = 2 graded - 1 event of s1 = 1.
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T10:00:00Z', sessionId: s2, kind: lesson, attemptSeq: 1 }
+      - { op: commit, at: '2026-05-01T10:05:00Z', sessionId: s1, kind: lesson, wrongAttempts: 2 }
+  expected:
+    steps:
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T09:00:00Z' }
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T09:00:00Z' }
+      - { extra: 1, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T09:00:00Z' }
+
+- id: ht-21-practice-earns-one-keeps-progress
+  rule: hearts
+  note: >-
+    Completing a practice session earns +1. Partial regen progress (100 min) is kept, so the next
+    heart still arrives at 12:00.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:40:00Z', sessionId: p1, kind: practice, wrongAttempts: 0 }
+      - { op: view, at: '2026-05-01T12:00:00Z' }
+  expected:
+    steps:
+      - { extra: 0, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+      - { count: 5, nextRegenAt: null }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-22-practice-reward-capped
+  rule: hearts
+  note: >-
+    Practice at full hearts: capped at 5, updatedAt = t (materialized while full).
+  input:
+    initial: { policy: hearts, count: 5, updatedAt: '2026-04-30T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T08:00:00Z', sessionId: p1, kind: practice, wrongAttempts: 0 }
+  expected:
+    steps:
+      - { extra: 0, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: hearts, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-23-practice-after-regen
+  rule: hearts
+  note: >-
+    At 12:10 one heart has regenerated (2 -> 3 @ 12:00). Practice adds +1 -> 4 and the 10 minutes of
+    progress are kept.
+  input:
+    initial: { policy: hearts, count: 2, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T12:10:00Z', sessionId: p1, kind: practice, wrongAttempts: 0 }
+  expected:
+    steps:
+      - { extra: 0, count: 4, updatedAt: '2026-05-01T12:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T12:00:00Z' }
+
+- id: ht-24-practice-from-four-to-full
+  rule: hearts
+  note: >-
+    Practice brings 4 -> 5 and updatedAt stays as materialized (08:00). That value is irrelevant
+    while full: the next loss materializes 5 and sets updatedAt = t.
+  input:
+    initial: { policy: hearts, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:40:00Z', sessionId: p1, kind: practice, wrongAttempts: 0 }
+      - { op: view, at: '2026-05-01T10:00:00Z' }
+      - { op: mistake, at: '2026-05-01T11:00:00Z', sessionId: s2, kind: lesson, attemptSeq: 1 }
+  expected:
+    steps:
+      - { extra: 0, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+      - { count: 5, nextRegenAt: null }
+      - { duplicate: false, count: 4, updatedAt: '2026-05-01T11:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T11:00:00Z' }
+
+- id: ht-25-practice-commit-charges-nothing
+  rule: hearts
+  note: >-
+    Practice is exempt from heart loss: the 2 unrecorded wrong attempts are still reported (extra 2)
+    but cost nothing, and completion earns +1 (3 -> 4).
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:00:00Z', sessionId: p1, kind: practice, wrongAttempts: 2 }
+  expected:
+    steps:
+      - { extra: 2, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-26-practice-mistake-events-are-free
+  rule: hearts
+  note: >-
+    A wrong answer in practice is recorded (idempotency still applies) but costs no heart.
+    Completion earns +1 (3 -> 4).
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: p1, kind: practice, attemptSeq: 1 }
+      - { op: commit, at: '2026-05-01T09:05:00Z', sessionId: p1, kind: practice, wrongAttempts: 1 }
+  expected:
+    steps:
+      - { duplicate: false, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+      - { extra: 0, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: hearts, count: 4, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-27-lesson-commit-earns-nothing
+  rule: hearts
+  note: >-
+    Only practice earns a heart. A clean lesson commit leaves hearts as they were.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T08:30:00Z', sessionId: s1, kind: lesson, wrongAttempts: 0 }
+  expected:
+    steps:
+      - { extra: 0, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: hearts, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-28-unlimited-never-changes
+  rule: hearts
+  note: >-
+    Zaboon Plus (policy unlimited): events are still de-duplicated, but hearts never change,
+    including at commit.
+  input:
+    initial: { policy: unlimited, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:00:05Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:01:00Z', sessionId: s1, kind: lesson, attemptSeq: 2 }
+      - { op: commit, at: '2026-05-01T09:05:00Z', sessionId: s1, kind: lesson, wrongAttempts: 4 }
+  expected:
+    steps:
+      - { duplicate: false, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: true, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: false, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+      - { extra: 2, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: unlimited, count: 5, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-29-unlimited-practice-no-reward
+  rule: hearts
+  note: >-
+    Unlimited: practice completion does not change the stored hearts either.
+  input:
+    initial: { policy: unlimited, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: commit, at: '2026-05-01T09:00:00Z', sessionId: p1, kind: practice, wrongAttempts: 0 }
+  expected:
+    steps:
+      - { extra: 0, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+    final: { policy: unlimited, count: 3, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-30-practice-from-zero-ends-at-one
+  rule: hearts
+  note: >-
+    At 0 hearts the user practises to earn one back. The wrong answers (two events, one duplicate,
+    one never recorded) cost nothing, and completion earns +1, ending at 1. The regen clock (08:00)
+    keeps running, so a second heart arrives at 12:00.
+  input:
+    initial: { policy: hearts, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:00:00Z', sessionId: p1, kind: practice, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:00:05Z', sessionId: p1, kind: practice, attemptSeq: 1 }
+      - { op: mistake, at: '2026-05-01T09:03:00Z', sessionId: p1, kind: practice, attemptSeq: 2 }
+      - { op: commit, at: '2026-05-01T09:10:00Z', sessionId: p1, kind: practice, wrongAttempts: 3 }
+      - { op: view, at: '2026-05-01T12:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: true, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+      - { duplicate: false, count: 0, updatedAt: '2026-05-01T08:00:00Z' }
+      - { extra: 1, count: 1, updatedAt: '2026-05-01T08:00:00Z' }
+      - { count: 2, nextRegenAt: '2026-05-01T16:00:00Z' }
+    final: { policy: hearts, count: 1, updatedAt: '2026-05-01T08:00:00Z' }
+
+- id: ht-31-clock-skew-view
+  rule: hearts
+  note: >-
+    Clock skew: the view is taken 30 min before updatedAt. Regenerated units clamp to 0, so the
+    count stays 2 and the next heart is still due at updatedAt + 240 min. Without the clamp,
+    floor(-30/240) = -1 would wrongly show 1.
+  input:
+    initial: { policy: hearts, count: 2, updatedAt: '2026-05-01T10:00:00Z' }
+    ops:
+      - { op: view, at: '2026-05-01T09:30:00Z' }
+      - { op: view, at: '2026-05-01T14:00:00Z' }
+  expected:
+    steps:
+      - { count: 2, nextRegenAt: '2026-05-01T14:00:00Z' }
+      - { count: 3, nextRegenAt: '2026-05-01T18:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T10:00:00Z' }
+
+- id: ht-32-clock-skew-loss
+  rule: hearts
+  note: >-
+    Clock skew: a mistake stamped 1 min before updatedAt. Units clamp to 0, so it costs exactly one
+    heart (3 -> 2) and updatedAt stays 10:00. Without the clamp the state would drop to 1 @ 06:00.
+  input:
+    initial: { policy: hearts, count: 3, updatedAt: '2026-05-01T10:00:00Z' }
+    ops:
+      - { op: mistake, at: '2026-05-01T09:59:00Z', sessionId: s1, kind: lesson, attemptSeq: 1 }
+      - { op: view, at: '2026-05-01T13:59:00Z' }
+      - { op: view, at: '2026-05-01T14:00:00Z' }
+  expected:
+    steps:
+      - { duplicate: false, count: 2, updatedAt: '2026-05-01T10:00:00Z' }
+      - { count: 2, nextRegenAt: '2026-05-01T14:00:00Z' }
+      - { count: 3, nextRegenAt: '2026-05-01T18:00:00Z' }
+    final: { policy: hearts, count: 2, updatedAt: '2026-05-01T10:00:00Z' }

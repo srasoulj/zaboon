@@ -229,12 +229,20 @@ importers:
       '@persian-tools/persian-tools':
         specifier: 4.0.4
         version: 4.0.4
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/game-rules:
     dependencies:
       '@zaboon/contracts':
         specifier: workspace:*
         version: link:../contracts
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/grader:
     dependencies:
@@ -247,6 +255,10 @@ importers:
       '@zaboon/farsi':
         specifier: workspace:*
         version: link:../farsi
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/session-engine:
     dependencies:
@@ -265,6 +277,10 @@ importers:
       '@zaboon/srs':
         specifier: workspace:*
         version: link:../srs
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/srs:
     dependencies:
@@ -274,6 +290,10 @@ importers:
       ts-fsrs:
         specifier: 5.4.2
         version: 5.4.2
+    devDependencies:
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
 
   packages/ui:
     dependencies:
@@ -302,18 +322,21 @@ importers:
       '@zaboon/content-schema':
         specifier: workspace:*
         version: link:../../packages/content-schema
+      '@zaboon/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@zaboon/farsi':
         specifier: workspace:*
         version: link:../../packages/farsi
       '@zaboon/grader':
         specifier: workspace:*
         version: link:../../packages/grader
-      '@zaboon/session-engine':
-        specifier: workspace:*
-        version: link:../../packages/session-engine
       commander:
         specifier: 15.0.0
         version: 15.0.0
+      drizzle-orm:
+        specifier: 0.45.3
+        version: 0.45.3(postgres@3.4.9)
       sharp:
         specifier: 0.35.4
         version: 0.35.4(@types/node@22.20.4)

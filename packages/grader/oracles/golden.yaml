@@ -1,0 +1,3216 @@
+# ORACLE: packages/grader golden grading cases -- READ-ONLY, owned by the orchestrator.
+# Workers implementing packages/grader (and packages/farsi) must make every case pass and must not
+# edit this file. Field reference and comparison rules: packages/grader/oracles/README.md.
+# Rules (docs/LEARNING-ENGINE.md sections 3 and 7, as pinned by the orchestrator):
+#   correct  - exact DAG match after normalization (Persian: looseKey, in which a written ezāfe ه‌ی
+#              folds to ه like ۀ/هٔ; English: lowercase, U+2019/U+2018/U+02BC read as ASCII ', strip
+#              punctuation, expand I'm/you're/it's/don't/can't/I'd, US/UK spellings, number words = digits).
+#   typo     - a small edit inside one token: <=1 edit for tokens of 4+ letters, <=2 for 8+, none for
+#              shorter tokens; mixing up آ and ا is a typo at any length. A typo whose result is
+#              exactly a `lexicon` word is wrong.
+#   spelling - one Persian letter of a token swapped for a same-sound letter (ز ذ ض ظ / س ص ث / ت ط /
+#              ه ح / غ ق) at any length; this takes precedence over the typo rule. It is wrong instead
+#              when the swapped token is in `lexicon`.
+#   negation - adding or removing the negative prefix ن (نمی‌ / نمی / ن) on a verb is wrong in every
+#              mode, never a typo, although it is one edit.
+#   wrong    - any wrong, missing or extra token. Verdict = worst operation on the minimum-cost path.
+#   merges   - faFormal: per-token alternatives when its token count equals the pattern's (so mixed
+#              register is accepted), otherwise an extra pattern; pronoun drop applies to every pattern;
+#              variant sets are symmetric and may span several tokens.
+#   bank     - exact membership in the same merged DAG; never typo or spelling.
+# Cases avoid anything the rules leave open (edit metric, whose length sets the limit, typo-vs-
+# spelling ranking, exact costs); `closest` is given only when one best path wins under any
+# reasonable cost weights.
+# Escapes: strings are YAML double-quoted; ZWNJ is written \u200C and every other invisible
+# character, combining mark, look-alike Arabic letter/digit or typographic apostrophe is a \uXXXX escape.
+
+- id: g001
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Cخوام"
+  expect: correct
+  closest: "من آب می\u200Cخوام"
+  note: "canonical colloquial answer"
+
+- id: g002
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب می\u200Cخوام"
+  expect: correct
+  closest: "آب می\u200Cخوام"
+  note: "pronoun drop: sentence-initial من is optional"
+
+- id: g003
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب میخوام"
+  expect: correct
+  closest: "آب می\u200Cخوام"
+  note: "pronoun drop + missing ZWNJ (closest keeps the learner's choice to drop من)"
+
+- id: g004
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می خوام"
+  expect: correct
+  note: "space instead of ZWNJ after the prefix می"
+
+- id: g005
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Cخواهم"
+  expect: correct
+  closest: "من آب می\u200Cخواهم"
+  note: "formal register (faFormal) is merged; closest is in the formal register the learner used"
+
+- id: g006
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب میخواهم"
+  expect: correct
+  closest: "آب می\u200Cخواهم"
+  note: "formal register + pronoun drop + missing ZWNJ"
+
+- id: g007
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب م\u064A\u200Cخوام"
+  expect: correct
+  note: "Arabic yeh U+064A in the verb"
+
+- id: g008
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "م\u064Eن آب می\u200Cخوام"
+  expect: correct
+  note: "harakat (fatha) typed on من are ignored"
+
+- id: g009
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Cخوام."
+  expect: correct
+  note: "trailing period ignored"
+
+- id: g010
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من\u00A0آب  می\u200Cخوام"
+  expect: correct
+  note: "NBSP and a double space"
+
+- id: g011
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "\u200Fمن آب می\u200Cخوام\u200F"
+  expect: correct
+  note: "RLM bidi marks around the answer"
+
+- id: g012
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Dخوام"
+  expect: correct
+  note: "ZWJ instead of ZWNJ is removed by normalization"
+
+- id: g013
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "ا\u0653ب می\u200Cخوام"
+  expect: correct
+  note: "decomposed آ (alef + madda above) is composed by NFC"
+
+- id: g014
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من نون می\u200Cخوام"
+  expect: wrong
+  closest: "من آب می\u200Cخوام"
+  note: "wrong noun (bread instead of water)"
+
+- id: g015
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "نون می\u200Cخوام"
+  expect: wrong
+  closest: "آب می\u200Cخوام"
+  note: "wrong noun; closest follows the dropped pronoun"
+
+- id: g016
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من نان می\u200Cخواهم"
+  expect: wrong
+  closest: "من آب می\u200Cخواهم"
+  note: "wrong noun in a formal answer: closest is rendered in the formal register"
+
+- id: g017
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "اب میخوام"
+  expect: typo
+  closest: "آب می\u200Cخوام"
+  note: "آ typed as ا: a typo at any word length (آب has 2 letters)"
+
+- id: g018
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من اب می\u200Cخواهم"
+  expect: typo
+  closest: "من آب می\u200Cخواهم"
+  note: "آ/ا typo in a formal answer"
+
+- id: g019
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "می\u200Cخوام آب"
+  expect: wrong
+  note: "word order: the verb must come last"
+
+- id: g020
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب من می\u200Cخوام"
+  expect: wrong
+  closest: "آب می\u200Cخوام"
+  note: "the pronoun is optional only sentence-initially; here it is an extra token"
+
+- id: g021
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب نون می\u200Cخوام"
+  expect: wrong
+  closest: "من آب می\u200Cخوام"
+  note: "extra token"
+
+- id: g022
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من water می\u200Cخوام"
+  expect: wrong
+  closest: "من آب می\u200Cخوام"
+  note: "English word in a Persian answer"
+
+- id: g023
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب"
+  expect: wrong
+  note: "missing verb"
+
+- id: g024
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "man ab mikham"
+  expect: wrong
+  note: "Finglish (Latin transliteration) is not Persian script"
+
+- id: g025
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: ""
+  expect: wrong
+  note: "empty answer"
+
+- id: g026
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب می\u200Cخام"
+  expect: typo
+  closest: "آب می\u200Cخوام"
+  note: "without the variant set, می\u200Cخام is one deletion from می\u200Cخوام (6 letters)"
+
+- id: g027
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  variants: [["می\u200Cخوام", "می\u200Cخام"]]
+  answer: "آب می\u200Cخام"
+  expect: correct
+  note: "orthography variant می\u200Cخوام/می\u200Cخام merged"
+
+- id: g028
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  variants: [["می\u200Cخوام", "می\u200Cخام"]]
+  answer: "من آب میخام"
+  expect: correct
+  note: "variant + missing ZWNJ"
+
+- id: g029
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  pronounDrop: false
+  answer: "آب می\u200Cخوام"
+  expect: wrong
+  closest: "من آب می\u200Cخوام"
+  note: "pronounDrop: false keeps من required (contrastive emphasis)"
+
+- id: g030
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  pronounDrop: false
+  answer: "من آب میخواهم"
+  expect: correct
+  note: "pronounDrop: false still accepts the full formal sentence"
+
+- id: g031
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  answer: "من آب می\u200Cخواهم"
+  expect: typo
+  closest: "من آب می\u200Cخوام"
+  note: "no faFormal given: the formal verb is just one edit (ه) from the colloquial one"
+
+- id: g032
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Cخوام"
+  expect: correct
+  note: "word bank: canonical tiles"
+
+- id: g033
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب می\u200Cخوام"
+  expect: correct
+  note: "word bank: pronoun drop is part of the DAG"
+
+- id: g034
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب می\u200Cخواهم"
+  expect: correct
+  note: "word bank: the formal register is part of the DAG"
+
+- id: g035
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب من می\u200Cخوام"
+  expect: wrong
+  note: "word bank: wrong order"
+
+- id: g036
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من نون می\u200Cخوام"
+  expect: wrong
+  note: "word bank: distractor tile"
+
+- id: g037
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "من آب"
+  expect: wrong
+  note: "word bank: missing tile"
+
+- id: g038
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "اب می\u200Cخوام"
+  expect: wrong
+  note: "word bank: no typo leniency, even for آ/ا"
+
+- id: g039
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  formal: "من آب می\u200Cخواهم"
+  answer: "آب می\u200Cخام"
+  expect: wrong
+  note: "word bank: an unlisted spelling is wrong (no variant set given)"
+
+- id: g040
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "نمیدونم"
+  expect: correct
+  closest: "نمی\u200Cدونم"
+  note: "pronoun drop + missing ZWNJ"
+
+- id: g041
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "نمی دونم"
+  expect: correct
+  note: "space after the prefix نمی"
+
+- id: g042
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "من نمی\u200Cدانم"
+  expect: correct
+  closest: "من نمی\u200Cدانم"
+  note: "formal register"
+
+- id: g043
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "نمی\u200Cدانم."
+  expect: correct
+  note: "formal + pronoun drop + period"
+
+- id: g044
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "من نم\u064Aدونم"
+  expect: correct
+  note: "Arabic yeh and no ZWNJ"
+
+- id: g045
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "من نمی\u200Cدنم"
+  expect: typo
+  note: "one deletion in a 7-letter token (matches either register, so no closest)"
+
+- id: g046
+  lang: fa
+  mode: bank
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "نمی\u200Cدونم"
+  expect: correct
+  note: "word bank: pronoun drop"
+
+- id: g047
+  lang: fa
+  mode: bank
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "من نمی\u200Cدانم"
+  expect: correct
+  note: "word bank: formal tiles"
+
+- id: g048
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "سلام!"
+  expect: correct
+  note: "exclamation mark ignored"
+
+- id: g049
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "«سلام»"
+  expect: correct
+  note: "guillemets ignored"
+
+- id: g050
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "س\u0640لام"
+  expect: correct
+  note: "tatweel ignored"
+
+- id: g051
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "س\u064Eلام"
+  expect: correct
+  note: "fatha ignored"
+
+- id: g052
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "\u202Bسلام\u202C"
+  expect: correct
+  note: "RLE/PDF bidi controls ignored"
+
+- id: g053
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "صلام"
+  expect: spelling
+  closest: "سلام"
+  note: "same-sound swap س→ص: spelling (takes precedence over the 4-letter typo rule)"
+
+- id: g054
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "ثلام"
+  expect: spelling
+  closest: "سلام"
+  note: "same-sound swap س→ث"
+
+- id: g055
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "سلاام"
+  expect: typo
+  closest: "سلام"
+  note: "one inserted letter in a 4-letter word"
+
+- id: g056
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام"
+  answer: "خداحافظ"
+  expect: wrong
+  closest: "سلام"
+  note: "goodbye instead of hello"
+
+- id: g057
+  lang: fa
+  mode: bank
+  accept:
+    - "سلام"
+  answer: "صلام"
+  expect: wrong
+  note: "word bank: no spelling leniency"
+
+- id: g058
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  answer: "خداحافظ!"
+  expect: correct
+  note: "exclamation mark ignored"
+
+- id: g059
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  answer: "خداحافز"
+  expect: spelling
+  closest: "خداحافظ"
+  note: "same-sound swap ظ→ز"
+
+- id: g060
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  answer: "خداهافظ"
+  expect: spelling
+  closest: "خداحافظ"
+  note: "same-sound swap ح→ه"
+
+- id: g061
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  answer: "خدافظ"
+  expect: wrong
+  closest: "خداحافظ"
+  note: "two deletions in a 7-letter word exceed the typo limit (no variant set given)"
+
+- id: g062
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  variants: [["خداحافظ", "خدافظ"]]
+  answer: "خدافظ"
+  expect: correct
+  note: "the informal spelling is accepted once listed as an orthography variant"
+
+- id: g063
+  lang: fa
+  mode: typed
+  accept:
+    - "خداحافظ"
+  variants: [["خداحافظ", "خدا حافظ"]]
+  answer: "خدا حافظ"
+  expect: correct
+  note: "a multi-word orthography variant"
+
+- id: g064
+  lang: fa
+  mode: bank
+  accept:
+    - "خداحافظ"
+  answer: "خدافظ"
+  expect: wrong
+  note: "word bank: no typo leniency"
+
+- id: g065
+  lang: fa
+  mode: typed
+  accept:
+    - "مرسی"
+  answer: "مرس\u0649"
+  expect: correct
+  note: "alef maksura U+0649 for final yeh"
+
+- id: g066
+  lang: fa
+  mode: typed
+  accept:
+    - "مرسی"
+  answer: "مرثی"
+  expect: spelling
+  closest: "مرسی"
+  note: "same-sound swap س→ث"
+
+- id: g067
+  lang: fa
+  mode: typed
+  accept:
+    - "بفرمایید"
+  answer: "بفرمائید"
+  expect: correct
+  note: "ئی folds to یی"
+
+- id: g068
+  lang: fa
+  mode: typed
+  accept:
+    - "بفرمایید"
+  answer: "بفرما\u064Aید"
+  expect: correct
+  note: "Arabic yeh in the middle of the word"
+
+- id: g069
+  lang: fa
+  mode: typed
+  accept:
+    - "بفرمایید"
+  answer: "بفرمیید"
+  expect: typo
+  closest: "بفرمایید"
+  note: "one deletion in an 8-letter word"
+
+- id: g070
+  lang: fa
+  mode: typed
+  accept:
+    - "حالت چطوره؟"
+  formal: "حالت چطور است؟"
+  answer: "حالت چطوره"
+  expect: correct
+  note: "question mark optional"
+
+- id: g071
+  lang: fa
+  mode: typed
+  accept:
+    - "حالت چطوره؟"
+  formal: "حالت چطور است؟"
+  answer: "حالت چطور است"
+  expect: correct
+  closest: "حالت چطور است؟"
+  note: "formal register with a different token count is merged as its own pattern"
+
+- id: g072
+  lang: fa
+  mode: typed
+  accept:
+    - "حالت چطوره؟"
+  formal: "حالت چطور است؟"
+  lexicon: ["هال"]
+  answer: "هالت چطوره"
+  expect: spelling
+  closest: "حالت چطوره؟"
+  note: "ح→ه gives هالت, which is not in the lexicon (only هال is): still spelling"
+
+- id: g073
+  lang: fa
+  mode: typed
+  accept:
+    - "حالت چطوره؟"
+  formal: "حالت چطور است؟"
+  answer: "حالت چتوره؟"
+  expect: spelling
+  closest: "حالت چطوره؟"
+  note: "same-sound swap ط→ت"
+
+- id: g074
+  lang: fa
+  mode: typed
+  accept:
+    - "سلام، حالت چطوره؟"
+  answer: "صلام، هالت چطوره؟"
+  expect: spelling
+  closest: "سلام، حالت چطوره؟"
+  note: "two tokens each with one same-sound swap: verdict stays spelling"
+
+- id: g075
+  lang: fa
+  mode: typed
+  accept:
+    - "صبح بخیر"
+  answer: "سبح بخیر"
+  expect: spelling
+  closest: "صبح بخیر"
+  note: "same-sound swap ص→س"
+
+- id: g076
+  lang: fa
+  mode: typed
+  accept:
+    - "صبح بخیر"
+  answer: "صبه بخیر"
+  expect: spelling
+  closest: "صبح بخیر"
+  note: "same-sound swap ح→ه"
+
+- id: g077
+  lang: fa
+  mode: typed
+  accept:
+    - "صبح بخیر"
+  variants: [["بخیر", "به خیر"]]
+  answer: "صبح به خیر"
+  expect: correct
+  note: "the two-word spelling is accepted as an orthography variant"
+
+- id: g078
+  lang: fa
+  mode: typed
+  accept:
+    - "ظهر بخیر"
+  lexicon: ["زهر"]
+  answer: "زهر بخیر"
+  expect: wrong
+  closest: "ظهر بخیر"
+  note: "ظ→ز lands on زهر \"poison\", another course word"
+
+- id: g079
+  lang: fa
+  mode: typed
+  accept:
+    - "ظهر بخیر"
+  lexicon: ["زهر"]
+  answer: "ضهر بخیر"
+  expect: spelling
+  closest: "ظهر بخیر"
+  note: "ظ→ض is not a lexicon word"
+
+- id: g080
+  lang: fa
+  mode: typed
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  lexicon: ["سد"]
+  answer: "سد تومن"
+  expect: wrong
+  closest: "صد تومن"
+  note: "ص→س lands on سد \"dam\", another course word"
+
+- id: g081
+  lang: fa
+  mode: typed
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  answer: "سد تومن"
+  expect: spelling
+  closest: "صد تومن"
+  note: "the same swap is only a spelling slip when سد is not a course word"
+
+- id: g082
+  lang: fa
+  mode: typed
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  lexicon: ["سد"]
+  answer: "ثد تومن"
+  expect: spelling
+  closest: "صد تومن"
+  note: "ص→ث does not produce a lexicon word"
+
+- id: g083
+  lang: fa
+  mode: typed
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  answer: "صد تومان"
+  expect: correct
+  closest: "صد تومان"
+  note: "formal register"
+
+- id: g084
+  lang: fa
+  mode: typed
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  lexicon: ["سد"]
+  answer: "سد تومان"
+  expect: wrong
+  closest: "صد تومان"
+  note: "lexicon collision in a formal answer; closest in the formal register"
+
+- id: g085
+  lang: fa
+  mode: bank
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  lexicon: ["سد"]
+  answer: "سد تومن"
+  expect: wrong
+  note: "word bank: lexicon collision"
+
+- id: g086
+  lang: fa
+  mode: bank
+  accept:
+    - "صد تومن"
+  formal: "صد تومان"
+  answer: "سد تومن"
+  expect: wrong
+  note: "word bank: no spelling leniency even without a lexicon collision"
+
+- id: g087
+  lang: fa
+  mode: typed
+  accept:
+    - "صفر"
+  lexicon: ["سفر"]
+  answer: "سفر"
+  expect: wrong
+  closest: "صفر"
+  note: "ص→س lands on سفر \"trip\""
+
+- id: g088
+  lang: fa
+  mode: typed
+  accept:
+    - "شصت"
+  lexicon: ["شست"]
+  answer: "شست"
+  expect: wrong
+  closest: "شصت"
+  note: "ص→س lands on شست \"thumb\""
+
+- id: g089
+  lang: fa
+  mode: typed
+  accept:
+    - "شصت"
+  answer: "شثت"
+  expect: spelling
+  closest: "شصت"
+  note: "ص→ث, not a course word"
+
+- id: g090
+  lang: fa
+  mode: typed
+  accept:
+    - "سه"
+  answer: "ثه"
+  expect: spelling
+  closest: "سه"
+  note: "spelling applies at any length (2-letter word)"
+
+- id: g091
+  lang: fa
+  mode: typed
+  accept:
+    - "سه"
+  answer: "سح"
+  expect: spelling
+  closest: "سه"
+  note: "same-sound swap ه→ح on a 2-letter word"
+
+- id: g092
+  lang: fa
+  mode: typed
+  accept:
+    - "سه"
+  answer: "شه"
+  expect: wrong
+  closest: "سه"
+  note: "ش does not sound like س; a 2-letter word allows no typo"
+
+- id: g093
+  lang: fa
+  mode: typed
+  accept:
+    - "حیاط"
+  lexicon: ["حیات"]
+  answer: "حیات"
+  expect: wrong
+  closest: "حیاط"
+  note: "ط→ت lands on حیات \"life\" (a 4-letter same-sound swap is spelling, so the lexicon check applies)"
+
+- id: g094
+  lang: fa
+  mode: typed
+  accept:
+    - "حیاط"
+  lexicon: ["حیات"]
+  answer: "هیاط"
+  expect: spelling
+  closest: "حیاط"
+  note: "ح→ه, not a course word"
+
+- id: g095
+  lang: fa
+  mode: typed
+  accept:
+    - "من تب دارم"
+  lexicon: ["طب"]
+  answer: "من طب دارم"
+  expect: wrong
+  closest: "من تب دارم"
+  note: "ت→ط lands on طب \"medicine\""
+
+- id: g096
+  lang: fa
+  mode: typed
+  accept:
+    - "من تب دارم"
+  answer: "طب دارم"
+  expect: spelling
+  closest: "تب دارم"
+  note: "the same swap is spelling when طب is not a course word; pronoun dropped"
+
+- id: g097
+  lang: fa
+  mode: typed
+  accept:
+    - "من تب دارم"
+  answer: "تب دارم"
+  expect: correct
+  note: "pronoun drop"
+
+- id: g098
+  lang: fa
+  mode: typed
+  accept:
+    - "دوغ می\u200Cخوای؟"
+  formal: "دوغ می\u200Cخواهی؟"
+  answer: "دوق می\u200Cخوای"
+  expect: spelling
+  closest: "دوغ می\u200Cخوای؟"
+  note: "غ→ق in a 3-letter word"
+
+- id: g099
+  lang: fa
+  mode: typed
+  accept:
+    - "دوغ می\u200Cخوای؟"
+  formal: "دوغ می\u200Cخواهی؟"
+  answer: "دوخ می\u200Cخوای"
+  expect: wrong
+  closest: "دوغ می\u200Cخوای؟"
+  note: "خ does not sound like غ; a 3-letter word allows no typo"
+
+- id: g100
+  lang: fa
+  mode: typed
+  accept:
+    - "دوغ می\u200Cخوای؟"
+  formal: "دوغ می\u200Cخواهی؟"
+  answer: "دوغ میخواهی؟"
+  expect: correct
+  note: "formal register"
+
+- id: g101
+  lang: fa
+  mode: typed
+  accept:
+    - "چای با قند"
+  answer: "چای با غند"
+  expect: spelling
+  closest: "چای با قند"
+  note: "ق→غ in a 3-letter word"
+
+- id: g102
+  lang: fa
+  mode: typed
+  accept:
+    - "چای با قند"
+  answer: "چای با کند"
+  expect: wrong
+  closest: "چای با قند"
+  note: "ک does not sound like ق"
+
+- id: g103
+  lang: fa
+  mode: typed
+  accept:
+    - "یه قصه بگو"
+  lexicon: ["غصه"]
+  answer: "یه غصه بگو"
+  expect: wrong
+  closest: "یه قصه بگو"
+  note: "ق→غ lands on غصه \"sorrow\""
+
+- id: g104
+  lang: fa
+  mode: typed
+  accept:
+    - "یه چای، لطفا\u064B"
+  formal: "یک چای، لطفا\u064B"
+  answer: "یه چای لطفا"
+  expect: correct
+  note: "no comma, no tanwin"
+
+- id: g105
+  lang: fa
+  mode: typed
+  accept:
+    - "یه چای، لطفا\u064B"
+  formal: "یک چای، لطفا\u064B"
+  answer: "یک چا\u064A، لطفا\u064B"
+  expect: correct
+  note: "formal یک + Arabic yeh"
+
+- id: g106
+  lang: fa
+  mode: typed
+  accept:
+    - "یه چای، لطفا\u064B"
+  formal: "یک چای، لطفا\u064B"
+  variants: [["چای", "چایی"]]
+  answer: "یه چایی لطفا"
+  expect: correct
+  note: "orthography variant چای/چایی"
+
+- id: g107
+  lang: fa
+  mode: typed
+  accept:
+    - "یه چای، لطفا\u064B"
+  formal: "یک چای، لطفا\u064B"
+  answer: "یه قهوه لطفا"
+  expect: wrong
+  closest: "یه چای، لطفا\u064B"
+  note: "coffee instead of tea"
+
+- id: g108
+  lang: fa
+  mode: typed
+  accept:
+    - "من برنج دوست دارم"
+  variants: [["دوست دارم", "دوس دارم"]]
+  answer: "برنج دوس دارم"
+  expect: correct
+  note: "multi-word orthography variant + pronoun drop"
+
+- id: g109
+  lang: fa
+  mode: typed
+  accept:
+    - "من برنج دوست دارم"
+  answer: "من برنچ دوست دارم"
+  expect: typo
+  closest: "من برنج دوست دارم"
+  note: "ج→چ in a 4-letter word (not a same-sound pair)"
+
+- id: g110
+  lang: fa
+  mode: typed
+  accept:
+    - "نون و پنیر"
+  formal: "نان و پنیر"
+  answer: "نان و پنیر"
+  expect: correct
+  closest: "نان و پنیر"
+  note: "formal register"
+
+- id: g111
+  lang: fa
+  mode: typed
+  accept:
+    - "نون و پنیر"
+  formal: "نان و پنیر"
+  answer: "نون پنیر"
+  expect: wrong
+  closest: "نون و پنیر"
+  note: "missing و"
+
+- id: g112
+  lang: fa
+  mode: bank
+  accept:
+    - "نون و پنیر"
+  formal: "نان و پنیر"
+  answer: "پنیر و نون"
+  expect: wrong
+  note: "word bank: wrong order"
+
+- id: g113
+  lang: fa
+  mode: typed
+  accept:
+    - "غذا خوشمزه\u200Cست"
+  formal: "غذا خوشمزه است"
+  answer: "غذا خوشمزه است"
+  expect: correct
+  closest: "غذا خوشمزه است"
+  note: "formal register (different token count)"
+
+- id: g114
+  lang: fa
+  mode: typed
+  accept:
+    - "غذا خوشمزه\u200Cست"
+  formal: "غذا خوشمزه است"
+  answer: "قذا خوشمزه\u200Cست"
+  expect: spelling
+  closest: "غذا خوشمزه\u200Cست"
+  note: "غ→ق"
+
+- id: g115
+  lang: fa
+  mode: typed
+  accept:
+    - "غذا خوشمزه\u200Cست"
+  formal: "غذا خوشمزه است"
+  answer: "غذا خوشمزست"
+  expect: typo
+  closest: "غذا خوشمزه\u200Cست"
+  note: "informal spelling drops ه: one deletion in an 8-letter token"
+
+- id: g116
+  lang: fa
+  mode: typed
+  accept:
+    - "یه قهوه می\u200Cخوام"
+  answer: "یه غهوه می\u200Cخوام"
+  expect: spelling
+  closest: "یه قهوه می\u200Cخوام"
+  note: "ق→غ"
+
+- id: g117
+  lang: fa
+  mode: typed
+  accept:
+    - "ماست"
+  answer: "ماصت"
+  expect: spelling
+  closest: "ماست"
+  note: "س→ص"
+
+- id: g118
+  lang: fa
+  mode: typed
+  accept:
+    - "آب"
+  answer: "آش"
+  expect: wrong
+  closest: "آب"
+  note: "a different 2-letter word"
+
+- id: g119
+  lang: fa
+  mode: typed
+  accept:
+    - "نون"
+  answer: "نوم"
+  expect: wrong
+  closest: "نون"
+  note: "one wrong letter in a 3-letter word"
+
+- id: g120
+  lang: fa
+  mode: typed
+  accept:
+    - "من کتابا رو می\u200Cخوام"
+  formal: "من کتاب\u200Cها را می\u200Cخواهم"
+  answer: "کتاب\u200Cها رو می\u200Cخوام"
+  expect: correct
+  note: "register tokens align 1:1, so formal کتاب\u200Cها mixes with colloquial رو"
+
+- id: g121
+  lang: fa
+  mode: typed
+  accept:
+    - "من کتابا رو می\u200Cخوام"
+  formal: "من کتاب\u200Cها را می\u200Cخواهم"
+  answer: "من کتاب ها را میخواهم"
+  expect: correct
+  closest: "من کتاب\u200Cها را می\u200Cخواهم"
+  note: "formal, typed with spaces and no ZWNJ"
+
+- id: g122
+  lang: fa
+  mode: typed
+  accept:
+    - "من کتابا رو می\u200Cخوام"
+  formal: "من کتاب\u200Cها را می\u200Cخواهم"
+  answer: "کتابها رو میخوام"
+  expect: correct
+  note: "pronoun drop, no ZWNJ anywhere"
+
+- id: g123
+  lang: fa
+  mode: typed
+  accept:
+    - "من کتابا رو می\u200Cخوام"
+  formal: "من کتاب\u200Cها را می\u200Cخواهم"
+  answer: "من کتابا را می\u200Cخوام"
+  expect: correct
+  note: "mixed register (را with colloquial words)"
+
+- id: g124
+  lang: fa
+  mode: bank
+  accept:
+    - "من کتابا رو می\u200Cخوام"
+  formal: "من کتاب\u200Cها را می\u200Cخواهم"
+  answer: "من کتاب\u200Cها رو می\u200Cخوام"
+  expect: correct
+  note: "word bank: mixed-register tiles are on a DAG path"
+
+- id: g125
+  lang: fa
+  mode: typed
+  accept:
+    - "کتابا کجان؟"
+  variants: [["کتابا", "کتاب\u200Cها"]]
+  answer: "کتاب\u200Cها کجان"
+  expect: correct
+  note: "orthography variant کتابا/کتاب\u200Cها"
+
+- id: g126
+  lang: fa
+  mode: typed
+  accept:
+    - "کتابا کجان؟"
+  variants: [["کتابا", "کتاب\u200Cها"]]
+  answer: "کتاب ها کجان؟"
+  expect: correct
+  note: "variant typed with a space before ها"
+
+- id: g127
+  lang: fa
+  mode: typed
+  accept:
+    - "کتابا کجان؟"
+  answer: "کتاب\u200Cها کجان"
+  expect: typo
+  closest: "کتابا کجان؟"
+  note: "without the variant set: one inserted ه in a 5-letter token"
+
+- id: g128
+  lang: fa
+  mode: bank
+  accept:
+    - "کتابا کجان؟"
+  variants: [["کتابا", "کتاب\u200Cها"]]
+  answer: "کتاب\u200Cها کجان"
+  expect: correct
+  note: "word bank: variants are part of the DAG"
+
+- id: g129
+  lang: fa
+  mode: bank
+  accept:
+    - "کتابا کجان؟"
+  answer: "کتاب\u200Cها کجان"
+  expect: wrong
+  note: "word bank without the variant set"
+
+- id: g130
+  lang: fa
+  mode: typed
+  accept:
+    - "کتاب\u200Cها رو بده"
+  variants: [["کتابا", "کتاب\u200Cها"]]
+  answer: "کتابا رو بده"
+  expect: correct
+  note: "variant sets work in both directions"
+
+- id: g131
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  variants: [["اینو", "این رو"]]
+  answer: "این رو می\u200Cخوام"
+  expect: correct
+  note: "variant اینو/این رو (one token vs two)"
+
+- id: g132
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  variants: [["اینو", "این رو"]]
+  answer: "این رو میخوام"
+  expect: correct
+  note: "variant + missing ZWNJ"
+
+- id: g133
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  answer: "این رو می\u200Cخوام"
+  expect: wrong
+  closest: "اینو می\u200Cخوام"
+  note: "without the variant set, the extra token رو is wrong"
+
+- id: g134
+  lang: fa
+  mode: bank
+  accept:
+    - "اینو می\u200Cخوام"
+  variants: [["اینو", "این رو"]]
+  answer: "این رو می\u200Cخوام"
+  expect: correct
+  note: "word bank with the variant set"
+
+- id: g135
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  formal: "این را می\u200Cخواهم"
+  answer: "این را می\u200Cخواهم"
+  expect: correct
+  closest: "این را می\u200Cخواهم"
+  note: "formal register (2 vs 3 tokens: merged as its own pattern)"
+
+- id: g136
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  formal: "این را می\u200Cخواهم"
+  answer: "این را میخواهم"
+  expect: correct
+  note: "formal, no ZWNJ"
+
+- id: g137
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  formal: "این را می\u200Cخواهم"
+  variants: [["اینو", "این رو"]]
+  answer: "این رو می\u200Cخوام"
+  expect: correct
+  note: "formal pattern and variant set together"
+
+- id: g138
+  lang: fa
+  mode: typed
+  accept:
+    - "اینو می\u200Cخوام"
+  formal: "این را می\u200Cخواهم"
+  answer: "این رو می\u200Cخوام"
+  expect: wrong
+  note: "formal pattern but no variant set: mixed forms are not a DAG path"
+
+- id: g139
+  lang: fa
+  mode: typed
+  accept:
+    - "چیکار می\u200Cکنی؟"
+  formal: "چه کار می\u200Cکنی؟"
+  variants: [["چیکار", "چی کار"]]
+  answer: "چی کار میکنی"
+  expect: correct
+  note: "variant چیکار/چی کار"
+
+- id: g140
+  lang: fa
+  mode: typed
+  accept:
+    - "چیکار می\u200Cکنی؟"
+  formal: "چه کار می\u200Cکنی؟"
+  answer: "چه کار می\u200Cکنی"
+  expect: correct
+  closest: "چه کار می\u200Cکنی؟"
+  note: "formal register"
+
+- id: g141
+  lang: fa
+  mode: typed
+  accept:
+    - "چیکار می\u200Cکنی؟"
+  answer: "چی کار می\u200Cکنی"
+  expect: wrong
+  closest: "چیکار می\u200Cکنی؟"
+  note: "no variant set and no formal form: the split word is an extra token"
+
+- id: g142
+  lang: fa
+  mode: typed
+  accept:
+    - "من یه برادر دارم"
+  formal: "من یک برادر دارم"
+  answer: "یک برادر دارم"
+  expect: correct
+  closest: "یک برادر دارم"
+  note: "formal یک + pronoun drop"
+
+- id: g143
+  lang: fa
+  mode: typed
+  accept:
+    - "من یه برادر دارم"
+  formal: "من یک برادر دارم"
+  answer: "من یه داداش دارم"
+  expect: wrong
+  closest: "من یه برادر دارم"
+  note: "a different word (داداش is not listed)"
+
+- id: g144
+  lang: fa
+  mode: bank
+  accept:
+    - "من یه برادر دارم"
+  formal: "من یک برادر دارم"
+  answer: "من یه برادر دارم"
+  expect: correct
+  note: "word bank: canonical"
+
+- id: g145
+  lang: fa
+  mode: bank
+  accept:
+    - "من یه برادر دارم"
+  formal: "من یک برادر دارم"
+  answer: "یه برادر من دارم"
+  expect: wrong
+  note: "word bank: pronoun in the wrong place"
+
+- id: g146
+  lang: fa
+  mode: typed
+  accept:
+    - "من یه خواهر دارم"
+  formal: "من یک خواهر دارم"
+  answer: "من یه خاهر دارم"
+  expect: typo
+  closest: "من یه خواهر دارم"
+  note: "silent و dropped: one deletion in a 5-letter word"
+
+- id: g147
+  lang: fa
+  mode: typed
+  accept:
+    - "بابام معلمه"
+  formal: "پدرم معلم است"
+  answer: "پدرم معلم است"
+  expect: correct
+  closest: "پدرم معلم است"
+  note: "formal register"
+
+- id: g148
+  lang: fa
+  mode: typed
+  accept:
+    - "بابام معلمه"
+  formal: "پدرم معلم است"
+  answer: "بابام معلمه."
+  expect: correct
+  note: "period ignored"
+
+- id: g149
+  lang: fa
+  mode: typed
+  accept:
+    - "بابام معلمه"
+  formal: "پدرم معلم است"
+  answer: "بابام دکتره"
+  expect: wrong
+  closest: "بابام معلمه"
+  note: "a different word"
+
+- id: g150
+  lang: fa
+  mode: typed
+  accept:
+    - "مامانم خونه\u200Cست"
+  formal: "مادرم خانه است"
+  answer: "مامانم خونست"
+  expect: typo
+  closest: "مامانم خونه\u200Cست"
+  note: "informal spelling without ه: one deletion in a 6-letter token"
+
+- id: g151
+  lang: fa
+  mode: typed
+  accept:
+    - "مامانم خونه\u200Cست"
+  formal: "مادرم خانه است"
+  answer: "مادرم خانه است"
+  expect: correct
+  closest: "مادرم خانه است"
+  note: "formal register"
+
+- id: g152
+  lang: fa
+  mode: typed
+  accept:
+    - "مامانم خونه\u200Cست"
+  formal: "مادرم خانه است"
+  answer: "مامانم خونه است"
+  expect: wrong
+  note: "است is not a loose-key affix and the registers do not align 1:1, so this mix is not accepted"
+
+- id: g153
+  lang: fa
+  mode: typed
+  accept:
+    - "خواهش می\u200Cکنم"
+  answer: "خاهش میکنم"
+  expect: typo
+  closest: "خواهش می\u200Cکنم"
+  note: "silent و dropped + missing ZWNJ"
+
+- id: g154
+  lang: fa
+  mode: typed
+  accept:
+    - "ما چای می\u200Cخوایم"
+  formal: "ما چای می\u200Cخواهیم"
+  answer: "چای می\u200Cخوایم"
+  expect: correct
+  note: "drop ما"
+
+- id: g155
+  lang: fa
+  mode: typed
+  accept:
+    - "ما چای می\u200Cخوایم"
+  formal: "ما چای می\u200Cخواهیم"
+  answer: "چای میخواهیم"
+  expect: correct
+  note: "drop ما, formal verb"
+
+- id: g156
+  lang: fa
+  mode: typed
+  accept:
+    - "اونا دانشجو هستن"
+  formal: "آنها دانشجو هستند"
+  answer: "دانشجو هستن"
+  expect: correct
+  note: "drop the colloquial pronoun اونا"
+
+- id: g157
+  lang: fa
+  mode: typed
+  accept:
+    - "اونا دانشجو هستن"
+  formal: "آنها دانشجو هستند"
+  answer: "آنها دانشجو هستن"
+  expect: correct
+  note: "mixed register on a 1:1 alignment"
+
+- id: g158
+  lang: fa
+  mode: typed
+  accept:
+    - "اونا دانشجو هستن"
+  formal: "آنها دانشجو هستند"
+  answer: "اونا دانشجو هستند."
+  expect: correct
+  note: "mixed register + period"
+
+- id: g159
+  lang: fa
+  mode: typed
+  accept:
+    - "اونا دانشجو هستن"
+  formal: "آنها دانشجو هستند"
+  pronounDrop: false
+  answer: "دانشجو هستند"
+  expect: wrong
+  note: "pronounDrop: false"
+
+- id: g160
+  lang: fa
+  mode: typed
+  accept:
+    - "تو چای می\u200Cخوای؟"
+  formal: "تو چای می\u200Cخواهی؟"
+  answer: "چای می\u200Cخوای؟"
+  expect: correct
+  note: "drop تو"
+
+- id: g161
+  lang: fa
+  mode: typed
+  accept:
+    - "تو چای می\u200Cخوای؟"
+  formal: "تو چای می\u200Cخواهی؟"
+  pronounDrop: false
+  answer: "چای می\u200Cخوای"
+  expect: wrong
+  closest: "تو چای می\u200Cخوای؟"
+  note: "pronounDrop: false"
+
+- id: g162
+  lang: fa
+  mode: typed
+  accept:
+    - "اون معلمه"
+  formal: "او معلم است"
+  answer: "معلم است"
+  expect: correct
+  note: "pronoun drop also applies to the formal pattern او معلم است"
+
+- id: g163
+  lang: fa
+  mode: typed
+  accept:
+    - "اون معلمه"
+  formal: "او معلم است"
+  answer: "معلمه"
+  expect: correct
+  note: "drop اون"
+
+- id: g164
+  lang: fa
+  mode: typed
+  accept:
+    - "شما قهوه می\u200Cخورین؟"
+  formal: "شما قهوه می\u200Cخورید؟"
+  answer: "قهوه میخورید"
+  expect: correct
+  note: "drop شما, formal verb"
+
+- id: g165
+  lang: fa
+  mode: typed
+  accept:
+    - "شما قهوه می\u200Cخورین؟"
+  formal: "شما قهوه می\u200Cخورید؟"
+  answer: "غهوه می\u200Cخورین"
+  expect: spelling
+  closest: "قهوه می\u200Cخورین؟"
+  note: "ق→غ; pronoun dropped"
+
+- id: g166
+  lang: fa
+  mode: typed
+  accept:
+    - "من خسته\u200Cام"
+  formal: "من خسته هستم"
+  answer: "خسته ام"
+  expect: correct
+  note: "clitic ام typed with a space"
+
+- id: g167
+  lang: fa
+  mode: typed
+  accept:
+    - "من خسته\u200Cام"
+  formal: "من خسته هستم"
+  answer: "خسته هستم"
+  expect: correct
+  closest: "خسته هستم"
+  note: "formal pattern with pronoun drop"
+
+- id: g168
+  lang: fa
+  mode: typed
+  accept:
+    - "من خسته\u200Cام"
+  formal: "من خسته هستم"
+  answer: "خسطه\u200Cام"
+  expect: spelling
+  closest: "خسته\u200Cام"
+  note: "ت→ط"
+
+- id: g169
+  lang: fa
+  mode: typed
+  accept:
+    - "من تشنه\u200Cام"
+  answer: "من طشنه\u200Cام"
+  expect: spelling
+  closest: "من تشنه\u200Cام"
+  note: "ت→ط at the start of the word"
+
+- id: g170
+  lang: fa
+  mode: typed
+  accept:
+    - "پاییز"
+  answer: "پائیز"
+  expect: correct
+  note: "ئی/یی fold"
+
+- id: g171
+  lang: fa
+  mode: typed
+  accept:
+    - "کتاب"
+  answer: "\u0643تاب"
+  expect: correct
+  note: "Arabic kaf"
+
+- id: g172
+  lang: fa
+  mode: typed
+  accept:
+    - "کتاب"
+  answer: "کتاپ"
+  expect: typo
+  closest: "کتاب"
+  note: "ب→پ in a 4-letter word"
+
+- id: g173
+  lang: fa
+  mode: typed
+  accept:
+    - "مدرسه"
+  answer: "مدرس\u0629"
+  expect: correct
+  note: "teh marbuta folds to ه"
+
+- id: g174
+  lang: fa
+  mode: typed
+  accept:
+    - "کتاب من"
+  answer: "کتاب\u0650 من"
+  expect: correct
+  note: "ezāfe kasra typed by the learner is ignored"
+
+- id: g175
+  lang: fa
+  mode: typed
+  accept:
+    - "خانه\u0654 ما"
+  answer: "خانه ما"
+  expect: correct
+  note: "ezāfe ه\u0654 folds to ه"
+
+- id: g176
+  lang: fa
+  mode: typed
+  accept:
+    - "خانه\u0654 ما"
+  answer: "خان\u06C0 ما"
+  expect: correct
+  note: "\u06C0 and ه\u0654 fold to the same key"
+
+- id: g177
+  lang: fa
+  mode: typed
+  accept:
+    - "ته\u200Cدیگ"
+  answer: "تهدیگ"
+  expect: correct
+  note: "ZWNJ omitted inside a compound"
+
+- id: g178
+  lang: fa
+  mode: typed
+  accept:
+    - "ته\u200Cدیگ"
+  answer: "ته دیگ"
+  expect: wrong
+  closest: "ته\u200Cدیگ"
+  note: "a space inside a compound whose second part is not a known affix splits it into two tokens"
+
+- id: g179
+  lang: fa
+  mode: typed
+  accept:
+    - "تهران بزرگ\u200Cترین شهر ایرانه"
+  answer: "تهران بزرگ ترین شهر ایرانه"
+  expect: correct
+  note: "suffix ترین typed with a space"
+
+- id: g180
+  lang: fa
+  mode: typed
+  accept:
+    - "تهران بزرگ\u200Cترین شهر ایرانه"
+  answer: "طهران بزرگترین شهر ایرانه"
+  expect: spelling
+  closest: "تهران بزرگ\u200Cترین شهر ایرانه"
+  note: "ت→ط (the old spelling طهران) + missing ZWNJ"
+
+- id: g181
+  lang: fa
+  mode: typed
+  accept:
+    - "اتاق"
+  answer: "اطاق"
+  expect: spelling
+  closest: "اتاق"
+  note: "ت→ط (the old spelling اطاق)"
+
+- id: g182
+  lang: fa
+  mode: typed
+  accept:
+    - "زرد"
+  answer: "ذرد"
+  expect: spelling
+  closest: "زرد"
+  note: "ز→ذ"
+
+- id: g183
+  lang: fa
+  mode: typed
+  accept:
+    - "آفرین"
+  answer: "افرین"
+  expect: typo
+  closest: "آفرین"
+  note: "آ→ا in a 5-letter word"
+
+- id: g184
+  lang: fa
+  mode: typed
+  accept:
+    - "آقا"
+  answer: "اقا"
+  expect: typo
+  closest: "آقا"
+  note: "آ→ا in a 3-letter word (below the normal typo length)"
+
+- id: g185
+  lang: fa
+  mode: typed
+  accept:
+    - "امروز خسته\u200Cام"
+  answer: "آمروز خسته\u200Cام"
+  expect: typo
+  closest: "امروز خسته\u200Cام"
+  note: "ا→آ: the confusion counts in both directions"
+
+- id: g186
+  lang: fa
+  mode: typed
+  accept:
+    - "چهارشنبه"
+  answer: "چارشنبه"
+  expect: typo
+  closest: "چهارشنبه"
+  note: "spoken form without ه: one deletion in an 8-letter word"
+
+- id: g187
+  lang: fa
+  mode: typed
+  accept:
+    - "تلویزیون"
+  answer: "تلوزیون"
+  expect: typo
+  closest: "تلویزیون"
+  note: "one deletion in an 8-letter word"
+
+- id: g188
+  lang: fa
+  mode: typed
+  accept:
+    - "ممنون"
+  answer: "ممنن"
+  expect: typo
+  closest: "ممنون"
+  note: "one deletion in a 5-letter word"
+
+- id: g189
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want water"
+  expect: correct
+  note: "optional group omitted"
+
+- id: g190
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I'd like some water."
+  expect: correct
+  note: "second alternative + optional word + period"
+
+- id: g191
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I would like water"
+  expect: correct
+  note: "contraction I'd = I would"
+
+- id: g192
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "i WANT water!"
+  expect: correct
+  note: "case and punctuation ignored"
+
+- id: g193
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "  I want   some water  "
+  expect: correct
+  note: "extra whitespace"
+
+- id: g194
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want watr"
+  expect: typo
+  closest: "I want water"
+  note: "one deletion in a 5-letter word"
+
+- id: g195
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I wamt some water"
+  expect: typo
+  closest: "I want some water"
+  note: "one substitution in a 4-letter word"
+
+- id: g196
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want sume water"
+  expect: typo
+  closest: "I want some water"
+  note: "typo inside the optional word beats treating it as an extra token"
+
+- id: g197
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want wotar"
+  expect: wrong
+  closest: "I want water"
+  note: "two edits in a 5-letter word"
+
+- id: g198
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want milk"
+  expect: wrong
+  closest: "I want water"
+  note: "wrong noun"
+
+- id: g199
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I need watr"
+  expect: wrong
+  closest: "I want water"
+  note: "a wrong token outranks the typo"
+
+- id: g200
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I water"
+  expect: wrong
+  closest: "I want water"
+  note: "missing verb"
+
+- id: g201
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "want water"
+  expect: wrong
+  closest: "I want water"
+  note: "missing subject (English has no pronoun drop)"
+
+- id: g202
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "water I want"
+  expect: wrong
+  closest: "I want water"
+  note: "word order"
+
+- id: g203
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want the water"
+  expect: wrong
+  note: "extra article"
+
+- id: g204
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want some some water"
+  expect: wrong
+  closest: "I want some water"
+  note: "repeated word is an extra token"
+
+- id: g205
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "Water"
+  expect: wrong
+  closest: "I want water"
+  note: "a single word"
+
+- id: g206
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: ""
+  expect: wrong
+  note: "empty answer"
+
+- id: g207
+  lang: en
+  mode: bank
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want some water"
+  expect: correct
+  note: "word bank"
+
+- id: g208
+  lang: en
+  mode: bank
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I would like water"
+  expect: correct
+  note: "word bank: contraction merge is part of the DAG"
+
+- id: g209
+  lang: en
+  mode: bank
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "water I want"
+  expect: wrong
+  note: "word bank: wrong order"
+
+- id: g210
+  lang: en
+  mode: bank
+  accept:
+    - "[I want/I'd like] [some/] water"
+  answer: "I want waters"
+  expect: wrong
+  note: "word bank: a near-miss tile gets no typo leniency"
+
+- id: g211
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+    - "Water, please"
+  answer: "water please"
+  expect: correct
+  note: "second accepted pattern"
+
+- id: g212
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+    - "Water, please"
+  answer: "Water, please!"
+  expect: correct
+  note: "second pattern with punctuation"
+
+- id: g213
+  lang: en
+  mode: typed
+  accept:
+    - "[I want/I'd like] [some/] water"
+    - "Water, please"
+  answer: "some water, please"
+  expect: wrong
+  closest: "Water, please"
+  note: "extra token against the closest pattern"
+
+- id: g214
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi]"
+  answer: "HELLO!"
+  expect: correct
+  note: "uppercase + exclamation mark"
+
+- id: g215
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi]"
+  answer: "hi."
+  expect: correct
+  note: "second alternative"
+
+- id: g216
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi]"
+  answer: "helo"
+  expect: typo
+  closest: "Hello"
+  note: "one deletion in a 5-letter word"
+
+- id: g217
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi]"
+  answer: "Hey"
+  expect: wrong
+  note: "not an alternative; too short for a typo"
+
+- id: g218
+  lang: en
+  mode: typed
+  accept:
+    - "[Goodbye/Bye]"
+  answer: "bye!"
+  expect: correct
+  note: "second alternative"
+
+- id: g219
+  lang: en
+  mode: typed
+  accept:
+    - "[Goodbye/Bye]"
+  answer: "Goodby"
+  expect: typo
+  closest: "Goodbye"
+  note: "one deletion in a 7-letter word"
+
+- id: g220
+  lang: en
+  mode: typed
+  accept:
+    - "[Goodbye/Bye]"
+  answer: "gudbye"
+  expect: wrong
+  note: "two edits in a 7-letter word"
+
+- id: g221
+  lang: en
+  mode: typed
+  accept:
+    - "[Thank you/Thanks]"
+  answer: "Thank you!"
+  expect: correct
+  note: "multi-word alternative"
+
+- id: g222
+  lang: en
+  mode: typed
+  accept:
+    - "[Thank you/Thanks]"
+  answer: "thanks."
+  expect: correct
+  note: "single-word alternative"
+
+- id: g223
+  lang: en
+  mode: typed
+  accept:
+    - "[Thank you/Thanks]"
+  answer: "thank yuo"
+  expect: wrong
+  note: "a 3-letter word allows no typo (transposition in you)"
+
+- id: g224
+  lang: en
+  mode: typed
+  accept:
+    - "You're welcome"
+  answer: "you are welcome"
+  expect: correct
+  note: "contraction you're = you are"
+
+- id: g225
+  lang: en
+  mode: typed
+  accept:
+    - "You're welcome"
+  answer: "You're welcom"
+  expect: typo
+  closest: "You're welcome"
+  note: "one deletion in a 7-letter word"
+
+- id: g226
+  lang: en
+  mode: typed
+  accept:
+    - "I'm tired"
+  answer: "I am tired."
+  expect: correct
+  note: "contraction I'm = I am"
+
+- id: g227
+  lang: en
+  mode: typed
+  accept:
+    - "I'm tired"
+  answer: "I am tird"
+  expect: typo
+  closest: "I'm tired"
+  note: "one deletion in a 5-letter word"
+
+- id: g228
+  lang: en
+  mode: typed
+  accept:
+    - "I am tired"
+  answer: "I'm tired"
+  expect: correct
+  note: "contraction in the answer, full form in the pattern"
+
+- id: g229
+  lang: en
+  mode: typed
+  accept:
+    - "[It's/The weather is] hot"
+  answer: "It is hot"
+  expect: correct
+  note: "contraction it's = it is"
+
+- id: g230
+  lang: en
+  mode: typed
+  accept:
+    - "[It's/The weather is] hot"
+  answer: "the weather is hot!"
+  expect: correct
+  note: "second alternative"
+
+- id: g231
+  lang: en
+  mode: typed
+  accept:
+    - "[It's/The weather is] hot"
+  answer: "It is hat"
+  expect: wrong
+  closest: "It's hot"
+  note: "a 3-letter word allows no typo"
+
+- id: g232
+  lang: en
+  mode: typed
+  accept:
+    - "I don't know"
+  answer: "I do not know"
+  expect: correct
+  note: "contraction don't = do not"
+
+- id: g233
+  lang: en
+  mode: typed
+  accept:
+    - "I don't know"
+  answer: "i don't know."
+  expect: correct
+  note: "case and period"
+
+- id: g234
+  lang: en
+  mode: typed
+  accept:
+    - "I do not know"
+  answer: "I don't know"
+  expect: correct
+  note: "contraction in the answer, full form in the pattern"
+
+- id: g235
+  lang: en
+  mode: typed
+  accept:
+    - "I can't speak [Persian/Farsi]"
+  answer: "I cannot speak Farsi"
+  expect: correct
+  note: "can't = cannot + second alternative"
+
+- id: g236
+  lang: en
+  mode: typed
+  accept:
+    - "I can't speak [Persian/Farsi]"
+  answer: "I can't speak persian."
+  expect: correct
+  note: "lowercase proper noun"
+
+- id: g237
+  lang: en
+  mode: typed
+  accept:
+    - "[What's/What is] your name?"
+  answer: "What is your name"
+  expect: correct
+  note: "second alternative, no question mark"
+
+- id: g238
+  lang: en
+  mode: typed
+  accept:
+    - "[What's/What is] your name?"
+  answer: "what's your name?"
+  expect: correct
+  note: "first alternative, lowercase"
+
+- id: g239
+  lang: en
+  mode: typed
+  accept:
+    - "[What's/What is] your name?"
+  answer: "What is your nane"
+  expect: typo
+  closest: "What is your name?"
+  note: "one substitution in a 4-letter word"
+
+- id: g240
+  lang: en
+  mode: typed
+  accept:
+    - "My name is Sara"
+  answer: "my name is sara"
+  expect: correct
+  note: "case ignored"
+
+- id: g241
+  lang: en
+  mode: typed
+  accept:
+    - "My name is Sara"
+  answer: "My name is Sarah"
+  expect: typo
+  closest: "My name is Sara"
+  note: "one insertion in a 4-letter word"
+
+- id: g242
+  lang: en
+  mode: typed
+  accept:
+    - "My name is Sara"
+  answer: "My name Sara"
+  expect: wrong
+  closest: "My name is Sara"
+  note: "missing is"
+
+- id: g243
+  lang: en
+  mode: bank
+  accept:
+    - "My name is Sara"
+  answer: "name My is Sara"
+  expect: wrong
+  note: "word bank: wrong order"
+
+- id: g244
+  lang: en
+  mode: bank
+  accept:
+    - "My name is Sara"
+  answer: "My name is Sara"
+  expect: correct
+  note: "word bank: canonical"
+
+- id: g245
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have one brother"
+  expect: correct
+  note: "second alternative"
+
+- id: g246
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have 1 brother"
+  expect: correct
+  note: "digit for the number word inside a group"
+
+- id: g247
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have a brothr"
+  expect: typo
+  closest: "I have a brother"
+  note: "one deletion in a 7-letter word"
+
+- id: g248
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have a bruthar"
+  expect: wrong
+  closest: "I have a brother"
+  note: "two edits in a 7-letter word"
+
+- id: g249
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have a sister"
+  expect: wrong
+  closest: "I have a brother"
+  note: "wrong noun"
+
+- id: g250
+  lang: en
+  mode: typed
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have brother"
+  expect: wrong
+  note: "missing article"
+
+- id: g251
+  lang: en
+  mode: bank
+  accept:
+    - "I have [a/one] brother"
+  answer: "I have a brothers"
+  expect: wrong
+  note: "word bank: near-miss tile"
+
+- id: g252
+  lang: en
+  mode: typed
+  accept:
+    - "I have two sisters"
+  answer: "I have 2 sisters"
+  expect: correct
+  note: "digit for the number word"
+
+- id: g253
+  lang: en
+  mode: typed
+  accept:
+    - "I have two sisters"
+  answer: "I have two sistrs"
+  expect: typo
+  closest: "I have two sisters"
+  note: "one deletion in a 7-letter word"
+
+- id: g254
+  lang: en
+  mode: typed
+  accept:
+    - "I have two sisters"
+  answer: "I have three sisters"
+  expect: wrong
+  closest: "I have two sisters"
+  note: "wrong number"
+
+- id: g255
+  lang: en
+  mode: bank
+  accept:
+    - "I have two sisters"
+  answer: "I have 2 sisters"
+  expect: correct
+  note: "word bank: number merge is part of the DAG"
+
+- id: g256
+  lang: en
+  mode: typed
+  accept:
+    - "My [dad/father] is a teacher"
+  answer: "My father is a teacher."
+  expect: correct
+  note: "second alternative"
+
+- id: g257
+  lang: en
+  mode: typed
+  accept:
+    - "My [dad/father] is a teacher"
+  answer: "my dad is a techer"
+  expect: typo
+  closest: "My dad is a teacher"
+  note: "one deletion in a 7-letter word"
+
+- id: g258
+  lang: en
+  mode: typed
+  accept:
+    - "My [dad/father] is a teacher"
+  answer: "My dad is teacher"
+  expect: wrong
+  closest: "My dad is a teacher"
+  note: "missing article"
+
+- id: g259
+  lang: en
+  mode: typed
+  accept:
+    - "My [dad/father] is a teacher"
+  answer: "My dad is a doctor"
+  expect: wrong
+  closest: "My dad is a teacher"
+  note: "wrong noun"
+
+- id: g260
+  lang: en
+  mode: typed
+  accept:
+    - "My grandmother is [very/] kind"
+  answer: "My grandmother is kind"
+  expect: correct
+  note: "optional word omitted"
+
+- id: g261
+  lang: en
+  mode: typed
+  accept:
+    - "My grandmother is [very/] kind"
+  answer: "My granmuther is very kind"
+  expect: typo
+  closest: "My grandmother is very kind"
+  note: "two edits in an 11-letter word are allowed"
+
+- id: g262
+  lang: en
+  mode: typed
+  accept:
+    - "My grandmother is [very/] kind"
+  answer: "My grenmuthar is kind"
+  expect: wrong
+  closest: "My grandmother is kind"
+  note: "four edits exceed the limit"
+
+- id: g263
+  lang: en
+  mode: typed
+  accept:
+    - "See you tomorrow"
+  answer: "See you tommorow"
+  expect: typo
+  closest: "See you tomorrow"
+  note: "two edits in an 8-letter word are allowed"
+
+- id: g264
+  lang: en
+  mode: typed
+  accept:
+    - "See you tomorrow"
+  answer: "see you tomorow!"
+  expect: typo
+  closest: "See you tomorrow"
+  note: "one deletion in an 8-letter word"
+
+- id: g265
+  lang: en
+  mode: typed
+  accept:
+    - "See you tomorrow"
+  answer: "See you tumoro"
+  expect: wrong
+  closest: "See you tomorrow"
+  note: "three edits exceed the 8+ letter limit"
+
+- id: g266
+  lang: en
+  mode: typed
+  accept:
+    - "It's [very/really] delicious"
+  answer: "It is very delisous"
+  expect: typo
+  closest: "It's very delicious"
+  note: "two edits in a 9-letter word are allowed"
+
+- id: g267
+  lang: en
+  mode: typed
+  accept:
+    - "It's [very/really] delicious"
+  answer: "It is really delishus"
+  expect: wrong
+  closest: "It's really delicious"
+  note: "three edits exceed the limit"
+
+- id: g268
+  lang: en
+  mode: typed
+  accept:
+    - "I [eat/have] breakfast at seven"
+  answer: "I have breakfast at 7."
+  expect: correct
+  note: "digit for the number word"
+
+- id: g269
+  lang: en
+  mode: typed
+  accept:
+    - "I [eat/have] breakfast at seven"
+  answer: "I eat brekfest at seven"
+  expect: typo
+  closest: "I eat breakfast at seven"
+  note: "two edits in a 9-letter word"
+
+- id: g270
+  lang: en
+  mode: typed
+  accept:
+    - "I [eat/have] breakfast at seven"
+  answer: "I eat breakfast at eight"
+  expect: wrong
+  closest: "I eat breakfast at seven"
+  note: "wrong number"
+
+- id: g271
+  lang: en
+  mode: typed
+  accept:
+    - "What color is it?"
+  answer: "What colour is it?"
+  expect: correct
+  note: "UK spelling colour"
+
+- id: g272
+  lang: en
+  mode: typed
+  accept:
+    - "What color is it?"
+  answer: "what color is this"
+  expect: wrong
+  closest: "What color is it?"
+  note: "this vs it"
+
+- id: g273
+  lang: en
+  mode: typed
+  accept:
+    - "[What's/What is] your favorite food?"
+  answer: "What is your favourite food?"
+  expect: correct
+  note: "UK spelling favourite"
+
+- id: g274
+  lang: en
+  mode: typed
+  accept:
+    - "[A/One] tea, please"
+  answer: "1 tea please"
+  expect: correct
+  note: "digit for one"
+
+- id: g275
+  lang: en
+  mode: typed
+  accept:
+    - "Three teas, please"
+  answer: "3 teas please"
+  expect: correct
+  note: "digit for three"
+
+- id: g276
+  lang: en
+  mode: typed
+  accept:
+    - "My brother is ten [years old/]"
+  answer: "My brother is 10"
+  expect: correct
+  note: "digit for ten + optional words omitted"
+
+- id: g277
+  lang: en
+  mode: typed
+  accept:
+    - "My brother is ten [years old/]"
+  answer: "my brother is 10 years old."
+  expect: correct
+  note: "digit + optional words"
+
+- id: g278
+  lang: en
+  mode: typed
+  accept:
+    - "Where is the restaurant?"
+  answer: "Where is the restaraunt"
+  expect: typo
+  closest: "Where is the restaurant?"
+  note: "two edits in a 10-letter word"
+
+- id: g279
+  lang: en
+  mode: typed
+  accept:
+    - "Where is the restaurant?"
+  answer: "Where is restaurant"
+  expect: wrong
+  closest: "Where is the restaurant?"
+  note: "missing article"
+
+- id: g280
+  lang: en
+  mode: typed
+  accept:
+    - "bread and cheese"
+  answer: "Bread and cheese."
+  expect: correct
+  note: "case and period"
+
+- id: g281
+  lang: en
+  mode: typed
+  accept:
+    - "bread and cheese"
+  answer: "bread and chese"
+  expect: typo
+  closest: "bread and cheese"
+  note: "one deletion in a 6-letter word"
+
+- id: g282
+  lang: en
+  mode: typed
+  accept:
+    - "bread and cheese"
+  answer: "cheese and bread"
+  expect: wrong
+  closest: "bread and cheese"
+  note: "word order"
+
+- id: g283
+  lang: en
+  mode: bank
+  accept:
+    - "bread and cheese"
+  answer: "cheese and bread"
+  expect: wrong
+  note: "word bank: word order"
+
+- id: g284
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi], how are you?"
+  answer: "Hi, how are you?"
+  expect: correct
+  note: "punctuation inside the pattern is ignored too"
+
+- id: g285
+  lang: en
+  mode: typed
+  accept:
+    - "[Hello/Hi], how are you?"
+  answer: "Hello, how are yuo?"
+  expect: wrong
+  closest: "Hello, how are you?"
+  note: "3-letter word: no typo allowed"
+
+- id: g286
+  lang: en
+  mode: typed
+  accept:
+    - "I want tea"
+  answer: "I want tia"
+  expect: wrong
+  closest: "I want tea"
+  note: "one substitution in a 3-letter word is wrong"
+
+- id: g287
+  lang: en
+  mode: typed
+  accept:
+    - "I want tea"
+  answer: "I wamt tea"
+  expect: typo
+  closest: "I want tea"
+  note: "one substitution in a 4-letter word"
+
+- id: g288
+  lang: en
+  mode: typed
+  accept:
+    - "I want [chicken/fish] and rice"
+  answer: "I want chiken and rice"
+  expect: typo
+  closest: "I want chicken and rice"
+  note: "one deletion in a 7-letter word"
+
+- id: g289
+  lang: en
+  mode: typed
+  accept:
+    - "I want [chicken/fish] and rice"
+  answer: "I want chikin and rice"
+  expect: wrong
+  note: "two edits in a 7-letter word"
+
+- id: g290
+  lang: en
+  mode: typed
+  accept:
+    - "I bought vegetables yesterday"
+  answer: "I bought vegtables yesturday"
+  expect: typo
+  closest: "I bought vegetables yesterday"
+  note: "typos in two tokens are still typo"
+
+- id: g291
+  lang: en
+  mode: typed
+  accept:
+    - "I bought vegetables yesterday"
+  answer: "I bought vegetables"
+  expect: wrong
+  closest: "I bought vegetables yesterday"
+  note: "missing word"
+
+- id: g292
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  answer: "من آب نمی\u200Cخوام"
+  expect: wrong
+  closest: "من آب می\u200Cخوام"
+  note: "adding the negative prefix is one edit but never a typo: the meaning flips"
+
+- id: g293
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب نمی\u200Cخوام"
+  answer: "من آب می\u200Cخوام"
+  expect: wrong
+  closest: "من آب نمی\u200Cخوام"
+  note: "removing the negative prefix is wrong too"
+
+- id: g294
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب می\u200Cخوام"
+  answer: "آب نمی خوام"
+  expect: wrong
+  closest: "آب می\u200Cخوام"
+  note: "negation typed with a space (the loose key joins نمی) after pronoun drop"
+
+- id: g295
+  lang: fa
+  mode: typed
+  accept:
+    - "من آب نمی\u200Cخوام"
+  formal: "من آب نمی\u200Cخواهم"
+  answer: "من آب می\u200Cخواهم"
+  expect: wrong
+  note: "removing the negation in the formal register is wrong as well"
+
+- id: g296
+  lang: fa
+  mode: typed
+  accept:
+    - "من یه برادر دارم"
+  formal: "من یک برادر دارم"
+  answer: "من یه برادر ندارم"
+  expect: wrong
+  closest: "من یه برادر دارم"
+  note: "negative ن on a verb without می (دارم to ندارم)"
+
+- id: g297
+  lang: fa
+  mode: typed
+  accept:
+    - "من برادر ندارم"
+  answer: "من برادر دارم"
+  expect: wrong
+  closest: "من برادر ندارم"
+  note: "dropping the ن of ندارم"
+
+- id: g298
+  lang: fa
+  mode: typed
+  accept:
+    - "من نمی\u200Cدونم"
+  formal: "من نمی\u200Cدانم"
+  answer: "من می\u200Cدونم"
+  expect: wrong
+  note: "\"I know\" for \"I don't know\""
+
+- id: g299
+  lang: fa
+  mode: typed
+  accept:
+    - "آب نیست"
+  answer: "آب هست"
+  expect: wrong
+  closest: "آب نیست"
+  note: "نیست and هست are different words (two edits)"
+
+- id: g300
+  lang: fa
+  mode: bank
+  accept:
+    - "من آب می\u200Cخوام"
+  answer: "من آب نمی\u200Cخوام"
+  expect: wrong
+  note: "word bank: a negated verb tile"
+
+- id: g301
+  lang: en
+  mode: typed
+  accept:
+    - "I have a book"
+  lexicon: ["book", "books"]
+  answer: "I have a books"
+  expect: wrong
+  closest: "I have a book"
+  note: "one edit, but books is another course word"
+
+- id: g302
+  lang: en
+  mode: typed
+  accept:
+    - "I have a book"
+  answer: "I have a books"
+  expect: typo
+  closest: "I have a book"
+  note: "the same edit stays a typo when no lexicon lists books"
+
+- id: g303
+  lang: en
+  mode: typed
+  accept:
+    - "This is my house"
+  lexicon: ["horse"]
+  answer: "This is my horse"
+  expect: wrong
+  closest: "This is my house"
+  note: "house to horse lands on a course word"
+
+- id: g304
+  lang: fa
+  mode: typed
+  accept:
+    - "نمی\u200Cدونم"
+  lexicon: ["نمی\u200Cدونن"]
+  answer: "نمی\u200Cدونن"
+  expect: wrong
+  closest: "نمی\u200Cدونم"
+  note: "person ending م to ن lands on نمی\u200Cدونن \"they don't know\", a course word"
+
+- id: g305
+  lang: fa
+  mode: typed
+  accept:
+    - "نمی\u200Cدونم"
+  answer: "نمی\u200Cدونن"
+  expect: typo
+  closest: "نمی\u200Cدونم"
+  note: "the same person-ending swap is a typo when نمی\u200Cدونن is not in the lexicon"
+
+- id: g306
+  lang: fa
+  mode: typed
+  accept:
+    - "من کتاب می\u200Cخوام"
+  lexicon: ["کباب"]
+  answer: "من کباب می\u200Cخوام"
+  expect: wrong
+  closest: "من کتاب می\u200Cخوام"
+  note: "ت to ب lands on کباب \"kebab\""
+
+- id: g307
+  lang: fa
+  mode: typed
+  accept:
+    - "آره"
+  lexicon: ["اره"]
+  answer: "اره"
+  expect: wrong
+  closest: "آره"
+  note: "the آ/ا typo lands on اره \"saw\", a course word"
+
+- id: g308
+  lang: fa
+  mode: typed
+  accept:
+    - "آره"
+  answer: "اره"
+  expect: typo
+  closest: "آره"
+  note: "the same آ/ا typo when اره is not a course word"
+
+- id: g309
+  lang: fa
+  mode: typed
+  accept:
+    - "خانه\u0654 ما"
+  answer: "خانه\u200Cی ما"
+  expect: correct
+  note: "written ezāfe ه\u200Cی folds to ه like ه\u0654"
+
+- id: g310
+  lang: fa
+  mode: typed
+  accept:
+    - "خونه\u200Cی من"
+  answer: "خونه من"
+  expect: correct
+  note: "ezāfe ه\u200Cی in the pattern, omitted by the learner"
+
+- id: g311
+  lang: fa
+  mode: typed
+  accept:
+    - "خونه\u200Cی من"
+  answer: "خون\u06C0 من"
+  expect: correct
+  note: "ه\u200Cی and \u06C0 give the same key"
+
+- id: g312
+  lang: fa
+  mode: typed
+  accept:
+    - "خسته\u200Cای؟"
+  answer: "خسته؟"
+  expect: wrong
+  closest: "خسته\u200Cای؟"
+  note: "ه\u200Cای (\"you are\") is not an ezāfe and never folds, so the ending is missing"
+
+- id: g313
+  lang: en
+  mode: typed
+  accept:
+    - "I'm good"
+  answer: "I\u2019m good"
+  expect: correct
+  note: "U+2019 (smart punctuation on iOS/macOS) read as an apostrophe"
+
+- id: g314
+  lang: en
+  mode: typed
+  accept:
+    - "I'm good"
+  answer: "I\u2018m good"
+  expect: correct
+  note: "U+2018 read as an apostrophe"
+
+- id: g315
+  lang: en
+  mode: typed
+  accept:
+    - "I'm good"
+  answer: "I\u02BCm good"
+  expect: correct
+  note: "U+02BC modifier letter apostrophe read as an apostrophe"
+
+- id: g316
+  lang: en
+  mode: typed
+  accept:
+    - "I don't know"
+  answer: "I don\u2019t know"
+  expect: correct
+  note: "U+2019 in don't"
+
+- id: g317
+  lang: en
+  mode: typed
+  accept:
+    - "[It's/The weather is] hot"
+  answer: "It\u2019s hot"
+  expect: correct
+  note: "U+2019 in it's"
+
+- id: g318
+  lang: en
+  mode: typed
+  accept:
+    - "I do not know"
+  answer: "I don\u2019t know"
+  expect: correct
+  note: "the apostrophe is normalized before the contraction is expanded"
+
+- id: g319
+  lang: en
+  mode: typed
+  accept:
+    - "I\u2019m tired"
+  answer: "I am tired"
+  expect: correct
+  note: "a typographic apostrophe in the pattern is normalized too"
+
+- id: g320
+  lang: en
+  mode: typed
+  accept:
+    - "I'm tired"
+  answer: "I\u2019m tird"
+  expect: typo
+  closest: "I'm tired"
+  note: "U+2019 plus one deletion in a 5-letter word"

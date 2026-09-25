@@ -13,5 +13,8 @@
     "@zaboon/content-schema": "workspace:*",
     "@zaboon/contracts": "workspace:*",
     "@zaboon/farsi": "workspace:*"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
   }
 }
