@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_APP_CONFIG as cfg } from '@zaboon/contracts'
 import type { Challenge, ChallengeOf, ChallengeResponse } from '@zaboon/contracts'
 import { acceptedTokenKeys, wordKey } from './content'
-import { buildChallenge, generateSession, gradeResponse } from './index'
+import {
+  TRACE_MIN_COVERAGE,
+  TRACE_MIN_PRECISION,
+  buildChallenge,
+  encodeVariant,
+  generateSession,
+  gradeResponse,
+} from './index'
 import { loadCourse } from './test-support/load-course'
 
 const fx = loadCourse('fixtures').view('u01-fixture')
@@ -30,6 +37,7 @@ const RESPONSES: ChallengeResponse[] = [
   { kind: 'pairs', value: [[0, 0]] },
   { kind: 'none' },
   { kind: 'audio', transcript: 'سلام' },
+  { kind: 'trace', coverage: 1, precision: 1 },
 ]
 const KIND_FOR: Record<string, ChallengeResponse['kind']> = {
   select_image: 'choice',
@@ -174,5 +182,88 @@ describe('gradeResponse', () => {
       storyId: 'x',
     }
     expect(gradeResponse(story, { kind: 'none' }).verdict).toBe('wrong')
+  })
+
+  describe('typed Persian (P2)', () => {
+    const build = <T extends Challenge['type']>(ref: Parameters<typeof buildChallenge>[0]) =>
+      buildChallenge(ref, 0, fx) as ChallengeOf<T>
+    const enFa = build<'translate_type'>({
+      type: 'translate_type',
+      items: ['s_u01_0007'],
+      direction: 'en_fa',
+    })
+    const listen = build<'listen_type'>({ type: 'listen_type', items: ['lx_ab'] })
+    const cloze = build<'cloze_type'>({
+      type: 'cloze_type',
+      items: ['s_u01_0007'],
+      variant: encodeVariant({ option: 2 }),
+    })
+    const text = (value: string) => ({ kind: 'text', value }) as const
+
+    it('translate_type en→fa: exact, pronoun drop, register and ZWNJ-free spellings pass', () => {
+      for (const v of ['من سیب می‌خوام', 'سیب می‌خوام', 'من سیب می‌خواهم', 'سیب میخوام'])
+        expect(gradeResponse(enFa, text(v)).verdict, v).toBe('correct')
+      expect(gradeResponse(enFa, text('من نون می‌خوام')).verdict).toBe('wrong')
+      expect(gradeResponse(enFa, { kind: 'tiles', value: ['سیب', 'می‌خوام'] }).verdict).toBe(
+        'wrong',
+      )
+    })
+
+    it('a same-sound letter is a spelling verdict, unless it lands on a course word', () => {
+      const r = gradeResponse(enFa, text('من ثیب می‌خوام'))
+      expect(r.verdict).toBe('spelling')
+      expect(r.diff?.some((d) => d.status === 'spelling')).toBe(true)
+      expect(gradeResponse(cloze, text('ثیب')).verdict).toBe('spelling')
+      expect(gradeResponse(cloze, text('ثیب'), { lexicon: ['ثیب'] }).verdict).toBe('wrong')
+    })
+
+    it('a missing madda is a typo; another word is wrong; negation is never a typo', () => {
+      expect(gradeResponse(listen, text('آب')).verdict).toBe('correct')
+      expect(gradeResponse(listen, text('اب')).verdict).toBe('typo')
+      expect(gradeResponse(listen, text('نون')).verdict).toBe('wrong')
+      expect(gradeResponse(enFa, text('من سیب نمی‌خوام')).verdict).toBe('wrong')
+    })
+
+    it('cloze_type grades the blank only, and never throws on odd input', () => {
+      expect(gradeResponse(cloze, text('سیب')).verdict).toBe('correct')
+      expect(gradeResponse(cloze, text(' سیب ')).verdict).toBe('correct')
+      expect(gradeResponse(cloze, text('من سیب می‌خوام')).verdict).toBe('wrong')
+      expect(gradeResponse(cloze, text('')).verdict).toBe('wrong')
+      expect(gradeResponse(cloze, { kind: 'choice', value: 0 }).verdict).toBe('wrong')
+    })
+  })
+
+  describe('letter_trace (P2)', () => {
+    const trace = buildChallenge({ type: 'letter_trace', items: ['l_be'] }, 0, fx)
+    const t = (coverage: number, precision: number, declined?: true) =>
+      ({ kind: 'trace', coverage, precision, ...(declined ? { declined } : {}) }) as const
+
+    it('exports sane thresholds', () => {
+      expect(TRACE_MIN_COVERAGE).toBeGreaterThan(0.5)
+      expect(TRACE_MIN_COVERAGE).toBeLessThan(1)
+      expect(TRACE_MIN_PRECISION).toBeGreaterThan(0.5)
+      expect(TRACE_MIN_PRECISION).toBeLessThan(1)
+    })
+
+    it('passes when both scores reach their thresholds', () => {
+      expect(gradeResponse(trace, t(1, 1))).toEqual({ verdict: 'correct' })
+      expect(gradeResponse(trace, t(TRACE_MIN_COVERAGE, TRACE_MIN_PRECISION)).verdict).toBe(
+        'correct',
+      )
+      expect(gradeResponse(trace, t(TRACE_MIN_COVERAGE - 0.01, 1)).verdict).toBe('wrong')
+      expect(gradeResponse(trace, t(1, TRACE_MIN_PRECISION - 0.01)).verdict).toBe('wrong')
+      expect(gradeResponse(trace, t(0, 0)).verdict).toBe('wrong')
+    })
+
+    it('"Can\'t trace now" (declined) grades correct: no heart, no re-queue', () => {
+      expect(gradeResponse(trace, t(0, 0, true))).toEqual({ verdict: 'correct' })
+    })
+
+    it('any other response kind is wrong (skip is skipped); a trace fits no other type', () => {
+      for (const r of RESPONSES.filter((x) => x.kind !== 'trace'))
+        expect(gradeResponse(trace, r).verdict).toBe('wrong')
+      expect(gradeResponse(trace, { kind: 'skip' }).verdict).toBe('skipped')
+      for (const c of all) expect(gradeResponse(c, t(1, 1, true)).verdict).toBe('wrong')
+    })
   })
 })

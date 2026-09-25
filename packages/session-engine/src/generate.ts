@@ -10,11 +10,20 @@
  * Every candidate ref is probed with the real builder, so types whose media or distractors are
  * missing are skipped. All choices come from the seed: same input → same session.
  *
- * Wave 3 seam: mix categories behind a feature (`typing`, `letterTrace`) are dropped from the
- * weights unless `GenerateInput.features` turns the feature on, so with every feature off a session
- * is exactly the MVP's (packages/session-engine/oracles/mvp-sessions.golden.json). With a feature
- * on, the category has no pool yet and its slots fall back to the MVP categories (ws-typing adds
- * the pools and builders); `practiceMode` is accepted and not used yet.
+ * Wave 3 (P2) features, each off unless `GenerateInput.features` turns it on:
+ * - `persianTyping`: the `typing` mix category (translate_type en→fa over sentences, listen_type,
+ *   cloze_type) and ladder step 5 (typing the new word's translation, from the second lesson of a
+ *   level on, like English typing);
+ * - `letterTrace`: the `letterTrace` mix category (letter_trace) in letters sessions.
+ * While a feature is off its category is dropped from the weights, its pool is never built and no
+ * extra randomness is drawn, so the session is exactly the MVP's
+ * (packages/session-engine/oracles/mvp-sessions.golden.json). A pinned P2 ref whose feature is off
+ * is replaced in place by its MVP twin (`mvpTwin`). Stored refs hold what was built, so a rebuild
+ * never depends on the flags.
+ *
+ * Practice hub (`practiceMode`, practice sessions only): `mixed` (or absent) is the MVP practice
+ * session; `mistakes` drills open mistakes only; `listening` and `typing` keep to those challenge
+ * kinds. A mode with nothing to offer falls back to `mixed`, byte-identical.
  */
 import type {
   CompiledSentence,
@@ -71,7 +80,7 @@ export interface GenerateInput {
   config: AppConfig
   /** Wave 3 features from the request's flags (the server passes them; absent = all off). */
   features?: SessionFeatures
-  /** Practice hub mode (P2, practice sessions only). Accepted; not used by the engine yet. */
+  /** Practice hub mode (P2, practice sessions only); absent = `mixed`. */
   practiceMode?: PracticeMode
 }
 
@@ -94,6 +103,8 @@ type Category =
   | 'letterForms'
   | 'readWord'
   | 'buildWord'
+  | 'typing'
+  | 'letterTrace'
 
 const COURSE_FALLBACK: readonly Category[] = [
   'productionBank',
@@ -244,8 +255,32 @@ const GATED_CATEGORIES: Readonly<Record<string, keyof SessionFeatures>> = {
   letterTrace: 'letterTrace',
 }
 
+/**
+ * The MVP twin of a P2 ref whose feature is off (the ref itself otherwise): typed Persian becomes
+ * its word-bank or choice twin over the same item, a trace becomes the letter's forms. Used for
+ * hand-pinned refs, so a pinned P2 level still plays with its flags off.
+ */
+export function mvpTwin(r: ChallengeRef, features: SessionFeatures | undefined): ChallengeRef {
+  const typing = features?.persianTyping === true
+  switch (r.type) {
+    case 'translate_type':
+      return !typing && r.direction === 'en_fa' ? { ...r, type: 'translate_bank' } : r
+    case 'listen_type':
+      return typing ? r : { ...r, type: 'listen_tap' }
+    case 'cloze_type':
+      return typing ? r : { ...r, type: 'cloze_choice' }
+    case 'letter_trace':
+      return features?.letterTrace === true ? r : { type: 'letter_forms', items: [r.items[0]!] }
+    default:
+      return r
+  }
+}
+
 /** Drops every gated category whose feature is off (in place). */
-function dropDisabled(weights: Record<string, number>, features: SessionFeatures | undefined): void {
+function dropDisabled(
+  weights: Record<string, number>,
+  features: SessionFeatures | undefined,
+): void {
   for (const [category, feature] of Object.entries(GATED_CATEGORIES))
     if (features?.[feature] !== true) delete weights[category]
 }
@@ -339,6 +374,33 @@ function sentencesWith(
     )
 }
 
+/** The cloze option that blanks a sentence's first pool word (0 = the builder picks). */
+function clozeTarget(p: Planner, pool: CoursePool, s: CompiledSentence): number {
+  const lex = new Set(pool.lexemes.map((l) => l.id))
+  const i = s.tokens.findIndex(
+    (t) =>
+      t.lexeme !== undefined && lex.has(t.lexeme) && p.ix.lexemes.get(t.lexeme)?.pos !== 'pronoun',
+  )
+  return i >= 0 ? i + 1 : 0
+}
+
+/** Typed Persian refs (P2) over sentences and words, interleaved by item. */
+function persianTypingRefs(
+  p: Planner,
+  pool: CoursePool,
+  sentences: readonly CompiledSentence[],
+  lexemes: readonly Lexeme[],
+): ChallengeRef[] {
+  return [
+    ...sentences.flatMap((s) => [
+      ref('translate_type', [s.id], { direction: 'en_fa' }),
+      ref('listen_type', [s.id]),
+      ref('cloze_type', [s.id], { option: clozeTarget(p, pool, s) }),
+    ]),
+    ...lexemes.map((l) => ref('listen_type', [l.id])),
+  ]
+}
+
 function coursePools(
   p: Planner,
   pool: CoursePool,
@@ -347,20 +409,10 @@ function coursePools(
 ): Partial<Record<Category, ChallengeRef[]>> {
   const S = shuffle(pool.sentences, rnd)
   const L = shuffle(pool.lexemes, rnd)
-  const clozeTarget = (s: CompiledSentence) => {
-    const lex = new Set(pool.lexemes.map((l) => l.id))
-    const i = s.tokens.findIndex(
-      (t) =>
-        t.lexeme !== undefined &&
-        lex.has(t.lexeme) &&
-        p.ix.lexemes.get(t.lexeme)?.pos !== 'pronoun',
-    )
-    return i >= 0 ? i + 1 : 0
-  }
   const recognition = shuffle(
     [
       ...S.map((s) => ref('select_translation', [s.id], { direction: 'fa_en' })),
-      ...S.map((s) => ref('cloze_choice', [s.id], { option: clozeTarget(s) })),
+      ...S.map((s) => ref('cloze_choice', [s.id], { option: clozeTarget(p, pool, s) })),
       ...pool.chats.map((c) => ref('complete_chat', [c])),
       ...L.filter((l) => l.image).map((l) => ref('select_image', [l.id])),
     ],
@@ -400,7 +452,88 @@ function coursePools(
         ),
       )
   }
-  return { recognition, productionBank: production, listening, matching }
+  const pools: Partial<Record<Category, ChallengeRef[]>> = {
+    recognition,
+    productionBank: production,
+    listening,
+    matching,
+  }
+  // P2 pools come last and draw from `rnd` only while their feature is on (MVP sessions unchanged).
+  if (allowTyping && p.input.features?.persianTyping === true)
+    pools.typing = shuffle(persianTypingRefs(p, pool, S, L), rnd)
+  return pools
+}
+
+/** Round-robin over lists: the first of each, then the second of each, … */
+function interleave<T>(lists: readonly (readonly T[])[]): T[] {
+  const out: T[] = []
+  const longest = Math.max(0, ...lists.map((l) => l.length))
+  for (let i = 0; i < longest; i++) for (const l of lists) if (i < l.length) out.push(l[i]!)
+  return out
+}
+
+/**
+ * A practice-hub session other than `mixed` (empty when the mode has nothing to offer, or for
+ * `mixed`/no mode; the caller then plans today's practice session). Items keep the practice
+ * pool's priority (open mistakes, due cards, weakest words); no randomness is drawn here.
+ */
+function planPracticeMode(p: Planner, pool: CoursePool, budget: number): ChallengeRef[] {
+  const { practiceMode, features, learner } = p.input
+  const typing = features?.persianTyping === true
+  const takeAll = (candidates: readonly ChallengeRef[]) => {
+    const out: ChallengeRef[] = []
+    for (const r of candidates) {
+      if (out.length >= budget) break
+      if (p.take([r])) out.push(r)
+    }
+    return out
+  }
+  const S = pool.sentences
+  const L = pool.lexemes
+  switch (practiceMode) {
+    case 'mistakes': {
+      // Open mistakes only, each drilled through its review exercises in turn.
+      const items = [...new Set(learner.mistakes.map((r) => r.slice(r.indexOf(':') + 1)))]
+      const out: ChallengeRef[] = []
+      let turn = 0
+      for (let progress = true; progress && out.length < budget;) {
+        progress = false
+        for (const item of items) {
+          if (out.length >= budget) break
+          const r = reviewRef(p, item, turn++, S)
+          if (r) {
+            out.push(r)
+            progress = true
+          }
+        }
+      }
+      return out
+    }
+    case 'listening':
+      return takeAll(
+        interleave([
+          S.map((s) => ref('listen_tap', [s.id])),
+          L.map((l) => ref('listen_tap', [l.id])),
+          typing ? S.map((s) => ref('listen_type', [s.id])) : [],
+          typing ? L.map((l) => ref('listen_type', [l.id])) : [],
+        ]),
+      )
+    case 'typing':
+      return takeAll(
+        interleave([
+          S.map((s) => ref('translate_type', [s.id], { direction: 'fa_en' })),
+          L.map((l) => ref('translate_type', [l.id], { direction: 'fa_en' })),
+          typing ? S.map((s) => ref('translate_type', [s.id], { direction: 'en_fa' })) : [],
+          typing ? S.map((s) => ref('listen_type', [s.id])) : [],
+          typing
+            ? S.map((s) => ref('cloze_type', [s.id], { option: clozeTarget(p, pool, s) }))
+            : [],
+          typing ? L.map((l) => ref('translate_type', [l.id], { direction: 'en_fa' })) : [],
+        ]),
+      )
+    default:
+      return []
+  }
 }
 
 /** One review ref for an item, rotating through recognition / production / listening. */
@@ -457,10 +590,18 @@ function planCourse(
       (ix.view.unit?.unit.levels ?? []).flatMap((l) => (l.spec ? [l.spec] : [])),
     )
   } else pool = focusPool(ix, level?.spec ? [level.spec] : [])
+  if (kind === 'practice') {
+    const drill = planPracticeMode(p, pool, budget)
+    if (drill.length > 0) return { front: [], rest: drill }
+  }
 
   const profile = PROFILE_FOR_KIND[kind] ?? level?.spec?.mix ?? 'standard'
   const weights = { ...mixWeights(config, profile) }
   dropDisabled(weights, input.features)
+  // Typing (English, and Persian with the feature) starts with a level's second lesson.
+  const allowTyping = kind !== 'lesson' || input.lessonIndex >= 1
+  const persianTyping = allowTyping && input.features?.persianTyping === true
+  if (!allowTyping) delete weights.typing
   const front: ChallengeRef[] = []
   const rest: ChallengeRef[] = []
   let left = budget
@@ -502,6 +643,13 @@ function planCourse(
         ref('translate_bank', [w.id], { direction: 'en_fa' }),
       ]),
       p.take([...withWord.map((s) => ref('listen_tap', [s.id])), ref('listen_tap', [w.id])]),
+      // Step 5 (P2): type the translation in Persian.
+      persianTyping
+        ? p.take([
+            ...withWord.map((s) => ref('translate_type', [s.id], { direction: 'en_fa' })),
+            ref('translate_type', [w.id], { direction: 'en_fa' }),
+          ])
+        : null,
     ].filter((r): r is ChallengeRef => r !== null)
     const room = left - reserve
     const kept =
@@ -528,7 +676,6 @@ function planCourse(
   }
 
   // --- the rest by mix profile ----------------------------------------------------------------
-  const allowTyping = kind !== 'lesson' || input.lessonIndex >= 1
   rest.push(
     ...p.fillByMix(
       Math.max(0, left),
@@ -638,6 +785,15 @@ function planLetters(
     ),
     buildWord: E.map((id) => ref('build_word', [id])),
   }
+  // P2: trace each letter isolated and in one joined form (a non-connector: its final form).
+  if (input.features?.letterTrace === true)
+    pools.letterTrace = shuffle(
+      L.flatMap((l) => [
+        ref('letter_trace', [l.id]),
+        ref('letter_trace', [l.id], { option: l.connects ? 1 + Math.floor(rnd() * 3) : 3 }),
+      ]),
+      rnd,
+    )
   // The letterIntro share is served by the new-letter intros above (like newWord in lessons).
   const weights = { ...mixWeights(config, 'letters') }
   delete weights.letterIntro
@@ -652,12 +808,17 @@ export function generateSession(input: GenerateInput): GeneratedSession {
   const p = new Planner(input)
   const level = findLevel(input.content, input.levelId)
   const spec = level?.spec
-  const pinned: ChallengeRef[] = (spec?.pinned ?? []).map((x) => ({
-    type: x.type,
-    items: [...x.items],
-    ...(x.direction ? { direction: x.direction } : {}),
-    ...(x.distractors ? { distractors: [...x.distractors] } : {}),
-  }))
+  const pinned: ChallengeRef[] = (spec?.pinned ?? []).map((x) =>
+    mvpTwin(
+      {
+        type: x.type,
+        items: [...x.items],
+        ...(x.direction ? { direction: x.direction } : {}),
+        ...(x.distractors ? { distractors: [...x.distractors] } : {}),
+      },
+      input.features,
+    ),
+  )
   let refs: ChallengeRef[]
   if (spec?.pinnedOnly && pinned.length > 0) refs = pinned
   else {

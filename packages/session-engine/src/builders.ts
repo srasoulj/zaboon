@@ -17,7 +17,7 @@ import type {
   ChallengeRef,
   Direction,
 } from '@zaboon/contracts'
-import { accepts } from '@zaboon/grader'
+import { accepts, compile } from '@zaboon/grader'
 import {
   ContentError,
   acceptedTokenKeys,
@@ -27,6 +27,7 @@ import {
   letterInfo,
   lexemeGraph,
   lexemeText,
+  literalPattern,
   modelAnswer,
   sentenceAudio,
   sentenceLexemes,
@@ -372,7 +373,12 @@ function matchPairs(c: Ctx): ChallengeOf<'match_pairs'> {
   }
 }
 
-function listenTap(c: Ctx): ChallengeOf<'listen_tap'> {
+/** The clip and transcript of a listening item (listen_tap, listen_type). */
+function listenItem(c: Ctx): {
+  item: Item
+  audio: ChallengeOf<'listen_tap'>['audio']
+  transcript: ChallengeOf<'listen_tap'>['transcript']
+} {
   const item = wordItem(c.ix, c.ref.items[0]!)
   const audio =
     item.kind === 'sentence'
@@ -380,7 +386,14 @@ function listenTap(c: Ctx): ChallengeOf<'listen_tap'> {
       : item.lexeme.audio
         ? { normal: c.ix.view.mediaUrl(item.lexeme.audio) }
         : undefined
-  if (!audio?.normal) throw new ContentError(`listen_tap ${c.ref.items[0]}: no audio`)
+  if (!audio?.normal) throw new ContentError(`${c.ref.type} ${c.ref.items[0]}: no audio`)
+  const transcript =
+    item.kind === 'sentence' ? sentenceText(c.ix, item.sentence) : lexemeText(c.ix, item.lexeme)
+  return { item, audio, transcript }
+}
+
+function listenTap(c: Ctx): ChallengeOf<'listen_tap'> {
+  const { item, audio, transcript } = listenItem(c)
   const graph = itemGraph(item, 'fa')
   const words = itemTiles(item, 'fa')
   const extra = bankDistractors(
@@ -394,8 +407,6 @@ function listenTap(c: Ctx): ChallengeOf<'listen_tap'> {
   )
   if (words.length + extra.length < 2)
     throw new ContentError(`listen_tap ${c.ref.items[0]}: bank too small`)
-  const transcript =
-    item.kind === 'sentence' ? sentenceText(c.ix, item.sentence) : lexemeText(c.ix, item.lexeme)
   return {
     ...c.common,
     type: 'listen_tap',
@@ -446,6 +457,67 @@ function clozeChoice(c: Ctx): ChallengeOf<'cloze_choice'> {
     choices,
     answer,
   }
+}
+
+/** Type what you hear (P2): listen_tap's clip and transcript, answered by typing Persian. */
+function listenType(c: Ctx): ChallengeOf<'listen_type'> {
+  const { item, audio, transcript } = listenItem(c)
+  return { ...c.common, type: 'listen_type', audio, transcript, graph: itemGraph(item, 'fa') }
+}
+
+/**
+ * Type the missing word (P2). The blank is chosen like cloze_choice's (option n = token n - 1,
+ * option 0 = the engine picks). Its graph accepts every single word that completes the sentence
+ * under the sentence's own key (the surface first, so it is the model answer; then register and
+ * orthography alternatives found on the sentence graph), with no pronoun drop: the blank is
+ * never optional.
+ */
+function clozeType(c: Ctx): ChallengeOf<'cloze_type'> {
+  const s = c.ix.sentence(c.ref.items[0]!)
+  const candidates = clozeCandidates(c.ix, s)
+  const blank = c.option > 0 ? c.option - 1 : candidates[Math.floor(c.rnd() * candidates.length)]
+  if (blank === undefined || !candidates.includes(blank))
+    throw new ContentError(`cloze_type ${s.id}: nothing to blank`)
+  const surfaces = s.tokens.map((t) => t.surface)
+  const token = s.tokens[blank]!
+  const fills = (word: string) =>
+    accepts(
+      s.graphs.fa,
+      surfaces.map((w, i) => (i === blank ? word : w)),
+      'fa',
+    )
+  const forms = distinctBy(
+    [token.surface, ...s.graphs.fa.edges.map((e) => e.t)].filter(
+      (w) => w !== '' && !/\s/.test(w) && fills(w),
+    ),
+    Number.MAX_SAFE_INTEGER,
+    (w) => w,
+  )
+  if (forms.length === 0) throw new ContentError(`cloze_type ${s.id}: the blank has no key`)
+  return {
+    ...c.common,
+    type: 'cloze_type',
+    before: s.tokens.slice(0, blank),
+    after: s.tokens.slice(blank + 1),
+    translation: modelAnswer(s.graphs.en),
+    graph: compile(forms.map(literalPattern), { lang: 'fa', pronounDrop: false }),
+  }
+}
+
+/** letter_trace `form` by ref option (variant.ts). */
+export const TRACE_FORMS = ['isolated', 'initial', 'medial', 'final'] as const
+
+/**
+ * Trace a letter (P2) in one of its forms. A non-connector has no distinct initial or medial
+ * form (they look like its isolated and final forms), so only options 0 and 3 build for it.
+ */
+function letterTrace(c: Ctx): ChallengeOf<'letter_trace'> {
+  const letter = c.ix.letter(c.ref.items[0]!)
+  const form = TRACE_FORMS[c.option]
+  if (form === undefined) throw new ContentError(`letter_trace ${letter.id}: no form ${c.option}`)
+  if (!letter.connects && (form === 'initial' || form === 'medial'))
+    throw new ContentError(`letter_trace ${letter.id}: a non-connector has no ${form} form`)
+  return { ...c.common, type: 'letter_trace', letter: letterInfo(c.ix, letter), form }
 }
 
 function completeChat(c: Ctx): ChallengeOf<'complete_chat'> {
@@ -633,8 +705,14 @@ export function buildChallenge(ref: ChallengeRef, index: number, content: Conten
       return readWord(c)
     case 'build_word':
       return buildWord(c)
+    case 'listen_type':
+      return listenType(c)
+    case 'cloze_type':
+      return clozeType(c)
+    case 'letter_trace':
+      return letterTrace(c)
     default:
-      throw new NotImplementedError(`challenge type not in the MVP: ${ref.type}`)
+      throw new NotImplementedError(`challenge type not available yet: ${ref.type}`)
   }
 }
 
