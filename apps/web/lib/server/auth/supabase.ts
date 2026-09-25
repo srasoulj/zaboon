@@ -2,7 +2,7 @@
  * Production auth: Supabase access tokens verified locally against the project's JWKS (ADR 0009).
  * Only asymmetric algorithms, the project's issuer and the `authenticated` audience are accepted.
  */
-import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { createRemoteJWKSet, errors, jwtVerify } from 'jose'
 import { ApiError } from '../errors'
 import type { AccessClaims } from './types'
 
@@ -26,7 +26,17 @@ export async function verifySupabaseToken(
       algorithms: ALGORITHMS,
     })
     return payload as Partial<AccessClaims>
-  } catch {
+  } catch (err) {
+    // The key set couldn't be fetched or read: that says nothing about the token, so it is a
+    // retryable server error, never `unauthorized` (clients treat that as final, e.g. they drop a
+    // pending guest merge).
+    if (isKeySetUnavailable(err)) throw new ApiError('internal', 'auth keys are unavailable')
     throw new ApiError('unauthorized', 'invalid or expired token')
   }
+}
+
+/** A JWKS timeout or unreadable key set, or a non-JOSE failure (the fetch itself failed). */
+export function isKeySetUnavailable(err: unknown): boolean {
+  if (err instanceof errors.JWKSTimeout || err instanceof errors.JWKSInvalid) return true
+  return !(err instanceof errors.JOSEError)
 }
