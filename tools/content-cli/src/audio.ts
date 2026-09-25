@@ -60,9 +60,22 @@ export function slowArgs(input: string, output: string): string[] {
 }
 
 /**
- * TTS audio (the WAV from `speech()`) → the house MP3 (−16 LUFS, mono, 64 kbps), through a temp
- * dir. Lexeme clips are used as written (`audio` only processes sentences), so every TTS clip is
- * normalized here.
+ * gpt-audio pads its clips with near-digital silence (up to ~2 s after the speech). Both ends are
+ * trimmed on the raw audio, before loudnorm raises the noise floor, keeping 50 ms before the
+ * speech and 250 ms after it, so playback and lip-sync end when the voice does.
+ */
+export const TTS_TRIM =
+  'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05,areverse,' +
+  'silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.25,areverse'
+
+/** A TTS clip → the house MP3: trimmed, −16 LUFS, mono, 64 kbps. */
+export function ttsArgs(input: string, output: string): string[] {
+  return [...base, '-i', input, '-af', `${TTS_TRIM},${LOUDNORM}`, ...encode, output]
+}
+
+/**
+ * TTS audio (the WAV from `speech()`) → the house MP3, through a temp dir. Lexeme clips are used
+ * as written (`audio` only processes sentences), so every TTS clip is normalized here.
  */
 export async function encodeTtsMp3(bytes: Buffer, run: FfmpegRunner = runFfmpeg): Promise<Buffer> {
   const work = mkdtempSync(join(tmpdir(), 'zaboon-tts-'))
@@ -70,7 +83,7 @@ export async function encodeTtsMp3(bytes: Buffer, run: FfmpegRunner = runFfmpeg)
     const input = join(work, 'speech.wav')
     const output = join(work, 'speech.mp3')
     writeFileSync(input, bytes)
-    await run(normalizeArgs(input, output))
+    await run(ttsArgs(input, output))
     return readFileSync(output)
   } finally {
     rmSync(work, { recursive: true, force: true })

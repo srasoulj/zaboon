@@ -1,13 +1,7 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import {
@@ -22,16 +16,17 @@ import type { FfmpegRunner } from './audio'
 import { loadCourse } from './load'
 import { generateArt, generateTts, readSidecar } from './media'
 import { suggestVariants, type SuggestOutput } from './suggest'
-import { validateCourse } from './validate'
+import { mediaRefs, validateCourse } from './validate'
 import { setItemFields } from './yaml-out'
-import { seedCourseCopy } from './fixtures/seed-course'
+import { seedCourseWithoutMedia } from './fixtures/seed'
 import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
+/** content/fa-en without generated audio and illustrations (the live course may have some). */
 function seedCopy(): string {
   const root = mkdtempSync(join(tmpdir(), 'zaboon-authoring-'))
   dirs.push(root)
-  return seedCourseCopy(join(root, 'fa-en'))
+  return seedCourseWithoutMedia(root)
 }
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 
@@ -123,6 +118,19 @@ describe('suggest', () => {
     await expect(
       suggestVariants({ course: loadCourse(seedCopy()), unit: 'u09-nope', dryRun: true }),
     ).rejects.toThrow(/unknown unit/)
+  })
+})
+
+describe('test seed', () => {
+  it('copies the live course without generated media, so tests never depend on it', () => {
+    const dir = seedCopy()
+    expect(existsSync(join(dir, 'assets/audio'))).toBe(false)
+    expect(existsSync(join(dir, 'assets/img'))).toBe(false)
+    const course = loadCourse(dir)
+    expect(mediaRefs(course).filter((m) => /^(audio|img)\//.test(m.ref))).toEqual([])
+    expect(course.sentences.filter((s) => s.audio?.signedOffBy !== undefined)).toEqual([])
+    expect(course.sentences.length).toBeGreaterThan(0)
+    expect(errorsOf(dir)).toEqual([])
   })
 })
 
@@ -268,9 +276,9 @@ describe('tts', () => {
       voice: 'coral',
       input: 'سلام!',
     })
-    // Comments survive the edit: the file still starts with the live file's header line.
+    // Comments survive the edit: the file still starts with the seed file's header line.
     const header = readFileSync(
-      join(repoRoot(), 'content/fa-en/sentences/u01-hello.yaml'),
+      fileURLToPath(new URL('./fixtures/seed-fa-en/sentences/u01-hello.yaml', import.meta.url)),
       'utf8',
     ).split('\n')[0]!
     expect(header).toMatch(/^# Unit 1 sentences/)

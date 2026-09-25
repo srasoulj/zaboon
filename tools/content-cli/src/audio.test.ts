@@ -1,13 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -20,10 +12,12 @@ import {
   processClip,
   processUnitAudio,
   slowArgs,
+  TTS_TRIM,
+  ttsArgs,
   type FfmpegRunner,
 } from './audio'
+import { seedCourseWithoutMedia } from './fixtures/seed'
 import { loadCourse } from './load'
-import { repoRoot } from './paths'
 import { validateCourse } from './validate'
 import { setItemFields } from './yaml-out'
 
@@ -72,8 +66,7 @@ describe('audio processing', () => {
   })
 
   it('processes a unit: writes slow clips and envelopes and points the YAML at them', async () => {
-    const dir = join(temp(), 'fa-en')
-    cpSync(join(repoRoot(), 'content/fa-en'), dir, { recursive: true })
+    const dir = seedCourseWithoutMedia(temp())
     mkdirSync(join(dir, 'assets/audio'), { recursive: true })
     writeFileSync(join(dir, 'assets/audio/s_u01_0001.mp3'), 'raw tts')
     setItemFields(join(dir, 'sentences/u01-hello.yaml'), 's_u01_0001', [
@@ -135,28 +128,44 @@ describe('audio processing', () => {
     const mp3 = await encodeTtsMp3(wav, fake)
     expect(mp3.toString()).toBe('mp3 bytes')
     expect(input!.equals(wav)).toBe(true)
-    expect(seen).toEqual(normalizeArgs(seen[seen.indexOf('-i') + 1]!, seen.at(-1)!))
+    expect(seen).toEqual(ttsArgs(seen[seen.indexOf('-i') + 1]!, seen.at(-1)!))
+    // Silence is trimmed on the raw audio, then the clip is normalized like `audio` does.
+    expect(seen[seen.indexOf('-af') + 1]).toBe(`${TTS_TRIM},loudnorm=I=-16:TP=-1.5:LRA=11`)
+    expect(seen.slice(-9, -1)).toEqual([
+      '-ac',
+      '1',
+      '-ar',
+      '44100',
+      '-c:a',
+      'libmp3lame',
+      '-b:a',
+      '64k',
+    ])
     expect(existsSync(seen.at(-1)!)).toBe(false) // the temp dir is removed
   })
 
-  it('encodes a real 24 kHz TTS WAV to mono MP3 with ffmpeg (or says it is missing)', async () => {
-    const samples = 12_000 // 0.5 s at 24 kHz
-    const tone = Buffer.alloc(samples * 2)
-    for (let i = 0; i < samples; i++)
-      tone.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 440 * i) / 24_000)), i * 2)
+  it('encodes a real TTS WAV with ffmpeg, trimming padded silence (or says it is missing)', async () => {
+    // 0.3 s of silence, 0.5 s of a 440 Hz tone, 1.5 s of silence, at 24 kHz like gpt-audio.
+    const rate = 24_000
+    const [lead, tone, tail] = [0.3 * rate, 0.5 * rate, 1.5 * rate]
+    const wav = Buffer.alloc((lead + tone + tail) * 2)
+    for (let i = 0; i < tone; i++)
+      wav.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 440 * i) / rate)), (lead + i) * 2)
     if (spawnSync('ffmpeg', ['-version']).status !== 0) {
-      await expect(encodeTtsMp3(pcm16ToWav(tone))).rejects.toThrow(/ffmpeg is not installed/)
+      await expect(encodeTtsMp3(pcm16ToWav(wav))).rejects.toThrow(/ffmpeg is not installed/)
       return
     }
     const file = join(temp(), 'tts.mp3')
-    writeFileSync(file, await encodeTtsMp3(pcm16ToWav(tone)))
+    writeFileSync(file, await encodeTtsMp3(pcm16ToWav(wav)))
     const probe = JSON.parse(
       spawnSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file], {
         encoding: 'utf8',
       }).stdout,
     ) as { streams: { codec_name: string; channels: number }[]; format: { duration: string } }
     expect(probe.streams[0]).toMatchObject({ codec_name: 'mp3', channels: 1 })
-    expect(Number(probe.format.duration)).toBeGreaterThan(0.4)
+    // 2.3 s in; about 0.05 + 0.5 + 0.25 s out (plus MP3 encoder padding).
+    expect(Number(probe.format.duration)).toBeGreaterThan(0.7)
+    expect(Number(probe.format.duration)).toBeLessThan(1)
   }, 30_000)
 
   it('runs the real ffmpeg when it is installed, and says so clearly when it is not', async () => {
