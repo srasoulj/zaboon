@@ -252,6 +252,15 @@ export const routes = {
     request: undefined,
     response: c.DevTokenResponse,
   }),
+  devRefresh: route({
+    method: 'POST',
+    path: '/api/dev/auth/refresh',
+    auth: 'dev',
+    phase: 'mvp',
+    bucket: 'auth',
+    request: c.DevRefreshRequest,
+    response: c.DevTokenResponse,
+  }),
 } as const
 
 export type Routes = typeof routes

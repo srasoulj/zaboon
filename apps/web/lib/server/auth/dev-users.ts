@@ -131,3 +131,11 @@ export async function deleteUser(userId: string): Promise<boolean> {
   const rows = await sql`DELETE FROM auth.users WHERE id = ${userId} RETURNING id`
   return rows.length === 1
 }
+
+/** The current state of a user (for refreshing a token after a link or admin change). */
+export async function getUser(userId: string): Promise<DevUser | null> {
+  const sql = adminSql()
+  const [row] = await sql<Row[]>`
+    SELECT id, is_anonymous, email, raw_app_meta_data FROM auth.users WHERE id = ${userId}`
+  return row ? toUser(row) : null
+}

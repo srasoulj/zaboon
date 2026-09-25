@@ -8,7 +8,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "dev": "pnpm db:ensure && pnpm --filter @zaboon/web dev",
+    "dev": "pnpm db:ensure && AUTH_MODE=local NEXT_PUBLIC_AUTH_MODE=local ZABOON_DEV_AUTH=1 pnpm --filter @zaboon/web dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "eslint . --max-warnings=0",

@@ -1,0 +1,131 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiClientError, createApiClient, TEST_NOW_KEY } from './api-client'
+import { createLocalAuthClient, LOCAL_SESSION_KEY } from './auth-client'
+
+const USER = '11111111-2222-4333-8444-555555555555'
+
+class MemoryStorage {
+  private m = new Map<string, string>()
+  getItem = (k: string) => this.m.get(k) ?? null
+  setItem = (k: string, v: string) => void this.m.set(k, v)
+  removeItem = (k: string) => void this.m.delete(k)
+}
+
+beforeEach(() => {
+  vi.stubGlobal('localStorage', new MemoryStorage())
+})
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+})
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+
+const token = (expiresInMs: number, id = USER) => ({
+  accessToken: `tok-${expiresInMs}-${'x'.repeat(24)}`,
+  expiresAt: new Date(Date.now() + expiresInMs).toISOString(),
+  user: { id, isAnonymous: true, email: null },
+})
+
+describe('api client', () => {
+  it('builds the request from the route registry and validates the response', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'local')
+    localStorage.setItem(TEST_NOW_KEY, '2031-01-02T00:00:00Z')
+    const fetchMock = vi.fn(async () => json(200, { deleted: true }))
+    const api = createApiClient({ getAccessToken: async () => 'abc', fetch: fetchMock })
+    await expect(api('deleteAccount')).resolves.toEqual({ deleted: true })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/account')
+    expect(init.method).toBe('DELETE')
+    expect(init.headers).toMatchObject({
+      authorization: 'Bearer abc',
+      'x-zaboon-app-version': '0.1.0',
+      'x-test-now': '2031-01-02T00:00:00Z',
+    })
+  })
+
+  it('fills path params, sends JSON bodies and never sends x-test-now outside local mode', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'supabase')
+    localStorage.setItem(TEST_NOW_KEY, '2031-01-02T00:00:00Z')
+    const fetchMock = vi.fn(async () =>
+      json(200, {
+        lives: { policy: 'hearts', count: 4, max: 5, nextRegenAt: null },
+        duplicate: false,
+      }),
+    )
+    const api = createApiClient({ getAccessToken: async () => null, fetch: fetchMock })
+    await api('sessionEvent', {
+      params: { id: 'abc' },
+      body: { attemptSeq: 1, index: 0, kind: 'wrong' },
+    })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/sessions/abc/events')
+    expect(JSON.parse(init.body as string)).toEqual({ attemptSeq: 1, index: 0, kind: 'wrong' })
+    expect(init.headers).not.toHaveProperty('x-test-now')
+    expect(init.headers).not.toHaveProperty('authorization')
+  })
+
+  it('turns error envelopes, bad responses and network failures into ApiClientError', async () => {
+    const envelope = createApiClient({
+      getAccessToken: async () => null,
+      fetch: async () => json(409, { error: { code: 'out_of_lives', message: 'no hearts left' } }),
+    })
+    await expect(envelope('home')).rejects.toMatchObject({ code: 'out_of_lives', status: 409 })
+    const garbage = createApiClient({
+      getAccessToken: async () => null,
+      fetch: async () => json(502, 'oops'),
+    })
+    await expect(garbage('home')).rejects.toMatchObject({ code: 'internal', status: 502 })
+    const offline = createApiClient({
+      getAccessToken: async () => null,
+      fetch: async () => {
+        throw new TypeError('Failed to fetch')
+      },
+    })
+    await expect(offline('home')).rejects.toBeInstanceOf(ApiClientError)
+    await expect(offline('home')).rejects.toMatchObject({ code: 'network' })
+  })
+})
+
+describe('local auth client', () => {
+  it('signs in a guest, persists the session and notifies subscribers', async () => {
+    const fetchMock = vi.fn(async () => json(200, token(3_600_000)))
+    const auth = createLocalAuthClient(fetchMock)
+    const seen: unknown[] = []
+    auth.subscribe((s) => seen.push(s?.userId ?? null))
+    const s = await auth.signInAsGuest()
+    expect(s).toMatchObject({ userId: USER, isAnonymous: true })
+    expect(JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY)!)).toMatchObject({ userId: USER })
+    expect(await auth.getSession()).toEqual(s)
+    expect(seen).toEqual([USER])
+    await auth.signOut()
+    expect(await auth.getSession()).toBeNull()
+  })
+
+  it('refreshes a session that is about to expire, once for concurrent callers', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(200, token(10_000)))
+      .mockResolvedValueOnce(json(200, token(3_600_000)))
+    const auth = createLocalAuthClient(fetchMock)
+    await auth.signInAsGuest()
+    const [a, b] = await Promise.all([auth.getSession(), auth.getSession()])
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]![0]).toBe('/api/dev/auth/refresh')
+    expect(a).toEqual(b)
+    expect(a!.expiresAt - Date.now()).toBeGreaterThan(60_000)
+  })
+
+  it('reports identity_already_exists when linking an email that belongs to another account', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json(200, token(3_600_000)))
+      .mockResolvedValueOnce(
+        json(409, { error: { code: 'identity_already_exists', message: 'taken' } }),
+      )
+    const auth = createLocalAuthClient(fetchMock)
+    await auth.signInAsGuest()
+    await expect(auth.linkEmail('a@b.test')).resolves.toEqual({ status: 'identity_already_exists' })
+  })
+})
