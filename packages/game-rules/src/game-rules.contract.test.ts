@@ -8,7 +8,6 @@ import {
 } from '@zaboon/contracts'
 import {
   ENGAGEMENT_IMPLEMENTATION,
-  NotImplementedError,
   QUEST_TEMPLATES,
   applyActivity,
   applyCoinGrants,
@@ -107,8 +106,13 @@ describe('@zaboon/game-rules contract', () => {
       expect(typeof fn).toBe('function')
     expect(['stub', 'real']).toContain(ENGAGEMENT_IMPLEMENTATION)
   })
-  it.runIf(ENGAGEMENT_IMPLEMENTATION === 'stub')('engagement stubs throw NotImplementedError', () => {
-    expect(() => leagueWeek(now)).toThrow(NotImplementedError)
-    expect(() => questGrant('2026-09-25', 'xp_20', cfg)).toThrow(NotImplementedError)
+  it('the engagement rules are implemented', () => {
+    expect(ENGAGEMENT_IMPLEMENTATION).toBe('real')
+    expect(leagueWeek(now).startsAt).toBe('2026-09-21T00:00:00.000Z')
+    expect(questGrant('2026-09-25', 'xp_20', cfg)).toEqual({
+      reason: 'quest',
+      ref: '2026-09-25:xp_20',
+      amount: cfg.quests.rewardCoins,
+    })
   })
 })
