@@ -143,13 +143,27 @@ export function normalize(text: string): string {
  * English is untouched apart from the strict-form steps.
  */
 export function looseKey(text: string): string {
+  // One pass can create a new whole-token prefix (م + the suffix ی = می) that another pass would
+  // join to the next token (م ی ا → می ا → میا), so passes repeat until nothing changes: the key is
+  // idempotent by construction. Every pass only joins tokens or folds characters one way, so this
+  // ends quickly (the bound is a safety net).
+  let key = loosePass(text)
+  for (let i = 0; i <= key.length; i++) {
+    const next = loosePass(key)
+    if (next === key) break
+    key = next
+  }
+  return key
+}
+
+function loosePass(text: string): string {
   const folded = normalize(text)
     .replace(/[ەةۀ]/g, 'ه')
     .replace(/ه\u0654/g, 'ه')
     .replace(/ه\u200Cی(?= |$)/g, 'ه')
     .replace(/[أإٱ]/g, 'ا')
     .replaceAll(ZWNJ, '')
-  // After joining, so that a suffix ی joined to a final ئ folds too (idempotent key).
+  // After joining, so that a suffix ی joined to a final ئ folds too.
   return joinAffixes(folded).replace(/ئ+(?=ی)/g, (m) => 'ی'.repeat(m.length))
 }
 
