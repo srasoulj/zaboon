@@ -135,10 +135,9 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
     try {
       const db = getDb()
       const user = await authorize(def.auth, req)
-      const runtime = await getRuntimeConfig(db)
-      const config = runtime.config
+      const { config, flags: configuredFlags } = await getRuntimeConfig(db)
       const now = requestNow(req)
-      const flags = requestFlags(req, runtime.flags)
+      const flags = requestFlags(req, configuredFlags)
 
       const clientVersion = req.headers.get(APP_VERSION_HEADER)
       if (clientVersion && compareVersions(clientVersion, config.minAppVersion) < 0) {
