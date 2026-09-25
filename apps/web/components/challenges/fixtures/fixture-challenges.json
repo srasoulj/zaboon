@@ -1,0 +1,826 @@
+[
+  {
+    "index": 0,
+    "ref": {
+      "type": "select_image",
+      "items": ["lx_ab"],
+      "distractors": ["lx_nun", "lx_chay", "lx_sib"]
+    },
+    "isNew": false,
+    "type": "select_image",
+    "prompt": {
+      "fa": "آب",
+      "translit": "āb",
+      "audio": {
+        "normal": "/media/fixtures/audio/lx_ab.mp3"
+      }
+    },
+    "choices": [
+      {
+        "lexeme": "lx_ab",
+        "image": "/media/fixtures/img/water.svg",
+        "label": "water"
+      },
+      {
+        "lexeme": "lx_sib",
+        "image": "/media/fixtures/img/apple.svg",
+        "label": "apple"
+      },
+      {
+        "lexeme": "lx_nun",
+        "image": "/media/fixtures/img/bread.svg",
+        "label": "bread"
+      },
+      {
+        "lexeme": "lx_chay",
+        "image": "/media/fixtures/img/tea.svg",
+        "label": "tea"
+      }
+    ],
+    "answer": 0
+  },
+  {
+    "index": 1,
+    "ref": {
+      "type": "select_translation",
+      "items": ["s_u01_0001"],
+      "direction": "fa_en"
+    },
+    "isNew": false,
+    "type": "select_translation",
+    "direction": "fa_en",
+    "prompt": {
+      "lang": "fa",
+      "text": "سلام، خوبی؟",
+      "fa": {
+        "fa": "سلام، خوبی؟",
+        "translit": "salām, khubi?",
+        "faFormal": "سلام، خوب هستی؟",
+        "faVocalized": "سَلام، خوبی؟",
+        "tokens": [
+          {
+            "surface": "سلام",
+            "lexeme": "lx_salam",
+            "translit": "salām",
+            "gloss": "hello"
+          },
+          {
+            "surface": "خوبی",
+            "lexeme": "lx_khub",
+            "translit": "khubi",
+            "gloss": "(you're) good"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0001.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0001.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0001.envelope.json"
+        }
+      }
+    },
+    "choices": [
+      {
+        "lang": "en",
+        "text": "Do you want some tea?"
+      },
+      {
+        "lang": "en",
+        "text": "I'm good, thanks"
+      },
+      {
+        "lang": "en",
+        "text": "Mom is good"
+      },
+      {
+        "lang": "en",
+        "text": "Hello, how are you?"
+      }
+    ],
+    "answer": 3
+  },
+  {
+    "index": 2,
+    "ref": {
+      "type": "translate_bank",
+      "items": ["s_u01_0002"],
+      "direction": "fa_en"
+    },
+    "isNew": false,
+    "type": "translate_bank",
+    "direction": "fa_en",
+    "prompt": {
+      "lang": "fa",
+      "text": "من آب می‌خوام",
+      "fa": {
+        "fa": "من آب می‌خوام",
+        "translit": "man āb mikhām",
+        "faFormal": "من آب می‌خواهم",
+        "faVocalized": "مَن آب می‌خوام",
+        "tokens": [
+          {
+            "surface": "من",
+            "lexeme": "lx_man",
+            "translit": "man",
+            "gloss": "I"
+          },
+          {
+            "surface": "آب",
+            "lexeme": "lx_ab",
+            "translit": "āb",
+            "gloss": "water"
+          },
+          {
+            "surface": "می‌خوام",
+            "lexeme": "lx_mikham",
+            "translit": "mikhām",
+            "gloss": "(I) want"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0002.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0002.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0002.envelope.json"
+        }
+      }
+    },
+    "answerLang": "en",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [5],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "t": "I"
+        },
+        {
+          "from": 2,
+          "to": 1,
+          "t": "want"
+        },
+        {
+          "from": 0,
+          "to": 3,
+          "t": "I'd"
+        },
+        {
+          "from": 3,
+          "to": 1,
+          "t": "like"
+        },
+        {
+          "from": 1,
+          "to": 4,
+          "t": "some"
+        },
+        {
+          "from": 1,
+          "to": 4,
+          "t": ""
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "water"
+        }
+      ]
+    },
+    "bank": ["day", "tea", "mum", "some", "I", "want", "water"]
+  },
+  {
+    "index": 3,
+    "ref": {
+      "type": "translate_bank",
+      "items": ["s_u01_0003"],
+      "direction": "en_fa"
+    },
+    "isNew": false,
+    "type": "translate_bank",
+    "direction": "en_fa",
+    "prompt": {
+      "lang": "en",
+      "text": "I want some bread"
+    },
+    "answerLang": "fa",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [3, 5],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "من"
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": ""
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "t": "نون"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خوام"
+        },
+        {
+          "from": 0,
+          "to": 4,
+          "t": "نان"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "می‌خواهم"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خام"
+        }
+      ],
+      "registers": {
+        "1": "colloquial",
+        "2": "colloquial",
+        "3": "colloquial",
+        "4": "formal",
+        "5": "formal"
+      }
+    },
+    "bank": ["نون", "بابا", "مامان", "چای", "می‌خوام"]
+  },
+  {
+    "index": 4,
+    "ref": {
+      "type": "translate_type",
+      "items": ["s_u01_0006"],
+      "direction": "fa_en"
+    },
+    "isNew": false,
+    "type": "translate_type",
+    "direction": "fa_en",
+    "prompt": {
+      "lang": "fa",
+      "text": "مامان خوبه",
+      "fa": {
+        "fa": "مامان خوبه",
+        "translit": "māmān khube",
+        "faFormal": "مامان خوب است",
+        "tokens": [
+          {
+            "surface": "مامان",
+            "lexeme": "lx_maman",
+            "translit": "māmān",
+            "gloss": "mom"
+          },
+          {
+            "surface": "خوبه",
+            "lexeme": "lx_khub",
+            "translit": "khube",
+            "gloss": "is good"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0006.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0006.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0006.envelope.json"
+        }
+      }
+    },
+    "answerLang": "en",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [3, 5],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "Mom"
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": "Mum"
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": "Mother"
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": "Mama"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "t": "is"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "good"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "well"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "fine"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "okay"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "OK"
+        },
+        {
+          "from": 0,
+          "to": 4,
+          "t": "Mom's"
+        },
+        {
+          "from": 0,
+          "to": 4,
+          "t": "Mum's"
+        },
+        {
+          "from": 0,
+          "to": 4,
+          "t": "Mama's"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "good"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "well"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "fine"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "okay"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "OK"
+        }
+      ]
+    }
+  },
+  {
+    "index": 5,
+    "ref": {
+      "type": "match_pairs",
+      "items": ["lx_salam", "lx_mersi", "lx_maman", "lx_baba", "lx_khub"]
+    },
+    "isNew": false,
+    "type": "match_pairs",
+    "pairs": [
+      {
+        "fa": {
+          "fa": "سلام",
+          "translit": "salām",
+          "faVocalized": "سَلام",
+          "audio": {
+            "normal": "/media/fixtures/audio/lx_salam.mp3"
+          }
+        },
+        "en": "hello"
+      },
+      {
+        "fa": {
+          "fa": "مرسی",
+          "translit": "mersi",
+          "faVocalized": "مِرسی",
+          "audio": {
+            "normal": "/media/fixtures/audio/lx_mersi.mp3"
+          }
+        },
+        "en": "thanks"
+      },
+      {
+        "fa": {
+          "fa": "مامان",
+          "translit": "māmān",
+          "audio": {
+            "normal": "/media/fixtures/audio/lx_maman.mp3"
+          }
+        },
+        "en": "mom"
+      },
+      {
+        "fa": {
+          "fa": "بابا",
+          "translit": "bābā",
+          "audio": {
+            "normal": "/media/fixtures/audio/lx_baba.mp3"
+          }
+        },
+        "en": "dad"
+      },
+      {
+        "fa": {
+          "fa": "خوب",
+          "translit": "khub",
+          "audio": {
+            "normal": "/media/fixtures/audio/lx_khub.mp3"
+          }
+        },
+        "en": "good"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "ref": {
+      "type": "listen_tap",
+      "items": ["s_u01_0005"]
+    },
+    "isNew": false,
+    "type": "listen_tap",
+    "audio": {
+      "normal": "/media/fixtures/audio/s_u01_0005.mp3",
+      "slow": "/media/fixtures/audio/s_u01_0005.slow.mp3",
+      "envelope": "/media/fixtures/audio/s_u01_0005.envelope.json"
+    },
+    "transcript": {
+      "fa": "چای می‌خوای؟",
+      "translit": "chāy mikhāy?",
+      "faFormal": "چای می‌خواهی؟",
+      "tokens": [
+        {
+          "surface": "چای",
+          "lexeme": "lx_chay",
+          "translit": "chāy",
+          "gloss": "tea"
+        },
+        {
+          "surface": "می‌خوای",
+          "lexeme": "lx_mikham",
+          "translit": "mikhāy",
+          "gloss": "(you) want"
+        }
+      ],
+      "audio": {
+        "normal": "/media/fixtures/audio/s_u01_0005.mp3",
+        "slow": "/media/fixtures/audio/s_u01_0005.slow.mp3",
+        "envelope": "/media/fixtures/audio/s_u01_0005.envelope.json"
+      }
+    },
+    "bank": ["بابا", "چای", "مامان", "می‌خوای", "نون"],
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [2],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "چای"
+        },
+        {
+          "from": 1,
+          "to": 3,
+          "t": "می‌خوای؟"
+        },
+        {
+          "from": 3,
+          "to": 2,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 4,
+          "t": "می‌خواهی؟"
+        },
+        {
+          "from": 4,
+          "to": 2,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 3,
+          "t": "می‌خای"
+        }
+      ],
+      "registers": {
+        "3": "colloquial",
+        "4": "formal"
+      }
+    }
+  },
+  {
+    "index": 7,
+    "ref": {
+      "type": "cloze_choice",
+      "items": ["s_u01_0007"]
+    },
+    "isNew": false,
+    "type": "cloze_choice",
+    "before": [
+      {
+        "surface": "من",
+        "lexeme": "lx_man",
+        "translit": "man",
+        "gloss": "I"
+      }
+    ],
+    "after": [
+      {
+        "surface": "می‌خوام",
+        "lexeme": "lx_mikham",
+        "translit": "mikhām",
+        "gloss": "(I) want"
+      }
+    ],
+    "translation": "I want an apple",
+    "choices": ["سیب", "روز", "نون"],
+    "answer": 0
+  },
+  {
+    "index": 8,
+    "ref": {
+      "type": "complete_chat",
+      "items": ["c_u01_001"]
+    },
+    "isNew": false,
+    "type": "complete_chat",
+    "speaker": {
+      "id": "leila",
+      "name": "Leila"
+    },
+    "prompt": {
+      "fa": "سلام، خوبی؟",
+      "translit": "salām, khubi?",
+      "faFormal": "سلام، خوب هستی؟",
+      "faVocalized": "سَلام، خوبی؟",
+      "tokens": [
+        {
+          "surface": "سلام",
+          "lexeme": "lx_salam",
+          "translit": "salām",
+          "gloss": "hello"
+        },
+        {
+          "surface": "خوبی",
+          "lexeme": "lx_khub",
+          "translit": "khubi",
+          "gloss": "(you're) good"
+        }
+      ],
+      "audio": {
+        "normal": "/media/fixtures/audio/s_u01_0001.mp3",
+        "slow": "/media/fixtures/audio/s_u01_0001.slow.mp3",
+        "envelope": "/media/fixtures/audio/s_u01_0001.envelope.json"
+      },
+      "en": "Hello, how are you?"
+    },
+    "choices": [
+      {
+        "fa": "مامان خوبه",
+        "translit": "māmān khube",
+        "faFormal": "مامان خوب است",
+        "tokens": [
+          {
+            "surface": "مامان",
+            "lexeme": "lx_maman",
+            "translit": "māmān",
+            "gloss": "mom"
+          },
+          {
+            "surface": "خوبه",
+            "lexeme": "lx_khub",
+            "translit": "khube",
+            "gloss": "is good"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0006.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0006.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0006.envelope.json"
+        },
+        "en": "Mom is good"
+      },
+      {
+        "fa": "خوبم، مرسی",
+        "translit": "khubam, mersi",
+        "faVocalized": "خوبَم، مِرسی",
+        "tokens": [
+          {
+            "surface": "خوبم",
+            "lexeme": "lx_khub",
+            "translit": "khubam",
+            "gloss": "(I'm) good"
+          },
+          {
+            "surface": "مرسی",
+            "lexeme": "lx_mersi",
+            "translit": "mersi",
+            "gloss": "thanks"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0008.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0008.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0008.envelope.json"
+        },
+        "en": "I'm good, thanks"
+      },
+      {
+        "fa": "نون می‌خوام",
+        "translit": "nun mikhām",
+        "faFormal": "نان می‌خواهم",
+        "tokens": [
+          {
+            "surface": "نون",
+            "lexeme": "lx_nun",
+            "translit": "nun",
+            "gloss": "bread"
+          },
+          {
+            "surface": "می‌خوام",
+            "lexeme": "lx_mikham",
+            "translit": "mikhām",
+            "gloss": "(I) want"
+          }
+        ],
+        "audio": {
+          "normal": "/media/fixtures/audio/s_u01_0003.mp3",
+          "slow": "/media/fixtures/audio/s_u01_0003.slow.mp3",
+          "envelope": "/media/fixtures/audio/s_u01_0003.envelope.json"
+        },
+        "en": "I want some bread"
+      }
+    ],
+    "answer": 1
+  },
+  {
+    "index": 0,
+    "ref": {
+      "type": "letter_intro",
+      "items": ["l_be"]
+    },
+    "isNew": false,
+    "type": "letter_intro",
+    "letter": {
+      "id": "l_be",
+      "letter": "ب",
+      "name": "be",
+      "translit": "b",
+      "ipa": "b",
+      "connects": true,
+      "forms": {
+        "isolated": "ب",
+        "initial": "ب‍",
+        "medial": "‍ب‍",
+        "final": "‍ب"
+      },
+      "audio": "/media/fixtures/audio/l_be.mp3"
+    },
+    "examples": [
+      {
+        "fa": "بابا",
+        "translit": "bābā",
+        "audio": {
+          "normal": "/media/fixtures/audio/lx_baba.mp3"
+        },
+        "en": "dad"
+      },
+      {
+        "fa": "آب",
+        "translit": "āb",
+        "audio": {
+          "normal": "/media/fixtures/audio/lx_ab.mp3"
+        },
+        "en": "water"
+      },
+      {
+        "fa": "سیب",
+        "translit": "sib",
+        "audio": {
+          "normal": "/media/fixtures/audio/lx_sib.mp3"
+        },
+        "en": "apple"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "ref": {
+      "type": "letter_sound",
+      "items": ["l_be"]
+    },
+    "isNew": false,
+    "type": "letter_sound",
+    "mode": "letter_to_sound",
+    "letter": {
+      "id": "l_be",
+      "letter": "ب",
+      "name": "be",
+      "translit": "b",
+      "ipa": "b",
+      "connects": true,
+      "forms": {
+        "isolated": "ب",
+        "initial": "ب‍",
+        "medial": "‍ب‍",
+        "final": "‍ب"
+      },
+      "audio": "/media/fixtures/audio/l_be.mp3"
+    },
+    "choices": ["d", "b", "r", "ā/a"],
+    "answer": 1
+  },
+  {
+    "index": 2,
+    "ref": {
+      "type": "letter_forms",
+      "items": ["l_be", "l_mim", "l_nun"]
+    },
+    "isNew": false,
+    "type": "letter_forms",
+    "pairs": [
+      {
+        "left": "ب",
+        "right": "ب‍"
+      },
+      {
+        "left": "م",
+        "right": "م‍"
+      },
+      {
+        "left": "ن",
+        "right": "‍ن‍"
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "ref": {
+      "type": "read_word",
+      "items": ["lx_baba"]
+    },
+    "isNew": false,
+    "type": "read_word",
+    "word": {
+      "fa": "بابا",
+      "translit": "bābā",
+      "audio": {
+        "normal": "/media/fixtures/audio/lx_baba.mp3"
+      },
+      "en": "dad"
+    },
+    "ask": "translit",
+    "choices": ["bābā", "chāy", "nun", "sib"],
+    "answer": 0
+  },
+  {
+    "index": 4,
+    "ref": {
+      "type": "build_word",
+      "items": ["lx_sib"]
+    },
+    "isNew": false,
+    "type": "build_word",
+    "target": {
+      "fa": "سیب",
+      "translit": "sib",
+      "audio": {
+        "normal": "/media/fixtures/audio/lx_sib.mp3"
+      },
+      "en": "apple"
+    },
+    "tiles": ["س", "ب", "ن", "ی", "و"],
+    "answer": ["س", "ی", "ب"]
+  }
+]
