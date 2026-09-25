@@ -2,7 +2,7 @@
 import type { Challenge, ChallengeResponse, Verdict } from '@zaboon/contracts'
 import { gradeResponse } from '@zaboon/session-engine'
 import { Button3D, MotionPreferenceProvider } from '@zaboon/ui'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { correctResponse, wrongResponse } from '@/components/challenges/fixtures/samples'
 import {
   rendererFor,
@@ -115,6 +115,8 @@ function Feedback({ challenge, display }: { challenge: Challenge; display: Chall
 export interface ChallengeGalleryProps {
   entries: readonly GalleryEntry[]
   ids: readonly string[]
+  /** The P2 subset of `ids` (their links and options sit after the MVP challenges). */
+  p2Ids: readonly string[]
   theme: 'light' | 'dark'
   reduceMotion: boolean
   single: boolean
@@ -123,6 +125,7 @@ export interface ChallengeGalleryProps {
 export function ChallengeGallery({
   entries,
   ids,
+  p2Ids,
   theme,
   reduceMotion,
   single,
@@ -148,9 +151,18 @@ export function ChallengeGallery({
     ['Transliteration', transliteration, setTransliteration],
     ['Vowel marks', vowelMarks, setVowelMarks],
     ['Autoplay audio', sound, setSound],
+  ]
+  const p2Toggles: [string, boolean, (v: boolean) => void][] = [
     ['In-app Persian keyboard', persianKeyboard, setPersianKeyboard],
     ['Phonetic layout', phonetic, setPhonetic],
   ]
+  const firstP2 = entries.find((e) => p2Ids.includes(e.id))?.id
+  const checkboxes = (list: typeof toggles) =>
+    list.map(([label, value, set]) => (
+      <label key={label}>
+        <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} /> {label}
+      </label>
+    ))
   const themeLink = (t: 'light' | 'dark') => `?theme=${t}${reduceMotion ? '&reduce=1' : ''}`
 
   return (
@@ -163,43 +175,50 @@ export function ChallengeGallery({
             <a href={themeLink('dark')}>Dark</a>
             {single && <a href={`?theme=${theme}`}>All challenges</a>}
           </nav>
-          <div className={styles.nav}>
-            {toggles.map(([label, value, set]) => (
-              <label key={label}>
-                <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} />{' '}
-                {label}
-              </label>
-            ))}
-          </div>
+          <div className={styles.nav}>{checkboxes(toggles)}</div>
           {!single && (
             <nav className={styles.nav} aria-label="Challenges">
-              {ids.map((id) => (
-                <a key={id} href={`?theme=${theme}&only=${id}`}>
-                  {id}
-                </a>
-              ))}
+              {ids
+                .filter((id) => !p2Ids.includes(id))
+                .map((id) => (
+                  <a key={id} href={`?theme=${theme}&only=${id}`}>
+                    {id}
+                  </a>
+                ))}
             </nav>
           )}
         </header>
         {entries.map(({ id, challenge }) => (
-          <section
-            key={id}
-            className={styles.section}
-            aria-label={id}
-            data-testid={`challenge-${id}`}
-          >
-            <p className={styles.sectionTitle}>{id}</p>
-            <div className={styles.states}>
-              <div className={styles.state} data-testid={`answering-${id}`}>
-                <p className={styles.stateLabel}>Answering</p>
-                <Interactive challenge={challenge} display={display} />
+          <Fragment key={id}>
+            {id === firstP2 && (
+              <header className={styles.header}>
+                <h2 className={styles.title}>P2: typed Persian and tracing (behind flags)</h2>
+                <div className={styles.nav}>{checkboxes(p2Toggles)}</div>
+                {!single && (
+                  <nav className={styles.nav} aria-label="P2 challenges">
+                    {p2Ids.map((p) => (
+                      <a key={p} href={`?theme=${theme}&only=${p}`}>
+                        {p}
+                      </a>
+                    ))}
+                  </nav>
+                )}
+              </header>
+            )}
+            <section className={styles.section} aria-label={id} data-testid={`challenge-${id}`}>
+              <p className={styles.sectionTitle}>{id}</p>
+              <div className={styles.states}>
+                <div className={styles.state} data-testid={`answering-${id}`}>
+                  <p className={styles.stateLabel}>Answering</p>
+                  <Interactive challenge={challenge} display={display} />
+                </div>
+                <div className={styles.state} data-testid={`feedback-${id}`}>
+                  <p className={styles.stateLabel}>Feedback</p>
+                  <Feedback challenge={challenge} display={display} />
+                </div>
               </div>
-              <div className={styles.state} data-testid={`feedback-${id}`}>
-                <p className={styles.stateLabel}>Feedback</p>
-                <Feedback challenge={challenge} display={display} />
-              </div>
-            </div>
-          </section>
+            </section>
+          </Fragment>
         ))}
       </main>
     </MotionPreferenceProvider>

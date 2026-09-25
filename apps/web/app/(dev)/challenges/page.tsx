@@ -58,6 +58,16 @@ function entries(): GalleryEntry[] {
   })
 }
 
+/** P2 challenges (typed Persian, tracing): behind flags in the app, listed after the MVP ones. */
+function isP2(c: Challenge): boolean {
+  return (
+    c.type === 'listen_type' ||
+    c.type === 'cloze_type' ||
+    c.type === 'letter_trace' ||
+    (c.type === 'translate_type' && c.answerLang === 'fa')
+  )
+}
+
 type Search = Record<string, string | string[] | undefined>
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
 
@@ -82,6 +92,7 @@ export default async function ChallengeGalleryPage({
       <ChallengeGallery
         entries={shown}
         ids={all.map((e) => e.id)}
+        p2Ids={all.filter((e) => isP2(e.challenge)).map((e) => e.id)}
         theme={theme}
         reduceMotion={one(params.reduce) === '1'}
         single={Boolean(only)}
