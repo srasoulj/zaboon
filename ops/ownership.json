@@ -198,8 +198,8 @@
     "ws-qa": {
       "wave": 2,
       "paths": [
-        "e2e/**",
-        "apps/web/tests/**"
+        "e2e/qa/**",
+        "apps/web/tests/qa/**"
       ]
     },
     "ws-engagement": {
