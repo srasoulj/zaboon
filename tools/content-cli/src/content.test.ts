@@ -37,6 +37,7 @@ describe('fixture course', () => {
       'u01-l2',
       'u01-p1',
       'u01-r1',
+      'u01-t1',
     ])
   })
 })

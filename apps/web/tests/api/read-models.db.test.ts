@@ -36,6 +36,7 @@ describe('GET /api/path', () => {
       'u01-l2': 'locked',
       'u01-p1': 'locked',
       'u01-r1': 'locked',
+      'u01-t1': 'locked',
     })
     expect(res.body.sections[0].units[0]).toMatchObject({
       id: 'u01-fixture',

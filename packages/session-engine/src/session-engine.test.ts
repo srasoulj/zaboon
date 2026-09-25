@@ -13,6 +13,7 @@ import { newCard, review } from '@zaboon/srs'
 import {
   ContentError,
   IMPLEMENTATION,
+  NotImplementedError,
   allocate,
   buildChallenge,
   decodeVariant,
@@ -113,6 +114,34 @@ describe('session-engine', () => {
         'match_pairs',
       ])
       expect(s.challenges.every((c) => !c.isNew)).toBe(true)
+    })
+
+    it('u01-t1 pins the Wave 3 types (typed Persian, tracing) after every MVP level', () => {
+      const levels = fixture.units[0]!.levels
+      expect(levels.at(-1)!.id).toBe('u01-t1')
+      const spec = levels.at(-1)!.spec!
+      expect(spec.pinnedOnly).toBe(true)
+      expect(spec.pinned.map(refLine)).toEqual([
+        { type: 'translate_type', items: ['s_u01_0003'], direction: 'en_fa' },
+        { type: 'listen_type', items: ['s_u01_0005'], direction: undefined },
+        { type: 'cloze_type', items: ['s_u01_0007'], direction: undefined },
+        { type: 'letter_trace', items: ['l_be'], direction: undefined },
+      ])
+      // Until the P2 builders land (ws-typing) the session can't be built: NotImplementedError,
+      // never a ContentError. Once they land, it builds exactly the four pins.
+      let built: Challenge[] | null = null
+      try {
+        built = gen(fx, { levelId: 'u01-t1' }).challenges
+      } catch (e) {
+        expect(e).toBeInstanceOf(NotImplementedError)
+      }
+      if (built)
+        expect(built.map((c) => c.type)).toEqual([
+          'translate_type',
+          'listen_type',
+          'cloze_type',
+          'letter_trace',
+        ])
     })
 
     it('u01-l1 and u01-l2 together build all 13 MVP types in the pinned order', () => {

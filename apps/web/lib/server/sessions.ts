@@ -41,6 +41,7 @@ import { GRADER_VERSION } from '@zaboon/grader'
 import {
   ContentError,
   generateSession,
+  NotImplementedError,
   rebuildChallenges,
   type SessionFeatures,
 } from '@zaboon/session-engine'
@@ -229,6 +230,9 @@ export async function createSession(
       })
     } catch (e) {
       if (e instanceof ContentError) throw new ApiError('validation', e.message)
+      // A level that pins a Wave 3 challenge type whose builder hasn't landed yet: a clear 400.
+      if (e instanceof NotImplementedError)
+        throw new ApiError('validation', `this level is not available yet (${e.message})`)
       throw e
     }
     const expiresAt = new Date(now.getTime() + config.session.ttlHours * 3_600_000)

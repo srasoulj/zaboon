@@ -7,5 +7,6 @@ Frozen test data for the end-to-end tests. It is not course content.
 - `u01-l1` pins the 8 course types in order: select_image, select_translation, translate_bank (fa→en, then en→fa), translate_type, match_pairs, listen_tap, cloze_choice, complete_chat.
 - `u01-l2` pins the 5 letter types in order: letter_intro, letter_sound, letter_forms, read_word, build_word.
 - Together they cover all 13 MVP challenge types. `pinnedOnly: true` means those sessions contain exactly these challenges.
+- `u01-t1` (Wave 3, P2) is the LAST level on the path (after `u01-r1`), so nothing before it moves. It pins typed Persian and tracing in order: translate_type en→fa (`s_u01_0003`), listen_type (`s_u01_0005`), cloze_type (`s_u01_0007`), letter_trace (`l_be`). Its focus items all appear in the levels above, so the unit bundle and the unit review are unchanged. Until ws-typing lands the P2 builders, creating its session answers 400 (`not available yet`); its tests run with the `persianKeyboard` / `letterTrace` flags on (`x-test-flags`).
 - `assets/` holds tiny placeholders: sine-tone MP3s, JSON lip-sync envelopes and flat SVGs.
 - Any change needs an orchestrator PR.
