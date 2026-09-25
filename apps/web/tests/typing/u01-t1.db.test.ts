@@ -174,7 +174,10 @@ describe('fixture level u01-t1', () => {
 
   it('with the flags off: the MVP twins in place, completed like any MVP lesson', async () => {
     const alice = await reachT1()
-    for (const flags of [{}, { persianKeyboard: false, letterTrace: false }]) {
+    for (const flags of [{}, { persianKeyboard: false, letterTrace: false }] as Record<
+      string,
+      boolean
+    >[]) {
       const s = await startT1(alice, flags)
       expect(s.challenges.map((c) => c.type)).toEqual([
         'translate_bank',

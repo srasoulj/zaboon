@@ -849,5 +849,226 @@
         "right": "‍ب"
       }
     ]
+  },
+  {
+    "index": 0,
+    "ref": {
+      "type": "translate_type",
+      "items": ["s_u01_0003"],
+      "direction": "en_fa"
+    },
+    "isNew": false,
+    "type": "translate_type",
+    "direction": "en_fa",
+    "prompt": {
+      "lang": "en",
+      "text": "I want some bread"
+    },
+    "answerLang": "fa",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [3, 5],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "من"
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": ""
+        },
+        {
+          "from": 0,
+          "to": 1,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "t": "نون"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خوام"
+        },
+        {
+          "from": 0,
+          "to": 4,
+          "t": "نان"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "t": "می‌خواهم"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خام"
+        }
+      ],
+      "registers": {
+        "1": "colloquial",
+        "2": "colloquial",
+        "3": "colloquial",
+        "4": "formal",
+        "5": "formal"
+      }
+    }
+  },
+  {
+    "index": 1,
+    "ref": {
+      "type": "listen_type",
+      "items": ["s_u01_0005"]
+    },
+    "isNew": false,
+    "type": "listen_type",
+    "audio": {
+      "normal": "/media/fixtures/audio/s_u01_0005.mp3",
+      "slow": "/media/fixtures/audio/s_u01_0005.slow.mp3",
+      "envelope": "/media/fixtures/audio/s_u01_0005.envelope.json"
+    },
+    "transcript": {
+      "fa": "چای می‌خوای؟",
+      "translit": "chāy mikhāy?",
+      "faFormal": "چای می‌خواهی؟",
+      "tokens": [
+        {
+          "surface": "چای",
+          "lexeme": "lx_chay",
+          "translit": "chāy",
+          "gloss": "tea"
+        },
+        {
+          "surface": "می‌خوای",
+          "lexeme": "lx_mikham",
+          "translit": "mikhāy",
+          "gloss": "(you) want"
+        }
+      ],
+      "audio": {
+        "normal": "/media/fixtures/audio/s_u01_0005.mp3",
+        "slow": "/media/fixtures/audio/s_u01_0005.slow.mp3",
+        "envelope": "/media/fixtures/audio/s_u01_0005.envelope.json"
+      }
+    },
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [2],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "چای"
+        },
+        {
+          "from": 1,
+          "to": 3,
+          "t": "می‌خوای؟"
+        },
+        {
+          "from": 3,
+          "to": 2,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 4,
+          "t": "می‌خواهی؟"
+        },
+        {
+          "from": 4,
+          "to": 2,
+          "t": ""
+        },
+        {
+          "from": 1,
+          "to": 3,
+          "t": "می‌خای"
+        }
+      ],
+      "registers": {
+        "3": "colloquial",
+        "4": "formal"
+      }
+    }
+  },
+  {
+    "index": 2,
+    "ref": {
+      "type": "cloze_type",
+      "items": ["s_u01_0007"]
+    },
+    "isNew": false,
+    "type": "cloze_type",
+    "before": [
+      {
+        "surface": "من",
+        "lexeme": "lx_man",
+        "translit": "man",
+        "gloss": "I"
+      },
+      {
+        "surface": "سیب",
+        "lexeme": "lx_sib",
+        "translit": "sib",
+        "gloss": "apple"
+      }
+    ],
+    "after": [],
+    "translation": "I want an apple",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [1, 2, 3],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "می‌خوام"
+        },
+        {
+          "from": 0,
+          "to": 2,
+          "t": "می‌خواهم"
+        },
+        {
+          "from": 0,
+          "to": 3,
+          "t": "می‌خام"
+        }
+      ]
+    }
+  },
+  {
+    "index": 3,
+    "ref": {
+      "type": "letter_trace",
+      "items": ["l_be"]
+    },
+    "isNew": false,
+    "type": "letter_trace",
+    "letter": {
+      "id": "l_be",
+      "letter": "ب",
+      "name": "be",
+      "translit": "b",
+      "ipa": "b",
+      "connects": true,
+      "forms": {
+        "isolated": "ب",
+        "initial": "ب‍",
+        "medial": "‍ب‍",
+        "final": "‍ب"
+      },
+      "audio": "/media/fixtures/audio/l_be.mp3"
+    },
+    "form": "isolated"
   }
 ]

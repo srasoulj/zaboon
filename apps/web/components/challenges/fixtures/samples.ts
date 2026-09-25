@@ -60,7 +60,11 @@ export function correctResponse(c: Challenge): ChallengeResponse {
     case 'build_word':
       return { kind: 'tiles', value: c.answer }
     case 'translate_type':
+    case 'listen_type':
+    case 'cloze_type':
       return { kind: 'text', value: (solveGraph(c.graph) ?? []).join(' ') }
+    case 'letter_trace':
+      return { kind: 'trace', coverage: 0.95, precision: 0.97 }
     case 'match_pairs':
     case 'letter_forms':
       return { kind: 'pairs', value: c.pairs.map((_, i) => [i, i] as [number, number]) }
@@ -86,7 +90,12 @@ export function wrongResponse(c: Challenge): ChallengeResponse {
     case 'build_word':
       return { kind: 'tiles', value: [...c.answer].reverse() }
     case 'translate_type':
-      return { kind: 'text', value: 'I am a teapot' }
+      return { kind: 'text', value: c.answerLang === 'fa' ? 'سلام مرسی' : 'I am a teapot' }
+    case 'listen_type':
+    case 'cloze_type':
+      return { kind: 'text', value: 'خداحافظ' }
+    case 'letter_trace':
+      return { kind: 'trace', coverage: 0.4, precision: 0.5 }
     default:
       // Matching can only produce correct pairs; letter_intro has nothing to get wrong.
       return correctResponse(c)

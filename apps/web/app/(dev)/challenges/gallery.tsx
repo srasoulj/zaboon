@@ -4,12 +4,11 @@ import { gradeResponse } from '@zaboon/session-engine'
 import { Button3D, MotionPreferenceProvider } from '@zaboon/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { correctResponse, wrongResponse } from '@/components/challenges/fixtures/samples'
-import { renderers } from '@/components/challenges'
-import type {
-  ChallengeAudio,
-  ChallengeDisplay,
-  ChallengeRenderer,
-  MvpChallengeType,
+import {
+  rendererFor,
+  type ChallengeAudio,
+  type ChallengeDisplay,
+  type ChallengeRenderer,
 } from '@/lib/challenge-registry'
 import styles from './challenges.module.css'
 
@@ -37,7 +36,7 @@ function useFakeAudio(): { audio: ChallengeAudio; played: string | null } {
 
 /** A miniature player: holds the draft, CHECK grades it with gradeResponse, CONTINUE resets. */
 function Interactive({ challenge, display }: { challenge: Challenge; display: ChallengeDisplay }) {
-  const Renderer = renderers[challenge.type as MvpChallengeType] as ChallengeRenderer
+  const Renderer = rendererFor(challenge.type) as ChallengeRenderer
   const [round, setRound] = useState(0)
   const [response, setResponse] = useState<ChallengeResponse | null>(null)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
@@ -92,7 +91,7 @@ function Interactive({ challenge, display }: { challenge: Challenge; display: Ch
 
 /** A graded screen: the sample wrong answer (or the only possible one for matching/intro). */
 function Feedback({ challenge, display }: { challenge: Challenge; display: ChallengeDisplay }) {
-  const Renderer = renderers[challenge.type as MvpChallengeType] as ChallengeRenderer
+  const Renderer = rendererFor(challenge.type) as ChallengeRenderer
   const { audio } = useFakeAudio()
   const response =
     challenge.type === 'letter_intro' ? correctResponse(challenge) : wrongResponse(challenge)
@@ -132,6 +131,8 @@ export function ChallengeGallery({
   const [transliteration, setTransliteration] = useState(true)
   const [vowelMarks, setVowelMarks] = useState(false)
   const [sound, setSound] = useState(false)
+  const [persianKeyboard, setPersianKeyboard] = useState(true)
+  const [phonetic, setPhonetic] = useState(false)
   // Marks hydration as done so screenshot tests never capture the server-only render.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration flag
   useEffect(() => setReady(true), [])
@@ -140,11 +141,15 @@ export function ChallengeGallery({
     vowelMarks,
     sound,
     reducedMotion: reduceMotion,
+    persianKeyboard,
+    keyboardLayout: phonetic ? 'phonetic' : 'standard',
   }
   const toggles: [string, boolean, (v: boolean) => void][] = [
     ['Transliteration', transliteration, setTransliteration],
     ['Vowel marks', vowelMarks, setVowelMarks],
     ['Autoplay audio', sound, setSound],
+    ['In-app Persian keyboard', persianKeyboard, setPersianKeyboard],
+    ['Phonetic layout', phonetic, setPhonetic],
   ]
   const themeLink = (t: 'light' | 'dark') => `?theme=${t}${reduceMotion ? '&reduce=1' : ''}`
 
