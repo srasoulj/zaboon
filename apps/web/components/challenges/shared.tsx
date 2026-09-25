@@ -128,22 +128,51 @@ export interface ChallengeFrameProps {
   children: ReactNode
 }
 
-/** Instruction heading + the centered answer column (max 640px). */
+/**
+ * Instruction heading + the centered answer column (max 640px). The motion provider is always
+ * rendered (so toggling reduced motion never remounts the challenge) and passes on the effective
+ * preference: the player's display setting OR the OS/in-app one.
+ */
 export function ChallengeFrame({ type, heading, display, children }: ChallengeFrameProps) {
   const id = useId()
-  const content = (
-    <section className={styles.frame} aria-labelledby={id} data-challenge={type} lang="en">
-      <h2 id={id} className={styles.heading}>
-        {heading}
-      </h2>
-      <div className={styles.body}>{children}</div>
-    </section>
+  const reduce = useReducedMotion(display)
+  return (
+    <MotionPreferenceProvider reduce={reduce}>
+      <section className={styles.frame} aria-labelledby={id} data-challenge={type} lang="en">
+        <h2 id={id} className={styles.heading}>
+          {heading}
+        </h2>
+        <div className={styles.body}>{children}</div>
+      </section>
+    </MotionPreferenceProvider>
   )
-  // Only ever force reduce: a nested provider with `undefined` would override the player's toggle.
-  return display.reducedMotion ? (
-    <MotionPreferenceProvider reduce>{content}</MotionPreferenceProvider>
-  ) : (
-    content
+}
+
+/**
+ * A named group whose English name is read with an English voice: the Persian content inside
+ * carries its own lang="fa" (never put an English aria-label on a lang="fa" element).
+ */
+export function Labelled({
+  label,
+  children,
+  className,
+}: {
+  label: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div role="group" aria-label={label} lang="en" className={className}>
+      {children}
+    </div>
+  )
+}
+
+/** True while a modal dialog (e.g. the player's quit dialog) is open: shortcuts must not fire. */
+export function modalOpen(): boolean {
+  return (
+    typeof document !== 'undefined' &&
+    document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]') !== null
   )
 }
 
@@ -225,7 +254,7 @@ export function playMedia(audio: ChallengeAudio, media: Media | undefined, slow 
   else audio.play(url)
 }
 
-/** The big speaker + turtle pair of listening challenges. */
+/** The big speaker (+ the 0.7× turtle when the media has a slow clip) of listening challenges. */
 export function ListenButtons({
   audio,
   media,
@@ -237,7 +266,9 @@ export function ListenButtons({
   return (
     <div className={styles.audioRow}>
       <AudioButton size="lg" onPlay={() => playMedia(audio, media)} />
-      <AudioButton size="lg" slow onPlay={() => playMedia(audio, media, true)} />
+      {media.slow !== undefined && (
+        <AudioButton size="lg" slow onPlay={() => playMedia(audio, media, true)} />
+      )}
     </div>
   )
 }
@@ -262,7 +293,7 @@ export function FaPrompt({ dto, display, audio, size = 'lg', label }: FaPromptPr
       {(dto.audio?.normal ?? dto.audio?.slow) !== undefined && (
         <AudioButton onPlay={() => playMedia(audio, dto.audio)} />
       )}
-      <div>
+      <MaybeLabelled label={label}>
         <FaText
           as="p"
           tokens={tokens}
@@ -270,16 +301,19 @@ export function FaPrompt({ dto, display, audio, size = 'lg', label }: FaPromptPr
           translit={display.transliteration && perToken}
           vowels={display.vowelMarks}
           className={styles.promptText}
-          {...(label === undefined ? {} : { 'aria-label': label })}
         />
         {display.transliteration && !perToken && (
           <span className={styles.promptTranslit} lang="fa-Latn">
             {dto.translit}
           </span>
         )}
-      </div>
+      </MaybeLabelled>
     </div>
   )
+}
+
+function MaybeLabelled({ label, children }: { label: string | undefined; children: ReactNode }) {
+  return label === undefined ? <div>{children}</div> : <Labelled label={label}>{children}</Labelled>
 }
 
 /** Inline Persian (choices, replies) with per-word transliteration when enabled. */
@@ -330,7 +364,13 @@ export function useChoice(
     if (locked || index < 0 || index >= count) return
     onResponse({ kind: 'choice', value: index })
   }
-  useDigitShortcuts(count, (n) => pick(n - 1), !locked)
+  useDigitShortcuts(
+    count,
+    (n) => {
+      if (!modalOpen()) pick(n - 1)
+    },
+    !locked,
+  )
   const stateOf = (index: number): ChoiceState | undefined => {
     if (!locked) return undefined
     if (index === answer) return 'correct'

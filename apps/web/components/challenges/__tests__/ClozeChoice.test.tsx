@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('cloze_choice')
 const correct = c.choices[c.answer]!
@@ -11,8 +11,7 @@ describe('cloze_choice', () => {
   it('shows the sentence with a blank between whole words, and the translation', () => {
     renderChallenge(c)
     expect(screen.getByRole('heading', { name: 'Fill in the blank' })).toBeInTheDocument()
-    const sentence = screen.getByRole('group', { name: 'Sentence' })
-    expect(sentence).toHaveAttribute('dir', 'rtl')
+    const sentence = persianOf(screen.getByRole('group', { name: 'Sentence' }))
     expect(sentence).toHaveTextContent(c.before[0]!.surface)
     expect(sentence).toHaveTextContent(c.after[0]!.surface)
     expect(screen.getByText(c.translation)).toBeInTheDocument()

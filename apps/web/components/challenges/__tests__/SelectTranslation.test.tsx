@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('select_translation')
 const correct = c.choices[c.answer]!.text
@@ -11,9 +11,7 @@ describe('select_translation', () => {
   it('shows the instruction, the Persian prompt (lang/dir) and English choices', () => {
     renderChallenge(c)
     expect(screen.getByRole('heading', { name: 'Select the correct meaning' })).toBeInTheDocument()
-    const prompt = screen.getByRole('group', { name: 'Prompt' })
-    expect(prompt).toHaveAttribute('lang', 'fa')
-    expect(prompt).toHaveAttribute('dir', 'rtl')
+    const prompt = persianOf(screen.getByRole('group', { name: 'Prompt' }))
     expect(prompt).toHaveTextContent(c.prompt.text)
     expect(
       within(screen.getByRole('group', { name: 'Choices' })).getAllByRole('button'),

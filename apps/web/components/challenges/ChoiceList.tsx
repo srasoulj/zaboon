@@ -36,6 +36,7 @@ export function ChoiceList({
             index={i + 1}
             // A graded card shows its verdict colours (the kit's pressed style would override them).
             selected={control.selected === i && state === undefined}
+            {...(media ? { className: styles.mediaCard } : {})}
             state={state}
             aria-disabled={control.locked || undefined}
             onSelect={() => control.pick(i)}

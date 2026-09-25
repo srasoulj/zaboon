@@ -1,6 +1,6 @@
 import { act, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('complete_chat')
 const correct = c.choices[c.answer]!.fa
@@ -11,8 +11,7 @@ describe('complete_chat', () => {
     renderChallenge(c)
     expect(screen.getByRole('heading', { name: 'Complete the chat' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: c.speaker.name })).toBeInTheDocument()
-    const line = screen.getByRole('group', { name: `${c.speaker.name} says` })
-    expect(line).toHaveAttribute('lang', 'fa')
+    const line = persianOf(screen.getByRole('group', { name: `${c.speaker.name} says` }))
     expect(line).toHaveTextContent(c.prompt.fa)
     expect(screen.getByRole('group', { name: 'Replies' })).toBeInTheDocument()
   })
@@ -32,13 +31,17 @@ describe('complete_chat', () => {
     expect(h.verdict()).toBe('correct')
   })
 
-  it('the speaker lip-syncs to the audio envelope unless motion is reduced', () => {
+  it('lip-syncs only while a clip plays, never under reduced motion', async () => {
     const raf = vi.spyOn(window, 'requestAnimationFrame')
     const h = renderChallenge(c)
+    expect(raf).not.toHaveBeenCalled() // nothing polls while no audio plays
+    await h.user.click(screen.getByRole('button', { name: 'Play audio' }))
+    expect(h.audio.play).toHaveBeenCalledWith(c.prompt.audio!.normal)
     expect(raf).toHaveBeenCalled()
     h.unmount()
     raf.mockClear()
-    renderChallenge(c, { display: { reducedMotion: true } })
+    const r = renderChallenge(c, { display: { reducedMotion: true } })
+    await r.user.click(screen.getByRole('button', { name: 'Play audio' }))
     expect(raf).not.toHaveBeenCalled()
     raf.mockRestore()
   })

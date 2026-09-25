@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 
 // Challenge gallery (apps/web/app/(dev)/challenges): every fixture challenge's renderer in the
@@ -18,6 +18,7 @@ const IDS = [
   'letter_intro-0',
   'letter_sound-0',
   'letter_forms-0',
+  'letter_forms-1',
   'read_word-0',
   'build_word-0',
 ]
@@ -31,6 +32,15 @@ async function open(page: Page, query = '') {
   await page.goto(`/challenges${query}`)
   await expect(page.locator('main[data-ready]')).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
+}
+
+/** Presses Tab (forward, wrapping) until `target` has focus: keyboard only, like a learner. */
+async function tabTo(page: Page, target: Locator) {
+  for (let i = 0; i < 120; i++) {
+    if (await target.evaluate((el) => el === document.activeElement)) return
+    await page.keyboard.press('Tab')
+  }
+  await expect(target).toBeFocused()
 }
 
 const answering = (page: Page, id: string) => page.getByTestId(`answering-${id}`)
@@ -131,11 +141,17 @@ test('match_pairs: keyboard-only matching submits when every pair is matched', a
     ['خوب', 'good'],
   ]
   for (const [fa, en] of pairs) {
-    await card.getByRole('group', { name: 'Persian' }).getByRole('button', { name: fa }).focus()
+    await tabTo(
+      page,
+      card.getByRole('group', { name: 'Persian' }).getByRole('button', { name: fa }),
+    )
     await page.keyboard.press('Enter')
-    await card.getByRole('group', { name: 'English' }).getByRole('button', { name: en }).focus()
+    const target = card.getByRole('group', { name: 'English' }).getByRole('button', { name: en })
+    await tabTo(page, target)
     await page.keyboard.press('Space')
+    await expect(target).toBeFocused() // the matched card keeps focus
   }
+  await expect(card.getByRole('status').first()).toHaveText('All pairs matched.')
   await expect(status(page, 'match_pairs-0')).toContainText('Verdict: correct')
 })
 
@@ -193,4 +209,34 @@ test('letter_intro: the four forms are joined with ZWJ', async ({ page }) => {
 test('an unknown ?only id is a 404', async ({ page }) => {
   const res = await page.goto('/challenges?only=nope')
   expect(res?.status()).toBe(404)
+})
+
+test('match_pairs: the tenth card answers to 0', async ({ page }) => {
+  await open(page, '?only=match_pairs-0')
+  const english = answering(page, 'match_pairs-0').getByRole('group', { name: 'English' })
+  const tenth = english.getByRole('button').nth(4)
+  await expect(tenth).toHaveAttribute('aria-keyshortcuts', '0')
+  await page.keyboard.press('0')
+  await expect(tenth).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('letter_forms by position: English names to Persian shapes', async ({ page }) => {
+  await open(page, '?only=letter_forms-1')
+  const card = answering(page, 'letter_forms-1')
+  const positions = card.getByRole('group', { name: 'Positions' })
+  // The column order is shuffled; every position name is there, in English.
+  for (const t of ['Alone', 'Start', 'Middle', 'End']) {
+    await expect(positions.getByRole('button', { name: t })).toBeVisible()
+  }
+  const shapes = card.getByRole('group', { name: 'Shapes' }).getByRole('button')
+  await expect(shapes).toHaveCount(4)
+})
+
+test('letter_sound: the letter audio appears only after CHECK', async ({ page }) => {
+  await open(page, '?only=letter_sound-0')
+  const card = answering(page, 'letter_sound-0')
+  await expect(card.getByRole('button', { name: 'Play the letter' })).toHaveCount(0)
+  await card.getByRole('button', { name: 'b', exact: true }).click()
+  await card.getByRole('button', { name: 'Check' }).click()
+  await expect(card.getByRole('button', { name: 'Play the letter' })).toBeVisible()
 })

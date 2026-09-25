@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { ChallengeOf } from '@zaboon/contracts'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('letter_sound')
 const correct = c.choices[c.answer]!
@@ -22,8 +22,7 @@ describe('letter_sound (letter → sound)', () => {
     expect(
       screen.getByRole('heading', { name: 'What sound does this letter make?' }),
     ).toBeInTheDocument()
-    const letter = screen.getByRole('group', { name: 'Letter' })
-    expect(letter).toHaveAttribute('lang', 'fa')
+    const letter = persianOf(screen.getByRole('group', { name: 'Letter' }))
     expect(letter).toHaveTextContent(c.letter.letter)
     expect(
       within(screen.getByRole('group', { name: 'Choices' })).getAllByRole('button'),
@@ -39,9 +38,12 @@ describe('letter_sound (letter → sound)', () => {
     expect(h.verdict()).toBe('wrong')
   })
 
-  it('plays the letter on demand and does not autoplay the answer', async () => {
+  it('hides the letter audio before CHECK (it is the answer) and offers it in feedback', async () => {
     const h = renderChallenge(c, { display: { sound: true } })
     expect(h.audio.play).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Play the letter' })).toBeNull()
+    await h.user.click(screen.getByRole('button', { name: correct }))
+    h.check()
     await h.user.click(screen.getByRole('button', { name: 'Play the letter' }))
     expect(h.audio.play).toHaveBeenCalledWith(c.letter.audio)
   })
@@ -60,14 +62,15 @@ describe('letter_sound (letter → sound)', () => {
 })
 
 describe('letter_sound (sound → letter)', () => {
-  it('shows the big speaker and turtle, autoplays, and offers Persian letters', async () => {
+  it('shows the big speaker (no turtle without a slow clip), autoplays, and offers Persian letters', async () => {
     const h = renderChallenge(reverse, { display: { sound: true } })
     expect(
       screen.getByRole('heading', { name: 'Which letter makes this sound?' }),
     ).toBeInTheDocument()
     expect(h.audio.play).toHaveBeenCalledTimes(1)
-    await h.user.click(screen.getByRole('button', { name: 'Play slowly' }))
-    expect(h.audio.play).toHaveBeenLastCalledWith(c.letter.audio, { slow: true })
+    expect(screen.queryByRole('button', { name: 'Play slowly' })).toBeNull()
+    await h.user.click(screen.getByRole('button', { name: 'Play audio' }))
+    expect(h.audio.play).toHaveBeenLastCalledWith(c.letter.audio)
     const choice = screen.getByRole('button', { name: 'ب' })
     expect(choice.querySelector('[lang="fa"][dir="rtl"]')).not.toBeNull()
     await h.user.click(choice)

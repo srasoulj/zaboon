@@ -4,7 +4,7 @@ import { FaText } from '@zaboon/ui'
 import clsx from 'clsx'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
 import { ChoiceList } from './ChoiceList'
-import { ChallengeFrame, styles, useChoice } from './shared'
+import { ChallengeFrame, Labelled, styles, useChoice } from './shared'
 
 type Props = ChallengeRendererProps<ChallengeOf<'cloze_choice'>>
 
@@ -20,34 +20,36 @@ export function ClozeChoice(props: Props) {
   return (
     <ChallengeFrame type={challenge.type} display={display} heading="Fill in the blank">
       <div>
-        <div className={styles.cloze} lang="fa" dir="rtl" role="group" aria-label="Sentence">
-          {challenge.before.length > 0 && (
-            <FaText
-              tokens={challenge.before}
-              translit={translit}
-              vowels={display.vowelMarks}
-              size="lg"
-            />
-          )}
-          <span
-            className={clsx(styles.blank, filled != null && styles.blankFilled)}
-            data-testid="cloze-blank"
-          >
-            {filled ?? (
-              <span className={styles.srOnly} lang="en">
-                blank
-              </span>
+        <Labelled label="Sentence">
+          <div className={styles.cloze} lang="fa" dir="rtl">
+            {challenge.before.length > 0 && (
+              <FaText
+                tokens={challenge.before}
+                translit={translit}
+                vowels={display.vowelMarks}
+                size="lg"
+              />
             )}
-          </span>
-          {challenge.after.length > 0 && (
-            <FaText
-              tokens={challenge.after}
-              translit={translit}
-              vowels={display.vowelMarks}
-              size="lg"
-            />
-          )}
-        </div>
+            <span
+              className={clsx(styles.blank, filled != null && styles.blankFilled)}
+              data-testid="cloze-blank"
+            >
+              {filled ?? (
+                <span className={styles.srOnly} lang="en">
+                  blank
+                </span>
+              )}
+            </span>
+            {challenge.after.length > 0 && (
+              <FaText
+                tokens={challenge.after}
+                translit={translit}
+                vowels={display.vowelMarks}
+                size="lg"
+              />
+            )}
+          </div>
+        </Labelled>
         <p className={styles.clozeTranslation} lang="en">
           {challenge.translation}
         </p>

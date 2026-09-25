@@ -17,11 +17,10 @@ export function MatchPairs(props: Props) {
         seed={`${challenge.index}:${pairs.map((p) => p.en).join('|')}`}
         leftLabel="Persian"
         rightLabel="English"
-        left={pairs.map((p) => ({
-          lang: 'fa',
-          content: <FaInline dto={p.fa} display={display} />,
-        }))}
-        right={pairs.map((p) => ({ lang: 'en', content: p.en }))}
+        leftDir="rtl"
+        rightDir="ltr"
+        left={pairs.map((p) => ({ content: <FaInline dto={p.fa} display={display} /> }))}
+        right={pairs.map((p) => ({ content: p.en }))}
         onTapLeft={(i) => {
           if (display.sound) playMedia(audio, pairs[i]!.fa.audio)
         }}
