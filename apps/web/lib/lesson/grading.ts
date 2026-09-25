@@ -34,6 +34,14 @@ export function sessionLexicon(challenges: readonly Challenge[]): string[] {
         break
       case 'translate_type':
         addFa(c.prompt.fa)
+        if (c.answerLang === 'fa') for (const t of canonical(c.graph).split(' ')) out.add(t)
+        break
+      case 'listen_type':
+        addFa(c.transcript)
+        for (const t of c.transcript.tokens ?? []) out.add(t.surface)
+        break
+      case 'cloze_type':
+        for (const t of [...c.before, ...c.after]) out.add(t.surface)
         break
       case 'match_pairs':
         for (const p of c.pairs) addFa(p.fa)
@@ -96,9 +104,18 @@ export function solutionFor(challenge: Challenge, grade: ResponseGrade | null): 
         }
       case 'listen_tap':
       case 'listen_type':
-      case 'cloze_type':
       case 'speak':
         return { text: grade?.closestSolution || canonical(challenge.graph), lang: 'fa' }
+      case 'cloze_type': {
+        // The whole sentence with the blank's closest accepted word (whole words only).
+        const blank = grade?.closestSolution || canonical(challenge.graph)
+        const words = [
+          ...challenge.before.map((t) => t.surface),
+          blank,
+          ...challenge.after.map((t) => t.surface),
+        ]
+        return { text: words.join(' '), lang: 'fa' }
+      }
       case 'cloze_choice': {
         const c = challenge.choices[challenge.answer]
         if (c === undefined) return null

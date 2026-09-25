@@ -21,6 +21,11 @@ const IDS = [
   'letter_forms-1',
   'read_word-0',
   'build_word-0',
+  // P2 (u01-t1): typed Persian and tracing.
+  'translate_type-1',
+  'listen_type-0',
+  'cloze_type-0',
+  'letter_trace-0',
 ]
 const THEMES = ['light', 'dark'] as const
 const stylePath = fileURLToPath(new URL('./screenshot.css', import.meta.url))
@@ -239,4 +244,115 @@ test('letter_sound: the letter audio appears only after CHECK', async ({ page })
   await card.getByRole('button', { name: 'b', exact: true }).click()
   await card.getByRole('button', { name: 'Check' }).click()
   await expect(card.getByRole('button', { name: 'Play the letter' })).toBeVisible()
+})
+
+// ------------------------------------------------------------------------ P2: typed Persian, tracing
+
+test('translate_type en→fa: the in-app keyboard types at the caret; physical keys are remapped', async ({
+  page,
+}) => {
+  await open(page, '?only=translate_type-1')
+  const card = answering(page, 'translate_type-1')
+  const box = card.getByRole('textbox', { name: 'Your answer in Persian' })
+  await expect(box).toHaveAttribute('lang', 'fa')
+  await expect(box).toHaveAttribute('dir', 'rtl')
+  const keys = card.getByRole('group', { name: 'Persian keyboard' })
+  const key = (name: string) => keys.getByRole('button', { name, exact: true })
+  for (const k of ['ن', 'و', 'ن', 'space']) await key(k).click()
+  await expect(box).toHaveValue('نون ')
+  // Physical keys on the standard layout: L = م, D = ی, Shift+Space = half-space, O = خ, , = و…
+  await box.focus()
+  for (const k of ['KeyL', 'KeyD', 'Shift+Space', 'KeyO', 'Comma', 'KeyH', 'KeyL'])
+    await page.keyboard.press(k)
+  await expect(box).toHaveValue(`نون می${ZWNJ}خوام`)
+  // Undo takes back the last key like any typed character.
+  await page.keyboard.press('ControlOrMeta+z')
+  await expect(box).not.toHaveValue(`نون می${ZWNJ}خوام`)
+  await page.keyboard.press('ControlOrMeta+Shift+z')
+  await expect(box).toHaveValue(`نون می${ZWNJ}خوام`)
+  await key('enter').click()
+  await expect(status(page, 'translate_type-1')).toContainText('Verdict: correct')
+})
+
+test('listen_type and cloze_type: typed Persian is graded by the grader', async ({ page }) => {
+  await open(page, '?only=listen_type-0')
+  const listen = answering(page, 'listen_type-0')
+  await listen.getByRole('textbox', { name: 'What you hear, in Persian' }).fill('چای میخوای')
+  await listen.getByRole('button', { name: 'Check' }).click()
+  await expect(status(page, 'listen_type-0')).toContainText('Verdict: correct')
+
+  await open(page, '?only=cloze_type-0')
+  const cloze = answering(page, 'cloze_type-0')
+  const blank = cloze.getByRole('textbox', { name: 'The missing word' })
+  await expect(blank).toHaveAttribute('dir', 'rtl')
+  await blank.fill('نون')
+  await blank.press('Enter')
+  await expect(status(page, 'cloze_type-0')).toContainText('Verdict: wrong')
+})
+
+/** Horizontal strokes over every run of guide pixels, one every `step` rows (canvas coordinates). */
+async function guideStrokes(canvas: Locator, step = 6): Promise<[number, number][][]> {
+  return canvas.evaluate((el, step) => {
+    const c = el as HTMLCanvasElement
+    const { data, width, height } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height)
+    const out: [number, number][][] = []
+    for (let y = 0; y < height; y += step) {
+      let run: number | null = null
+      for (let x = 0; x <= width; x++) {
+        const ink = x < width && data[(y * width + x) * 4 + 3]! > 128
+        if (ink && run === null) run = x
+        if (!ink && run !== null) {
+          out.push([
+            [run, y],
+            [x - 1, y],
+          ])
+          run = null
+        }
+      }
+    }
+    return out
+  }, step)
+}
+
+async function drawStrokes(page: Page, canvas: Locator, strokes: [number, number][][]) {
+  await canvas.scrollIntoViewIfNeeded()
+  const box = (await canvas.boundingBox())!
+  const size = await canvas.evaluate((el) => (el as HTMLCanvasElement).width)
+  const at = ([x, y]: [number, number]) =>
+    [box.x + (x * box.width) / size, box.y + (y * box.height) / size] as const
+  for (const stroke of strokes) {
+    const [first, ...rest] = stroke
+    await page.mouse.move(...at(first!))
+    await page.mouse.down()
+    for (const p of rest) await page.mouse.move(...at(p), { steps: 4 })
+    await page.mouse.up()
+  }
+}
+
+test('letter_trace: tracing the guide passes, a scribble fails, "Can\'t trace now" passes', async ({
+  page,
+}) => {
+  await open(page, '?only=letter_trace-0')
+  const card = answering(page, 'letter_trace-0')
+  const canvas = card.getByTestId('trace-canvas')
+  await expect(canvas).toHaveCSS('touch-action', 'none')
+  // Wait for the guide (drawn once the Persian font has loaded).
+  await expect.poll(async () => (await guideStrokes(canvas)).length).toBeGreaterThan(3)
+  await drawStrokes(page, canvas, await guideStrokes(canvas))
+  await card.getByRole('button', { name: 'Check' }).click()
+  await expect(status(page, 'letter_trace-0')).toContainText('Verdict: correct')
+
+  await card.getByRole('button', { name: 'Continue' }).click()
+  const size = await canvas.evaluate((el) => (el as HTMLCanvasElement).width)
+  const zigzag: [number, number][] = Array.from({ length: 16 }, (_, i) => [
+    i % 2 ? 4 : size - 4,
+    4 + i * ((size - 8) / 15),
+  ])
+  await drawStrokes(page, canvas, [zigzag])
+  await card.getByRole('button', { name: 'Check' }).click()
+  await expect(status(page, 'letter_trace-0')).toContainText('Verdict: wrong')
+
+  await card.getByRole('button', { name: 'Continue' }).click()
+  await card.getByRole('button', { name: "Can't trace now" }).click()
+  await expect(status(page, 'letter_trace-0')).toContainText('Verdict: correct')
 })

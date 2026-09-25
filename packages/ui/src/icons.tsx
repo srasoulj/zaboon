@@ -1,6 +1,7 @@
 /**
  * Original, geometric icons for the kit (star, book, dumbbell, chest, trophy, flame, coin, heart,
- * check, cross, flag, lock). Decorative: always `aria-hidden`; the owning control carries the name.
+ * check, cross, flag, lock, and the keyboard's shift, backspace and enter). Decorative: always
+ * `aria-hidden`; the owning control carries the name.
  */
 import type { ReactElement, SVGProps } from 'react'
 
@@ -18,6 +19,9 @@ export type IconName =
   | 'flag'
   | 'lock'
   | 'close'
+  | 'shift'
+  | 'backspace'
+  | 'enter'
 
 const PATHS: Record<IconName, ReactElement> = {
   star: (
@@ -98,6 +102,18 @@ const PATHS: Record<IconName, ReactElement> = {
       <rect x="4.5" y="10" width="15" height="11" rx="3" />
       <path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
     </g>
+  ),
+  shift: (
+    <path d="M12 3.5L3.5 12.5H8v7.5h8v-7.5h4.5z" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+  ),
+  backspace: (
+    <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 5H20a1.5 1.5 0 011.5 1.5v11A1.5 1.5 0 0120 19H8.5L2.5 12z" />
+      <path d="M11.5 9l6 6M17.5 9l-6 6" />
+    </g>
+  ),
+  enter: (
+    <path d="M19.5 5v6.5a2 2 0 01-2 2H5M9.5 9L5 13.5 9.5 18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
   ),
 }
 

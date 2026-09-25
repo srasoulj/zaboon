@@ -2,14 +2,13 @@
 import type { Challenge, ChallengeResponse, Verdict } from '@zaboon/contracts'
 import { gradeResponse } from '@zaboon/session-engine'
 import { Button3D, MotionPreferenceProvider } from '@zaboon/ui'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { correctResponse, wrongResponse } from '@/components/challenges/fixtures/samples'
-import { renderers } from '@/components/challenges'
-import type {
-  ChallengeAudio,
-  ChallengeDisplay,
-  ChallengeRenderer,
-  MvpChallengeType,
+import {
+  rendererFor,
+  type ChallengeAudio,
+  type ChallengeDisplay,
+  type ChallengeRenderer,
 } from '@/lib/challenge-registry'
 import styles from './challenges.module.css'
 
@@ -37,7 +36,7 @@ function useFakeAudio(): { audio: ChallengeAudio; played: string | null } {
 
 /** A miniature player: holds the draft, CHECK grades it with gradeResponse, CONTINUE resets. */
 function Interactive({ challenge, display }: { challenge: Challenge; display: ChallengeDisplay }) {
-  const Renderer = renderers[challenge.type as MvpChallengeType] as ChallengeRenderer
+  const Renderer = rendererFor(challenge.type) as ChallengeRenderer
   const [round, setRound] = useState(0)
   const [response, setResponse] = useState<ChallengeResponse | null>(null)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
@@ -92,7 +91,7 @@ function Interactive({ challenge, display }: { challenge: Challenge; display: Ch
 
 /** A graded screen: the sample wrong answer (or the only possible one for matching/intro). */
 function Feedback({ challenge, display }: { challenge: Challenge; display: ChallengeDisplay }) {
-  const Renderer = renderers[challenge.type as MvpChallengeType] as ChallengeRenderer
+  const Renderer = rendererFor(challenge.type) as ChallengeRenderer
   const { audio } = useFakeAudio()
   const response =
     challenge.type === 'letter_intro' ? correctResponse(challenge) : wrongResponse(challenge)
@@ -116,6 +115,8 @@ function Feedback({ challenge, display }: { challenge: Challenge; display: Chall
 export interface ChallengeGalleryProps {
   entries: readonly GalleryEntry[]
   ids: readonly string[]
+  /** The P2 subset of `ids` (their links and options sit after the MVP challenges). */
+  p2Ids: readonly string[]
   theme: 'light' | 'dark'
   reduceMotion: boolean
   single: boolean
@@ -124,6 +125,7 @@ export interface ChallengeGalleryProps {
 export function ChallengeGallery({
   entries,
   ids,
+  p2Ids,
   theme,
   reduceMotion,
   single,
@@ -132,6 +134,8 @@ export function ChallengeGallery({
   const [transliteration, setTransliteration] = useState(true)
   const [vowelMarks, setVowelMarks] = useState(false)
   const [sound, setSound] = useState(false)
+  const [persianKeyboard, setPersianKeyboard] = useState(true)
+  const [phonetic, setPhonetic] = useState(false)
   // Marks hydration as done so screenshot tests never capture the server-only render.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time post-hydration flag
   useEffect(() => setReady(true), [])
@@ -140,12 +144,25 @@ export function ChallengeGallery({
     vowelMarks,
     sound,
     reducedMotion: reduceMotion,
+    persianKeyboard,
+    keyboardLayout: phonetic ? 'phonetic' : 'standard',
   }
   const toggles: [string, boolean, (v: boolean) => void][] = [
     ['Transliteration', transliteration, setTransliteration],
     ['Vowel marks', vowelMarks, setVowelMarks],
     ['Autoplay audio', sound, setSound],
   ]
+  const p2Toggles: [string, boolean, (v: boolean) => void][] = [
+    ['In-app Persian keyboard', persianKeyboard, setPersianKeyboard],
+    ['Phonetic layout', phonetic, setPhonetic],
+  ]
+  const firstP2 = entries.find((e) => p2Ids.includes(e.id))?.id
+  const checkboxes = (list: typeof toggles) =>
+    list.map(([label, value, set]) => (
+      <label key={label}>
+        <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} /> {label}
+      </label>
+    ))
   const themeLink = (t: 'light' | 'dark') => `?theme=${t}${reduceMotion ? '&reduce=1' : ''}`
 
   return (
@@ -158,43 +175,50 @@ export function ChallengeGallery({
             <a href={themeLink('dark')}>Dark</a>
             {single && <a href={`?theme=${theme}`}>All challenges</a>}
           </nav>
-          <div className={styles.nav}>
-            {toggles.map(([label, value, set]) => (
-              <label key={label}>
-                <input type="checkbox" checked={value} onChange={(e) => set(e.target.checked)} />{' '}
-                {label}
-              </label>
-            ))}
-          </div>
+          <div className={styles.nav}>{checkboxes(toggles)}</div>
           {!single && (
             <nav className={styles.nav} aria-label="Challenges">
-              {ids.map((id) => (
-                <a key={id} href={`?theme=${theme}&only=${id}`}>
-                  {id}
-                </a>
-              ))}
+              {ids
+                .filter((id) => !p2Ids.includes(id))
+                .map((id) => (
+                  <a key={id} href={`?theme=${theme}&only=${id}`}>
+                    {id}
+                  </a>
+                ))}
             </nav>
           )}
         </header>
         {entries.map(({ id, challenge }) => (
-          <section
-            key={id}
-            className={styles.section}
-            aria-label={id}
-            data-testid={`challenge-${id}`}
-          >
-            <p className={styles.sectionTitle}>{id}</p>
-            <div className={styles.states}>
-              <div className={styles.state} data-testid={`answering-${id}`}>
-                <p className={styles.stateLabel}>Answering</p>
-                <Interactive challenge={challenge} display={display} />
+          <Fragment key={id}>
+            {id === firstP2 && (
+              <header className={styles.header}>
+                <h2 className={styles.title}>P2: typed Persian and tracing (behind flags)</h2>
+                <div className={styles.nav}>{checkboxes(p2Toggles)}</div>
+                {!single && (
+                  <nav className={styles.nav} aria-label="P2 challenges">
+                    {p2Ids.map((p) => (
+                      <a key={p} href={`?theme=${theme}&only=${p}`}>
+                        {p}
+                      </a>
+                    ))}
+                  </nav>
+                )}
+              </header>
+            )}
+            <section className={styles.section} aria-label={id} data-testid={`challenge-${id}`}>
+              <p className={styles.sectionTitle}>{id}</p>
+              <div className={styles.states}>
+                <div className={styles.state} data-testid={`answering-${id}`}>
+                  <p className={styles.stateLabel}>Answering</p>
+                  <Interactive challenge={challenge} display={display} />
+                </div>
+                <div className={styles.state} data-testid={`feedback-${id}`}>
+                  <p className={styles.stateLabel}>Feedback</p>
+                  <Feedback challenge={challenge} display={display} />
+                </div>
               </div>
-              <div className={styles.state} data-testid={`feedback-${id}`}>
-                <p className={styles.stateLabel}>Feedback</p>
-                <Feedback challenge={challenge} display={display} />
-              </div>
-            </div>
-          </section>
+            </section>
+          </Fragment>
         ))}
       </main>
     </MotionPreferenceProvider>

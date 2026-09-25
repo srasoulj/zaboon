@@ -6,7 +6,7 @@
  * pass `renderer={RiveCharacter}` implementing `CharacterRendererProps`.
  */
 import clsx from 'clsx'
-import type { ComponentType, ReactNode } from 'react'
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { usePrefersReducedMotion } from '../motion-preference'
 import { tokens } from '../tokens'
 
@@ -55,7 +55,15 @@ export interface CharacterProps {
   paused?: boolean
   /** Swap in a Rive renderer later; defaults to the SVG placeholder. */
   renderer?: CharacterRenderer
-  /** Accessible name; defaults to "<Name>, <mood>". Pass `decorative` to hide from AT instead. */
+  /**
+   * Portrait URL (content assets, §7.4). Drawn in the same `size`×`size` box as the placeholder;
+   * the SVG placeholder is shown while there is none or when it fails to load.
+   */
+  image?: string
+  /**
+   * Accessible name; defaults to "<Name>, <mood>" for the placeholder and "<Name>" for a portrait
+   * (its `alt`). Pass `decorative` to hide from AT instead (`alt=""`).
+   */
   label?: string
   decorative?: boolean
   className?: string
@@ -362,14 +370,45 @@ export function Character({
   size = 120,
   paused = false,
   renderer: Renderer = SvgCharacter,
+  image,
   label,
   decorative = false,
   className,
 }: CharacterProps) {
   const reduce = usePrefersReducedMotion()
+  // The URL that failed to load (a new `image` gets a fresh try).
+  const [failed, setFailed] = useState<string | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const portrait = image !== undefined && image !== '' && failed !== image ? image : null
+  // An error that fired before hydration never reaches onError: detect a broken image on mount.
+  useEffect(() => {
+    const img = imgRef.current
+    if (portrait !== null && img?.complete && img.naturalWidth === 0) setFailed(portrait)
+  }, [portrait])
+  const displayName = CHARACTER_DISPLAY_NAMES[name]
+
+  if (portrait !== null) {
+    // The <img> carries the name itself (alt), so the wrapper is not a second image.
+    return (
+      <div className={clsx('zb-character zb-character--portrait', className)} style={{ inlineSize: size }} data-mood={mood}>
+        <img
+          ref={imgRef}
+          className="zb-character__img"
+          src={portrait}
+          alt={decorative ? '' : (label ?? displayName)}
+          width={size}
+          height={size}
+          decoding="async"
+          crossOrigin="anonymous"
+          data-character={name}
+          onError={() => setFailed(portrait)}
+        />
+      </div>
+    )
+  }
   const a11y = decorative
     ? { 'aria-hidden': true as const }
-    : { role: 'img', 'aria-label': label ?? `${CHARACTER_DISPLAY_NAMES[name]}, ${mood}` }
+    : { role: 'img', 'aria-label': label ?? `${displayName}, ${mood}` }
   return (
     <div className={clsx('zb-character', className)} style={{ inlineSize: size }} data-mood={mood} {...a11y}>
       <Renderer name={name} mood={mood} mouthOpen={clampMouth(mouthOpen)} size={size} animate={!reduce && !paused} />

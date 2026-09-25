@@ -5,7 +5,12 @@
  */
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { Challenge, DEFAULT_APP_CONFIG as cfg, MVP_CHALLENGE_TYPES } from '@zaboon/contracts'
+import {
+  Challenge,
+  DEFAULT_APP_CONFIG as cfg,
+  MVP_CHALLENGE_TYPES,
+  PracticeMode,
+} from '@zaboon/contracts'
 import type { ChallengeOf, ChallengeRef, FsrsCard, SessionKind } from '@zaboon/contracts'
 import type { LessonSpec, UnitBundle } from '@zaboon/content-schema'
 import { accepts } from '@zaboon/grader'
@@ -19,9 +24,11 @@ import {
   decodeVariant,
   encodeVariant,
   generateSession,
+  mvpTwin,
   rebuildChallenges,
+  TRACE_FORMS,
 } from './index'
-import type { ContentView, GenerateInput, LearnerState } from './index'
+import type { ContentView, GenerateInput, LearnerState, SessionFeatures } from './index'
 import { acceptedTokenKeys, answerTiles, indexContent, wordKey } from './content'
 import { loadCourse } from './test-support/load-course'
 
@@ -127,21 +134,71 @@ describe('session-engine', () => {
         { type: 'cloze_type', items: ['s_u01_0007'], direction: undefined },
         { type: 'letter_trace', items: ['l_be'], direction: undefined },
       ])
-      // Until the P2 builders land (ws-typing) the session can't be built: NotImplementedError,
-      // never a ContentError. Once they land, it builds exactly the four pins.
-      let built: Challenge[] | null = null
-      try {
-        built = gen(fx, { levelId: 'u01-t1' }).challenges
-      } catch (e) {
-        expect(e).toBeInstanceOf(NotImplementedError)
-      }
-      if (built)
-        expect(built.map((c) => c.type)).toEqual([
-          'translate_type',
-          'listen_type',
-          'cloze_type',
-          'letter_trace',
+      // With both features on it builds exactly the four pins.
+      const on = gen(fx, {
+        levelId: 'u01-t1',
+        features: { persianTyping: true, letterTrace: true },
+      })
+      expect(on.refs).toEqual([
+        { type: 'translate_type', items: ['s_u01_0003'], direction: 'en_fa' },
+        { type: 'listen_type', items: ['s_u01_0005'] },
+        { type: 'cloze_type', items: ['s_u01_0007'] },
+        { type: 'letter_trace', items: ['l_be'] },
+      ])
+      expect(on.challenges.map((c) => c.type)).toEqual([
+        'translate_type',
+        'listen_type',
+        'cloze_type',
+        'letter_trace',
+      ])
+      expect(of(on.challenges[0]!, 'translate_type').answerLang).toBe('fa')
+      expect(of(on.challenges[3]!, 'letter_trace').form).toBe('isolated')
+      expect(rebuildChallenges(on.refs, fx)).toEqual(on.challenges)
+    })
+
+    it('u01-t1 plays the MVP twins in place while the features are off', () => {
+      for (const features of [undefined, { persianTyping: false, letterTrace: false }]) {
+        const off = gen(fx, { levelId: 'u01-t1', ...(features ? { features } : {}) })
+        expect(off.refs).toEqual([
+          { type: 'translate_bank', items: ['s_u01_0003'], direction: 'en_fa' },
+          { type: 'listen_tap', items: ['s_u01_0005'] },
+          { type: 'cloze_choice', items: ['s_u01_0007'] },
+          { type: 'letter_forms', items: ['l_be'] },
         ])
+        expect(off.challenges.every((c) => MVP_CHALLENGE_TYPES.includes(c.type as never))).toBe(
+          true,
+        )
+        // Stored refs hold what was built, so the rebuild never needs the flags.
+        expect(rebuildChallenges(off.refs, fx)).toEqual(off.challenges)
+      }
+      // One feature at a time.
+      const typingOnly = gen(fx, { levelId: 'u01-t1', features: { persianTyping: true } })
+      expect(typingOnly.refs.map((r) => r.type)).toEqual([
+        'translate_type',
+        'listen_type',
+        'cloze_type',
+        'letter_forms',
+      ])
+      const traceOnly = gen(fx, { levelId: 'u01-t1', features: { letterTrace: true } })
+      expect(traceOnly.refs.map((r) => r.type)).toEqual([
+        'translate_bank',
+        'listen_tap',
+        'cloze_choice',
+        'letter_trace',
+      ])
+    })
+
+    it('mvpTwin leaves English typing and MVP refs alone', () => {
+      const en: ChallengeRef = { type: 'translate_type', items: ['s_u01_0006'], direction: 'fa_en' }
+      expect(mvpTwin(en, undefined)).toBe(en)
+      const bank: ChallengeRef = { type: 'listen_tap', items: ['s_u01_0005'] }
+      expect(mvpTwin(bank, undefined)).toBe(bank)
+      expect(
+        mvpTwin(
+          { type: 'letter_trace', items: ['l_be'], variant: encodeVariant({ option: 2 }) },
+          {},
+        ),
+      ).toEqual({ type: 'letter_forms', items: ['l_be'] })
     })
 
     it('u01-l1 and u01-l2 together build all 13 MVP types in the pinned order', () => {
@@ -417,7 +474,10 @@ describe('session-engine', () => {
         buildChallenge({ type: 'select_translation', items: ['s_nope'] }, 0, fx),
       ).toThrow(ContentError)
       expect(() => buildChallenge({ type: 'speak', items: ['s_u01_0001'] }, 0, fx)).toThrow(
-        /not in the MVP/,
+        NotImplementedError,
+      )
+      expect(() => buildChallenge({ type: 'story', items: ['s_u01_0001'] }, 0, fx)).toThrow(
+        /not available yet/,
       )
       expect(() =>
         buildChallenge({ type: 'match_pairs', items: ['lx_ab', 'lx_nun'] }, 0, fx),
@@ -724,17 +784,39 @@ const learnerArb = (content: ContentView) => {
     }))
 }
 
-function checkScenario(scenarios: Scenario[], runs: number) {
+const P2_TYPES: Readonly<Record<string, keyof SessionFeatures>> = {
+  listen_type: 'persianTyping',
+  cloze_type: 'persianTyping',
+  letter_trace: 'letterTrace',
+}
+
+/** A type the session may contain: MVP types, and P2 types while their feature is on. */
+function allowedType(c: Challenge, features: SessionFeatures | undefined): boolean {
+  if (c.type === 'translate_type' && c.answerLang === 'fa') return features?.persianTyping === true
+  const feature = P2_TYPES[c.type]
+  if (feature) return features?.[feature] === true
+  return (MVP_CHALLENGE_TYPES as readonly string[]).includes(c.type)
+}
+
+/** `withFeatures`: also draw the Wave 3 features and a practice mode (practice sessions). */
+function checkScenario(scenarios: Scenario[], runs: number, withFeatures = false) {
   const scenario = fc.constantFrom(...scenarios).chain((sc) =>
     fc.record({
       sc: fc.constant(sc),
       seed: fc.string(),
       lessonIndex: fc.nat(4),
       learner: learnerArb(sc.content),
+      features: withFeatures
+        ? fc.record({ persianTyping: fc.boolean(), letterTrace: fc.boolean() })
+        : fc.constant(undefined),
+      practiceMode:
+        withFeatures && sc.kind === 'practice'
+          ? fc.constantFrom(...PracticeMode.options)
+          : fc.constant(undefined),
     }),
   )
   fc.assert(
-    fc.property(scenario, ({ sc, seed, lessonIndex, learner }) => {
+    fc.property(scenario, ({ sc, seed, lessonIndex, learner, features, practiceMode }) => {
       const input: GenerateInput = {
         content: sc.content,
         kind: sc.kind,
@@ -744,6 +826,8 @@ function checkScenario(scenarios: Scenario[], runs: number) {
         seed,
         now,
         config: cfg,
+        ...(features ? { features } : {}),
+        ...(practiceMode ? { practiceMode } : {}),
       }
       const a = generateSession(input)
       expect(a.refs.length).toBeGreaterThan(0)
@@ -754,7 +838,8 @@ function checkScenario(scenarios: Scenario[], runs: number) {
           throw new Error(`${sc.kind} ${sc.levelId} #${i} ${c.type}: ${parsed.error.message}`)
         expect(c.index).toBe(i)
         expect(c.ref).toEqual(a.refs[i])
-        expect(MVP_CHALLENGE_TYPES).toContain(c.type)
+        if (!allowedType(c, features))
+          throw new Error(`${c.type} with features ${JSON.stringify(features)}`)
       })
       const level = sc.content.unit?.unit.levels.find((l) => l.id === sc.levelId)
       if (!level?.spec?.pinnedOnly) {
@@ -771,23 +856,167 @@ function checkScenario(scenarios: Scenario[], runs: number) {
   )
 }
 
+describe('P2 builders (typed Persian, tracing)', () => {
+  it('listen_type: the clip and transcript of listen_tap, a typed Persian key', () => {
+    const r: ChallengeRef = { type: 'listen_type', items: ['s_u01_0005'] }
+    const lt = of(buildChallenge(r, 3, fx), 'listen_type')
+    const tap = of(
+      buildChallenge({ type: 'listen_tap', items: ['s_u01_0005'] }, 3, fx),
+      'listen_tap',
+    )
+    expect(lt.audio).toEqual(tap.audio)
+    expect(lt.transcript).toEqual(tap.transcript)
+    expect(accepts(lt.graph, 'چای می‌خوای', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'چای می‌خواهی؟', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'نون می‌خوام', 'fa')).toBe(false)
+    expect(Challenge.parse(lt)).toStrictEqual(lt)
+    expect(buildChallenge(r, 3, fx)).toEqual(lt)
+    // Words work too; an item without audio is not buildable (the planner skips it).
+    expect(
+      of(buildChallenge({ type: 'listen_type', items: ['lx_ab'] }, 0, fx), 'listen_type').transcript
+        .fa,
+    ).toBe('آب')
+  })
+
+  it('cloze_type: whole-word tokens around the blank, a key for the blank only', () => {
+    // Option 2 blanks token #1 (سیب) of «من سیب می‌خوام».
+    const r: ChallengeRef = {
+      type: 'cloze_type',
+      items: ['s_u01_0007'],
+      variant: encodeVariant({ option: 2 }),
+    }
+    const ct = of(buildChallenge(r, 0, fx), 'cloze_type')
+    expect(ct.before.map((t) => t.surface)).toEqual(['من'])
+    expect(ct.after.map((t) => t.surface)).toEqual(['می‌خوام'])
+    expect(ct.translation).toMatch(/apple/)
+    expect(accepts(ct.graph, 'سیب', 'fa')).toBe(true)
+    expect(accepts(ct.graph, 'من سیب', 'fa')).toBe(false)
+    expect(accepts(ct.graph, '', 'fa')).toBe(false)
+    expect(accepts(ct.graph, 'نون', 'fa')).toBe(false)
+    expect(Challenge.parse(ct)).toStrictEqual(ct)
+    expect(buildChallenge(r, 0, fx)).toEqual(ct)
+  })
+
+  it('cloze_type: the blank accepts its register and orthography alternatives', () => {
+    const verb = of(
+      buildChallenge(
+        { type: 'cloze_type', items: ['s_u01_0007'], variant: encodeVariant({ option: 3 }) },
+        0,
+        fx,
+      ),
+      'cloze_type',
+    )
+    expect(verb.after).toEqual([])
+    for (const w of ['می‌خوام', 'میخوام', 'می‌خام', 'می‌خواهم'])
+      expect(accepts(verb.graph, w, 'fa'), w).toBe(true)
+    expect(accepts(verb.graph, 'می‌خوای', 'fa')).toBe(false)
+    // Option 0: the engine picks a non-pronoun blank, deterministically.
+    const picked = of(
+      buildChallenge({ type: 'cloze_type', items: ['s_u01_0007'] }, 4, fx),
+      'cloze_type',
+    )
+    expect(picked.before.map((t) => t.surface)).toContain('من')
+    expect(buildChallenge({ type: 'cloze_type', items: ['s_u01_0007'] }, 4, fx)).toEqual(picked)
+    // Blanking a pronoun-only position that isn't a candidate fails as content, never silently.
+    expect(() =>
+      buildChallenge(
+        { type: 'cloze_type', items: ['s_u01_0007'], variant: encodeVariant({ option: 9 }) },
+        0,
+        fx,
+      ),
+    ).toThrow(ContentError)
+  })
+
+  it('letter_trace: the letter and the form its option names', () => {
+    expect(TRACE_FORMS).toEqual(['isolated', 'initial', 'medial', 'final'])
+    TRACE_FORMS.forEach((form, option) => {
+      const r: ChallengeRef = {
+        type: 'letter_trace',
+        items: ['l_be'],
+        ...(option ? { variant: encodeVariant({ option }) } : {}),
+      }
+      const lt = of(buildChallenge(r, 0, fx), 'letter_trace')
+      expect(lt.form).toBe(form)
+      expect(lt.letter).toMatchObject({ id: 'l_be', letter: 'ب', connects: true })
+      expect(lt.letter.forms[form]).toBeTruthy()
+      expect(Challenge.parse(lt)).toStrictEqual(lt)
+    })
+    // A non-connector (ر) has only isolated and final forms.
+    expect(
+      of(buildChallenge({ type: 'letter_trace', items: ['l_re'] }, 0, fx), 'letter_trace').form,
+    ).toBe('isolated')
+    expect(
+      of(
+        buildChallenge(
+          { type: 'letter_trace', items: ['l_re'], variant: encodeVariant({ option: 3 }) },
+          0,
+          fx,
+        ),
+        'letter_trace',
+      ).form,
+    ).toBe('final')
+    for (const option of [1, 2])
+      expect(() =>
+        buildChallenge(
+          { type: 'letter_trace', items: ['l_re'], variant: encodeVariant({ option }) },
+          0,
+          fx,
+        ),
+      ).toThrow(ContentError)
+    expect(() =>
+      buildChallenge(
+        { type: 'letter_trace', items: ['l_be'], variant: encodeVariant({ option: 4 }) },
+        0,
+        fx,
+      ),
+    ).toThrow(ContentError)
+  })
+
+  it('translate_type en→fa types the Persian sentence', () => {
+    const tt = of(
+      buildChallenge({ type: 'translate_type', items: ['s_u01_0003'], direction: 'en_fa' }, 0, fx),
+      'translate_type',
+    )
+    expect(tt.answerLang).toBe('fa')
+    expect(tt.prompt.lang).toBe('en')
+    expect(accepts(tt.graph, 'نون می‌خوام', 'fa')).toBe(true)
+  })
+})
+
 describe('Wave 3 seams (features, practiceMode)', () => {
   const on = { persianTyping: true, letterTrace: true }
   const learner = { ...fresh, lexemeCards: cards(indexContent(fx).lexemeList.map((l) => l.id)) }
   const sessions = [
-    { content: withSpec(fx, { mix: 'standard' }), kind: 'lesson' as const, levelId: 'u01-gen', learner },
-    { content: fx, kind: 'practice' as const, levelId: null, learner },
-    { content: fx, kind: 'letters' as const, levelId: 'u01-letters-2', learner: fresh },
+    {
+      content: withSpec(fx, { mix: 'standard' }),
+      kind: 'lesson' as const,
+      levelId: 'u01-gen',
+      learner,
+      lessonIndex: 1,
+    },
+    { content: fx, kind: 'practice' as const, levelId: null, learner, lessonIndex: 0 },
+    {
+      content: fx,
+      kind: 'letters' as const,
+      levelId: 'u01-letters-2',
+      learner: fresh,
+      lessonIndex: 0,
+    },
   ]
+  const SEEDS = Array.from({ length: 12 }, (_, i) => `w3-${i}`)
+  const typedPersian = (r: ChallengeRef) =>
+    r.type === 'listen_type' ||
+    r.type === 'cloze_type' ||
+    (r.type === 'translate_type' && r.direction === 'en_fa')
 
-  it('with the features on, sessions stay valid MVP sessions until the P2 builders exist', () => {
+  it('with the features on, sessions are valid, within length and rebuild exactly', () => {
     for (const s of sessions)
-      for (const seed of ['w3-a', 'w3-b', 'w3-c']) {
+      for (const seed of SEEDS.slice(0, 3)) {
         const out = gen(s.content, { ...s, seed, features: on })
         expect(out.challenges.length).toBeGreaterThan(0)
         for (const c of out.challenges) {
           expect(Challenge.safeParse(c).success).toBe(true)
-          expect(MVP_CHALLENGE_TYPES).toContain(c.type)
+          expect(allowedType(c, on)).toBe(true)
         }
         expect(out.refs.length).toBeLessThanOrEqual(cfg.session.lengths[s.kind]!)
         expect(rebuildChallenges(out.refs, s.content)).toEqual(out.challenges)
@@ -801,11 +1030,154 @@ describe('Wave 3 seams (features, practiceMode)', () => {
     }
   })
 
-  it('accepts a practice mode and ignores it for now', () => {
-    const practice = sessions[1]!
-    expect(gen(practice.content, { ...practice, practiceMode: 'mistakes' })).toEqual(
-      gen(practice.content, practice),
+  it("the typing pool appears only with persianTyping (and not in a level's first lesson)", () => {
+    const [lesson, practice] = sessions
+    const refsOf = (
+      s: (typeof sessions)[number],
+      features?: SessionFeatures,
+      over: Partial<GenerateInput> = {},
+    ) =>
+      SEEDS.flatMap(
+        (seed) => gen(s!.content, { ...s, seed, ...(features ? { features } : {}), ...over }).refs,
+      )
+    for (const s of [lesson!, practice!]) {
+      expect(refsOf(s).some(typedPersian)).toBe(false)
+      expect(refsOf(s, { letterTrace: true }).some(typedPersian)).toBe(false)
+      const typing = refsOf(s, { persianTyping: true })
+      expect(typing.some(typedPersian)).toBe(true)
+      expect(typing.some((r) => r.type === 'letter_trace')).toBe(false)
+    }
+    expect(refsOf(lesson!, { persianTyping: true }, { lessonIndex: 0 }).some(typedPersian)).toBe(
+      false,
     )
+  })
+
+  it('the letterTrace pool appears only with letterTrace, isolated and joined forms', () => {
+    // A learner who knows the letters: no intros, so the mix has room for every category.
+    const known = { ...fresh, letterCards: cards(indexContent(fx).letterList.map((l) => l.id)) }
+    const letters = { ...sessions[2]!, learner: known }
+    const traces = (features?: SessionFeatures) =>
+      SEEDS.flatMap(
+        (seed) =>
+          gen(letters.content, { ...letters, seed, ...(features ? { features } : {}) }).challenges,
+      ).filter((c): c is ChallengeOf<'letter_trace'> => c.type === 'letter_trace')
+    expect(traces()).toEqual([])
+    expect(traces({ persianTyping: true })).toEqual([])
+    const on = traces({ letterTrace: true })
+    expect(on.length).toBeGreaterThan(0)
+    expect(new Set(on.map((c) => c.form)).has('isolated')).toBe(true)
+    expect(on.some((c) => c.form !== 'isolated')).toBe(true)
+    for (const c of on) if (!c.letter.connects) expect(['isolated', 'final']).toContain(c.form)
+  })
+
+  it('ladder step 5: a new word is typed in Persian, only with persianTyping', () => {
+    const view = withSpec(fx, {
+      mix: 'standard',
+      focus: { lexemes: ['lx_nun', 'lx_chay'], sentences: [], letters: [], chats: [] },
+    })
+    const base = { levelId: 'u01-gen', lessonIndex: 1, learner: fresh }
+    for (const seed of SEEDS.slice(0, 4)) {
+      const off = gen(view, { ...base, seed })
+      const onS = gen(view, { ...base, seed, features: { persianTyping: true } })
+      const typed = (refs: ChallengeRef[]) =>
+        refs
+          .filter((r) => r.type === 'translate_type' && r.direction === 'en_fa')
+          .flatMap((r) => r.items)
+      expect(typed(off.refs)).toEqual([])
+      const newWords = onS.challenges.filter((c) => c.isNew).map((c) => c.ref.items[0]!)
+      expect(newWords.length).toBeGreaterThan(0)
+      const ix = indexContent(view)
+      for (const w of newWords) {
+        const covers = typed(onS.refs).some(
+          (id) =>
+            id === w || (id.startsWith('s_') && ix.sentence(id).tokens.some((t) => t.lexeme === w)),
+        )
+        expect(covers, `${seed}: ${w}`).toBe(true)
+      }
+    }
+    // A level's first lesson keeps the MVP ladder.
+    const first = gen(view, { ...base, lessonIndex: 0, features: { persianTyping: true } })
+    expect(first).toEqual(gen(view, { ...base, lessonIndex: 0 }))
+  })
+
+  describe('practice modes', () => {
+    const practice = sessions[1]!
+    const withMistakes = { ...learner, mistakes: ['sentence:s_u01_0005', 'lexeme:lx_sib'] }
+    const practiceGen = (over: Partial<GenerateInput>) =>
+      gen(practice.content, { ...practice, ...over })
+
+    it("mixed is today's practice session, byte-identical", () => {
+      for (const seed of SEEDS.slice(0, 4))
+        for (const l of [learner, withMistakes])
+          for (const features of [undefined, on])
+            expect(
+              practiceGen({
+                seed,
+                learner: l,
+                practiceMode: 'mixed',
+                ...(features ? { features } : {}),
+              }),
+            ).toEqual(practiceGen({ seed, learner: l, ...(features ? { features } : {}) }))
+    })
+
+    it('mistakes drills open mistakes only; with none it is the mixed session', () => {
+      const ix = indexContent(fx)
+      for (const seed of SEEDS.slice(0, 4)) {
+        const out = practiceGen({ seed, learner: withMistakes, practiceMode: 'mistakes' })
+        expect(out.refs.length).toBeGreaterThan(1)
+        for (const r of out.refs) {
+          const id = r.items[0]!
+          const aboutMistake =
+            id === 's_u01_0005' ||
+            id === 'lx_sib' ||
+            (id.startsWith('s_') && ix.sentence(id).tokens.some((t) => t.lexeme === 'lx_sib'))
+          expect(aboutMistake, JSON.stringify(r)).toBe(true)
+        }
+        expect(rebuildChallenges(out.refs, fx)).toEqual(out.challenges)
+        expect(practiceGen({ seed, practiceMode: 'mistakes' })).toEqual(practiceGen({ seed }))
+      }
+    })
+
+    it('listening keeps to listening challenges (listen_type with persianTyping)', () => {
+      for (const seed of SEEDS.slice(0, 3)) {
+        const off = practiceGen({ seed, practiceMode: 'listening' })
+        expect(new Set(off.refs.map((r) => r.type))).toEqual(new Set(['listen_tap']))
+        expect(off.refs.length).toBe(cfg.session.lengths.practice)
+        const typing = practiceGen({
+          seed,
+          practiceMode: 'listening',
+          features: { persianTyping: true },
+        })
+        expect(new Set(typing.refs.map((r) => r.type))).toEqual(
+          new Set(['listen_tap', 'listen_type']),
+        )
+      }
+    })
+
+    it('typing keeps to typed answers (Persian ones with persianTyping)', () => {
+      for (const seed of SEEDS.slice(0, 3)) {
+        const off = practiceGen({ seed, practiceMode: 'typing' })
+        expect(off.refs.every((r) => r.type === 'translate_type' && r.direction === 'fa_en')).toBe(
+          true,
+        )
+        expect(off.refs.length).toBeGreaterThan(0)
+        const typing = practiceGen({
+          seed,
+          practiceMode: 'typing',
+          features: { persianTyping: true },
+        })
+        expect(typing.refs.every((r) => r.type === 'translate_type' || typedPersian(r))).toBe(true)
+        expect(typing.refs.some(typedPersian)).toBe(true)
+        expect(rebuildChallenges(typing.refs, fx)).toEqual(typing.challenges)
+      }
+    })
+
+    it('modes only apply to practice sessions', () => {
+      const lesson = sessions[0]!
+      expect(gen(lesson.content, { ...lesson, practiceMode: 'listening' })).toEqual(
+        gen(lesson.content, lesson),
+      )
+    })
   })
 })
 
@@ -830,6 +1202,26 @@ describe('properties', () => {
     PROPERTY_TIMEOUT_MS,
   )
 
+  it(
+    'fixture course with Wave 3 features and practice modes: valid, deterministic, rebuildable',
+    () => {
+      checkScenario(
+        [...fixtureScenarios, { content: fx, kind: 'lesson', levelId: 'u01-t1' }],
+        150,
+        true,
+      )
+    },
+    PROPERTY_TIMEOUT_MS,
+  )
+
+  it(
+    'content/fa-en with Wave 3 features and practice modes: valid, deterministic, rebuildable',
+    () => {
+      checkScenario(faEnScenarios, 150, true)
+    },
+    PROPERTY_TIMEOUT_MS,
+  )
+
   it('different seeds give different generated sessions', () => {
     const view = withSpec(fx, { mix: 'standard' })
     const learner = { ...fresh, lexemeCards: cards(indexContent(fx).lexemeList.map((l) => l.id)) }
@@ -844,9 +1236,15 @@ describe('properties', () => {
 
 describe('complete_chat speakers', () => {
   const chatOnly = (view: ContentView) =>
-    gen(withSpec(view, { pinned: [{ type: 'complete_chat', items: ['c_u01_001'] }], pinnedOnly: true }), {
-      levelId: 'u01-gen',
-    }).challenges[0]!
+    gen(
+      withSpec(view, {
+        pinned: [{ type: 'complete_chat', items: ['c_u01_001'] }],
+        pinnedOnly: true,
+      }),
+      {
+        levelId: 'u01-gen',
+      },
+    ).challenges[0]!
 
   it('carry the character portrait as a media URL when the course has one', () => {
     const view = faEn.view('u01-hello')

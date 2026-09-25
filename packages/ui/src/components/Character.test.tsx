@@ -1,5 +1,5 @@
 import '../test-utils'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { MotionPreferenceProvider } from '../motion-preference'
 import {
@@ -72,6 +72,53 @@ describe('Character', () => {
     expect(screen.queryByRole('img')).toBeNull()
     rerender(<Character name="leila" label="Leila the chef" />)
     expect(screen.getByRole('img', { name: 'Leila the chef' })).toBeInTheDocument()
+  })
+})
+
+describe('Character portraits', () => {
+  const URL_A = 'https://cdn.example/leila.png'
+  const URL_B = 'https://cdn.example/leila-2.png'
+
+  it('draws the image in the placeholder box, named by the character', () => {
+    const { container } = render(<Character name="leila" image={URL_A} size={96} />)
+    const img = screen.getByRole('img', { name: 'Leila' })
+    expect(img.tagName).toBe('IMG')
+    expect(img).toHaveAttribute('src', URL_A)
+    expect(img).toHaveAttribute('width', '96')
+    expect(img).toHaveAttribute('height', '96')
+    expect(img).toHaveAttribute('decoding', 'async')
+    expect(img).toHaveAttribute('crossorigin', 'anonymous')
+    expect(container.querySelector('svg')).toBeNull()
+    // Only one image in the accessibility tree: the wrapper is not a second one.
+    expect(screen.getAllByRole('img')).toHaveLength(1)
+    expect(container.firstElementChild).toHaveStyle({ inlineSize: '96px' })
+  })
+
+  it('uses the custom label as alt, and alt="" when decorative', () => {
+    const { container, rerender } = render(<Character name="leila" image={URL_A} label="Leila the chef" />)
+    expect(screen.getByRole('img', { name: 'Leila the chef' })).toBeInTheDocument()
+    rerender(<Character name="leila" image={URL_A} decorative />)
+    expect(container.querySelector('img')).toHaveAttribute('alt', '')
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
+  it('falls back to the SVG placeholder (same box) when the image fails, and retries a new URL', () => {
+    const { container, rerender } = render(<Character name="leila" image={URL_A} size={96} />)
+    fireEvent.error(container.querySelector('img')!)
+    expect(container.querySelector('img')).toBeNull()
+    const svg = container.querySelector('svg')!
+    expect(svg).toHaveAttribute('data-character', 'leila')
+    expect(svg).toHaveAttribute('width', '96')
+    expect(svg).toHaveAttribute('height', '96')
+    expect(screen.getByRole('img', { name: 'Leila, idle' })).toBeInTheDocument()
+    rerender(<Character name="leila" image={URL_B} size={96} />)
+    expect(container.querySelector('img')).toHaveAttribute('src', URL_B)
+  })
+
+  it('uses the placeholder when there is no image', () => {
+    const { container } = render(<Character name="leila" image="" size={96} />)
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('svg')).toHaveAttribute('width', '96')
   })
 })
 

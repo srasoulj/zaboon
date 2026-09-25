@@ -19,6 +19,15 @@ export interface ResponseGrade {
   diff?: DiffToken[]
 }
 
+/**
+ * letter_trace pass thresholds; the client's scorer (apps/web/lib/typing/trace.ts) reports both
+ * scores with a tolerance of ~6% of the canvas. Tuned on synthetic strokes: a faithful trace,
+ * even a wobbly one, scores ~1/1; three quarters of the letter ~0.8 coverage (0.7 of it ~0.76,
+ * which fails); a scribble across the canvas ~0.45 precision.
+ */
+export const TRACE_MIN_COVERAGE = 0.8
+export const TRACE_MIN_PRECISION = 0.7
+
 const WRONG: ResponseGrade = { verdict: 'wrong' }
 const verdictOf = (ok: boolean): ResponseGrade => ({ verdict: ok ? 'correct' : 'wrong' })
 
@@ -97,8 +106,15 @@ export function gradeResponse(
       case 'letter_intro':
         return response.kind === 'none' ? { verdict: 'correct' } : WRONG
       case 'letter_trace':
+        // "Can't trace now" (declined) grades correct: it costs no heart and is not re-queued
+        // (trade-off: it counts as a clean review of the letter).
+        if (response.kind !== 'trace') return WRONG
+        if (response.declined === true) return { verdict: 'correct' }
+        return verdictOf(
+          response.coverage >= TRACE_MIN_COVERAGE && response.precision >= TRACE_MIN_PRECISION,
+        )
       case 'story':
-        return WRONG // P2 types graded elsewhere; never throw
+        return WRONG // graded elsewhere; never throw
     }
   } catch {
     return WRONG // malformed graph or response: never throw

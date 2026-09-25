@@ -7,9 +7,10 @@ import { FIXTURES, renderChallenge } from '../testing'
 import { correctResponse, wrongResponse } from '../fixtures/samples'
 
 describe('renderers', () => {
-  it('has one real renderer per MVP type', () => {
-    expect(Object.keys(renderers).sort()).toEqual([...MVP_CHALLENGE_TYPES].sort())
-    expect(new Set(Object.values(renderers)).size).toBe(MVP_CHALLENGE_TYPES.length)
+  it('has one real renderer per MVP type and per optional P2 type', () => {
+    const types = [...MVP_CHALLENGE_TYPES, 'listen_type', 'cloze_type', 'letter_trace']
+    expect(Object.keys(renderers).sort()).toEqual(types.sort())
+    expect(new Set(Object.values(renderers)).size).toBe(types.length)
   })
 
   it.each(FIXTURES.map((c) => [`${c.type}#${c.index}`, c] as const))(

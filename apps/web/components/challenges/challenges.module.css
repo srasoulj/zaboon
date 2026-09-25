@@ -444,3 +444,84 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ---------- typed Persian (P2) ---------- */
+.persianField {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.persianInline {
+  display: inline-flex;
+}
+
+.textareaFa {
+  min-block-size: 96px;
+  font: 500 24px / 1.8 var(--font-persian);
+}
+
+.blankInput {
+  box-sizing: content-box;
+  min-inline-size: 88px;
+  max-inline-size: 100%;
+  min-block-size: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-block-end: 3px solid var(--color-line);
+  background: transparent;
+  color: var(--color-ink);
+  font: 500 24px / 1.8 var(--font-persian);
+  text-align: center;
+}
+
+.blankInput:focus-visible {
+  outline: 3px solid var(--color-selected-border);
+  outline-offset: 2px;
+  border-block-end-color: var(--color-selected-border);
+}
+
+.blankInput[data-state='correct'] {
+  border-block-end-color: var(--color-correct-fg);
+}
+
+.blankInput[data-state='wrong'] {
+  border-block-end-color: var(--color-wrong-fg);
+}
+
+/* ---------- letter tracing (P2) ---------- */
+.traceCaption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.traceArea {
+  display: grid;
+  place-items: center;
+}
+
+.traceCanvas {
+  inline-size: min(100%, 320px);
+  aspect-ratio: 1;
+  border: 2px solid var(--color-line);
+  border-block-end-width: 4px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.traceArea[data-state='correct'] .traceCanvas {
+  border-color: var(--color-correct-fg);
+}
+
+.traceArea[data-state='wrong'] .traceCanvas {
+  border-color: var(--color-wrong-fg);
+}

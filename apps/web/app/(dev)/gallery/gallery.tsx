@@ -14,6 +14,7 @@ import {
   PathLayout,
   PathNode,
   MotionPreferenceProvider,
+  PersianKeyboard,
   ProgressBar,
   SpeechBubble,
   StatPill,
@@ -26,7 +27,7 @@ import {
   type PathUnit,
   type Tile,
 } from '@zaboon/ui'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import styles from './gallery.module.css'
 
 const ZWNJ = '\u200C'
@@ -88,6 +89,85 @@ const UNITS: PathUnit[] = [
 ]
 
 const NODE_TYPES: PathNodeType[] = ['lesson', 'story', 'practice', 'chest', 'review']
+
+/** A tiny inline portrait (stands in for a CDN image) and a URL that 404s to show the fallback. */
+const PORTRAIT = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">' +
+    '<rect width="120" height="120" rx="24" fill="#FFF3D6"/>' +
+    '<rect x="28" y="78" width="64" height="42" rx="21" fill="#E5484D"/>' +
+    '<circle cx="60" cy="52" r="26" fill="#A8704A"/>' +
+    '<circle cx="51" cy="50" r="3.5" fill="#2F2F2F"/><circle cx="69" cy="50" r="3.5" fill="#2F2F2F"/>' +
+    '<path d="M52 61 Q60 68 68 61" stroke="#2F2F2F" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '<rect x="40" y="14" width="40" height="20" rx="10" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="2"/>' +
+    '</svg>',
+)}`
+const BROKEN_PORTRAIT = '/gallery/missing-portrait.png'
+
+/** A live echo field for the keyboard: types at the caret like a lesson's answer field would. */
+function KeyboardDemo() {
+  const [text, setText] = useState('')
+  const [submitted, setSubmitted] = useState(0)
+  const field = useRef<HTMLTextAreaElement>(null)
+  const caret = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const at = caret.current
+    if (at === null || !field.current) return
+    caret.current = null
+    field.current.setSelectionRange(at, at)
+  }, [text])
+  const edit = (insert: string, back: boolean) => {
+    const el = field.current
+    const start = el?.selectionStart ?? text.length
+    const end = el?.selectionEnd ?? start
+    const from = back && start === end ? Math.max(0, start - 1) : start
+    caret.current = from + insert.length
+    setText(text.slice(0, from) + insert + text.slice(end))
+  }
+  return (
+    <div className={styles.stack}>
+      <label className={styles.caption} htmlFor="kbd-echo">
+        Try it: tap keys, long-press z, s, t, h, q, a or e (phonetic) for variants
+      </label>
+      <textarea
+        id="kbd-echo"
+        ref={field}
+        className={styles.field}
+        lang="fa"
+        dir="rtl"
+        rows={2}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        data-testid="keyboard-echo"
+      />
+      <p className={styles.caption} aria-live="polite">
+        Enter pressed {submitted} {submitted === 1 ? 'time' : 'times'}
+      </p>
+      {(['phonetic', 'standard'] as const).map((layout) => (
+        <div key={layout} className={styles.stack}>
+          <Caption>
+            {layout === 'phonetic' ? 'Phonetic (long-press variants)' : 'Standard (ISIRI 9147)'}
+          </Caption>
+          <PersianKeyboard
+            layout={layout}
+            label={`Persian keyboard, ${layout}`}
+            onKey={(t) => edit(t, false)}
+            onBackspace={() => edit('', true)}
+            onEnter={() => setSubmitted((n) => n + 1)}
+          />
+        </div>
+      ))}
+      <Caption>Disabled</Caption>
+      <PersianKeyboard
+        layout="phonetic"
+        label="Persian keyboard, disabled"
+        disabled
+        onKey={() => {}}
+        onBackspace={() => {}}
+        onEnter={() => {}}
+      />
+    </div>
+  )
+}
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
@@ -310,6 +390,23 @@ export function Gallery({ theme }: { theme: 'light' | 'dark' }) {
               </div>
             ))}
           </div>
+          <div className={styles.portraits}>
+            <Caption>Portraits (image, broken URL → placeholder)</Caption>
+            <div className={styles.row}>
+              <div className={styles.cell} data-testid="portrait-image">
+                <Character name="leila" image={PORTRAIT} size={96} />
+                <Caption>image</Caption>
+              </div>
+              <div className={styles.cell} data-testid="portrait-fallback">
+                <Character name="leila" image={BROKEN_PORTRAIT} size={96} />
+                <Caption>fallback</Caption>
+              </div>
+              <div className={styles.cell}>
+                <Character name="leila" image={PORTRAIT} size={64} decorative />
+                <Caption>decorative</Caption>
+              </div>
+            </div>
+          </div>
           <Caption>Hodhod moods</Caption>
           <div className={styles.row}>
             {CHARACTER_MOODS.map((m) => (
@@ -387,6 +484,10 @@ export function Gallery({ theme }: { theme: 'light' | 'dark' }) {
               onDismiss={() => {}}
             />
           </div>
+        </Section>
+
+        <Section id="keyboard" title="PersianKeyboard">
+          <KeyboardDemo />
         </Section>
 
         <Modal

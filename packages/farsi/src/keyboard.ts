@@ -145,12 +145,64 @@ export const KEYBOARD_LAYOUTS: Readonly<Record<'standard' | 'phonetic', Keyboard
   phonetic: { id: 'phonetic', keys: PHONETIC },
 }
 
+type LayoutId = 'standard' | 'phonetic'
+
+const LETTER_ROWS: readonly (readonly string[])[] = [
+  ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'],
+  ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote'],
+  ['KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Comma', 'Period', 'Slash'],
+]
+const DIGITS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0']
+
+/**
+ * Drawing order of the keys (`KeyboardEvent.code`s) per row, top to bottom, in physical (left to
+ * right) order. Every mapped key of a layout appears exactly once; the last row is the space bar.
+ * The on-screen keyboard adds its own half-space, backspace and enter keys around these.
+ */
+export const KEYBOARD_ROWS: Readonly<Record<LayoutId, readonly (readonly string[])[]>> = {
+  standard: [
+    ['Backquote', ...DIGITS, 'Minus', 'Equal'],
+    [...LETTER_ROWS[0]!, 'BracketLeft', 'BracketRight', 'Backslash'],
+    LETTER_ROWS[1]!,
+    LETTER_ROWS[2]!,
+    ['Space'],
+  ],
+  phonetic: [['Backquote', ...DIGITS], LETTER_ROWS[0]!, LETTER_ROWS[1]!, LETTER_ROWS[2]!, ['Space']],
+}
+
+/** The parts of a `KeyboardEvent` the physical-key remap looks at (DOM-free). */
+export interface PhysicalKeyEvent {
+  key: string
+  code: string
+  shiftKey: boolean
+  ctrlKey: boolean
+  metaKey: boolean
+  altKey: boolean
+  isComposing: boolean
+  /** Deprecated but still the only IME signal on Android (229 = "being composed"). */
+  keyCode?: number
+}
+
+/**
+ * What a physical key press should type in the in-app layout (§1.4), or null to leave the event to
+ * the browser. A key is remapped by `event.code` only when `event.key` is a single Latin
+ * (printable ASCII) character, nothing is being composed, no Ctrl/Meta/Alt is held and the event
+ * is not Android's IME placeholder (keyCode 229). So an OS Persian layout (whose `key` is already
+ * Persian), IMEs and shortcuts pass through unchanged. Shift+Space (`HALF_SPACE_CODE`) types ZWNJ.
+ */
+export function remapPhysicalKey(layout: LayoutId, e: PhysicalKeyEvent): string | null {
+  if (e.isComposing || e.keyCode === 229) return null
+  if (e.ctrlKey || e.metaKey || e.altKey) return null
+  if (!/^[\x20-\x7E]$/.test(e.key)) return null
+  return keyChar(layout, e.code, { shift: e.shiftKey })
+}
+
 /**
  * The character a physical key types in a layout, or null when the layout leaves the key alone.
  * `variant` picks a long-press alternative (0 = base).
  */
 export function keyChar(
-  layout: 'standard' | 'phonetic',
+  layout: LayoutId,
   code: string,
   opts: { shift?: boolean; variant?: number } = {},
 ): string | null {

@@ -2,15 +2,18 @@
 import type { ChallengeOf } from '@zaboon/contracts'
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
+import { PersianField } from './PersianField'
 import { TranslationPrompt } from './TranslateBank'
 import { ChallengeFrame, gradedState, styles, useAutoplay } from './shared'
 
 type Props = ChallengeRendererProps<ChallengeOf<'translate_type'>>
 
 /**
- * Type the translation (MVP: English). An auto-growing textarea whose direction and language are
- * the answer language; Enter asks the player to CHECK, Shift+Enter adds a new line. A blank
- * answer clears the draft.
+ * Type the translation. An auto-growing textarea whose direction and language are the answer
+ * language; Enter asks the player to CHECK, Shift+Enter adds a new line. A blank answer clears the
+ * draft. Typed Persian (P2, `answerLang: 'fa'`) goes through `PersianField`: explicit RTL, the
+ * in-app keyboard while `display.persianKeyboard` is on, and physical keys remapped to the
+ * learner's layout.
  */
 export function TranslateType(props: Props) {
   const { challenge, display, audio, phase, response, onResponse, onSubmit } = props
@@ -38,12 +41,26 @@ export function TranslateType(props: Props) {
     if (!locked && text.trim().length > 0) onSubmit()
   }
 
+  if (lang === 'fa')
+    return (
+      <ChallengeFrame type={challenge.type} display={display} heading="Type this in Persian">
+        <TranslationPrompt prompt={challenge.prompt} display={display} audio={audio} />
+        <PersianField
+          value={text}
+          onChange={change}
+          onEnter={() => {
+            if (text.trim().length > 0) onSubmit()
+          }}
+          locked={locked}
+          display={display}
+          label="Your answer in Persian"
+          state={gradedState(phase, props.verdict)}
+        />
+      </ChallengeFrame>
+    )
+
   return (
-    <ChallengeFrame
-      type={challenge.type}
-      display={display}
-      heading={lang === 'en' ? 'Type this in English' : 'Type this in Persian'}
-    >
+    <ChallengeFrame type={challenge.type} display={display} heading="Type this in English">
       <TranslationPrompt prompt={challenge.prompt} display={display} audio={audio} />
       <textarea
         ref={ref}
@@ -52,10 +69,10 @@ export function TranslateType(props: Props) {
         onChange={(e) => change(e.target.value)}
         onKeyDown={onKeyDown}
         readOnly={locked}
-        aria-label={lang === 'en' ? 'Your answer in English' : 'Your answer in Persian'}
-        placeholder={lang === 'en' ? 'Type in English' : 'Type in Persian'}
-        lang={lang}
-        dir={lang === 'fa' ? 'rtl' : 'ltr'}
+        aria-label="Your answer in English"
+        placeholder="Type in English"
+        lang="en"
+        dir="ltr"
         rows={3}
         maxLength={500}
         autoCapitalize="sentences"

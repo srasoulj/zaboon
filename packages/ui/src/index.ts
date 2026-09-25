@@ -47,3 +47,11 @@ export {
 } from './components/Character'
 export { BottomSheet, Modal, Toast, type BottomSheetProps, type ModalProps, type ToastProps, type ToastTone } from './components/Overlay'
 export { ConfettiBurst, confettiPieces, type ConfettiBurstProps, type ConfettiPiece } from './components/Confetti'
+export {
+  keyFace,
+  LONG_PRESS_MS,
+  PersianKeyboard,
+  type KeyFace,
+  type PersianKeyboardLayout,
+  type PersianKeyboardProps,
+} from './components/PersianKeyboard'

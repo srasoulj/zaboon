@@ -94,3 +94,36 @@
   display: grid;
   gap: 24px;
 }
+
+.field {
+  inline-size: 100%;
+  max-inline-size: 720px;
+  padding: 8px 12px;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: var(--radius-tile);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font: 500 calc(var(--font-body-size) * var(--font-persian-scale)) / var(--font-persian-line-height)
+    var(--font-persian);
+  resize: vertical;
+}
+
+/* A whole-pixel block (caption + one row of 96px cells ≈ 149.8px) so the sections after it keep
+   their pixel grid and their screenshot baselines. */
+.portraits {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-block-size: 150px;
+}
+
+/* Small phones (360px): give the 13-key keyboard rows the width they need for 24px targets. */
+@media (max-width: 380px) {
+  .page {
+    padding-inline: 8px;
+  }
+
+  .section {
+    padding: 12px;
+  }
+}
