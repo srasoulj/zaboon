@@ -1,7 +1,11 @@
 /**
- * Lesson sessions: create (generate from the immutable bundle) and complete (re-grade, then apply
- * the game rules in one locked transaction). Walking-skeleton scope: lessons only; ws-api adds
- * practice/letters/review kinds, level locking, hearts events, SRS updates and anti-cheat checks.
+ * Sessions (ARCHITECTURE §3.2, §6): create (generate from the immutable bundle), wrong-attempt
+ * events (hearts), and complete (re-grade, then apply every game rule in one locked transaction).
+ *
+ * Kinds in the MVP: lesson, practice, letters, unit_review. Level locking follows path.ts; hearts
+ * are spent per wrong-attempt event and reconciled at commit; practice never costs hearts and earns
+ * one back. The client's XP is never trusted: XP comes from the server's own count of wrong
+ * attempts, and implausible sessions (anticheat.ts) earn none.
  */
 import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
@@ -13,35 +17,65 @@ import {
   type CompleteSessionRequest,
   type CreateSessionResponse,
   type LivesState,
+  type LivesView,
+  type SessionKind,
   type Verdict,
 } from '@zaboon/contracts'
 import { itemRef } from '@zaboon/content-schema'
 import { repos, withUserLock, type Db, type Tx } from '@zaboon/db'
 import {
-  acceptTzChange,
   applyActivity,
-  dailyGoalStatus,
+  applyMistakeEvent,
+  clampActivityTime,
+  dailyGoalStep,
   dateInZone,
   initialLives,
   initialStreak,
   livesPolicy,
-  localDateFor,
+  sessionXp,
+  settleCommit,
   streakView,
-  xpFor,
 } from '@zaboon/game-rules'
 import { GRADER_VERSION } from '@zaboon/grader'
-import { generateSession, rebuildChallenges } from '@zaboon/session-engine'
+import { ContentError, generateSession, rebuildChallenges } from '@zaboon/session-engine'
+import { plausibilityFlags } from './anticheat'
 import type { AuthUser } from './auth'
-import { contentView, findLevel, loadBundle, requireCurrentVersion, versionOf } from './content'
+import {
+  contentView,
+  findLevel,
+  loadBundle,
+  requireCurrentVersion,
+  versionOf,
+  type LoadedBundle,
+} from './content'
 import { ApiError } from './errors'
-import { regrade } from './regrade'
+import { gradingLexicon, serverVerdict } from './grading'
+import { applySrs, loadLearnerState } from './learner'
+import {
+  currentOf,
+  letterLessonStates,
+  migrateEnrollment,
+  migrateLevelId,
+  migrationSteps,
+  pathStates,
+  progressMap,
+} from './path'
+import { acceptTz } from './tz'
 
-interface Ctx {
+export interface Ctx {
   db: Db
   user: AuthUser
   now: Date
   config: AppConfig
 }
+
+/** Session kinds this server can generate. legendary and jump_test are P2. */
+const MVP_KINDS: ReadonlySet<SessionKind> = new Set([
+  'lesson',
+  'practice',
+  'letters',
+  'unit_review',
+])
 
 async function livesState(
   tx: Tx,
@@ -52,82 +86,132 @@ async function livesState(
   return (await repos.state.getLives(tx, userId)) ?? initialLives(now, config)
 }
 
-/** The learner's timezone after (maybe) accepting the browser's, rate-limited by AppConfig.tz. */
-async function acceptTz(
-  tx: Tx,
-  userId: string,
-  requested: string,
-  now: Date,
-  config: AppConfig,
-): Promise<string> {
-  await repos.profiles.ensureProfile(tx, userId)
-  const profile = await repos.profiles.getProfile(tx, userId)
-  if (!profile) throw new ApiError('internal', 'profile missing')
-  if (!isValidTimeZone(requested)) return profile.timezone
-  const tzChangedAt = profile.tzChangedAt ? new Date(profile.tzChangedAt) : null
-  const r = acceptTzChange({ tz: profile.timezone, tzChangedAt }, requested, now, config)
-  if (r.changed)
-    await repos.profiles.updateProfile(tx, userId, {
-      timezone: r.tz,
-      tzChangedAt: now.toISOString(),
+const livesViewOf = (lives: LivesState, now: Date, config: AppConfig): LivesView =>
+  livesPolicy(lives.policy).view(lives, now, config)
+
+/**
+ * Brings the learner's enrollment in the bundle's course to its version (creating it if missing)
+ * and returns the path states at that version.
+ */
+export async function enrollAtCurrent(tx: Tx, userId: string, bundle: LoadedBundle) {
+  await repos.enrollments.ensureEnrollment(tx, userId, {
+    courseId: bundle.courseId,
+    contentVersion: bundle.version,
+  })
+  const enrollment = await migrateEnrollment(tx, userId, bundle)
+  const path = await pathStates(tx, userId, bundle)
+  const current = currentOf(path.states)
+  if (enrollment && enrollment.currentLevelId === null && current !== null)
+    await repos.enrollments.updateEnrollment(tx, userId, bundle.courseId, {
+      currentLevelId: current,
     })
-  return r.tz
+  return path
 }
 
-function isValidTimeZone(tz: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz })
-    return true
-  } catch {
-    return false
+interface Target {
+  /** Stored with the session: the level (or letter lesson) the session counts for. */
+  levelId: string | null
+  /** What the engine gets as `levelId`. */
+  engineLevelId: string | null
+  /** The unit whose content the session may use (null: letters only). */
+  unitIndex: number | null
+  lessonIndex: number
+}
+
+async function resolveTarget(
+  tx: Tx,
+  userId: string,
+  bundle: LoadedBundle,
+  kind: SessionKind,
+  requested: string | undefined,
+): Promise<Target> {
+  const { levels, states } = await pathStates(tx, userId, bundle)
+
+  if (kind === 'letters') {
+    const progress = progressMap(
+      await repos.learning.listLevelProgress(tx, userId, bundle.courseId),
+    )
+    const letterStates = letterLessonStates(bundle, progress)
+    const levelId = requested ?? currentOf(letterStates)
+    if (levelId !== null) {
+      const st = letterStates.get(levelId)
+      if (!st) throw new ApiError('not_found', `unknown letters lesson ${levelId}`)
+      if (st.state === 'locked')
+        throw new ApiError('forbidden', `letters lesson ${levelId} is locked`)
+    }
+    return { levelId, engineLevelId: levelId, unitIndex: null, lessonIndex: 0 }
+  }
+
+  if (kind === 'practice') {
+    // Practice may be scoped to any unlocked level; by default the learner's current one.
+    const levelId = requested ?? currentOf(states) ?? levels.at(-1)?.id ?? null
+    if (levelId === null) throw new ApiError('not_found', 'the course has no levels')
+    const loc = findLevel(bundle, levelId)
+    if (!loc) throw new ApiError('not_found', `unknown level ${levelId}`)
+    if (states.get(levelId)?.state === 'locked')
+      throw new ApiError('forbidden', `level ${levelId} is locked`)
+    return { levelId, engineLevelId: null, unitIndex: loc.unitIndex, lessonIndex: 0 }
+  }
+
+  // lesson | unit_review: a level of that kind
+  if (!requested) throw new ApiError('validation', `levelId is required for ${kind} sessions`)
+  const loc = findLevel(bundle, requested)
+  if (!loc) throw new ApiError('not_found', `unknown level ${requested}`)
+  if (loc.level.kind !== kind)
+    throw new ApiError('validation', `level ${requested} is a ${loc.level.kind}, not a ${kind}`)
+  const st = states.get(requested)
+  if (!st || st.state === 'locked') throw new ApiError('forbidden', `level ${requested} is locked`)
+  return {
+    levelId: requested,
+    engineLevelId: requested,
+    unitIndex: loc.unitIndex,
+    lessonIndex: Math.min(st.lessonsDone, loc.level.lessons - 1),
   }
 }
 
 export async function createSession(
   ctx: Ctx,
-  input: { courseId: string; kind: string; levelId?: string | undefined; tz: string },
+  input: { courseId: string; kind: SessionKind; levelId?: string | undefined; tz: string },
 ): Promise<CreateSessionResponse> {
-  if (input.kind !== 'lesson')
+  if (!MVP_KINDS.has(input.kind))
     throw new ApiError('validation', `session kind ${input.kind} is not available yet`)
-  if (!input.levelId) throw new ApiError('validation', 'levelId is required for lessons')
-  const levelId = input.levelId
   const cv = await requireCurrentVersion(ctx.db, input.courseId)
   const bundle = await loadBundle(cv)
-  const loc = findLevel(bundle, levelId)
-  if (!loc || loc.level.kind !== 'lesson')
-    throw new ApiError('not_found', `unknown lesson level ${levelId}`)
+  const { now, config } = ctx
+  const userId = ctx.user.id
 
-  return withUserLock(ctx.db, ctx.user.id, async (tx) => {
-    const { now, config } = ctx
-    const tz = await acceptTz(tx, ctx.user.id, input.tz, now, config)
-    await repos.enrollments.ensureEnrollment(tx, ctx.user.id, {
-      courseId: cv.courseId,
-      contentVersion: cv.version,
-    })
-    const lives = await livesState(tx, ctx.user.id, now, config)
-    const livesView = livesPolicy(lives.policy).view(lives, now, config)
-    if (livesView.count === 0) throw new ApiError('out_of_lives', 'no hearts left')
+  return withUserLock(ctx.db, userId, async (tx) => {
+    const tz = await acceptTz(tx, userId, input.tz, now, config)
+    await enrollAtCurrent(tx, userId, bundle)
+    const lives = await livesState(tx, userId, now, config)
+    const livesView = livesViewOf(lives, now, config)
+    if (input.kind !== 'practice' && livesView.count === 0)
+      throw new ApiError('out_of_lives', 'no hearts left')
 
-    const progress = await repos.learning.getLevelProgress(tx, ctx.user.id, cv.courseId, levelId)
-    const lessonIndex = Math.min(progress?.lessonsDone ?? 0, loc.level.lessons - 1)
+    const target = await resolveTarget(tx, userId, bundle, input.kind, input.levelId)
     const seed = randomUUID()
-    const view = contentView(bundle, loc.unitIndex)
-    const generated = generateSession({
-      content: view,
-      kind: 'lesson',
-      levelId,
-      lessonIndex,
-      learner: { lexemeCards: {}, letterCards: {}, mistakes: [], exposures: {} },
-      seed,
-      now,
-      config,
-    })
+    let generated: ReturnType<typeof generateSession>
+    try {
+      generated = generateSession({
+        content: contentView(bundle, target.unitIndex),
+        kind: input.kind,
+        levelId: target.engineLevelId,
+        lessonIndex: target.lessonIndex,
+        learner: await loadLearnerState(tx, userId),
+        seed,
+        now,
+        config,
+      })
+    } catch (e) {
+      if (e instanceof ContentError) throw new ApiError('validation', e.message)
+      throw e
+    }
     const expiresAt = new Date(now.getTime() + config.session.ttlHours * 3_600_000)
-    const session = await repos.sessions.createSession(tx, ctx.user.id, {
+    const session = await repos.sessions.createSession(tx, userId, {
       courseId: cv.courseId,
-      levelId,
-      lessonIndex,
-      kind: 'lesson',
+      levelId: target.levelId,
+      lessonIndex: target.lessonIndex,
+      kind: input.kind,
       contentVersion: cv.version,
       seed,
       challengeRefs: generated.refs,
@@ -136,17 +220,79 @@ export async function createSession(
       expiresAt: expiresAt.toISOString(),
       graderVersion: GRADER_VERSION,
     })
+    // "Most recently used" enrollment = the active course (GET /api/home).
+    await repos.enrollments.updateEnrollment(tx, userId, cv.courseId, {})
     return {
       sessionId: session.id,
       contentVersion: cv.version,
-      kind: 'lesson',
-      levelId,
+      kind: input.kind,
+      levelId: target.levelId,
       expiresAt: expiresAt.toISOString(),
       challenges: generated.challenges,
       lives: livesView,
       graderVersion: GRADER_VERSION,
     }
   })
+}
+
+/** Returned from a transaction that marked a session expired (a throw would roll that back). */
+const EXPIRED = Symbol('expired')
+
+/** A started, unexpired session of the caller's, locked for this transaction. */
+async function openSession(tx: Tx, userId: string, sessionId: string, now: Date) {
+  const session = await repos.sessions.getSessionForUpdate(tx, userId, sessionId)
+  if (!session) throw new ApiError('not_found', 'session not found')
+  return {
+    session,
+    expired:
+      session.status === 'expired' ||
+      (session.status === 'started' && now.getTime() > new Date(session.expiresAt).getTime()),
+  }
+}
+
+/** POST /api/sessions/:id/events: one wrong attempt, idempotent on (session, attemptSeq). */
+export async function recordWrongAttempt(
+  ctx: Ctx,
+  sessionId: string,
+  input: { attemptSeq: number; index: number; kind: 'wrong' },
+): Promise<{ lives: LivesView; duplicate: boolean }> {
+  const { now, config } = ctx
+  const userId = ctx.user.id
+  const out = await withUserLock(ctx.db, userId, async (tx) => {
+    const { session, expired } = await openSession(tx, userId, sessionId, now)
+    if (session.status === 'completed')
+      throw new ApiError('conflict', 'session is already completed')
+    if (expired) {
+      await repos.sessions.expireSession(tx, userId, sessionId)
+      return EXPIRED // commit the expiry, then answer 410
+    }
+    if (input.index >= session.challengeRefs.length)
+      throw new ApiError('validation', `unknown challenge ${input.index}`)
+    const { duplicate } = await repos.sessions.recordSessionEvent(tx, userId, {
+      sessionId,
+      attemptSeq: input.attemptSeq,
+      challengeIndex: input.index,
+      kind: input.kind,
+      createdAt: now.toISOString(),
+    })
+    let lives = await livesState(tx, userId, now, config)
+    if (!duplicate) {
+      // The insert above already decided "duplicate", so nothing else is recorded yet.
+      lives = applyMistakeEvent({
+        state: lives,
+        kind: session.kind,
+        sessionId,
+        attemptSeq: input.attemptSeq,
+        recorded: new Set(),
+        now,
+        cfg: config,
+      }).state
+      await repos.state.saveLives(tx, userId, lives)
+    }
+    return { lives: livesViewOf(lives, now, config), duplicate }
+  })
+  if (out === EXPIRED) throw new ApiError('gone', 'session expired')
+  return out
 }
 
 function refItems(ref: ChallengeRef): string[] {
@@ -162,6 +308,39 @@ function refItems(ref: ChallengeRef): string[] {
 
 const passes = (v: Verdict) => PASSING_VERDICTS.includes(v)
 
+/**
+ * Records one finished lesson of the session's level, if the level still exists at the current
+ * content version (its id mapped through the path migrations) and matches the session kind.
+ */
+async function recordLevelProgress(
+  tx: Tx,
+  userId: string,
+  session: repos.sessions.Session,
+  current: LoadedBundle,
+  at: string,
+): Promise<SessionResult['level']> {
+  if (!session.levelId) return null
+  const steps = migrationSteps(current.manifest, session.contentVersion, current.version)
+  const levelId = migrateLevelId(steps, session.levelId)
+  if (levelId === null) return null
+  let lessonsTotal: number
+  if (session.kind === 'letters') {
+    if (!current.letters.track.lessons.some((l) => l.id === levelId)) return null
+    lessonsTotal = 1
+  } else {
+    const loc = findLevel(current, levelId)
+    if (!loc || loc.level.kind !== session.kind) return null
+    lessonsTotal = loc.level.lessons
+  }
+  const p = await repos.learning.recordLessonDone(tx, userId, {
+    courseId: session.courseId,
+    levelId,
+    lessonsTotal,
+    at,
+  })
+  return { levelId, lessonsDone: p.lessonsDone, lessonsTotal, completed: p.completedAt !== null }
+}
+
 export async function completeSession(
   ctx: Ctx,
   sessionId: string,
@@ -169,22 +348,18 @@ export async function completeSession(
 ): Promise<SessionResult> {
   const { db, now, config } = ctx
   const userId = ctx.user.id
-  return withUserLock(db, userId, async (tx) => {
-    const session = await repos.sessions.getSessionForUpdate(tx, userId, sessionId)
-    if (!session) throw new ApiError('not_found', 'session not found')
+  const out = await withUserLock(db, userId, async (tx) => {
+    const { session, expired } = await openSession(tx, userId, sessionId, now)
     if (session.status === 'completed') return SessionResult.parse(session.result) // idempotent replay
-    if (session.status === 'expired' || now.getTime() > new Date(session.expiresAt).getTime()) {
+    if (expired) {
       await repos.sessions.expireSession(tx, userId, sessionId)
-      throw new ApiError('gone', 'session expired')
+      return EXPIRED // commit the expiry, then answer 410
     }
 
-    const cv = await versionOf(db, session.courseId, session.contentVersion)
-    const bundle = await loadBundle(cv)
+    const bundle = await loadBundle(await versionOf(db, session.courseId, session.contentVersion))
     const loc = session.levelId ? findLevel(bundle, session.levelId) : null
-    const challenges = rebuildChallenges(
-      session.challengeRefs,
-      contentView(bundle, loc?.unitIndex ?? null),
-    )
+    const view = contentView(bundle, loc?.unitIndex ?? null)
+    const challenges = rebuildChallenges(session.challengeRefs, view)
 
     // --- validate and re-grade ---------------------------------------------------------------
     const seqs = new Set<number>()
@@ -199,39 +374,63 @@ export async function completeSession(
     if (answered.size !== challenges.length)
       throw new ApiError('validation', 'every challenge needs an answer')
 
+    // The learner's verdict stands within the supported grader window (LEARNING-ENGINE §7.3).
     const trustClient =
       input.graderVersion > GRADER_VERSION - config.graderWindow &&
       input.graderVersion <= GRADER_VERSION
+    const lexicon = gradingLexicon(view)
     let graderMismatches = 0
     const graded = [...input.answers]
       .sort((a, b) => a.attemptSeq - b.attemptSeq)
       .map((a) => {
-        const server = regrade(challenges[a.index]!, a.response)
+        const server = serverVerdict(challenges[a.index]!, a.response, lexicon)
         if (passes(server) !== passes(a.verdict)) graderMismatches++
         return { ...a, verdict: trustClient ? a.verdict : server }
+      })
+    if (graderMismatches > 0)
+      console.warn('[grader] client/server verdict mismatch', {
+        sessionId,
+        graderMismatches,
+        clientGraderVersion: input.graderVersion,
+        serverGraderVersion: GRADER_VERSION,
       })
     const first = new Map<number, Verdict>()
     for (const a of graded) if (!first.has(a.index)) first.set(a.index, a.verdict)
     const firstPass = [...first.values()].filter(passes).length
+    const wrongAttempts = graded.filter((a) => a.verdict === 'wrong').length
     const wrongIndexes = new Set(graded.filter((a) => a.verdict === 'wrong').map((a) => a.index))
-    const perfect = wrongIndexes.size === 0
     const accuracy = challenges.length === 0 ? 0 : firstPass / challenges.length
 
-    // --- rules -------------------------------------------------------------------------------
-    const completedAt = new Date(input.completedAt)
-    const startedAt = new Date(session.startedAt)
-    const localDate = localDateFor({ completedAt, startedAt, now, tz: session.tz })
-    const today = dateInZone(now, session.tz)
-    const xp = xpFor(session.kind, perfect, config)
-    const at = now.toISOString()
-    await repos.progress.appendXp(tx, userId, {
-      amount: xp.base,
-      reason: session.kind,
+    // --- XP (server-counted; never the client's) ----------------------------------------------
+    const earned = sessionXp(session.kind, wrongAttempts, config)
+    const flags = await plausibilityFlags(tx, {
+      userId,
       sessionId,
-      occurredAt: at,
-      localDate,
+      answerMs: graded.filter((a) => a.verdict !== 'skipped').map((a) => a.ms),
+      now,
+      xp: earned.total,
+      config,
     })
-    if (xp.bonus > 0) {
+    const xp = flags.length === 0 ? earned : { base: 0, bonus: 0, total: 0 }
+
+    // The session counts at the client's completedAt clamped to [startedAt, now] (§6).
+    const startedAt = new Date(session.startedAt)
+    const countedAt = clampActivityTime(
+      { completedAt: new Date(input.completedAt), startedAt },
+      now,
+    )
+    const localDate = dateInZone(countedAt, session.tz)
+    const today = dateInZone(now, session.tz)
+    const at = now.toISOString()
+    if (xp.base > 0)
+      await repos.progress.appendXp(tx, userId, {
+        amount: xp.base,
+        reason: session.kind,
+        sessionId,
+        occurredAt: at,
+        localDate,
+      })
+    if (xp.bonus > 0)
       await repos.progress.appendXp(tx, userId, {
         amount: xp.bonus,
         reason: 'perfect_bonus',
@@ -239,18 +438,17 @@ export async function completeSession(
         occurredAt: at,
         localDate,
       })
-    }
-    await repos.enrollments.addEnrollmentXp(tx, userId, session.courseId, xp.total)
 
     const settings = await repos.profiles.getSettings(tx, userId)
     const before = (await repos.progress.getDailyActivity(tx, userId, localDate))?.xp ?? 0
-    const goal = dailyGoalStatus(before + xp.total, settings.dailyGoalXp)
+    const goal = dailyGoalStep(before, xp.total, settings.dailyGoalXp)
     await repos.progress.addDailyActivity(tx, userId, {
       localDate,
       xp: xp.total,
       goalMet: goal.met,
     })
 
+    // --- streak ---------------------------------------------------------------------------
     const streak = applyActivity(
       (await repos.state.getStreak(tx, userId)) ?? initialStreak(config),
       localDate,
@@ -259,24 +457,26 @@ export async function completeSession(
     await repos.state.saveStreak(tx, userId, streak.state)
     await repos.progress.markFreezeUsed(tx, userId, streak.frozenDates)
 
-    const lives = await livesState(tx, userId, now, config)
-    const livesView = livesPolicy(lives.policy).view(lives, now, config)
+    // --- hearts: charge wrong answers whose events never arrived; practice earns one back ------
+    const events = await repos.sessions.listSessionEvents(tx, userId, sessionId)
+    const settled = settleCommit({
+      state: await livesState(tx, userId, now, config),
+      kind: session.kind,
+      serverWrong: wrongAttempts,
+      recordedEvents: events.length,
+      now,
+      cfg: config,
+    })
+    await repos.state.saveLives(tx, userId, settled.state)
 
-    let level: SessionResult['level'] = null
-    if (session.levelId && loc) {
-      const p = await repos.learning.recordLessonDone(tx, userId, {
-        courseId: session.courseId,
-        levelId: session.levelId,
-        lessonsTotal: loc.level.lessons,
-        at,
-      })
-      level = {
-        levelId: session.levelId,
-        lessonsDone: p.lessonsDone,
-        lessonsTotal: loc.level.lessons,
-        completed: p.completedAt !== null,
-      }
-    }
+    // --- progress, mistakes, memory --------------------------------------------------------
+    const current = await loadBundle(await requireCurrentVersion(db, session.courseId))
+    await repos.enrollments.ensureEnrollment(tx, userId, {
+      courseId: session.courseId,
+      contentVersion: current.version,
+    })
+    await migrateEnrollment(tx, userId, current)
+    const level = await recordLevelProgress(tx, userId, session, current, at)
 
     const mistakes = [...new Set([...wrongIndexes].flatMap((i) => refItems(challenges[i]!.ref)))]
     const cleared = [
@@ -288,6 +488,7 @@ export async function completeSession(
     ]
     await repos.learning.recordMistakes(tx, userId, mistakes, at)
     await repos.learning.resolveMistakes(tx, userId, cleared, at)
+    await applySrs(tx, userId, { attempts: graded, challenges, view, now, config })
     await repos.sessions.insertSessionAnswers(
       tx,
       userId,
@@ -304,23 +505,35 @@ export async function completeSession(
       })),
     )
 
+    // --- enrollment and public stats ---------------------------------------------------------
+    if (xp.total > 0)
+      await repos.enrollments.addEnrollmentXp(tx, userId, session.courseId, xp.total)
+    const { states } = await pathStates(tx, userId, current)
+    await repos.enrollments.updateEnrollment(tx, userId, session.courseId, {
+      currentLevelId: currentOf(states),
+    })
+    await repos.profiles.syncPublicStats(tx, userId, {
+      xpTotal: await repos.progress.getXpTotal(tx, userId),
+      streakCurrent: streak.state.current,
+    })
+
     const result = SessionResult.parse({
       sessionId,
       kind: session.kind,
       contentVersion: session.contentVersion,
       localDate,
-      xp,
+      xp: { base: xp.base, bonus: xp.bonus, total: xp.total },
       accuracy,
-      perfect,
-      durationMs: Math.max(0, completedAt.getTime() - startedAt.getTime()),
+      perfect: earned.perfect,
+      durationMs: countedAt.getTime() - startedAt.getTime(),
       streak: {
         ...streakView(streak.state, today),
         extendedToday: streak.extendedToday,
         freezeGranted: streak.freezeGranted,
         frozenDates: streak.frozenDates,
       },
-      lives: livesView,
-      dailyGoal: { ...goal, justMet: goal.met && before < settings.dailyGoalXp },
+      lives: livesViewOf(settled.state, now, config),
+      dailyGoal: { xp: goal.dayXp, goal: goal.goal, met: goal.met, justMet: goal.justMet },
       level,
       mistakes,
       graderMismatches,
@@ -332,4 +545,6 @@ export async function completeSession(
     if (!stored) throw new ApiError('conflict', 'session was completed concurrently')
     return result
   })
+  if (out === EXPIRED) throw new ApiError('gone', 'session expired')
+  return out
 }

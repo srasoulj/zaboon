@@ -6,7 +6,7 @@ import { signLocalToken, verifyLocalToken } from './auth/local'
 import { requestNow } from './clock'
 import { resetServerEnv, serverEnv } from './env'
 import { ApiError } from './errors'
-import { regrade } from './regrade'
+import { serverVerdict } from './grading'
 
 const USER = '11111111-2222-4333-8444-555555555555'
 const saved = { ...process.env }
@@ -154,7 +154,7 @@ describe('clock', () => {
   })
 })
 
-describe('regrade', () => {
+describe('serverVerdict (gradeResponse)', () => {
   const ref = { type: 'translate_bank' as const, items: ['s_x'] }
   const graph = compile(["[I want/I'd like] [some/] water"], { lang: 'en' })
   const bank: Challenge = {
@@ -194,12 +194,12 @@ describe('regrade', () => {
   }
 
   it('grades word banks, choices and pairs', () => {
-    expect(regrade(bank, { kind: 'tiles', value: ['I', 'want', 'water'] })).toBe('correct')
-    expect(regrade(bank, { kind: 'tiles', value: ['I', 'want', 'bread'] })).toBe('wrong')
-    expect(regrade(choice, { kind: 'choice', value: 0 })).toBe('correct')
-    expect(regrade(choice, { kind: 'choice', value: 1 })).toBe('wrong')
+    expect(serverVerdict(bank, { kind: 'tiles', value: ['I', 'want', 'water'] })).toBe('correct')
+    expect(serverVerdict(bank, { kind: 'tiles', value: ['I', 'want', 'bread'] })).toBe('wrong')
+    expect(serverVerdict(choice, { kind: 'choice', value: 0 })).toBe('correct')
+    expect(serverVerdict(choice, { kind: 'choice', value: 1 })).toBe('wrong')
     expect(
-      regrade(pairs, {
+      serverVerdict(pairs, {
         kind: 'pairs',
         value: [
           [0, 0],
@@ -209,7 +209,7 @@ describe('regrade', () => {
       }),
     ).toBe('correct')
     expect(
-      regrade(pairs, {
+      serverVerdict(pairs, {
         kind: 'pairs',
         value: [
           [0, 1],
@@ -219,7 +219,7 @@ describe('regrade', () => {
       }),
     ).toBe('wrong')
     expect(
-      regrade(pairs, {
+      serverVerdict(pairs, {
         kind: 'pairs',
         value: [
           [0, 0],
@@ -231,8 +231,8 @@ describe('regrade', () => {
   })
 
   it('treats skips as skipped and mismatched response kinds as wrong', () => {
-    expect(regrade(bank, { kind: 'skip' })).toBe('skipped')
-    expect(regrade(bank, { kind: 'choice', value: 0 })).toBe('wrong')
-    expect(regrade(choice, { kind: 'text', value: 'Hello' })).toBe('wrong')
+    expect(serverVerdict(bank, { kind: 'skip' })).toBe('skipped')
+    expect(serverVerdict(bank, { kind: 'choice', value: 0 })).toBe('wrong')
+    expect(serverVerdict(choice, { kind: 'text', value: 'Hello' })).toBe('wrong')
   })
 })
