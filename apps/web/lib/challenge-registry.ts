@@ -7,6 +7,12 @@
  * `gradeResponse`, feedback bar, hearts, re-queue, audio preloading, keyboard shortcuts for
  * CHECK/SKIP). A RENDERER owns one challenge's prompt + answer UI and reports the learner's
  * answer as a `ChallengeResponse` draft; it never grades and never talks to the API.
+ *
+ * Wave 3 (P2, ws-typing): renderers for `listen_type`, `cloze_type` and `letter_trace` are optional
+ * entries of the map (`rendererFor` returns null for a type without one, and the player offers to
+ * skip it). Typed Persian `translate_type` (direction en_fa, `answerLang: 'fa'`) has no entry of
+ * its own: the `translate_type` renderer handles both answer languages. Typed Persian inputs show
+ * the in-app PersianKeyboard when `display.persianKeyboard` is true, in `display.keyboardLayout`.
  */
 import type { ComponentType } from 'react'
 import type {
@@ -14,11 +20,14 @@ import type {
   ChallengeOf,
   ChallengeResponse,
   MVP_CHALLENGE_TYPES,
+  Settings,
   Verdict,
 } from '@zaboon/contracts'
 import { renderers } from '@/components/challenges'
 
 export type MvpChallengeType = (typeof MVP_CHALLENGE_TYPES)[number]
+/** P2 types a renderer may be registered for (Wave 3); see the header comment. */
+export type P2ChallengeType = 'listen_type' | 'cloze_type' | 'letter_trace'
 
 export interface ChallengeDisplay {
   /** Show romanization under Persian (Settings.transliteration resolved for this item). */
@@ -28,6 +37,10 @@ export interface ChallengeDisplay {
   /** Sound effects and auto-play audio allowed. */
   sound: boolean
   reducedMotion: boolean
+  /** P2: the learner's layout for typed Persian (Settings.keyboardLayout); absent = 'standard'. */
+  keyboardLayout?: Settings['keyboardLayout']
+  /** P2 (flags.persianKeyboard): show the in-app PersianKeyboard for typed Persian; absent = off. */
+  persianKeyboard?: boolean
 }
 
 export interface ChallengeAudio {
@@ -60,7 +73,9 @@ export type ChallengeRenderer<C extends Challenge = Challenge> = ComponentType<
   ChallengeRendererProps<C>
 >
 
-export type RendererMap = { [T in MvpChallengeType]: ChallengeRenderer<ChallengeOf<T>> }
+export type RendererMap = { [T in MvpChallengeType]: ChallengeRenderer<ChallengeOf<T>> } & {
+  [T in P2ChallengeType]?: ChallengeRenderer<ChallengeOf<T>>
+}
 
 /** The renderer for a challenge type, or null for types without one (later phases). */
 export function rendererFor<T extends Challenge['type']>(

@@ -45,8 +45,9 @@ export function correctResponse(c: Challenge): ChallengeResponse {
       return { kind: 'pairs', value: c.pairs.map((_, i) => [i, i] as [number, number]) }
     case 'build_word':
       return { kind: 'tiles', value: [...c.answer] }
-    case 'letter_intro':
     case 'letter_trace':
+      return { kind: 'trace', coverage: 1, precision: 1 }
+    case 'letter_intro':
     case 'story':
       return { kind: 'none' }
   }
@@ -69,6 +70,7 @@ export function TestRenderer({
   onMismatch,
   phase,
   response,
+  display,
 }: ChallengeRendererProps) {
   const locked = phase !== 'answering'
   return (
@@ -78,6 +80,8 @@ export function TestRenderer({
       data-index={challenge.index}
       data-phase={phase}
       data-response={response ? JSON.stringify(response) : ''}
+      data-keyboard-layout={display.keyboardLayout ?? ''}
+      data-persian-keyboard={display.persianKeyboard ? 'true' : 'false'}
       className="flex flex-col items-center gap-3 text-center"
     >
       <p className="font-bold">
