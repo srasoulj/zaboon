@@ -2,7 +2,7 @@
 import { eq, sql } from 'drizzle-orm'
 import type { Tx } from '../index'
 import * as schema from '../schema'
-import { assertUserId } from './shared'
+import { ScopeError, assertUserId } from './shared'
 
 /** Tables whose rows belong to a user: every public table with a user_id column (discovered, so new tables are exported automatically). */
 async function userTables(tx: Tx): Promise<string[]> {
@@ -18,10 +18,13 @@ async function userTables(tx: Tx): Promise<string[]> {
 
 /**
  * Every row we hold about the user, as `{ tableName: rows[] }` (column names as in the database,
- * timestamps in ISO 8601). Run inside `withUser(db, userId, …)`.
+ * timestamps in ISO 8601). Run inside `withUser(db, userId, …)` (or `withSystem`).
  */
 export async function exportAccount(tx: Tx, userId: string): Promise<Record<string, unknown[]>> {
   assertUserId(userId)
+  // Some tables (public_profiles) are readable across users, so also require a matching scope.
+  const [scope] = await tx.execute<{ ok: boolean }>(sql`SELECT rls.can_access(${userId}::uuid) AS ok`)
+  if (!scope?.ok) throw new ScopeError('exportAccount must run in the same user scope (or withSystem)')
   const out: Record<string, unknown[]> = {}
   for (const table of await userTables(tx)) {
     const rows = await tx.execute<{ rows: unknown[] }>(sql`

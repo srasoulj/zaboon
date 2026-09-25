@@ -4,6 +4,7 @@
  */
 import { randomBytes } from 'node:crypto'
 import postgres from 'postgres'
+import { createDb, type DbHandle } from './index'
 
 const HOST = '127.0.0.1'
 const PORT = Number(process.env.ZABOON_DB_PORT ?? 54322)
@@ -49,5 +50,37 @@ export async function createAuthUser(adminUrl: string, opts: { anonymous?: boole
     return rows[0]!.id as string
   } finally {
     await sql.end()
+  }
+}
+
+/** Everything a repository test needs: a private database, an app_server pool and fixtures. */
+export interface TestContext {
+  tdb: TestDatabase
+  /** app_server handle (what route handlers use). */
+  h: DbHandle
+  /** Superuser connection for fixtures and assertions that must bypass RLS. */
+  admin: postgres.Sql
+  /** Creates an auth user (the trigger creates its profile rows) and returns its id. */
+  newUser(opts?: { anonymous?: boolean; email?: string }): Promise<string>
+  close(): Promise<void>
+}
+
+export async function createTestContext(): Promise<TestContext> {
+  const tdb = await createTestDatabase()
+  const h = createDb(tdb.appUrl)
+  const admin = postgres(tdb.adminUrl, { max: 2, onnotice: () => {} })
+  return {
+    tdb,
+    h,
+    admin,
+    async newUser(opts = {}) {
+      const rows = await admin`INSERT INTO auth.users (is_anonymous, email) VALUES (${opts.anonymous ?? true}, ${opts.email ?? null}) RETURNING id`
+      return rows[0]!.id as string
+    },
+    async close() {
+      await h.close()
+      await admin.end()
+      await tdb.drop()
+    },
   }
 }
