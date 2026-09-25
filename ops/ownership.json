@@ -43,7 +43,14 @@
     "apps/web/lib/server/auth/**",
     "apps/web/lib/api-client.ts",
     "apps/web/lib/challenge-registry.ts",
-    "e2e/fixtures/**"
+    "e2e/fixtures/**",
+    "apps/web/lib/server/env.ts",
+    "apps/web/lib/server/clock.ts",
+    "apps/web/lib/server/errors.ts",
+    "apps/web/lib/server/db.ts",
+    "apps/web/lib/server/config.ts",
+    "e2e/global-setup.ts",
+    "e2e/skeleton.api.spec.ts"
   ],
   "workstreams": {
     "ws-farsi-grader": {

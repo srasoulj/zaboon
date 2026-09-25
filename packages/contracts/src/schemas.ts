@@ -430,12 +430,17 @@ export const ChallengeResponse = z.discriminatedUnion('kind', [
 ])
 export type ChallengeResponse = z.infer<typeof ChallengeResponse>
 
+/** Bounds keep every value inside a Postgres `integer` column (and sane): 400, never 500. */
+export const MAX_CHALLENGES = 200
+export const MAX_ATTEMPT_SEQ = 10_000
+export const MAX_ANSWER_MS = 3_600_000
+
 export const AnswerRecord = z.object({
-  index: z.number().int().nonnegative(),
-  attemptSeq: z.number().int().nonnegative(),
+  index: z.number().int().nonnegative().max(MAX_CHALLENGES - 1),
+  attemptSeq: z.number().int().nonnegative().max(MAX_ATTEMPT_SEQ),
   response: ChallengeResponse,
   verdict: Verdict,
-  ms: z.number().int().nonnegative(),
+  ms: z.number().int().nonnegative().max(MAX_ANSWER_MS),
   hinted: z.boolean().default(false),
 })
 export type AnswerRecord = z.infer<typeof AnswerRecord>
@@ -646,14 +651,14 @@ export const CreateSessionResponse = z.object({
 export type CreateSessionResponse = z.infer<typeof CreateSessionResponse>
 
 export const SessionEventRequest = z.object({
-  attemptSeq: z.number().int().nonnegative(),
-  index: z.number().int().nonnegative(),
+  attemptSeq: z.number().int().nonnegative().max(MAX_ATTEMPT_SEQ),
+  index: z.number().int().nonnegative().max(MAX_CHALLENGES - 1),
   kind: z.literal('wrong'),
 })
 export const SessionEventResponse = z.object({ lives: LivesView, duplicate: z.boolean() })
 
 export const CompleteSessionRequest = z.object({
-  answers: z.array(AnswerRecord).min(1).max(200),
+  answers: z.array(AnswerRecord).min(1).max(MAX_CHALLENGES),
   completedAt: IsoDateTime,
   graderVersion: z.number().int().positive(),
 })
