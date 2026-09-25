@@ -17,7 +17,7 @@ describe('@zaboon/ai contract', () => {
     const t = new MockTransport((req) => ({
       id: 'x', model: req.model, choices: [{ message: { content: 'ok' }, finish_reason: 'stop' }],
     }))
-    const c = new AiClient({ apiKey: 'test', transport: t, dataCollection: 'deny' })
+    const c = new AiClient({ apiKey: 'test', transport: t, dataCollection: 'deny' }) // pragma: allowlist secret
     const r = await c.chat({ model: MODELS.app_explain, messages: [{ role: 'user', content: 'hi' }] })
     expect(r.choices[0]!.message.content).toBe('ok')
     expect(t.calls[0]!.usage).toEqual({ include: true })
