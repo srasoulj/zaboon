@@ -1,0 +1,82 @@
+/* Practice page. Tokens only. */
+
+.page {
+  display: grid;
+  gap: 28px;
+}
+.hero {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: var(--lip-border) solid var(--color-line);
+  border-block-end-width: var(--lip-card);
+  border-radius: var(--radius-card);
+}
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+.lead {
+  margin: 0;
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.linkButton {
+  text-decoration: none;
+}
+.heading {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.status,
+.empty {
+  margin: 0;
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.words {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.word {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: var(--radius-tile);
+}
+.wordText {
+  display: grid;
+  justify-items: start;
+}
+.translit {
+  color: var(--color-stone);
+  font-size: 15px;
+  font-weight: 700;
+}
+.gloss {
+  font-weight: 700;
+}
+.listen {
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  padding: 0;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-lajvard-500);
+  cursor: pointer;
+}
+.listen:focus-visible {
+  outline: 3px solid var(--color-lajvard-500);
+  outline-offset: 2px;
+}

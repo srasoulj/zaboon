@@ -35,7 +35,8 @@ describe('rewriteGuidebookAudio', () => {
   })
 
   it('leaves other tags, attributes and text alone (ZWNJ included)', () => {
-    const md = '<fa>می‌خوام</fa> <span audio="audio/a.mp3">x</span> <fast audio="audio/a.mp3"> audio="audio/a.mp3"'
+    const md =
+      '<fa>می‌خوام</fa> <span audio="audio/a.mp3">x</span> <fast audio="audio/a.mp3"> audio="audio/a.mp3"'
     expect(rewriteGuidebookAudio(md, resolve)).toBe(md)
     expect(rewriteGuidebookAudio('<fa lang="x" audio="audio/a.mp3" id="p">آب</fa>', resolve)).toBe(
       '<fa lang="x" audio="/content/assets/audio/a.0123456789.mp3" id="p">آب</fa>',
@@ -55,7 +56,9 @@ describe('bundleMediaIndex', () => {
       units: [
         {
           lexemes: [{ audio: 'audio/lx.1111111111.mp3', image: 'img/lx.2222222222.webp' }],
-          sentences: [{ audio: { normal: 'audio/s.3333333333.mp3', slow: 'audio/s_slow.4444444444.mp3' } }],
+          sentences: [
+            { audio: { normal: 'audio/s.3333333333.mp3', slow: 'audio/s_slow.4444444444.mp3' } },
+          ],
         },
       ],
       letters: {

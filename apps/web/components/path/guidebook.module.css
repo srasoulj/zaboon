@@ -1,0 +1,132 @@
+/* Guidebook page: long-form reading with Persian phrases and GFM tables. Tokens only. */
+
+.page {
+  display: grid;
+  gap: 16px;
+}
+
+.back {
+  justify-self: start;
+  color: var(--color-lajvard-500);
+  font-weight: 800;
+  text-decoration: none;
+}
+.back:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.status {
+  color: var(--color-stone);
+  font-weight: 700;
+}
+
+.markdown {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.markdown h2 {
+  margin: 24px 0 8px;
+  font-size: 24px;
+  font-weight: 800;
+}
+.markdown h3 {
+  margin: 20px 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+}
+.markdown h4,
+.markdown h5 {
+  margin: 16px 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.markdown p {
+  margin: 0 0 12px;
+}
+.markdown ul,
+.markdown ol {
+  margin: 0 0 12px;
+  padding-inline-start: 24px;
+}
+.markdown ul {
+  list-style: disc;
+}
+.markdown ol {
+  list-style: decimal;
+}
+.markdown li {
+  margin-block: 4px;
+}
+.markdown a {
+  color: var(--color-lajvard-500);
+  text-decoration: underline;
+}
+.markdown code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+.markdown blockquote {
+  margin: 0 0 12px;
+  padding: 8px 16px;
+  border-inline-start: 4px solid var(--color-line);
+  color: var(--color-stone);
+}
+
+.tableWrap {
+  margin: 0 0 16px;
+  overflow-x: auto;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: var(--radius-tile);
+}
+.tableWrap table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+.tableWrap th,
+.tableWrap td {
+  padding: 8px 12px;
+  border-block-end: var(--lip-border) solid var(--color-line);
+  text-align: start;
+  vertical-align: middle;
+}
+.tableWrap th {
+  background: var(--color-surface);
+  font-weight: 800;
+}
+.tableWrap tr:last-child td {
+  border-block-end: 0;
+}
+
+.phrase {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+.speaker {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-lajvard-500);
+  cursor: pointer;
+}
+.speaker:hover {
+  background: var(--color-surface);
+}
+.speaker:focus-visible {
+  outline: 3px solid var(--color-lajvard-500);
+  outline-offset: 2px;
+}

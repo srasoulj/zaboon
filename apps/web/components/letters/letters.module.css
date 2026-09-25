@@ -1,0 +1,167 @@
+/* Letters tab and the shared strength bars (also used by the practice word list). Tokens only. */
+
+.page {
+  display: grid;
+  gap: 24px;
+}
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+.lead {
+  margin: 4px 0 0;
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.heading {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.status {
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.cta {
+  text-decoration: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tile {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  inline-size: 100%;
+  padding: 10px 6px 12px;
+  border: var(--lip-border) solid var(--color-line);
+  border-block-end-width: var(--lip-card);
+  border-radius: var(--radius-tile);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font: inherit;
+}
+button.tile {
+  cursor: pointer;
+}
+button.tile:hover {
+  background: var(--color-surface);
+}
+button.tile:active {
+  transform: translateY(2px);
+  border-block-end-width: var(--lip-border);
+}
+button.tile:focus-visible {
+  outline: 3px solid var(--color-lajvard-500);
+  outline-offset: 2px;
+}
+/* Not introduced yet: dimmed, but the text keeps AA contrast (stone on bg). */
+.dim {
+  background: var(--color-surface);
+  color: var(--color-stone);
+}
+.dim .bars {
+  opacity: 0.6;
+}
+.glyph {
+  line-height: 1.6;
+}
+.translit {
+  color: var(--color-stone);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bars {
+  display: inline-flex;
+  gap: 3px;
+}
+.bar {
+  inline-size: 12px;
+  block-size: 6px;
+  border-radius: 3px;
+  background: var(--color-line);
+}
+.barOn {
+  background: var(--color-zaferan-500);
+}
+
+.lessons {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: var(--lip-border) solid var(--color-line);
+  border-radius: var(--radius-tile);
+}
+.lesson[data-state='locked'] {
+  background: var(--color-surface);
+}
+.lessonIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  background: var(--color-firouzeh-500);
+  color: var(--color-firouzeh-label);
+}
+.lesson[data-state='locked'] .lessonIcon {
+  background: var(--color-line);
+  color: var(--color-stone);
+}
+.lessonText {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-inline-size: 0;
+}
+.lessonTitle {
+  font-weight: 800;
+}
+.lessonLetters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lessonState {
+  color: var(--color-stone);
+  font-size: 15px;
+  font-weight: 700;
+}
+.lessonLink {
+  flex: none;
+  padding: 8px 14px;
+  border: var(--lip-border) solid var(--color-line);
+  border-block-end-width: var(--lip-card);
+  border-radius: var(--radius-button);
+  color: var(--color-lajvard-500);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+.lessonLink:focus-visible {
+  outline: 3px solid var(--color-lajvard-500);
+  outline-offset: 2px;
+}
+.lessonLinkPrimary {
+  border-color: var(--color-lajvard-600);
+  background: var(--color-lajvard-500);
+  color: var(--color-lajvard-label);
+}
