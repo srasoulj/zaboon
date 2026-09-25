@@ -92,7 +92,11 @@ async function readJson(bundlePath: string, file: string): Promise<unknown> {
     if (!res.ok) throw new Error(`content fetch failed: ${res.status} ${bundlePath}/${file}`)
     return res.json()
   }
-  return JSON.parse(await readFile(join(localContentRoot(), bundlePath, file), 'utf8')) as unknown
+  // Local files serve tests and `content publish --local` only; deployments fetch bundles from
+  // CONTENT_BASE_URL. The ignore comments keep Turbopack from tracing the whole project into the
+  // server bundle for this dynamic path (it cannot scope it statically).
+  const path = join(/*turbopackIgnore: true*/ localContentRoot(), bundlePath, file)
+  return JSON.parse(await readFile(/*turbopackIgnore: true*/ path, 'utf8')) as unknown
 }
 
 export function loadBundle(cv: CourseVersion): Promise<LoadedBundle> {

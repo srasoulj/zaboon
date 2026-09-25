@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiClientError, createApiClient, TEST_NOW_KEY } from './api-client'
-import { createLocalAuthClient, LOCAL_SESSION_KEY } from './auth-client'
+import { createAuthClient, createLocalAuthClient, LOCAL_SESSION_KEY } from './auth-client'
 
 const USER = '11111111-2222-4333-8444-555555555555'
 
@@ -136,5 +136,24 @@ describe('local auth client', () => {
     const auth = createLocalAuthClient(fetchMock)
     await auth.signInAsGuest()
     await expect(auth.linkEmail('a@b.test')).resolves.toEqual({ status: 'identity_already_exists' })
+  })
+})
+
+describe('createAuthClient', () => {
+  it('picks the local client in local mode', () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'local')
+    expect(createAuthClient().mode).toBe('local')
+  })
+
+  it('in supabase mode, checks the configuration at the first auth call, not when created', async () => {
+    // Providers create the client while rendering, which also happens on the server (static
+    // prerendering at build time included), where the browser's configuration need not exist.
+    vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'supabase')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', '')
+    const auth = createAuthClient()
+    expect(auth.mode).toBe('supabase')
+    await expect(auth.getSession()).rejects.toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
+    expect(() => auth.subscribe(() => {})).toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
   })
 })
