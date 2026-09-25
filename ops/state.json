@@ -86,7 +86,7 @@
       ]
     },
     "ws-path-letters": {
-      "status": "round 2 in review (#43)",
+      "status": "done (round 2 merged in #43)",
       "prs": [
         32,
         40,
@@ -94,7 +94,7 @@
       ]
     },
     "ws-pages": {
-      "status": "round 2 in review (#44)",
+      "status": "done (round 2 merged in #44; notice mounted in the shell)",
       "prs": [
         35,
         41,
@@ -219,6 +219,8 @@
     40,
     41,
     42,
+    43,
+    44,
     45
   ],
   "routines": {

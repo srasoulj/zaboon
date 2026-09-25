@@ -11,7 +11,7 @@
 | 0b/0c | Contracts, stubs, test oracles (641 cases) + runners, fixture course, Unit 1 seed, content build/publish, ADR 0009, CLAUDE.md, ownership gate | ✅ done (#3, #5, #8) |
 | skeleton | Server framework (`withRoute`, auth, clock, content loader), dev auth, lesson API, e2e; app shell (auth + API clients, chrome, renderer registry, fixtures) | ✅ done (#9, #12, #18) |
 | 1 | farsi+grader, session engine+srs+game rules, database, UI kit, content CLI + AI client | ✅ done (#6, #7, #10, #11, #14; review fixes #15, #16) |
-| 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#42, #45 |
+| 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
 | 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | 🔄 prep PR (contracts, seams, oracle, specs); then ws-engagement and ws-typing |
 | 4 | Stretch: speak, stories, placement, offline, energy, Plus/email/push behind flags | ⏳ |
 | 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ⏳ |
@@ -28,8 +28,8 @@
 | ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged | #17, #23, #26 |
 | ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ done; its paths go to ws-typing | #21, #31, #37 |
 | ws-player | 2 | lesson player, offline outbox, resume | ✅ done; its player paths go to ws-engagement | #22, #30, #39 |
-| ws-path-letters | 2 | path, guidebook, letters (practice goes to ws-engagement) | ✅ merged; 🔧 round 2 in #43 ([spec](../ops/prompts/ws-path-letters.md)) | #32, #40, #43 |
-| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged; 🔧 round 2 in #44 ([spec](../ops/prompts/ws-pages.md)) | #35, #41, #44 |
+| ws-path-letters | 2 | path, guidebook, letters (practice goes to ws-engagement) | ✅ merged, incl. round 2 ([spec](../ops/prompts/ws-path-letters.md)) | #32, #40, #43 |
+| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged, incl. round 2; the dropped-merge notice is mounted in the shell ([spec](../ops/prompts/ws-pages.md)) | #35, #41, #44 |
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
 | ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ⏳ starts after the prep PR ([spec](../ops/prompts/ws-engagement.md)) | |
