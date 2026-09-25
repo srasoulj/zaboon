@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('select_translation')
@@ -27,6 +27,21 @@ describe('select_translation', () => {
     expect(h.last()).toEqual({ kind: 'choice', value: wrongIndex })
     expect(h.verdict()).toBe('wrong')
     expect(screen.getByRole('button', { name: correct })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('Enter on the already-selected card reaches the player untouched (it becomes CHECK)', async () => {
+    const seen = vi.fn()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') seen(e.defaultPrevented)
+    }
+    window.addEventListener('keydown', onKey)
+    const h = renderChallenge(c)
+    await h.user.click(screen.getByRole('button', { name: correct }))
+    expect(screen.getByRole('button', { name: correct })).toHaveFocus()
+    await h.user.keyboard('{Enter}')
+    window.removeEventListener('keydown', onKey)
+    expect(seen).toHaveBeenCalledWith(false)
+    expect(h.last()).toEqual({ kind: 'choice', value: c.answer }) // the draft is unchanged
   })
 
   it('digit keys pick an option', async () => {

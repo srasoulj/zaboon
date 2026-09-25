@@ -109,6 +109,8 @@ describe('letter_forms (one letter: position names to shapes)', () => {
     for (const p of one.pairs) {
       const name = within(positions()).getByRole('button', { name: LABEL[p.left] })
       expect(name.querySelector('[lang="fa"]')).toBeNull()
+      // The position name is English by inheritance: the nearest lang is the challenge's "en".
+      expect(name.closest('[lang]')).toHaveAttribute('lang', 'en')
       const shape = card(shapes(), p.right)
       expect(shape).not.toHaveAccessibleName(expect.stringContaining('form'))
     }
