@@ -27,14 +27,20 @@
   .zb-fa__tap,
   .zb-feedback__report,
   .zb-dialog__close,
-  .zb-toast__close {
+  .zb-toast__close,
+  .zb-kbd__key {
     --zb-ring-offset: 3px;
     --zb-ring-halo: 0 0 0 calc(var(--zb-ring-offset) + 6px) var(--color-bg);
   }
-  :is(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-unit__guide, .zb-stat, .zb-fa__tap, .zb-feedback__report, .zb-dialog__close, .zb-toast__close):focus-visible {
+  :is(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-unit__guide, .zb-stat, .zb-fa__tap, .zb-feedback__report, .zb-dialog__close, .zb-toast__close, .zb-kbd__key):focus-visible {
     outline: 3px solid var(--color-ink);
     outline-offset: var(--zb-ring-offset);
     box-shadow: var(--zb-ring-halo);
+  }
+  /* Keys sit 4px apart: a tight ring that stays readable over the neighbours. */
+  .zb-kbd__key {
+    --zb-ring-offset: 1px;
+    --zb-ring-halo: 0 0 0 calc(var(--zb-ring-offset) + 3px) var(--color-bg);
   }
   /* The lip sits below the box: push the ring past it. */
   .zb-btn,
@@ -716,6 +722,14 @@
     display: inline-block;
     line-height: 0;
   }
+  /* A portrait fills the placeholder's exact box, letterboxed like the SVG's viewBox. */
+  .zb-character__img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+  }
   .zb-char {
     overflow: visible;
   }
@@ -907,6 +921,158 @@
     cursor: pointer;
   }
 
+  /* ---------- PersianKeyboard ---------- */
+  /* Keys share one width per layout (the widest row sets it), shrink with the container down to a
+     360px phone, and keep ≥24px of spacing between centers (WCAG 2.5.8). */
+  .zb-kbd {
+    --zb-kbd-gap: 4px;
+    --zb-kbd-unit: calc((100% - (var(--zb-kbd-cols) - 1) * var(--zb-kbd-gap)) / var(--zb-kbd-cols));
+    container-type: inline-size;
+    display: grid;
+    gap: 8px;
+    inline-size: 100%;
+    max-inline-size: 720px;
+    margin-inline: auto;
+    color: var(--color-ink);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+  .zb-kbd__row {
+    display: flex;
+    justify-content: center;
+    gap: var(--zb-kbd-gap);
+    min-inline-size: 0;
+  }
+  .zb-kbd__slot {
+    position: relative;
+    display: flex;
+    flex: 0 1 var(--zb-kbd-unit);
+    min-inline-size: 0;
+  }
+  .zb-kbd__key {
+    position: relative;
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: clamp(42px, 11cqi, 54px);
+    padding: 0;
+    border-radius: var(--radius-tile);
+    color: var(--color-ink);
+    font: 700 clamp(12px, 3.2cqi, 15px) / 1.1 var(--font-latin);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform var(--motion-tap) ease-out,
+      border-bottom-width var(--motion-tap) ease-out;
+  }
+  .zb-kbd__key:hover:not(:disabled) {
+    background: var(--color-surface);
+  }
+  .zb-kbd__key:disabled {
+    cursor: default;
+    color: var(--color-stone);
+  }
+  .zb-kbd__key:disabled:active {
+    transform: none;
+    border-bottom-width: var(--lip-card);
+  }
+  .zb-kbd__key[aria-pressed='true']:hover:not(:disabled) {
+    background: var(--color-selected-bg);
+  }
+  .zb-kbd__key:focus-visible {
+    z-index: 1;
+  }
+  .zb-kbd__glyph {
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .zb-kbd__glyph:lang(fa) {
+    font-family: var(--font-persian);
+    font-size: clamp(16px, 5cqi, 24px);
+    font-weight: 500;
+    line-height: var(--font-persian-line-height);
+  }
+  .zb-kbd__glyph:lang(en) {
+    font-size: clamp(9px, 2.4cqi, 12px);
+    letter-spacing: 0.02em;
+  }
+  /* The long-press hint: a small dot in the top corner of keys that have variants. */
+  .zb-kbd__hint {
+    position: absolute;
+    inset-block-start: 4px;
+    inset-inline-end: 4px;
+    inline-size: 5px;
+    block-size: 5px;
+    border-radius: 50%;
+    background: var(--color-stone);
+  }
+  .zb-kbd__row--bottom > .zb-kbd__key {
+    flex: 1.5 1 0;
+  }
+  .zb-kbd__row--bottom > .zb-kbd__key--half,
+  .zb-kbd__row--bottom > .zb-kbd__key--enter {
+    flex-grow: 2;
+  }
+  .zb-kbd__row--bottom > .zb-kbd__key--space {
+    flex-grow: 4.5;
+  }
+  .zb-kbd__text {
+    padding-inline: 2px;
+    text-align: center;
+    overflow-wrap: anywhere;
+    pointer-events: none;
+  }
+  .zb-kbd__key--enter {
+    border-color: var(--color-firouzeh-600);
+    background: var(--color-firouzeh-500);
+    color: var(--color-firouzeh-label);
+  }
+  .zb-kbd__key--enter:hover:not(:disabled) {
+    background: var(--color-firouzeh-600);
+  }
+  .zb-kbd__key--enter:disabled {
+    border-color: var(--color-line);
+    background: var(--color-line);
+    color: var(--color-stone);
+  }
+  .zb-kbd__popover {
+    position: absolute;
+    z-index: 2;
+    inset-block-end: calc(100% + 6px);
+    display: flex;
+    gap: var(--zb-kbd-gap);
+    padding: 6px;
+    border: var(--lip-border) solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-bg);
+    box-shadow: 0 var(--lip-card) 0 var(--color-line);
+    animation: zb-pop 120ms ease-out;
+  }
+  .zb-kbd__slot[data-align='start'] > .zb-kbd__popover {
+    inset-inline-start: 0;
+  }
+  .zb-kbd__slot[data-align='end'] > .zb-kbd__popover {
+    inset-inline-end: 0;
+  }
+  .zb-kbd__slot[data-align='center'] > .zb-kbd__popover {
+    inset-inline-start: 50%;
+    translate: -50% 0;
+  }
+  .zb-kbd__variant {
+    inline-size: 44px;
+    flex: none;
+  }
+  /* The in-app toggle (usePrefersReducedMotion) also marks the keyboard itself. */
+  .zb-kbd[data-reduce-motion] .zb-kbd__key {
+    transition: none;
+  }
+  .zb-kbd[data-reduce-motion] .zb-kbd__popover {
+    animation: none;
+  }
+
   /* ---------- ConfettiBurst ---------- */
   .zb-confetti {
     position: absolute;
@@ -1018,10 +1184,12 @@
   .zb-btn,
   .zb-choice,
   .zb-tile,
+  .zb-kbd__key,
   .zb-node__button,
   .zb-progress__fill {
     transition: none;
   }
+  .zb-kbd__popover,
   .zb-node__start,
   .zb-feedback,
   .zb-progress__badge,
@@ -1032,9 +1200,9 @@
     animation: none;
   }
 }
-[data-motion='reduce'] :is(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-progress__fill) {
+[data-motion='reduce'] :is(.zb-btn, .zb-choice, .zb-tile, .zb-kbd__key, .zb-node__button, .zb-progress__fill) {
   transition: none;
 }
-[data-motion='reduce'] :is(.zb-node__start, .zb-feedback, .zb-progress__badge, .zb-toast, .zb-char, .zb-char *, .zb-btn__spinner) {
+[data-motion='reduce'] :is(.zb-kbd__popover, .zb-node__start, .zb-feedback, .zb-progress__badge, .zb-toast, .zb-char, .zb-char *, .zb-btn__spinner) {
   animation: none;
 }

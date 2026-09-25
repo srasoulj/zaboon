@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
@@ -14,6 +14,18 @@ describe('complete_chat', () => {
     const line = persianOf(screen.getByRole('group', { name: `${c.speaker.name} says` }))
     expect(line).toHaveTextContent(c.prompt.fa)
     expect(screen.getByRole('group', { name: 'Replies' })).toBeInTheDocument()
+  })
+
+  it('draws the speaker portrait (alt = name) and falls back to the placeholder on error', () => {
+    const image = 'https://cdn.example/characters/leila/portrait.webp'
+    renderChallenge({ ...c, speaker: { ...c.speaker, image } })
+    const portrait = screen.getByRole('img', { name: c.speaker.name })
+    expect(portrait.tagName).toBe('IMG')
+    expect(portrait).toHaveAttribute('src', image)
+    fireEvent.error(portrait)
+    const placeholder = screen.getByRole('img', { name: c.speaker.name })
+    expect(placeholder.tagName).not.toBe('IMG')
+    expect(placeholder.querySelector('svg')).not.toBeNull()
   })
 
   it('the best reply is graded correct, another wrong', async () => {

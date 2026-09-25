@@ -95,6 +95,7 @@ export function CompleteChat(props: Props) {
           mood={mood}
           mouthOpen={lip.mouth}
           size={112}
+          image={challenge.speaker.image}
           label={challenge.speaker.name}
         />
         <SpeechBubble tail="start">
