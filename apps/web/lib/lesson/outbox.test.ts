@@ -11,7 +11,14 @@ class CodedError extends Error {
 
 const COMPLETE_BODY = {
   answers: [
-    { index: 0, attemptSeq: 0, response: { kind: 'choice' as const, value: 1 }, verdict: 'correct' as const, ms: 900, hinted: false },
+    {
+      index: 0,
+      attemptSeq: 0,
+      response: { kind: 'choice' as const, value: 1 },
+      verdict: 'correct' as const,
+      ms: 900,
+      hinted: false,
+    },
   ],
   completedAt: '2026-09-25T10:00:00.000Z',
   graderVersion: 2,
@@ -70,7 +77,11 @@ describe('outbox', () => {
     await outbox.enqueueComplete(USER_ID, SESSION_ID, COMPLETE_BODY)
     const report = await outbox.flush()
     expect(report).toEqual({ delivered: 3, dropped: 0, stalled: false, remaining: 0 })
-    expect(log).toEqual([`event:${SESSION_ID}:0`, `event:${SESSION_ID}:2`, `complete:${SESSION_ID}`])
+    expect(log).toEqual([
+      `event:${SESSION_ID}:0`,
+      `event:${SESSION_ID}:2`,
+      `complete:${SESSION_ID}`,
+    ])
     expect(store.rows.size).toBe(0)
   })
 
@@ -140,22 +151,30 @@ describe('outbox', () => {
       throw new CodedError('conflict')
     })
     await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
-    const err = await t.outbox.submitComplete(USER_ID, SESSION_ID, COMPLETE_BODY).catch((e: unknown) => e)
+    const err = await t.outbox
+      .submitComplete(USER_ID, SESSION_ID, COMPLETE_BODY)
+      .catch((e: unknown) => e)
     expect(err).toBeInstanceOf(OutboxPermanentError)
     expect((err as OutboxPermanentError).code).toBe('gone')
     expect(t.store.rows.size).toBe(0)
-    expect(t.deliveries.map((d) => (d.type === 'dropped' ? d.code : d.type))).toEqual(['conflict', 'gone'])
+    expect(t.deliveries.map((d) => (d.type === 'dropped' ? d.code : d.type))).toEqual([
+      'conflict',
+      'gone',
+    ])
   })
 
-  it.each(['network', 'internal', 'rate_limited', 'unauthorized'])('%s is retried, not dropped', async (code) => {
-    const t = setup()
-    t.send.event = vi.fn(async () => {
-      throw new CodedError(code)
-    })
-    await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
-    await t.outbox.flush()
-    expect(t.store.rows.size).toBe(1)
-  })
+  it.each(['network', 'internal', 'rate_limited', 'unauthorized'])(
+    '%s is retried, not dropped',
+    async (code) => {
+      const t = setup()
+      t.send.event = vi.fn(async () => {
+        throw new CodedError(code)
+      })
+      await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
+      await t.outbox.flush()
+      expect(t.store.rows.size).toBe(1)
+    },
+  )
 
   it("only sends the signed-in user's entries", async () => {
     const t = setup({ user: 'someone-else' })
@@ -173,10 +192,12 @@ describe('outbox', () => {
     let release!: () => void
     const gate = new Promise<void>((r) => (release = r))
     const original = t.send.event
-    t.send.event = vi.fn(async (sessionId: string, body: { attemptSeq: number; index: number; kind: 'wrong' }) => {
-      await gate
-      return original(sessionId, body)
-    })
+    t.send.event = vi.fn(
+      async (sessionId: string, body: { attemptSeq: number; index: number; kind: 'wrong' }) => {
+        await gate
+        return original(sessionId, body)
+      },
+    )
     await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
     const a = t.outbox.flush()
     await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(1))

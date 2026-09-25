@@ -11,12 +11,7 @@
  */
 import type { SessionEventResponse, SessionResult } from '@zaboon/contracts'
 import type { z } from 'zod'
-import {
-  completeEntryId,
-  eventEntryId,
-  type OutboxEntry,
-  type OutboxStore,
-} from './stores'
+import { completeEntryId, eventEntryId, type OutboxEntry, type OutboxStore } from './stores'
 
 type EventResponse = z.output<typeof SessionEventResponse>
 type EntryOf<K extends OutboxEntry['kind']> = Extract<OutboxEntry, { kind: K }>
@@ -32,7 +27,13 @@ export type OutboxDelivery =
   | { type: 'dropped'; entry: OutboxEntry; code: string; message: string }
 
 /** Error codes worth retrying; anything else is permanent for that entry. */
-const TRANSIENT = new Set(['network', 'internal', 'rate_limited', 'unauthorized', 'upgrade_required'])
+const TRANSIENT = new Set([
+  'network',
+  'internal',
+  'rate_limited',
+  'unauthorized',
+  'upgrade_required',
+])
 
 export function isTransient(error: unknown): boolean {
   const code = errorCode(error)

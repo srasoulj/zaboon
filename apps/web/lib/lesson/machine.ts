@@ -309,7 +309,11 @@ export const lessonMachine = setup({
           entry: enqueueActions(({ context, enqueue }) => {
             const session = context.session!
             const index = currentIndex(context.progress!)!
-            const recorded = recordMismatch(context.progress!, index, context.now() - context.shownAt)
+            const recorded = recordMismatch(
+              context.progress!,
+              index,
+              context.now() - context.shownAt,
+            )
             const heartLost = costsHeart(session.kind, context.hearts!)
             const next = {
               progress: recorded.progress,
@@ -320,7 +324,11 @@ export const lessonMachine = setup({
             if (session.kind !== 'practice')
               enqueue({
                 type: 'recordWrong',
-                params: { sessionId: session.sessionId, attemptSeq: recorded.answer.attemptSeq, index },
+                params: {
+                  sessionId: session.sessionId,
+                  attemptSeq: recorded.answer.attemptSeq,
+                  index,
+                },
               })
             enqueue({ type: 'persist', params: { snapshot: snapshotOf({ ...context, ...next }) } })
             enqueue({ type: 'sound', params: { effect: 'wrong' } })
@@ -342,7 +350,8 @@ export const lessonMachine = setup({
                 verdict: grade.verdict,
                 ms: context.now() - context.shownAt,
               })
-              const heartLost = grade.verdict === 'wrong' && costsHeart(session.kind, context.hearts!)
+              const heartLost =
+                grade.verdict === 'wrong' && costsHeart(session.kind, context.hearts!)
               return {
                 progress: recorded.progress,
                 hearts: heartLost ? loseHeart(context.hearts!) : context.hearts,
@@ -363,7 +372,11 @@ export const lessonMachine = setup({
               if (f.verdict === 'wrong' && context.session!.kind !== 'practice')
                 enqueue({
                   type: 'recordWrong',
-                  params: { sessionId: context.session!.sessionId, attemptSeq: f.attemptSeq, index: f.index },
+                  params: {
+                    sessionId: context.session!.sessionId,
+                    attemptSeq: f.attemptSeq,
+                    index: f.index,
+                  },
                 })
             }),
             { type: 'persist', params: ({ context }) => ({ snapshot: snapshotOf(context) }) },
@@ -384,7 +397,11 @@ export const lessonMachine = setup({
                 target: '#lesson.outOfHearts',
                 actions: assign({ feedback: null }),
               },
-              { guard: 'finished', target: '#lesson.completing', actions: assign({ feedback: null }) },
+              {
+                guard: 'finished',
+                target: '#lesson.completing',
+                actions: assign({ feedback: null }),
+              },
               { target: 'answering', actions: [assign({ feedback: null }), 'markShown'] },
             ],
           },
@@ -399,7 +416,10 @@ export const lessonMachine = setup({
         CONFIRM_QUIT: {
           target: 'exited',
           actions: [
-            { type: 'discard', params: ({ context }) => ({ sessionId: context.session?.sessionId ?? null }) },
+            {
+              type: 'discard',
+              params: ({ context }) => ({ sessionId: context.session?.sessionId ?? null }),
+            },
             assign({ exit: 'home' }),
           ],
         },
@@ -444,7 +464,10 @@ export const lessonMachine = setup({
                     }),
                   },
             ),
-            { type: 'discard', params: ({ context }) => ({ sessionId: context.session!.sessionId }) },
+            {
+              type: 'discard',
+              params: ({ context }) => ({ sessionId: context.session!.sessionId }),
+            },
           ],
         },
         onError: [

@@ -47,11 +47,30 @@ function StatCard({
   final: string
   children: ReactNode
 }) {
-  const border = { zaferan: 'border-zaferan-500', firouzeh: 'border-firouzeh-500', lajvard: 'border-lajvard-500' }[tone]
-  const fill = { zaferan: 'bg-zaferan-500 text-ink', firouzeh: 'bg-firouzeh-600 text-white', lajvard: 'bg-lajvard-500 text-white' }[tone]
+  const border = {
+    zaferan: 'border-zaferan-500',
+    firouzeh: 'border-firouzeh-500',
+    lajvard: 'border-lajvard-500',
+  }[tone]
+  const fill = {
+    zaferan: 'bg-zaferan-500 text-ink',
+    firouzeh: 'bg-firouzeh-600 text-white',
+    lajvard: 'bg-lajvard-500 text-white',
+  }[tone]
   return (
-    <div className={clsx('flex-1 overflow-hidden rounded-[16px] border-2', border)} data-testid={testId} data-value={final}>
-      <div className={clsx('px-2 py-1 text-center text-[13px] font-extrabold uppercase tracking-wide', fill)}>{label}</div>
+    <div
+      className={clsx('flex-1 overflow-hidden rounded-[16px] border-2', border)}
+      data-testid={testId}
+      data-value={final}
+    >
+      <div
+        className={clsx(
+          'px-2 py-1 text-center text-[13px] font-extrabold uppercase tracking-wide',
+          fill,
+        )}
+      >
+        {label}
+      </div>
       <div className="px-2 py-3 text-center text-[22px] font-extrabold">
         <span aria-hidden="true">{children}</span>
         <span className="zb-sr-only">{final}</span>
@@ -77,7 +96,9 @@ function Screen({
   }, [testId])
   return (
     <section className="flex min-h-dvh flex-col" data-testid={testId} data-source={source}>
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">{children}</div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+        {children}
+      </div>
       <footer className="border-t-2 border-line px-4 py-5">
         <div className="mx-auto max-w-[640px]">
           <Button3D ref={btn} onClick={onContinue} fullWidth data-testid="complete-continue">
@@ -125,7 +146,12 @@ export function SummaryScreen({
         <StatCard label="Accuracy" tone="firouzeh" testId="complete-accuracy" final={`${pct}%`}>
           {accuracy}%
         </StatCard>
-        <StatCard label="Time" tone="lajvard" testId="complete-time" final={formatDuration(summary.durationMs)}>
+        <StatCard
+          label="Time"
+          tone="lajvard"
+          testId="complete-time"
+          final={formatDuration(summary.durationMs)}
+        >
           {formatDuration(summary.durationMs)}
         </StatCard>
       </div>
@@ -147,7 +173,9 @@ export function StreakScreen({ days, onContinue }: { days: number; onContinue: (
         <p className="zb-sr-only">{`${days} day streak`}</p>
       </div>
       <p className="text-stone">
-        {days === 1 ? 'You started a streak! Come back tomorrow to keep it going.' : 'You extended your streak. Keep it up!'}
+        {days === 1
+          ? 'You started a streak! Come back tomorrow to keep it going.'
+          : 'You extended your streak. Keep it up!'}
       </p>
     </Screen>
   )

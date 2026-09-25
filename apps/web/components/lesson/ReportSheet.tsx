@@ -44,13 +44,22 @@ export interface ReportSheetProps {
 }
 
 /** The report flag's small sheet (LEARNING-ENGINE §4.5 report loop): posts createReport. */
-export function ReportSheet({ open, onClose, challenge, sessionId, response, submit }: ReportSheetProps) {
+export function ReportSheet({
+  open,
+  onClose,
+  challenge,
+  sessionId,
+  response,
+  submit,
+}: ReportSheetProps) {
   const [kind, setKind] = useState<Kind | null>(null)
   const [text, setText] = useState('')
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle')
   const ref = reportItemRef(challenge)
   const answer = answerText(response)
-  const options = OPTIONS.filter((o) => o.kind !== 'answer_should_be_accepted' || answer !== undefined)
+  const options = OPTIONS.filter(
+    (o) => o.kind !== 'answer_should_be_accepted' || answer !== undefined,
+  )
 
   const close = () => {
     onClose()
@@ -100,11 +109,18 @@ export function ReportSheet({ open, onClose, challenge, sessionId, response, sub
       }
     >
       {state !== 'sent' && (
-        <form data-testid="report-sheet" className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
+        <form
+          data-testid="report-sheet"
+          className="flex flex-col gap-3"
+          onSubmit={(e) => e.preventDefault()}
+        >
           <fieldset className="flex flex-col gap-2">
             <legend className="zb-sr-only">What went wrong?</legend>
             {options.map((o) => (
-              <label key={o.kind} className="flex items-center gap-3 rounded-[12px] border-2 border-line px-3 py-2">
+              <label
+                key={o.kind}
+                className="flex items-center gap-3 rounded-[12px] border-2 border-line px-3 py-2"
+              >
                 <input
                   type="radio"
                   name="report-kind"

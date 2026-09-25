@@ -12,7 +12,12 @@ import { useApi, useEnsureGuest, useHome } from '@/lib/app-services'
 import { createHowlerAudio } from '@/lib/lesson/audio'
 import { parseLessonRequest, requestKey } from '@/lib/lesson/request'
 import { LessonPlayer } from './LessonPlayer'
-import { LessonServicesProvider, sharedLessonStores, useOutboxReplay, type LessonServices } from './services'
+import {
+  LessonServicesProvider,
+  sharedLessonStores,
+  useOutboxReplay,
+  type LessonServices,
+} from './services'
 import { LoadingScreen } from './StatusScreens'
 import { resolveTestRenderer, testRenderersEnabled } from './test-renderers'
 
@@ -49,7 +54,10 @@ export function LessonRoute() {
 
   if (!parsed.ok)
     return (
-      <section className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center" data-testid="lesson-invalid">
+      <section
+        className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center"
+        data-testid="lesson-invalid"
+      >
         <h1 className="text-[24px] font-extrabold">We couldn&apos;t open this lesson</h1>
         <p className="text-stone">{parsed.reason}</p>
         <Link href="/learn" className="font-extrabold uppercase text-lajvard-500">
@@ -73,4 +81,3 @@ export function LessonRoute() {
     </LessonServicesProvider>
   )
 }
-

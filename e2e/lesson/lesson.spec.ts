@@ -19,7 +19,11 @@ test.beforeEach(async ({ guestPage }) => {
   await useTestRenderers(guestPage)
 })
 
-test('a perfect lesson shows the complete screens and updates home XP', async ({ guestPage: page, guest, request }) => {
+test('a perfect lesson shows the complete screens and updates home XP', async ({
+  guestPage: page,
+  guest,
+  request,
+}) => {
   await page.goto(FIRST_LESSON)
   await expect(page.getByTestId('lesson-player')).toBeVisible()
   await expect(page.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'locked')
@@ -55,7 +59,11 @@ test('a perfect lesson shows the complete screens and updates home XP', async ({
   expect(after.streak.current).toBe(1)
 })
 
-test('a wrong answer costs a heart and comes back at the end', async ({ guestPage: page, guest, request }) => {
+test('a wrong answer costs a heart and comes back at the end', async ({
+  guestPage: page,
+  guest,
+  request,
+}) => {
   await page.goto(FIRST_LESSON)
   expect(await currentIndex(page)).toBe(0)
   await answer(page, 'wrong', { human: false })
@@ -103,7 +111,10 @@ test('reloading mid-lesson resumes where the learner left off', async ({ guestPa
   await expect(player).toHaveAttribute('data-session', sessionId!)
   expect(await currentIndex(page)).toBe(2)
   await expect(page.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
-  await expect(page.getByRole('progressbar', { name: 'Lesson progress' })).toHaveAttribute('aria-valuenow', '25')
+  await expect(page.getByRole('progressbar', { name: 'Lesson progress' })).toHaveAttribute(
+    'aria-valuenow',
+    '25',
+  )
 
   for (const expected of [2, 3, 0]) {
     expect(await currentIndex(page)).toBe(expected)
@@ -113,7 +124,12 @@ test('reloading mid-lesson resumes where the learner left off', async ({ guestPa
   await expect(page.getByTestId('complete-summary')).toHaveAttribute('data-source', 'server')
 })
 
-test('a lesson finished offline is saved when the connection returns', async ({ guestPage: page, guest, request, context }) => {
+test('a lesson finished offline is saved when the connection returns', async ({
+  guestPage: page,
+  guest,
+  request,
+  context,
+}) => {
   await page.goto(FIRST_LESSON)
   for (let i = 0; i < FIRST_LESSON_LENGTH - 1; i++) {
     await answer(page, 'correct')
@@ -135,7 +151,9 @@ test('a lesson finished offline is saved when the connection returns', async ({ 
   expect((await home(request, guest)).xpTotal).toBe(15)
 })
 
-test('Escape asks before quitting; staying keeps the lesson, quitting returns to the path', async ({ guestPage: page }) => {
+test('Escape asks before quitting; staying keeps the lesson, quitting returns to the path', async ({
+  guestPage: page,
+}) => {
   await page.goto(FIRST_LESSON)
   await currentIndex(page)
   await page.keyboard.press('Escape')

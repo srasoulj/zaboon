@@ -14,7 +14,7 @@ export interface TopBarProps {
 /** Lesson top bar (DESIGN-SYSTEM §2.2): close (X), progress bar with combo glow, hearts. */
 export function TopBar({ progress, combo, hearts, onClose }: TopBarProps) {
   return (
-    <header className="flex items-center gap-4 px-4 pt-4 pb-2">
+    <header className="flex items-center gap-4 px-4 pt-7 pb-2">
       <button
         type="button"
         onClick={onClose}
@@ -26,8 +26,14 @@ export function TopBar({ progress, combo, hearts, onClose }: TopBarProps) {
       </button>
       <ProgressBar value={progress} streak={combo} streakThreshold={3} className="flex-1" />
       {hearts && (
-        <div data-testid="lesson-hearts" data-count={hearts.policy === 'unlimited' ? 'infinite' : hearts.count}>
-          <StatPill kind="hearts" value={hearts.policy === 'unlimited' ? 'infinite' : hearts.count} />
+        <div
+          data-testid="lesson-hearts"
+          data-count={hearts.policy === 'unlimited' ? 'infinite' : hearts.count}
+        >
+          <StatPill
+            kind="hearts"
+            value={hearts.policy === 'unlimited' ? 'infinite' : hearts.count}
+          />
         </div>
       )}
     </header>

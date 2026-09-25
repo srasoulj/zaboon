@@ -15,8 +15,7 @@ export interface LessonRequest {
 }
 
 export type ParsedLessonRequest =
-  | { ok: true; request: LessonRequest }
-  | { ok: false; reason: string }
+  { ok: true; request: LessonRequest } | { ok: false; reason: string }
 
 interface ParamReader {
   get(name: string): string | null
@@ -29,7 +28,8 @@ export function parseLessonRequest(params: ParamReader): ParsedLessonRequest {
   const courseId = params.get('course')
   const kindRaw = params.get('kind')
   const level = params.get('level')
-  if (!courseId || !COURSE_ID.test(courseId)) return { ok: false, reason: 'missing or invalid course' }
+  if (!courseId || !COURSE_ID.test(courseId))
+    return { ok: false, reason: 'missing or invalid course' }
   const kind = SessionKind.safeParse(kindRaw)
   if (!kind.success || !(PLAYER_KINDS as readonly string[]).includes(kind.data))
     return { ok: false, reason: `unsupported lesson kind ${kindRaw ?? '(none)'}` }

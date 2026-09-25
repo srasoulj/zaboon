@@ -47,7 +47,9 @@ type HowlCtor = typeof HowlType
 
 const PRELOAD_TIMEOUT_MS = 8_000
 
-export function createHowlerAudio(opts: { fetch?: typeof fetch; timeoutMs?: number } = {}): LessonAudio {
+export function createHowlerAudio(
+  opts: { fetch?: typeof fetch; timeoutMs?: number } = {},
+): LessonAudio {
   const doFetch = opts.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a))
   let enabled = true
   let Howl: HowlCtor | null = null

@@ -102,7 +102,11 @@ export function solutionFor(challenge: Challenge, grade: ResponseGrade | null): 
       case 'cloze_choice': {
         const c = challenge.choices[challenge.answer]
         if (c === undefined) return null
-        const words = [...challenge.before.map((t) => t.surface), c, ...challenge.after.map((t) => t.surface)]
+        const words = [
+          ...challenge.before.map((t) => t.surface),
+          c,
+          ...challenge.after.map((t) => t.surface),
+        ]
         return { text: words.join(' '), lang: 'fa' }
       }
       case 'complete_chat': {

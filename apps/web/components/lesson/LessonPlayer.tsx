@@ -43,10 +43,20 @@ import { TopBar } from './TopBar'
  * Renders the registered renderer for the challenge's type. Renderers come from a static map
  * (lib/challenge-registry.ts, or the test map), so the lookup never creates a component.
  */
-function ChallengeSlot({ resolve, props }: { resolve: RendererResolver; props: ChallengeRendererProps }) {
+function ChallengeSlot({
+  resolve,
+  props,
+}: {
+  resolve: RendererResolver
+  props: ChallengeRendererProps
+}) {
   const Renderer = resolve(props.challenge.type) as ChallengeRenderer | null
   if (!Renderer)
-    return <p className="text-center text-stone">This kind of challenge isn&apos;t available yet. Skip it for now.</p>
+    return (
+      <p className="text-center text-stone">
+        This kind of challenge isn&apos;t available yet. Skip it for now.
+      </p>
+    )
   return createElement(Renderer, props)
 }
 
@@ -83,7 +93,14 @@ function useOnline(): boolean {
   return online
 }
 
-export function LessonPlayer({ request, userId, settings, home, onExit, now = Date.now }: LessonPlayerProps) {
+export function LessonPlayer({
+  request,
+  userId,
+  settings,
+  home,
+  onExit,
+  now = Date.now,
+}: LessonPlayerProps) {
   const api = useApi()
   const queryClient = useQueryClient()
   const { snapshots, outbox, audio, resolveRenderer } = useLessonServices()
@@ -98,12 +115,18 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
     lessonMachine.provide({
       actors: {
         start: fromPromise<StartOutput, StartInput>(async ({ input }) => {
-          const saved = await snapshots.find(input.userId, requestKey(input.request)).catch(() => null)
+          const saved = await snapshots
+            .find(input.userId, requestKey(input.request))
+            .catch(() => null)
           if (saved) {
             if (saved.v === 1 && Date.parse(saved.session.expiresAt) > now())
               return {
                 session: saved.session,
-                resume: { progress: saved.progress, hearts: saved.hearts, startedAt: saved.startedAt },
+                resume: {
+                  progress: saved.progress,
+                  hearts: saved.hearts,
+                  startedAt: saved.startedAt,
+                },
               }
             await snapshots.remove(saved.sessionId).catch(() => {})
           }
@@ -129,7 +152,11 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
       actions: {
         recordWrong: (_, p) => {
           void outbox
-            .enqueueEvent(userId, p.sessionId, { attemptSeq: p.attemptSeq, index: p.index, kind: 'wrong' })
+            .enqueueEvent(userId, p.sessionId, {
+              attemptSeq: p.attemptSeq,
+              index: p.index,
+              kind: 'wrong',
+            })
             .then(() => outbox.flush())
             .catch((e: unknown) => console.warn('[lesson] could not queue a wrong attempt', e))
         },
@@ -172,7 +199,11 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
         if (d.type === 'complete') void invalidate()
         if (!sessionId || d.entry.sessionId !== sessionId) return
         if (d.type === 'event')
-          actor.send({ type: 'LIVES_SYNCED', lives: d.response.lives, attemptSeq: d.entry.body.attemptSeq })
+          actor.send({
+            type: 'LIVES_SYNCED',
+            lives: d.response.lives,
+            attemptSeq: d.entry.body.attemptSeq,
+          })
         else if (d.type === 'complete') actor.send({ type: 'RECONCILED', result: d.result })
         else if (d.code === 'gone') actor.send({ type: 'EXPIRED' })
       }),
@@ -217,7 +248,8 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
       const tag = target?.tagName
       // Text fields submit through the renderer (onSubmit); focused buttons activate natively.
       if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
-      const nativeButton = (tag === 'BUTTON' || tag === 'A') && target?.closest('[data-lesson-chrome]')
+      const nativeButton =
+        (tag === 'BUTTON' || tag === 'A') && target?.closest('[data-lesson-chrome]')
       if (nativeButton) return
       if (s.matches({ playing: 'answering' })) {
         e.preventDefault()
@@ -263,14 +295,24 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
     return <ExpiredScreen onRestart={() => send({ type: 'RESTART' })} onQuit={exitNow} />
   if (state.matches('error'))
     return (
-      <ErrorScreen code={ctx.error?.code ?? 'internal'} onRetry={() => send({ type: 'RETRY' })} onQuit={exitNow} />
+      <ErrorScreen
+        code={ctx.error?.code ?? 'internal'}
+        onRetry={() => send({ type: 'RETRY' })}
+        onQuit={exitNow}
+      />
     )
   if (state.matches('complete') && ctx.summary) {
     const next = () => send({ type: 'CONTINUE' })
     if (state.matches({ complete: 'streak' }))
       return <StreakScreen days={ctx.summary.streak.days} onContinue={next} />
     if (state.matches({ complete: 'goal' }))
-      return <DailyGoalScreen xp={ctx.summary.dailyGoal.xp} goal={ctx.summary.dailyGoal.goal} onContinue={next} />
+      return (
+        <DailyGoalScreen
+          xp={ctx.summary.dailyGoal.xp}
+          goal={ctx.summary.dailyGoal.goal}
+          onContinue={next}
+        />
+      )
     return <SummaryScreen summary={ctx.summary} offline={!online} onContinue={next} />
   }
   if (done) return <LoadingScreen label="" />
@@ -347,7 +389,11 @@ export function LessonPlayer({ request, userId, settings, home, onExit, now = Da
           submit={(body) => api('createReport', { body })}
         />
       )}
-      <QuitDialog open={state.matches('quitConfirm')} onStay={() => send({ type: 'STAY' })} onQuit={exitNow} />
+      <QuitDialog
+        open={state.matches('quitConfirm')}
+        onStay={() => send({ type: 'STAY' })}
+        onQuit={exitNow}
+      />
       <OutOfHeartsModal
         open={state.matches('outOfHearts')}
         onPractice={() => send({ type: 'PRACTICE' })}

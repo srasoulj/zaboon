@@ -69,7 +69,11 @@ export function localSummary(input: {
     accuracy: firstTryAccuracy(input.progress),
     durationMs: Math.max(0, Math.round(input.durationMs)),
     streak: { days: streakDaysAfter(before?.streak ?? null), extendedToday: !alreadyToday },
-    dailyGoal: { xp: goal.dayXp, goal: goal.goal, justMet: goal.justMet && !(before?.dailyGoal.met ?? false) },
+    dailyGoal: {
+      xp: goal.dayXp,
+      goal: goal.goal,
+      justMet: goal.justMet && !(before?.dailyGoal.met ?? false),
+    },
   }
 }
 

@@ -30,11 +30,21 @@ function SolutionText({ solution }: { solution: Solution }) {
  * The feedback bar after CHECK (DESIGN-SYSTEM §2.2): correct → praise; typo/spelling → accepted with
  * a note and the right spelling; wrong or skipped → "Correct solution:" and the report flag.
  */
-export function LessonFeedback({ verdict, attemptSeq, solution, onContinue, onReport }: LessonFeedbackProps) {
+export function LessonFeedback({
+  verdict,
+  attemptSeq,
+  solution,
+  onContinue,
+  onReport,
+}: LessonFeedbackProps) {
   const correct = verdict === 'correct' || verdict === 'typo' || verdict === 'spelling'
   if (correct) {
     const note =
-      verdict === 'typo' ? 'You have a typo.' : verdict === 'spelling' ? 'Watch the spelling.' : null
+      verdict === 'typo'
+        ? 'You have a typo.'
+        : verdict === 'spelling'
+          ? 'Watch the spelling.'
+          : null
     return (
       <div data-testid="lesson-feedback" data-verdict={verdict}>
         <FeedbackBar

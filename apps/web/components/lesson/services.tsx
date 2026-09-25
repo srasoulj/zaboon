@@ -13,7 +13,9 @@ import { openLessonStores } from '../../lib/lesson/idb'
 import { Outbox, type OutboxSender } from '../../lib/lesson/outbox'
 import type { SnapshotStore } from '../../lib/lesson/stores'
 
-export type RendererResolver = <T extends Challenge['type']>(type: T) => ChallengeRenderer<Extract<Challenge, { type: T }>> | null
+export type RendererResolver = <T extends Challenge['type']>(
+  type: T,
+) => ChallengeRenderer<Extract<Challenge, { type: T }>> | null
 
 export interface LessonServices {
   snapshots: SnapshotStore
@@ -24,7 +26,13 @@ export interface LessonServices {
 
 const Ctx = createContext<LessonServices | null>(null)
 
-export function LessonServicesProvider({ value, children }: { value: LessonServices; children: ReactNode }) {
+export function LessonServicesProvider({
+  value,
+  children,
+}: {
+  value: LessonServices
+  children: ReactNode
+}) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
@@ -47,7 +55,9 @@ let shared: Promise<{ snapshots: SnapshotStore; outbox: Outbox }> | null = null
 let sharedApi: ApiClient | null = null
 
 /** The page-wide stores and outbox (IndexedDB when available). */
-export function sharedLessonStores(api: ApiClient): Promise<{ snapshots: SnapshotStore; outbox: Outbox }> {
+export function sharedLessonStores(
+  api: ApiClient,
+): Promise<{ snapshots: SnapshotStore; outbox: Outbox }> {
   if (!shared || sharedApi !== api) {
     sharedApi = api
     shared = openLessonStores().then(({ snapshots, outbox }) => ({

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Challenge } from '@zaboon/contracts'
 import { createSilentAudio } from './audio'
-import { EFFECT_SPRITE, envelopeAt, mediaUrls, parseEnvelope, sessionMedia, SPRITE_LENGTH_MS } from './sounds'
+import {
+  EFFECT_SPRITE,
+  envelopeAt,
+  mediaUrls,
+  parseEnvelope,
+  sessionMedia,
+  SPRITE_LENGTH_MS,
+} from './sounds'
 import { encodeWav, renderSprite, SAMPLE_RATE } from './synth'
 import { testChallenges } from './test-support'
 

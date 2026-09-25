@@ -89,7 +89,12 @@ export function parseEnvelope(json: unknown): number[] | null {
 }
 
 /** Mouth openness at `seconds` into a clip, linearly interpolated; 0 outside the clip. */
-export function envelopeAt(env: readonly number[], seconds: number, rate = 1, fps = ENVELOPE_FPS): number {
+export function envelopeAt(
+  env: readonly number[],
+  seconds: number,
+  rate = 1,
+  fps = ENVELOPE_FPS,
+): number {
   if (env.length === 0 || !Number.isFinite(seconds) || seconds < 0) return 0
   const pos = seconds * rate * fps
   const i = Math.floor(pos)

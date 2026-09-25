@@ -45,7 +45,9 @@ describe('lesson URL contract', () => {
   it('builds hrefs, exits and keys', () => {
     const r = { courseId: 'fixture', kind: 'lesson' as const, levelId: 'u01-s0' }
     expect(lessonHref(r)).toBe('/lesson?course=fixture&kind=lesson&level=u01-s0')
-    expect(lessonHref({ ...r, kind: 'practice', levelId: null })).toBe('/lesson?course=fixture&kind=practice')
+    expect(lessonHref({ ...r, kind: 'practice', levelId: null })).toBe(
+      '/lesson?course=fixture&kind=practice',
+    )
     expect(exitHref('lesson')).toBe('/learn')
     expect(exitHref('unit_review')).toBe('/learn')
     expect(exitHref('letters')).toBe('/letters')
@@ -58,14 +60,34 @@ describe('progress', () => {
   it('re-queues wrong and skipped answers at the end, counting progress by passes', () => {
     let p = initialProgress(testChallenges())
     expect(progressValue(p)).toBe(0)
-    p = recordAttempt(p, { index: 0, response: { kind: 'choice', value: 0 }, verdict: 'wrong', ms: 5 }).progress
+    p = recordAttempt(p, {
+      index: 0,
+      response: { kind: 'choice', value: 0 },
+      verdict: 'wrong',
+      ms: 5,
+    }).progress
     expect(p.queue).toEqual([1, 2, 0])
-    p = recordAttempt(p, { index: 1, response: { kind: 'skip' }, verdict: 'skipped', ms: 5 }).progress
+    p = recordAttempt(p, {
+      index: 1,
+      response: { kind: 'skip' },
+      verdict: 'skipped',
+      ms: 5,
+    }).progress
     expect(p.queue).toEqual([2, 0, 1])
-    p = recordAttempt(p, { index: 2, response: { kind: 'none' }, verdict: 'correct', ms: 5 }).progress
+    p = recordAttempt(p, {
+      index: 2,
+      response: { kind: 'none' },
+      verdict: 'correct',
+      ms: 5,
+    }).progress
     expect(p.queue).toEqual([0, 1])
     expect(progressValue(p)).toBeCloseTo(1 / 3)
-    p = recordAttempt(p, { index: 0, response: { kind: 'choice', value: 1 }, verdict: 'typo', ms: 5 }).progress
+    p = recordAttempt(p, {
+      index: 0,
+      response: { kind: 'choice', value: 1 },
+      verdict: 'typo',
+      ms: 5,
+    }).progress
     expect(p.passed).toEqual([2, 0])
     expect(p.answers.map((a) => a.attemptSeq)).toEqual([0, 1, 2, 3])
     expect(wrongAttempts(p)).toBe(1)
@@ -74,16 +96,25 @@ describe('progress', () => {
 
   it('clamps answer times into the contract bounds', () => {
     const p = initialProgress(testChallenges())
-    expect(recordAttempt(p, { index: 0, response: { kind: 'skip' }, verdict: 'skipped', ms: -5 }).answer.ms).toBe(0)
     expect(
-      recordAttempt(p, { index: 0, response: { kind: 'skip' }, verdict: 'skipped', ms: 9e9 }).answer.ms,
+      recordAttempt(p, { index: 0, response: { kind: 'skip' }, verdict: 'skipped', ms: -5 }).answer
+        .ms,
+    ).toBe(0)
+    expect(
+      recordAttempt(p, { index: 0, response: { kind: 'skip' }, verdict: 'skipped', ms: 9e9 }).answer
+        .ms,
     ).toBe(3_600_000)
   })
 
   it('a mismatch records a wrong attempt without moving the queue', () => {
     const p = recordMismatch(initialProgress(testChallenges()), 0, 700)
     expect(p.progress.queue).toEqual([0, 1, 2])
-    expect(p.answer).toMatchObject({ index: 0, attemptSeq: 0, verdict: 'wrong', response: { kind: 'pairs', value: [] } })
+    expect(p.answer).toMatchObject({
+      index: 0,
+      attemptSeq: 0,
+      verdict: 'wrong',
+      response: { kind: 'pairs', value: [] },
+    })
     expect(gradeAttempt(testChallenges()[2]!, p.answer.response, []).verdict).toBe('wrong')
   })
 
@@ -106,7 +137,9 @@ describe('grading', () => {
 
   it('grades with the shared gradeResponse', () => {
     expect(gradeAttempt(select, { kind: 'choice', value: 1 }, []).verdict).toBe('correct')
-    expect(gradeAttempt(bank, { kind: 'tiles', value: ['hello', 'friend'] }, []).verdict).toBe('correct')
+    expect(gradeAttempt(bank, { kind: 'tiles', value: ['hello', 'friend'] }, []).verdict).toBe(
+      'correct',
+    )
     expect(gradeAttempt(bank, { kind: 'tiles', value: ['water'] }, []).verdict).toBe('wrong')
     expect(gradeAttempt(bank, { kind: 'skip' }, []).verdict).toBe('skipped')
   })
@@ -141,12 +174,20 @@ describe('summaries', () => {
 
   it('estimates offline with the shared game rules', () => {
     let p = initialProgress(testSession().challenges)
-    p = recordAttempt(p, { index: 0, response: { kind: 'choice', value: 0 }, verdict: 'wrong', ms: 5 }).progress
+    p = recordAttempt(p, {
+      index: 0,
+      response: { kind: 'choice', value: 0 },
+      verdict: 'wrong',
+      ms: 5,
+    }).progress
     const s = localSummary({
       kind: 'lesson',
       progress: p,
       durationMs: 61_400,
-      home: { streak: { current: 4, status: 'extended', freezes: 0 }, dailyGoal: { xp: 30, goal: 20, met: true } },
+      home: {
+        streak: { current: 4, status: 'extended', freezes: 0 },
+        dailyGoal: { xp: 30, goal: 20, met: true },
+      },
     })
     expect(s).toMatchObject({
       source: 'local',
@@ -156,10 +197,12 @@ describe('summaries', () => {
       streak: { days: 4, extendedToday: false },
       dailyGoal: { xp: 40, goal: 20, justMet: false },
     })
-    expect(localSummary({ kind: 'lesson', progress: p, durationMs: 0, home: null }).streak).toEqual({
-      days: 1,
-      extendedToday: true,
-    })
+    expect(localSummary({ kind: 'lesson', progress: p, durationMs: 0, home: null }).streak).toEqual(
+      {
+        days: 1,
+        extendedToday: true,
+      },
+    )
   })
 
   it('computes the streak after a lesson', () => {

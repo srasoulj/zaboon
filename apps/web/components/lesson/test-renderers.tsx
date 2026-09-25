@@ -63,7 +63,13 @@ export function wrongResponse(c: Challenge): ChallengeResponse {
   return { kind: 'choice', value: 99 } // a mismatched kind is always wrong
 }
 
-export function TestRenderer({ challenge, onResponse, onMismatch, phase, response }: ChallengeRendererProps) {
+export function TestRenderer({
+  challenge,
+  onResponse,
+  onMismatch,
+  phase,
+  response,
+}: ChallengeRendererProps) {
   const locked = phase !== 'answering'
   return (
     <div

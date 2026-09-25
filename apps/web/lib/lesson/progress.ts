@@ -69,7 +69,8 @@ export function recordAttempt(
     ms: clampMs(attempt.ms),
     hinted: false,
   }
-  const rest = p.queue[0] === attempt.index ? p.queue.slice(1) : p.queue.filter((i) => i !== attempt.index)
+  const rest =
+    p.queue[0] === attempt.index ? p.queue.slice(1) : p.queue.filter((i) => i !== attempt.index)
   const ok = passes(attempt.verdict)
   const combo = ok ? p.combo + 1 : 0
   return {

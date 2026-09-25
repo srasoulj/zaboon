@@ -3,7 +3,15 @@ import { useRef } from 'react'
 import { Button3D, Character, Modal } from '@zaboon/ui'
 
 /** "Wait, don't go!" (DESIGN-SYSTEM §2.3): Escape or the close button asks before quitting. */
-export function QuitDialog({ open, onStay, onQuit }: { open: boolean; onStay: () => void; onQuit: () => void }) {
+export function QuitDialog({
+  open,
+  onStay,
+  onQuit,
+}: {
+  open: boolean
+  onStay: () => void
+  onQuit: () => void
+}) {
   const stay = useRef<HTMLButtonElement>(null)
   return (
     <Modal
@@ -49,7 +57,13 @@ export function OutOfHeartsModal({
       illustration={<Character name="hodhod" mood="sad" size={96} decorative />}
       actions={
         <>
-          <Button3D ref={practice} variant="secondary" onClick={onPractice} fullWidth data-testid="hearts-practice">
+          <Button3D
+            ref={practice}
+            variant="secondary"
+            onClick={onPractice}
+            fullWidth
+            data-testid="hearts-practice"
+          >
             Practice to earn hearts
           </Button3D>
           <Button3D variant="ghost" onClick={onQuit} fullWidth data-testid="hearts-quit">

@@ -27,7 +27,13 @@ function pluck(
   out: Float32Array,
   at: number,
   freq: number,
-  opts: { gain?: number; decay?: number; partials?: number[]; detune?: number; attack?: number } = {},
+  opts: {
+    gain?: number
+    decay?: number
+    partials?: number[]
+    detune?: number
+    attack?: number
+  } = {},
 ) {
   const gain = opts.gain ?? 0.3
   const decay = opts.decay ?? 0.35
@@ -72,7 +78,8 @@ function click(out: Float32Array, at: number, gain = 0.25) {
   for (let i = 0; i < len; i++) {
     const t = i / SAMPLE_RATE
     const env = Math.exp(-t / 0.008)
-    out[start + i]! += gain * env * (0.7 * Math.sin(2 * Math.PI * 1250 * t) + 0.3 * (rand() * 2 - 1))
+    out[start + i]! +=
+      gain * env * (0.7 * Math.sin(2 * Math.PI * 1250 * t) + 0.3 * (rand() * 2 - 1))
   }
 }
 
@@ -93,14 +100,28 @@ const RENDER: Record<EffectName, (out: Float32Array, at: number) => void> = {
   },
   wrong: (o, at) => {
     // Soft attack, few partials: gentle, never harsh.
-    pluck(o, at, D3, { gain: 0.32, decay: 0.28, partials: [1, 0.3, 0.08], attack: 0.02, detune: 1.001 })
-    pluck(o, at + 0.16, A2, { gain: 0.3, decay: 0.3, partials: [1, 0.3, 0.08], attack: 0.02, detune: 1.001 })
+    pluck(o, at, D3, {
+      gain: 0.32,
+      decay: 0.28,
+      partials: [1, 0.3, 0.08],
+      attack: 0.02,
+      detune: 1.001,
+    })
+    pluck(o, at + 0.16, A2, {
+      gain: 0.3,
+      decay: 0.3,
+      partials: [1, 0.3, 0.08],
+      attack: 0.02,
+      detune: 1.001,
+    })
   },
   complete: (o, at) => {
     daf(o, at, 0.35, 11)
     daf(o, at + 0.22, 0.25, 12)
     daf(o, at + 0.44, 0.35, 13)
-    ;[D5, F5, A5, D6].forEach((f, i) => pluck(o, at + 0.1 + i * 0.11, f, { gain: 0.22, decay: 0.3 }))
+    ;[D5, F5, A5, D6].forEach((f, i) =>
+      pluck(o, at + 0.1 + i * 0.11, f, { gain: 0.22, decay: 0.3 }),
+    )
     pluck(o, at + 0.6, D6, { gain: 0.25, decay: 0.45 })
     pluck(o, at + 0.6, A5, { gain: 0.18, decay: 0.45 })
   },
@@ -115,7 +136,10 @@ const RENDER: Record<EffectName, (out: Float32Array, at: number) => void> = {
 /** The whole sprite as mono float PCM in [-1, 1]. */
 export function renderSprite(): Float32Array {
   const out = new Float32Array(Math.ceil((SPRITE_LENGTH_MS / 1000) * SAMPLE_RATE))
-  for (const [name, [offset, duration]] of Object.entries(EFFECT_SPRITE) as [EffectName, [number, number]][]) {
+  for (const [name, [offset, duration]] of Object.entries(EFFECT_SPRITE) as [
+    EffectName,
+    [number, number],
+  ][]) {
     const region = new Float32Array(Math.ceil((duration / 1000) * SAMPLE_RATE))
     RENDER[name](region, 0)
     // Fade the last 20 ms so nothing clicks at the region's end.

@@ -94,10 +94,18 @@ export async function openLessonStores(): Promise<LessonStores> {
     try {
       const db = open()
       await db
-      return { snapshots: new IdbSnapshotStore(db), outbox: new IdbOutboxStore(db), persistent: true }
+      return {
+        snapshots: new IdbSnapshotStore(db),
+        outbox: new IdbOutboxStore(db),
+        persistent: true,
+      }
     } catch (e) {
       console.warn('[lesson] IndexedDB unavailable; progress will not survive a reload', e)
     }
   }
-  return { snapshots: new MemorySnapshotStore(), outbox: new MemoryOutboxStore(), persistent: false }
+  return {
+    snapshots: new MemorySnapshotStore(),
+    outbox: new MemoryOutboxStore(),
+    persistent: false,
+  }
 }

@@ -75,7 +75,8 @@ const idx = (actor: Actor) => currentChallenge(actor.getSnapshot().context)?.ind
 function answerRight(actor: Actor) {
   const i = idx(actor)
   if (i === 0) actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 1 } })
-  if (i === 1) actor.send({ type: 'RESPONSE', response: { kind: 'tiles', value: ['hello', 'friend'] } })
+  if (i === 1)
+    actor.send({ type: 'RESPONSE', response: { kind: 'tiles', value: ['hello', 'friend'] } })
   if (i === 2)
     actor.send({
       type: 'RESPONSE',
@@ -197,7 +198,9 @@ describe('lesson machine: wrong answers, hearts and re-queue', () => {
     }
     expect(order).toEqual([1, 2, 0])
     await waitFor(actor, (st) => st.matches('complete'))
-    expect(calls.completed[0]!.progress.answers.map((a) => [a.index, a.attemptSeq, a.verdict])).toEqual([
+    expect(
+      calls.completed[0]!.progress.answers.map((a) => [a.index, a.attemptSeq, a.verdict]),
+    ).toEqual([
       [0, 0, 'wrong'],
       [1, 1, 'correct'],
       [2, 2, 'correct'],
@@ -207,7 +210,10 @@ describe('lesson machine: wrong answers, hearts and re-queue', () => {
 
   it('a retry that is wrong again gets a new attemptSeq and costs another heart', async () => {
     const { actor, calls } = run({
-      start: async () => ({ session: testSession({ challenges: testSession().challenges.slice(0, 1) }), resume: null }),
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
     })
     await ready(actor)
     answerWrong(actor)
@@ -241,7 +247,10 @@ describe('lesson machine: wrong answers, hearts and re-queue', () => {
 
   it('practice never costs hearts or sends events', async () => {
     const { actor, calls } = run({
-      start: async () => ({ session: testSession({ kind: 'practice', levelId: null }), resume: null }),
+      start: async () => ({
+        session: testSession({ kind: 'practice', levelId: null }),
+        resume: null,
+      }),
       input: { request: { courseId: 'fixture', kind: 'practice', levelId: null } },
     })
     await ready(actor)
@@ -299,7 +308,9 @@ describe('lesson machine: wrong answers, hearts and re-queue', () => {
     const s = actor.getSnapshot()
     expect(s.matches({ playing: 'answering' })).toBe(true)
     expect(s.context.hearts!.count).toBe(4)
-    expect(calls.wrong).toEqual([{ sessionId: s.context.session!.sessionId, attemptSeq: 2, index: 2 }])
+    expect(calls.wrong).toEqual([
+      { sessionId: s.context.session!.sessionId, attemptSeq: 2, index: 2 },
+    ])
     expect(s.context.progress!.answers.at(-1)).toMatchObject({ index: 2, verdict: 'wrong' })
     expect(idx(actor)).toBe(2)
     answerRight(actor)
@@ -352,7 +363,10 @@ describe('lesson machine: quit, expiry, errors', () => {
     const { actor } = run({
       start: async () => {
         starts++
-        return { session: testSession({ challenges: testSession().challenges.slice(0, 1) }), resume: null }
+        return {
+          session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+          resume: null,
+        }
       },
       complete: async () => {
         throw new CodedError('gone')
@@ -392,7 +406,10 @@ describe('lesson machine: quit, expiry, errors', () => {
   it('a completion failure that is not gone can be retried', async () => {
     let n = 0
     const { actor, calls } = run({
-      start: async () => ({ session: testSession({ challenges: testSession().challenges.slice(0, 1) }), resume: null }),
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
       complete: async () => {
         if (n++ === 0) throw new CodedError('validation')
         return { status: 'delivered', result: testResult() }
@@ -422,7 +439,12 @@ describe('lesson machine: resume and offline completion', () => {
   it('resumes at the saved queue, answers, hearts and start time', async () => {
     const session = testSession()
     let progress = initialProgress(session.challenges)
-    progress = recordAttempt(progress, { index: 0, response: { kind: 'choice', value: 0 }, verdict: 'wrong', ms: 900 }).progress
+    progress = recordAttempt(progress, {
+      index: 0,
+      response: { kind: 'choice', value: 0 },
+      verdict: 'wrong',
+      ms: 900,
+    }).progress
     progress = recordAttempt(progress, {
       index: 1,
       response: { kind: 'tiles', value: ['hello', 'friend'] },
@@ -465,7 +487,11 @@ describe('lesson machine: resume and offline completion', () => {
     const { actor } = run({
       start: async () => ({
         session: testSession(),
-        resume: { progress: initialProgress(testSession().challenges), hearts: lives(0), startedAt: 1 },
+        resume: {
+          progress: initialProgress(testSession().challenges),
+          hearts: lives(0),
+          startedAt: 1,
+        },
       }),
     })
     await waitFor(actor, (s) => s.matches('outOfHearts'))
@@ -487,7 +513,10 @@ describe('lesson machine: resume and offline completion', () => {
       dailyGoal: { xp: 15, goal: 20, met: false },
     })
     const { actor } = run({
-      start: async () => ({ session: testSession({ challenges: testSession().challenges.slice(0, 1) }), resume: null }),
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
       complete: async () => ({ status: 'queued' }),
       input: { getHome },
     })
@@ -505,7 +534,10 @@ describe('lesson machine: resume and offline completion', () => {
     const other: SessionResult = testResult({ sessionId: '00000000-0000-4000-8000-000000000000' })
     actor.send({ type: 'RECONCILED', result: other })
     expect(actor.getSnapshot().context.summary!.source).toBe('local')
-    actor.send({ type: 'RECONCILED', result: testResult({ xp: { base: 10, bonus: 0, total: 10 } }) })
+    actor.send({
+      type: 'RECONCILED',
+      result: testResult({ xp: { base: 10, bonus: 0, total: 10 } }),
+    })
     expect(actor.getSnapshot().context.summary).toMatchObject({ source: 'server', xp: 10 })
   })
 })

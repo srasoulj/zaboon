@@ -24,7 +24,13 @@ export function LoadingScreen({ label = 'Loading your lesson…' }: { label?: st
   )
 }
 
-export function ExpiredScreen({ onRestart, onQuit }: { onRestart: () => void; onQuit: () => void }) {
+export function ExpiredScreen({
+  onRestart,
+  onQuit,
+}: {
+  onRestart: () => void
+  onQuit: () => void
+}) {
   return (
     <Centered testId="lesson-expired">
       <Character name="hodhod" mood="sad" size={120} decorative />
