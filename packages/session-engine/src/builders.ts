@@ -465,11 +465,19 @@ function completeChat(c: Ctx): ChallengeOf<'complete_chat'> {
   return {
     ...c.common,
     type: 'complete_chat',
-    speaker: { id: chat.speaker, name: c.ix.characterName(chat.speaker) },
+    speaker: withImage(
+      { id: chat.speaker, name: c.ix.characterName(chat.speaker) },
+      c.ix.characterImage(chat.speaker),
+    ),
     prompt: withEn(c.ix.sentence(chat.prompt)),
     choices: choices.map(withEn),
     answer,
   }
+}
+
+/** Adds `image` only when there is one, so challenges without portraits stay byte-identical. */
+function withImage<T extends object>(o: T, image: string | undefined): T & { image?: string } {
+  return image === undefined ? o : { ...o, image }
 }
 
 function exampleWords(ix: ContentIndex, letter: Letter): Lexeme[] {

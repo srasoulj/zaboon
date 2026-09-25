@@ -347,7 +347,8 @@ export const ClozeChoiceChallenge = z.object({
 export const CompleteChatChallenge = z.object({
   ...base,
   type: z.literal('complete_chat'),
-  speaker: z.object({ id: z.string(), name: z.string() }),
+  /** `image`: the character's portrait (a media URL) when the course has one; else draw the placeholder. */
+  speaker: z.object({ id: z.string(), name: z.string(), image: z.string().optional() }),
   prompt: FaTextDto.extend({ en: z.string() }),
   choices: z.array(FaTextDto.extend({ en: z.string() })).min(2).max(4),
   answer: z.number().int().nonnegative(),

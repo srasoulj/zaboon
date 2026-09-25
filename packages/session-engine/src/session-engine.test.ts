@@ -841,3 +841,25 @@ describe('properties', () => {
     expect(sessions.size).toBeGreaterThan(5)
   })
 })
+
+describe('complete_chat speakers', () => {
+  const chatOnly = (view: ContentView) =>
+    gen(withSpec(view, { pinned: [{ type: 'complete_chat', items: ['c_u01_001'] }], pinnedOnly: true }), {
+      levelId: 'u01-gen',
+    }).challenges[0]!
+
+  it('carry the character portrait as a media URL when the course has one', () => {
+    const view = faEn.view('u01-hello')
+    const portrait = '/media/fa-en/characters/shirin/portrait.webp'
+    expect(indexContent(view).characterImage('shirin')).toBe(portrait)
+    expect(indexContent(view).characterImage('nobody')).toBeUndefined()
+    const cc = of(chatOnly(view), 'complete_chat')
+    expect(cc.speaker).toStrictEqual({ id: 'shirin', name: 'Shirin', image: portrait })
+    expect(Challenge.parse(cc)).toStrictEqual(cc)
+  })
+
+  it('leave the portrait out when the character has none (the placeholder is drawn)', () => {
+    const cc = of(chatOnly(fx), 'complete_chat')
+    expect(cc.speaker).toStrictEqual({ id: 'leila', name: 'Leila' })
+  })
+})

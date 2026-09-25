@@ -13,6 +13,16 @@ DELIVER
 4. Renderers: `translate_type` handles `answerLang: 'fa'` (an RTL textarea with `lang="fa" dir="rtl"`; the in-app `PersianKeyboard` in `display.keyboardLayout` when `display.persianKeyboard`, with `inputmode="none"` on touch devices; physical keys remapped per §1.4); `ListenType`; `ClozeType` (an inline blank between whole-word tokens); `LetterTrace` (a pointer canvas with Pointer Events and `touch-action: none`; the guide is the letter form rendered with the app's Persian font; strokes are scored on the client in `apps/web/lib/typing/`, e.g. rasterize the glyph, dilate it, coverage = share of the glyph's skeleton near a stroke, precision = share of stroke points inside the dilated glyph; it reports `{kind:'trace', coverage, precision}`; a "Can't trace now" button reports `{kind:'trace', coverage: 0, precision: 0, declined: true}` and submits). Register them as the optional entries of `renderers`; dev gallery pages for every P2 challenge (re-record `apps/web/components/challenges/fixtures/fixture-challenges.json` including u01-t1).
 5. u01-t1 end to end with the flags on: it builds the four P2 challenges, the player renders them, the server re-grades them on `/complete`.
 
+6. Character portraits. `CompleteChatChallenge.speaker` now has an optional `image`: a media URL that the engine fills from the course's `characters.yaml`. The fa-en cast has transparent WebP portraits; the fixture cast has none.
+   - The kit's `Character` draws `image` as an `<img>` with the character's name as `alt`, at the placeholder's size and crop, with no layout shift.
+   - It falls back to the SVG placeholder when there is no image or the image fails to load.
+   - The complete_chat renderer passes `speaker.image` through.
+   - Tests: a DOM test for both cases, plus gallery entries.
+7. Nits inherited from ws-renderers (from the #37 review; fix them while you're in these files):
+   - `MatchColumns`: set the live-region text immediately when it differs from the current text, and clear-then-set only for a repeated message, so "All pairs matched." isn't delayed behind the feedback bar. Consider 100 ms instead of 50 ms. Fix the "one tick" comment.
+   - `LetterForms.test.tsx`: check `lang` on the element that holds the text (`within(name).getByText(…).closest('[lang]')`), not on the button.
+   - The Enter tests in `MatchPairs.test.tsx` and `SelectTranslation.test.tsx`: assert `aria-pressed="true"` before the second Enter, and remove listeners and observers in `try/finally`.
+
 RULES AND PITFALLS
 - With every feature off, sessions are byte-identical to today's: `packages/session-engine/oracles/mvp-sessions.oracle.test.ts` (read-only) must stay green. Don't reorder existing pools or draw extra randomness while a feature is off; add P2 pools after the MVP ones.
 - Persian text: never split a word across elements (the typed-answer echo, the cloze blank and feedback diffs are whole words); set `lang="fa" dir="rtl"` explicitly on Persian inputs; keep ZWNJ (U+200C) intact; never normalize the learner's input in the UI (the grader normalizes both sides).
