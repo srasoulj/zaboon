@@ -1,0 +1,1097 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): P2 engagement rules (Wave 3).
+# Runner: engagement.oracle.test.ts. Its cases run once `ENGAGEMENT_IMPLEMENTATION` in
+# @zaboon/game-rules is 'real' (ws-engagement flips it); until then only the case count is checked.
+#
+# Config (DEFAULT_APP_CONFIG): shop.prices streak_freeze 100, heart_refill 150;
+# quests.rewardCoins 10; leagues.rewardCoins [30, 20, 10]; streak.maxFreezes 2;
+# hearts.max 5, regenMinutes 240. Timestamps compare as instants; dates are YYYY-MM-DD.
+#
+# API (packages/game-rules/src/engagement.ts; the runner calls exactly these):
+#   leagueWeek(now: Date) -> {startsAt, endsAt}
+#   rolloverPlan(weeks: {startsAt, closedAt|null}[], now: Date) -> {close: startsAt[], current}
+#   leagueXpStep({member: {weeklyXp}|null, linked, sessionXp, flagged}) -> {join, weeklyXp|null}
+#   leagueRewardCoins(rank, cfg) -> number
+#   leagueGrant(week: {startsAt, endsAt}, rank, cfg) -> CoinGrant | null
+#   questGrant(date, questId, cfg) -> CoinGrant
+#   applyCoinGrants({coins, ledger: {reason, ref}[]}, grants: CoinGrant[]) -> {coins, applied, skipped}
+#   applyQuestProgress({date, defs: {id, metric, target}[], rows: {questId, progress, claimed}[],
+#                       session: {kind, xp, perfect, flagged}, cfg}) -> {quests, grants}
+#   purchase(state, {item, purchaseId}, now: Date, cfg) -> {ok: true, replayed, charged, state}
+#                                                         | {ok: false, refusal}
+#   shopItems(state, now: Date, cfg) -> {id, price, owned, max, unavailable}[]
+#   CoinGrant = {reason: 'quest' | 'league', ref, amount}
+#   state (shop) = {coins, streak: StreakState, lives: LivesState, purchases: {purchaseId, item}[]}
+#
+# rule leagueWeek: input {now} -> expected {startsAt, endsAt}. A league week runs from Monday
+#   00:00 UTC (inclusive) to the next Monday 00:00 UTC (exclusive), whatever the learner's zone.
+# rule rolloverPlan: input {weeks, now} -> expected {close, current}. `close` = the stored weeks
+#   that have ended (startsAt + 7 days <= now) and are not closed yet (closedAt null), oldest
+#   first; a closed week is never closed again (idempotent rollover). `current` = leagueWeek(now).
+# rule leagueXp: input {member, linked, sessionXp, flagged} -> expected {join, weeklyXp}. One
+#   committed session's league step, inside the /complete transaction. Guests (linked false) never
+#   join (weeklyXp null). Flagged (anti-cheat) sessions and 0 XP change nothing. The first XP of the
+#   week joins (join true, weeklyXp = sessionXp; placement is placeInCohort, leagues.yaml);
+#   afterwards weeklyXp grows by sessionXp.
+# rule leagueReward: input {week, rank} -> expected {coins, grant}. coins =
+#   leagues.rewardCoins[rank - 1], 0 past the list. grant = {reason: league, ref: week.startsAt,
+#   amount: coins}, or null when coins is 0 (one league grant per learner per week).
+# rule coinGrants: input {wallet: {coins, ledger}, grants} -> expected {coins, applied, skipped}.
+#   The coin_ledger row key is (reason, ref) (UNIQUE(user_id, reason, ref)): a grant whose key is
+#   already in the ledger, or earlier in the same batch, is skipped; the rest are applied in order.
+# rule quests: input {date, defs, rows, session} -> expected {quests, grants}. One committed
+#   session applied to the quests of its local date (the date the session counts for). Rows missing
+#   for a def start at progress 0; rows for other quests are ignored; output follows `defs` order.
+#   progress = min(target, progress + questIncrement(metric, session)), or unchanged when the
+#   session is flagged. completed = progress >= target; justCompleted = completed by this session.
+#   A completed quest that is not claimed yet is claimed (auto-claim) in this same commit, with
+#   grant questGrant(date, id) = {reason: quest, ref: "<date>:<id>", amount: 10}; a claimed quest
+#   never pays again. questIncrement: xp -> session xp; lessons -> 1 for kind lesson only;
+#   perfect_sessions -> 1 when perfect; practice_sessions / letters_sessions -> 1 for that kind.
+# rule shop: input {initial: state, ops: [{at, item, purchaseId}]} -> expected {steps, final}.
+#   ops run in order; each step is {ok: true, replayed, charged, coins, freezes, hearts} after the
+#   op (hearts = the stored lives count) or {ok: false, refusal}. purchase() checks, in order:
+#   1. purchaseId already used: same item -> replay (ok, replayed true, charged 0, nothing
+#      changes, even if the item could not be bought now); another item -> refusal
+#      purchase_id_reused (the API answers 409 conflict).
+#   2. streak_freeze: freezes >= maxFreezes (2) -> max_owned. heart_refill: policy unlimited ->
+#      unlimited_lives; hearts full at `at` (lazy regeneration counted) -> lives_full.
+#   3. coins < price -> insufficient_coins (the API answers 409 insufficient_coins).
+#   4. Otherwise charge the price and record the purchaseId: streak_freeze adds 1 freeze;
+#      heart_refill sets lives to {policy, count: max, updatedAt: at}.
+#   A refusal changes nothing and does not record the purchaseId (a retry is a fresh purchase).
+# rule shopItems: input {state, at} -> expected {items}: [streak_freeze, heart_refill], each
+#   {id, price, owned, max, unavailable}; owned/max are the freezes held and maxFreezes for
+#   streak_freeze and null for heart_refill; unavailable is step 2-3's refusal, or null.
+
+# ------------------------------------------------------------------------------ league weeks
+- id: lw-01-midweek
+  rule: leagueWeek
+  note: >-
+    Friday noon belongs to the week that started on Monday 2026-09-21.
+  input:
+    now: '2026-09-25T12:00:00Z'
+  expected:
+    startsAt: '2026-09-21T00:00:00.000Z'
+    endsAt: '2026-09-28T00:00:00.000Z'
+
+- id: lw-02-monday-midnight-starts-a-week
+  rule: leagueWeek
+  note: >-
+    Monday 00:00:00.000 UTC is the first instant of the new week.
+  input:
+    now: '2026-09-28T00:00:00.000Z'
+  expected:
+    startsAt: '2026-09-28T00:00:00.000Z'
+    endsAt: '2026-10-05T00:00:00.000Z'
+
+- id: lw-03-sunday-last-millisecond
+  rule: leagueWeek
+  note: >-
+    Sunday 23:59:59.999 UTC is the last instant of the old week.
+  input:
+    now: '2026-09-27T23:59:59.999Z'
+  expected:
+    startsAt: '2026-09-21T00:00:00.000Z'
+    endsAt: '2026-09-28T00:00:00.000Z'
+
+- id: lw-04-monday-one-millisecond-in
+  rule: leagueWeek
+  note: >-
+    One millisecond into Monday is still that week.
+  input:
+    now: '2026-09-21T00:00:00.001Z'
+  expected:
+    startsAt: '2026-09-21T00:00:00.000Z'
+    endsAt: '2026-09-28T00:00:00.000Z'
+
+- id: lw-05-utc-not-local-monday
+  rule: leagueWeek
+  note: >-
+    01:30 on Monday in Berlin (+02:00) is still Sunday 23:30 UTC: the old week. Weeks are UTC for
+    everybody, whatever the learner's timezone.
+  input:
+    now: '2026-09-28T01:30:00+02:00'
+  expected:
+    startsAt: '2026-09-21T00:00:00.000Z'
+    endsAt: '2026-09-28T00:00:00.000Z'
+
+- id: lw-06-utc-not-local-sunday
+  rule: leagueWeek
+  note: >-
+    20:00 on Sunday in Los Angeles (-07:00) is already Monday 03:00 UTC: the new week.
+  input:
+    now: '2026-09-27T20:00:00-07:00'
+  expected:
+    startsAt: '2026-09-28T00:00:00.000Z'
+    endsAt: '2026-10-05T00:00:00.000Z'
+
+- id: lw-07-week-spans-new-year
+  rule: leagueWeek
+  note: >-
+    Thursday 2026-01-01 is in the week that started on Monday 2025-12-29.
+  input:
+    now: '2026-01-01T10:00:00Z'
+  expected:
+    startsAt: '2025-12-29T00:00:00.000Z'
+    endsAt: '2026-01-05T00:00:00.000Z'
+
+- id: lw-08-sunday-before-new-year-week
+  rule: leagueWeek
+  note: >-
+    Sunday 2027-01-03 closes the week that started on Monday 2026-12-28.
+  input:
+    now: '2027-01-03T23:59:59Z'
+  expected:
+    startsAt: '2026-12-28T00:00:00.000Z'
+    endsAt: '2027-01-04T00:00:00.000Z'
+
+- id: lw-09-leap-day
+  rule: leagueWeek
+  note: >-
+    Tuesday 2028-02-29 (leap day): the week runs Monday 2028-02-28 to Monday 2028-03-06.
+  input:
+    now: '2028-02-29T12:00:00Z'
+  expected:
+    startsAt: '2028-02-28T00:00:00.000Z'
+    endsAt: '2028-03-06T00:00:00.000Z'
+
+- id: lw-10-dst-change-irrelevant
+  rule: leagueWeek
+  note: >-
+    Europe's clocks change on Sunday 2026-03-29; the week is still exactly 7 x 24 h of UTC.
+  input:
+    now: '2026-03-29T03:30:00+02:00'
+  expected:
+    startsAt: '2026-03-23T00:00:00.000Z'
+    endsAt: '2026-03-30T00:00:00.000Z'
+
+# ------------------------------------------------------------------------------ rollover plan
+- id: rp-01-nothing-stored
+  rule: rolloverPlan
+  note: >-
+    No week rows yet: nothing to close; the current week is the one containing now.
+  input:
+    weeks: []
+    now: '2026-09-28T00:00:05Z'
+  expected:
+    close: []
+    current: { startsAt: '2026-09-28T00:00:00.000Z', endsAt: '2026-10-05T00:00:00.000Z' }
+
+- id: rp-02-ended-week-closes
+  rule: rolloverPlan
+  note: >-
+    The cron fires at Monday 00:00: last week has ended and is still open, so it closes.
+  input:
+    weeks:
+      - { startsAt: '2026-09-21T00:00:00Z', closedAt: null }
+    now: '2026-09-28T00:00:00Z'
+  expected:
+    close: ['2026-09-21T00:00:00Z']
+    current: { startsAt: '2026-09-28T00:00:00.000Z', endsAt: '2026-10-05T00:00:00.000Z' }
+
+- id: rp-03-already-closed-is-idempotent
+  rule: rolloverPlan
+  note: >-
+    A second run in the same minute finds the week already closed: nothing to do.
+  input:
+    weeks:
+      - { startsAt: '2026-09-21T00:00:00Z', closedAt: '2026-09-28T00:00:03Z' }
+      - { startsAt: '2026-09-28T00:00:00Z', closedAt: null }
+    now: '2026-09-28T00:01:00Z'
+  expected:
+    close: []
+    current: { startsAt: '2026-09-28T00:00:00.000Z', endsAt: '2026-10-05T00:00:00.000Z' }
+
+- id: rp-04-current-week-never-closes
+  rule: rolloverPlan
+  note: >-
+    A run on Sunday night (a manual trigger) leaves the running week open.
+  input:
+    weeks:
+      - { startsAt: '2026-09-21T00:00:00Z', closedAt: null }
+    now: '2026-09-27T23:59:59Z'
+  expected:
+    close: []
+    current: { startsAt: '2026-09-21T00:00:00.000Z', endsAt: '2026-09-28T00:00:00.000Z' }
+
+- id: rp-05-missed-weeks-close-oldest-first
+  rule: rolloverPlan
+  note: >-
+    The cron missed two Mondays: both ended weeks close, oldest first, whatever the row order.
+  input:
+    weeks:
+      - { startsAt: '2026-09-14T00:00:00Z', closedAt: null }
+      - { startsAt: '2026-09-28T00:00:00Z', closedAt: null }
+      - { startsAt: '2026-09-07T00:00:00Z', closedAt: null }
+      - { startsAt: '2026-08-31T00:00:00Z', closedAt: '2026-09-07T00:00:02Z' }
+    now: '2026-10-01T09:00:00Z'
+  expected:
+    close: ['2026-09-07T00:00:00Z', '2026-09-14T00:00:00Z']
+    current: { startsAt: '2026-09-28T00:00:00.000Z', endsAt: '2026-10-05T00:00:00.000Z' }
+
+# ------------------------------------------------------------------------------ league XP
+- id: lx-01-first-xp-joins
+  rule: leagueXp
+  note: >-
+    A linked learner's first XP of the week joins a cohort with that XP.
+  input: { member: null, linked: true, sessionXp: 15, flagged: false }
+  expected: { join: true, weeklyXp: 15 }
+
+- id: lx-02-member-accumulates
+  rule: leagueXp
+  note: >-
+    Already in a cohort: weekly XP grows by the session's XP.
+  input: { member: { weeklyXp: 40 }, linked: true, sessionXp: 20, flagged: false }
+  expected: { join: false, weeklyXp: 60 }
+
+- id: lx-03-guest-never-joins
+  rule: leagueXp
+  note: >-
+    Joining requires a linked account (ARCHITECTURE §6): a guest's XP never enters a league.
+  input: { member: null, linked: false, sessionXp: 15, flagged: false }
+  expected: { join: false, weeklyXp: null }
+
+- id: lx-04-flagged-session-changes-nothing
+  rule: leagueXp
+  note: >-
+    Flagged (anti-cheat) sessions are excluded from leagues (ARCHITECTURE §9).
+  input: { member: { weeklyXp: 40 }, linked: true, sessionXp: 15, flagged: true }
+  expected: { join: false, weeklyXp: 40 }
+
+- id: lx-05-flagged-first-session-does-not-join
+  rule: leagueXp
+  note: >-
+    A flagged session is not "first XP of the week" either.
+  input: { member: null, linked: true, sessionXp: 15, flagged: true }
+  expected: { join: false, weeklyXp: null }
+
+- id: lx-06-zero-xp-does-not-join
+  rule: leagueXp
+  note: >-
+    A session that earned no XP does not place the learner in a cohort.
+  input: { member: null, linked: true, sessionXp: 0, flagged: false }
+  expected: { join: false, weeklyXp: null }
+
+# ------------------------------------------------------------------------------ league rewards
+- id: lr-01-rank-1
+  rule: leagueReward
+  note: >-
+    Rank 1 wins rewardCoins[0] = 30; the grant is keyed by the week.
+  input:
+    week: { startsAt: '2026-09-21T00:00:00.000Z', endsAt: '2026-09-28T00:00:00.000Z' }
+    rank: 1
+  expected:
+    coins: 30
+    grant: { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 30 }
+
+- id: lr-02-rank-2
+  rule: leagueReward
+  note: >-
+    Rank 2 wins 20.
+  input:
+    week: { startsAt: '2026-09-21T00:00:00.000Z', endsAt: '2026-09-28T00:00:00.000Z' }
+    rank: 2
+  expected:
+    coins: 20
+    grant: { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 20 }
+
+- id: lr-03-rank-3
+  rule: leagueReward
+  note: >-
+    Rank 3 wins 10.
+  input:
+    week: { startsAt: '2026-09-28T00:00:00.000Z', endsAt: '2026-10-05T00:00:00.000Z' }
+    rank: 3
+  expected:
+    coins: 10
+    grant: { reason: league, ref: '2026-09-28T00:00:00.000Z', amount: 10 }
+
+- id: lr-04-rank-4-nothing
+  rule: leagueReward
+  note: >-
+    Ranks past the reward list win nothing and get no grant.
+  input:
+    week: { startsAt: '2026-09-21T00:00:00.000Z', endsAt: '2026-09-28T00:00:00.000Z' }
+    rank: 4
+  expected:
+    coins: 0
+    grant: null
+
+- id: lr-05-last-of-30-nothing
+  rule: leagueReward
+  note: >-
+    The last of a full cohort wins nothing.
+  input:
+    week: { startsAt: '2026-09-21T00:00:00.000Z', endsAt: '2026-09-28T00:00:00.000Z' }
+    rank: 30
+  expected:
+    coins: 0
+    grant: null
+
+# ------------------------------------------------------------------------------ coin grants
+- id: cg-01-fresh-wallet
+  rule: coinGrants
+  note: >-
+    Two quest grants on an empty ledger: both apply.
+  input:
+    wallet: { coins: 0, ledger: [] }
+    grants:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+      - { reason: quest, ref: '2026-09-25:perfect_1', amount: 10 }
+  expected:
+    coins: 20
+    applied:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+      - { reason: quest, ref: '2026-09-25:perfect_1', amount: 10 }
+    skipped: []
+
+- id: cg-02-replayed-grant-skipped
+  rule: coinGrants
+  note: >-
+    The ledger already holds this quest's grant (a retried commit): it is skipped.
+  input:
+    wallet:
+      coins: 10
+      ledger:
+        - { reason: quest, ref: '2026-09-25:lessons_1' }
+    grants:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+  expected:
+    coins: 10
+    applied: []
+    skipped:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+
+- id: cg-03-duplicate-in-batch
+  rule: coinGrants
+  note: >-
+    The same (reason, ref) twice in one batch applies once.
+  input:
+    wallet: { coins: 5, ledger: [] }
+    grants:
+      - { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 30 }
+      - { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 30 }
+  expected:
+    coins: 35
+    applied:
+      - { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 30 }
+    skipped:
+      - { reason: league, ref: '2026-09-21T00:00:00.000Z', amount: 30 }
+
+- id: cg-04-same-ref-other-reason
+  rule: coinGrants
+  note: >-
+    The key is (reason, ref): the same ref under another reason is a different grant.
+  input:
+    wallet:
+      coins: 0
+      ledger:
+        - { reason: quest, ref: 'x' }
+    grants:
+      - { reason: league, ref: 'x', amount: 20 }
+  expected:
+    coins: 20
+    applied:
+      - { reason: league, ref: 'x', amount: 20 }
+    skipped: []
+
+- id: cg-05-quest-grants-per-date
+  rule: coinGrants
+  note: >-
+    Yesterday's grant for the same quest does not block today's: the date is in the ref.
+  input:
+    wallet:
+      coins: 40
+      ledger:
+        - { reason: quest, ref: '2026-09-24:lessons_1' }
+    grants:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+  expected:
+    coins: 50
+    applied:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+    skipped: []
+
+- id: cg-06-no-grants
+  rule: coinGrants
+  note: >-
+    Nothing to grant: the balance is unchanged.
+  input:
+    wallet: { coins: 7, ledger: [] }
+    grants: []
+  expected:
+    coins: 7
+    applied: []
+    skipped: []
+
+# ------------------------------------------------------------------------------ quests
+- id: qp-01-first-lesson-of-the-day
+  rule: quests
+  note: >-
+    A perfect 15-XP lesson on a fresh day: "Complete a lesson" and "no mistakes" complete and are
+    auto-claimed (10 coins each); "Earn 20 XP" reaches 15.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_20, metric: xp, target: 20 }
+      - { id: lessons_1, metric: lessons, target: 1 }
+      - { id: perfect_1, metric: perfect_sessions, target: 1 }
+    rows: []
+    session: { kind: lesson, xp: 15, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: xp_20, progress: 15, completed: false, claimed: false, justCompleted: false }
+      - { questId: lessons_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+      - { questId: perfect_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+      - { reason: quest, ref: '2026-09-25:perfect_1', amount: 10 }
+
+- id: qp-02-second-session-completes-xp
+  rule: quests
+  note: >-
+    The next lesson (10 XP, one mistake) takes "Earn 20 XP" from 15 to 20 (capped): it completes
+    and pays; the quests completed earlier stay claimed and pay nothing.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_20, metric: xp, target: 20 }
+      - { id: lessons_1, metric: lessons, target: 1 }
+      - { id: perfect_1, metric: perfect_sessions, target: 1 }
+    rows:
+      - { questId: xp_20, progress: 15, claimed: false }
+      - { questId: lessons_1, progress: 1, claimed: true }
+      - { questId: perfect_1, progress: 1, claimed: true }
+    session: { kind: lesson, xp: 10, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: xp_20, progress: 20, completed: true, claimed: true, justCompleted: true }
+      - { questId: lessons_1, progress: 1, completed: true, claimed: true, justCompleted: false }
+      - { questId: perfect_1, progress: 1, completed: true, claimed: true, justCompleted: false }
+    grants:
+      - { reason: quest, ref: '2026-09-25:xp_20', amount: 10 }
+
+- id: qp-03-progress-caps-at-target
+  rule: quests
+  note: >-
+    35 + 20 XP on "Earn 40 XP" stops at 40.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_40, metric: xp, target: 40 }
+    rows:
+      - { questId: xp_40, progress: 35, claimed: false }
+    session: { kind: unit_review, xp: 20, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: xp_40, progress: 40, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-25:xp_40', amount: 10 }
+
+- id: qp-04-flagged-session-advances-nothing
+  rule: quests
+  note: >-
+    An anti-cheat flagged session advances no quest (not even "Complete a lesson").
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_20, metric: xp, target: 20 }
+      - { id: lessons_1, metric: lessons, target: 1 }
+    rows:
+      - { questId: xp_20, progress: 5, claimed: false }
+    session: { kind: lesson, xp: 0, perfect: true, flagged: true }
+  expected:
+    quests:
+      - { questId: xp_20, progress: 5, completed: false, claimed: false, justCompleted: false }
+      - { questId: lessons_1, progress: 0, completed: false, claimed: false, justCompleted: false }
+    grants: []
+
+- id: qp-05-practice-is-not-a-lesson
+  rule: quests
+  note: >-
+    A practice session counts for "Complete a practice session", not for "Complete a lesson".
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: lessons_1, metric: lessons, target: 1 }
+      - { id: practice_1, metric: practice_sessions, target: 1 }
+    rows: []
+    session: { kind: practice, xp: 10, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: lessons_1, progress: 0, completed: false, claimed: false, justCompleted: false }
+      - { questId: practice_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-25:practice_1', amount: 10 }
+
+- id: qp-06-letters-lesson
+  rule: quests
+  note: >-
+    A letters session counts for "Complete a letters lesson" and its XP counts too.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: letters_1, metric: letters_sessions, target: 1 }
+      - { id: xp_20, metric: xp, target: 20 }
+    rows: []
+    session: { kind: letters, xp: 10, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: letters_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+      - { questId: xp_20, progress: 10, completed: false, claimed: false, justCompleted: false }
+    grants:
+      - { reason: quest, ref: '2026-09-25:letters_1', amount: 10 }
+
+- id: qp-07-unit-review-is-not-a-lesson
+  rule: quests
+  note: >-
+    "lessons" counts kind lesson only (questIncrement): a unit review adds its XP, not a lesson.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: lessons_2, metric: lessons, target: 2 }
+      - { id: xp_60, metric: xp, target: 60 }
+    rows:
+      - { questId: lessons_2, progress: 1, claimed: false }
+    session: { kind: unit_review, xp: 25, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: lessons_2, progress: 1, completed: false, claimed: false, justCompleted: false }
+      - { questId: xp_60, progress: 25, completed: false, claimed: false, justCompleted: false }
+    grants: []
+
+- id: qp-08-claimed-never-pays-again
+  rule: quests
+  note: >-
+    A third lesson after "Complete 2 lessons" was claimed changes nothing and pays nothing.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: lessons_2, metric: lessons, target: 2 }
+    rows:
+      - { questId: lessons_2, progress: 2, claimed: true }
+    session: { kind: lesson, xp: 15, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: lessons_2, progress: 2, completed: true, claimed: true, justCompleted: false }
+    grants: []
+
+- id: qp-09-completed-unclaimed-is-claimed-now
+  rule: quests
+  note: >-
+    A row that is complete but unclaimed (written before auto-claim existed) is claimed in the next
+    commit; it was not completed by this session.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: perfect_2, metric: perfect_sessions, target: 2 }
+    rows:
+      - { questId: perfect_2, progress: 2, claimed: false }
+    session: { kind: lesson, xp: 10, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: perfect_2, progress: 2, completed: true, claimed: true, justCompleted: false }
+    grants:
+      - { reason: quest, ref: '2026-09-25:perfect_2', amount: 10 }
+
+- id: qp-10-other-quests-ignored
+  rule: quests
+  note: >-
+    Rows for quests that are not today's are ignored; the output follows `defs` order.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: practice_1, metric: practice_sessions, target: 1 }
+      - { id: lessons_1, metric: lessons, target: 1 }
+    rows:
+      - { questId: xp_40, progress: 30, claimed: false }
+      - { questId: lessons_1, progress: 0, claimed: false }
+    session: { kind: lesson, xp: 15, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: practice_1, progress: 0, completed: false, claimed: false, justCompleted: false }
+      - { questId: lessons_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-25:lessons_1', amount: 10 }
+
+- id: qp-11-per-local-date
+  rule: quests
+  note: >-
+    The same quest on the next local date is a new quest: progress starts over and the grant's ref
+    carries that date, so it pays again.
+  input:
+    date: '2026-09-26'
+    defs:
+      - { id: lessons_1, metric: lessons, target: 1 }
+    rows: []
+    session: { kind: lesson, xp: 10, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: lessons_1, progress: 1, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-26:lessons_1', amount: 10 }
+
+- id: qp-12-zero-xp-session
+  rule: quests
+  note: >-
+    A session that earned 0 XP adds nothing to an XP quest.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_20, metric: xp, target: 20 }
+    rows:
+      - { questId: xp_20, progress: 12, claimed: false }
+    session: { kind: practice, xp: 0, perfect: false, flagged: false }
+  expected:
+    quests:
+      - { questId: xp_20, progress: 12, completed: false, claimed: false, justCompleted: false }
+    grants: []
+
+- id: qp-13-exact-target
+  rule: quests
+  note: >-
+    Reaching the target exactly completes the quest.
+  input:
+    date: '2026-09-25'
+    defs:
+      - { id: xp_20, metric: xp, target: 20 }
+    rows:
+      - { questId: xp_20, progress: 5, claimed: false }
+    session: { kind: lesson, xp: 15, perfect: true, flagged: false }
+  expected:
+    quests:
+      - { questId: xp_20, progress: 20, completed: true, claimed: true, justCompleted: true }
+    grants:
+      - { reason: quest, ref: '2026-09-25:xp_20', amount: 10 }
+
+# ------------------------------------------------------------------------------ shop
+- id: sh-01-buy-a-freeze
+  rule: shop
+  note: >-
+    250 coins, no freeze: a freeze costs 100.
+  input:
+    initial:
+      coins: 250
+      streak: { current: 4, longest: 9, lastActiveDate: '2026-09-24', freezes: 0 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000001' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 100, coins: 150, freezes: 1, hearts: 5 }
+    final:
+      coins: 150
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases:
+        - { purchaseId: 'a0000000-0000-4000-8000-000000000001', item: streak_freeze }
+
+- id: sh-02-freeze-cap
+  rule: shop
+  note: >-
+    Holding the maximum of 2 freezes: refused (max_owned), nothing charged.
+  input:
+    initial:
+      coins: 500
+      streak: { current: 12, longest: 12, lastActiveDate: '2026-09-24', freezes: 2 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000002' }
+  expected:
+    steps:
+      - { ok: false, refusal: max_owned }
+    final:
+      coins: 500
+      freezes: 2
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+
+- id: sh-03-freeze-too-expensive
+  rule: shop
+  note: >-
+    99 coins cannot pay 100.
+  input:
+    initial:
+      coins: 99
+      streak: { current: 1, longest: 3, lastActiveDate: '2026-09-24', freezes: 1 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000003' }
+  expected:
+    steps:
+      - { ok: false, refusal: insufficient_coins }
+    final:
+      coins: 99
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+
+- id: sh-04-exact-price-then-cap
+  rule: shop
+  note: >-
+    200 coins buy two freezes (the second at exactly the price left); a third is refused for the
+    cap, not for the empty wallet (the cap is checked before the price).
+  input:
+    initial:
+      coins: 200
+      streak: { current: 1, longest: 3, lastActiveDate: '2026-09-24', freezes: 0 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000041' }
+      - { at: '2026-09-25T12:00:01Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000042' }
+      - { at: '2026-09-25T12:00:02Z', item: streak_freeze, purchaseId: 'a0000000-0000-4000-8000-000000000043' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 100, coins: 100, freezes: 1, hearts: 5 }
+      - { ok: true, replayed: false, charged: 100, coins: 0, freezes: 2, hearts: 5 }
+      - { ok: false, refusal: max_owned }
+    final:
+      coins: 0
+      freezes: 2
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases:
+        - { purchaseId: 'a0000000-0000-4000-8000-000000000041', item: streak_freeze }
+        - { purchaseId: 'a0000000-0000-4000-8000-000000000042', item: streak_freeze }
+
+- id: sh-05-refill-hearts
+  rule: shop
+  note: >-
+    2 hearts and 150 coins: the refill costs 150 and fills hearts to 5 now.
+  input:
+    initial:
+      coins: 150
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 2, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000005' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 150, coins: 0, freezes: 1, hearts: 5 }
+    final:
+      coins: 0
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T12:00:00Z' }
+      purchases:
+        - { purchaseId: 'b0000000-0000-4000-8000-000000000005', item: heart_refill }
+
+- id: sh-06-refill-when-full
+  rule: shop
+  note: >-
+    Hearts are full: refused (lives_full), even with coins to spare.
+  input:
+    initial:
+      coins: 900
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000006' }
+  expected:
+    steps:
+      - { ok: false, refusal: lives_full }
+    final:
+      coins: 900
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+
+- id: sh-07-refill-when-regeneration-filled-it
+  rule: shop
+  note: >-
+    4 hearts stored 4 hours ago: regeneration has filled them by now (lazy), so refused.
+  input:
+    initial:
+      coins: 300
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 4, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000007' }
+  expected:
+    steps:
+      - { ok: false, refusal: lives_full }
+    final:
+      coins: 300
+      freezes: 1
+      lives: { policy: hearts, count: 4, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+
+- id: sh-08-refill-just-before-regeneration
+  rule: shop
+  note: >-
+    4 hearts stored 3h59m ago: not full yet, so the refill goes through.
+  input:
+    initial:
+      coins: 300
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 4, updatedAt: '2026-09-25T08:01:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000008' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 150, coins: 150, freezes: 1, hearts: 5 }
+    final:
+      coins: 150
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T12:00:00Z' }
+      purchases:
+        - { purchaseId: 'b0000000-0000-4000-8000-000000000008', item: heart_refill }
+
+- id: sh-09-unlimited-lives
+  rule: shop
+  note: >-
+    Unlimited lives (Zaboon Plus) never need a refill.
+  input:
+    initial:
+      coins: 900
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: unlimited, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000009' }
+  expected:
+    steps:
+      - { ok: false, refusal: unlimited_lives }
+    final:
+      coins: 900
+      freezes: 1
+      lives: { policy: unlimited, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+
+- id: sh-10-refill-too-expensive
+  rule: shop
+  note: >-
+    1 heart and 149 coins cannot pay 150.
+  input:
+    initial:
+      coins: 149
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 1, updatedAt: '2026-09-25T11:30:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000010' }
+  expected:
+    steps:
+      - { ok: false, refusal: insufficient_coins }
+    final:
+      coins: 149
+      freezes: 1
+      lives: { policy: hearts, count: 1, updatedAt: '2026-09-25T11:30:00Z' }
+      purchases: []
+
+- id: sh-11-full-beats-broke
+  rule: shop
+  note: >-
+    Full hearts and no coins: the refusal is lives_full (checked before the price).
+  input:
+    initial:
+      coins: 0
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T11:30:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'b0000000-0000-4000-8000-000000000011' }
+  expected:
+    steps:
+      - { ok: false, refusal: lives_full }
+    final:
+      coins: 0
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T11:30:00Z' }
+      purchases: []
+
+- id: sh-12-replay-is-idempotent
+  rule: shop
+  note: >-
+    The same purchaseId again (a retried request): a replay, charged 0, nothing changes.
+  input:
+    initial:
+      coins: 250
+      streak: { current: 4, longest: 9, lastActiveDate: '2026-09-24', freezes: 0 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'c0000000-0000-4000-8000-000000000012' }
+      - { at: '2026-09-25T12:00:04Z', item: streak_freeze, purchaseId: 'c0000000-0000-4000-8000-000000000012' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 100, coins: 150, freezes: 1, hearts: 5 }
+      - { ok: true, replayed: true, charged: 0, coins: 150, freezes: 1, hearts: 5 }
+    final:
+      coins: 150
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T08:00:00Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000012', item: streak_freeze }
+
+- id: sh-13-replay-wins-over-refusals
+  rule: shop
+  note: >-
+    The retried refill arrives after the hearts are full and the wallet is empty: still a replay,
+    not lives_full or insufficient_coins.
+  input:
+    initial:
+      coins: 150
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 0, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000013' }
+      - { at: '2026-09-25T12:00:09Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000013' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 150, coins: 0, freezes: 1, hearts: 5 }
+      - { ok: true, replayed: true, charged: 0, coins: 0, freezes: 1, hearts: 5 }
+    final:
+      coins: 0
+      freezes: 1
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T12:00:00Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000013', item: heart_refill }
+
+- id: sh-14-purchase-id-reused-for-another-item
+  rule: shop
+  note: >-
+    A purchaseId already spent on a freeze cannot buy a refill (409 conflict).
+  input:
+    initial:
+      coins: 400
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 0 }
+      lives: { policy: hearts, count: 1, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'c0000000-0000-4000-8000-000000000014' }
+      - { at: '2026-09-25T12:00:01Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000014' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 100, coins: 300, freezes: 1, hearts: 1 }
+      - { ok: false, refusal: purchase_id_reused }
+    final:
+      coins: 300
+      freezes: 1
+      lives: { policy: hearts, count: 1, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000014', item: streak_freeze }
+
+- id: sh-15-refused-id-is-not-recorded
+  rule: shop
+  note: >-
+    A refused purchase records nothing, so its purchaseId is still free: the same id then buys a
+    refill as a fresh purchase (not purchase_id_reused). A purchase from an earlier request (in
+    `purchases`) replays.
+  input:
+    initial:
+      coins: 150
+      streak: { current: 1, longest: 1, lastActiveDate: '2026-09-25', freezes: 2 }
+      lives: { policy: hearts, count: 3, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000099', item: heart_refill }
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: streak_freeze, purchaseId: 'c0000000-0000-4000-8000-000000000015' }
+      - { at: '2026-09-25T12:00:01Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000015' }
+      - { at: '2026-09-25T12:00:02Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000099' }
+  expected:
+    steps:
+      - { ok: false, refusal: max_owned }
+      - { ok: true, replayed: false, charged: 150, coins: 0, freezes: 2, hearts: 5 }
+      - { ok: true, replayed: true, charged: 0, coins: 0, freezes: 2, hearts: 5 }
+    final:
+      coins: 0
+      freezes: 2
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T12:00:01Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000099', item: heart_refill }
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000015', item: heart_refill }
+
+- id: sh-16-refill-at-zero-hearts-exact-price
+  rule: shop
+  note: >-
+    0 hearts and exactly 150 coins: the refill goes through and empties the wallet.
+  input:
+    initial:
+      coins: 150
+      streak: { current: 0, longest: 2, lastActiveDate: null, freezes: 0 }
+      lives: { policy: hearts, count: 0, updatedAt: '2026-09-25T11:59:00Z' }
+      purchases: []
+    ops:
+      - { at: '2026-09-25T12:00:00Z', item: heart_refill, purchaseId: 'c0000000-0000-4000-8000-000000000016' }
+  expected:
+    steps:
+      - { ok: true, replayed: false, charged: 150, coins: 0, freezes: 0, hearts: 5 }
+    final:
+      coins: 0
+      freezes: 0
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T12:00:00Z' }
+      purchases:
+        - { purchaseId: 'c0000000-0000-4000-8000-000000000016', item: heart_refill }
+
+# ------------------------------------------------------------------------------ shop items
+- id: si-01-everything-available
+  rule: shopItems
+  note: >-
+    Enough coins, room for a freeze, hearts not full: both items can be bought.
+  input:
+    state:
+      coins: 300
+      streak: { current: 3, longest: 3, lastActiveDate: '2026-09-25', freezes: 1 }
+      lives: { policy: hearts, count: 3, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    at: '2026-09-25T12:00:00Z'
+  expected:
+    items:
+      - { id: streak_freeze, price: 100, owned: 1, max: 2, unavailable: null }
+      - { id: heart_refill, price: 150, owned: null, max: null, unavailable: null }
+
+- id: si-02-reasons
+  rule: shopItems
+  note: >-
+    120 coins, 2 freezes, 4 hearts: the freeze is at its cap, the refill is too expensive.
+  input:
+    state:
+      coins: 120
+      streak: { current: 30, longest: 30, lastActiveDate: '2026-09-25', freezes: 2 }
+      lives: { policy: hearts, count: 4, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    at: '2026-09-25T12:00:00Z'
+  expected:
+    items:
+      - { id: streak_freeze, price: 100, owned: 2, max: 2, unavailable: max_owned }
+      - { id: heart_refill, price: 150, owned: null, max: null, unavailable: insufficient_coins }
+
+- id: si-03-full-and-unlimited
+  rule: shopItems
+  note: >-
+    No coins and full hearts; then unlimited lives.
+  input:
+    state:
+      coins: 0
+      streak: { current: 0, longest: 0, lastActiveDate: null, freezes: 0 }
+      lives: { policy: hearts, count: 5, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    at: '2026-09-25T12:00:00Z'
+  expected:
+    items:
+      - { id: streak_freeze, price: 100, owned: 0, max: 2, unavailable: insufficient_coins }
+      - { id: heart_refill, price: 150, owned: null, max: null, unavailable: lives_full }
+
+- id: si-04-unlimited
+  rule: shopItems
+  note: >-
+    Unlimited lives: the refill is never offered as available.
+  input:
+    state:
+      coins: 1000
+      streak: { current: 0, longest: 0, lastActiveDate: null, freezes: 0 }
+      lives: { policy: unlimited, count: 5, updatedAt: '2026-09-25T11:00:00Z' }
+      purchases: []
+    at: '2026-09-25T12:00:00Z'
+  expected:
+    items:
+      - { id: streak_freeze, price: 100, owned: 0, max: 2, unavailable: null }
+      - { id: heart_refill, price: 150, owned: null, max: null, unavailable: unlimited_lives }

@@ -1,14 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_APP_CONFIG as cfg, LivesView, StreakState, StreakView } from '@zaboon/contracts'
 import {
+  DEFAULT_APP_CONFIG as cfg,
+  LivesView,
+  QuestMetric,
+  StreakState,
+  StreakView,
+} from '@zaboon/contracts'
+import {
+  ENGAGEMENT_IMPLEMENTATION,
+  NotImplementedError,
+  QUEST_TEMPLATES,
   applyActivity,
+  applyCoinGrants,
+  applyQuestProgress,
   dailyGoalStatus,
   heartsPolicy,
   initialLives,
   initialStreak,
+  leagueGrant,
+  leagueRewardCoins,
+  leagueWeek,
+  leagueXpStep,
   localDateFor,
   placeInCohort,
+  purchase,
+  questGrant,
   rolloverCohort,
+  rolloverPlan,
+  shopItems,
   streakView,
   xpFor,
 } from './index'
@@ -65,5 +84,31 @@ describe('@zaboon/game-rules contract', () => {
     )
     expect(out[0]!.userId).toBe('u2')
     expect(out[0]!.rank).toBe(1)
+  })
+  it('quest templates count contract quest metrics', () => {
+    for (const t of QUEST_TEMPLATES) {
+      const metric: QuestMetric = t.metric
+      expect(QuestMetric.options).toContain(metric)
+    }
+  })
+  it('exports the P2 engagement API (oracles/engagement.yaml)', () => {
+    for (const fn of [
+      leagueWeek,
+      rolloverPlan,
+      leagueXpStep,
+      leagueRewardCoins,
+      leagueGrant,
+      questGrant,
+      applyCoinGrants,
+      applyQuestProgress,
+      purchase,
+      shopItems,
+    ])
+      expect(typeof fn).toBe('function')
+    expect(['stub', 'real']).toContain(ENGAGEMENT_IMPLEMENTATION)
+  })
+  it.runIf(ENGAGEMENT_IMPLEMENTATION === 'stub')('engagement stubs throw NotImplementedError', () => {
+    expect(() => leagueWeek(now)).toThrow(NotImplementedError)
+    expect(() => questGrant('2026-09-25', 'xp_20', cfg)).toThrow(NotImplementedError)
   })
 })

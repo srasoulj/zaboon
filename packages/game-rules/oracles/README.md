@@ -18,3 +18,8 @@ Every case assumes these config defaults (`DEFAULT_APP_CONFIG` in `@zaboon/contr
 - leagues: cohortSize 30, promote 7, demote 5; tiers (low to high) mes, noqreh, tala, firouzeh, aqiq,
   lajvard, yaqut, zomorrod, morvarid, almas
 - srs: slowMs 12000
+
+`engagement.yaml` (P2, Wave 3: league weeks and XP, rollover plan, coin grants, quests, the shop)
+also assumes leagues.rewardCoins [30, 20, 10], quests.rewardCoins 10 and shop prices streak_freeze
+100, heart_refill 150. Its header documents the API it calls (`src/engagement.ts`); its runner,
+`engagement.oracle.test.ts`, runs the cases once `ENGAGEMENT_IMPLEMENTATION` is `'real'`.
