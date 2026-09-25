@@ -180,20 +180,23 @@ function MemberRow({ m, zoneStart }: { m: LeaderboardEntry; zoneStart: boolean }
       <span
         className={clsx(
           'w-8 text-center text-[18px] font-extrabold',
-          m.zone === 'promote'
-            ? 'text-correct-fg'
-            : m.zone === 'demote'
-              ? 'text-wrong-fg'
-              : 'text-stone',
+          m.isMe
+            ? 'text-ink'
+            : m.zone === 'promote'
+              ? 'text-correct-fg'
+              : m.zone === 'demote'
+                ? 'text-wrong-fg'
+                : 'text-stone',
         )}
       >
         {m.rank}
       </span>
       <span className="flex-1 truncate font-extrabold">
         {name}
-        {m.isMe && <span className="text-stone"> (you)</span>}
+        {/* On the selected tint, stone text is below 4.5:1: the "you" row stays ink. */}
+        {m.isMe && <span> (you)</span>}
       </span>
-      <span className="font-bold text-stone">{m.weeklyXp} XP</span>
+      <span className={clsx('font-bold', m.isMe ? 'text-ink' : 'text-stone')}>{m.weeklyXp} XP</span>
       <span className="zb-sr-only">{ZONE_LABEL[m.zone]}</span>
       {m.zone !== 'stay' && (
         <Icon
