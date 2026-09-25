@@ -333,22 +333,49 @@ function fallback(graph: AnswerGraph, kg: KeyGraph, answer: readonly string[], c
     if (states.size === 0) break
   }
   const ok = [...states].some((s) => kg.accept.has(s))
-  const first: string[] = []
-  const walk = (node: number): boolean => {
-    if (graph.accept.includes(node)) return true
-    for (const e of graph.edges) {
-      if (e.from !== node) continue
-      if (walk(e.to)) {
-        if (e.t) first.unshift(e.t)
-        return true
-      }
-    }
-    return false
-  }
-  walk(graph.start)
+  const first = firstPath(graph)
   return {
     verdict: ok ? 'correct' : 'wrong',
     closestSolution: first.join(' '),
     diff: first.map((text) => ({ text, status: ok ? 'ok' : 'wrong' })),
   }
+}
+
+/**
+ * The first accepted path in edge order (the canonical answer's tokens), found iteratively so long
+ * graphs cannot overflow the stack; dead ends are remembered, so each node is expanded once.
+ */
+export function firstPath(graph: AnswerGraph): string[] {
+  const outgoing = new Map<number, AnswerGraph['edges']>()
+  for (const e of graph.edges) {
+    const list = outgoing.get(e.from)
+    if (list) list.push(e)
+    else outgoing.set(e.from, [e])
+  }
+  const accept = new Set(graph.accept)
+  const dead = new Set<number>()
+  const onStack = new Set<number>([graph.start])
+  const stack: { node: number; next: number; edge: AnswerGraph['edges'][number] | null }[] = [
+    { node: graph.start, next: 0, edge: null },
+  ]
+  while (stack.length) {
+    const top = stack[stack.length - 1]!
+    if (accept.has(top.node)) return stack.flatMap((f) => (f.edge?.t ? [f.edge.t] : []))
+    const edges = outgoing.get(top.node) ?? []
+    let pushed = false
+    while (top.next < edges.length) {
+      const e = edges[top.next++]!
+      if (dead.has(e.to) || onStack.has(e.to)) continue
+      stack.push({ node: e.to, next: 0, edge: e })
+      onStack.add(e.to)
+      pushed = true
+      break
+    }
+    if (!pushed) {
+      dead.add(top.node)
+      onStack.delete(top.node)
+      stack.pop()
+    }
+  }
+  return []
 }

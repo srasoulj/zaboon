@@ -148,9 +148,9 @@ export function looseKey(text: string): string {
     .replace(/ه\u0654/g, 'ه')
     .replace(/ه\u200Cی(?= |$)/g, 'ه')
     .replace(/[أإٱ]/g, 'ا')
-    .replace(/ئی/g, 'یی')
     .replaceAll(ZWNJ, '')
-  return joinAffixes(folded)
+  // After joining, so that a suffix ی joined to a final ئ folds too (idempotent key).
+  return joinAffixes(folded).replace(/ئ+(?=ی)/g, (m) => 'ی'.repeat(m.length))
 }
 
 /** Joins whole-token prefixes to the next token and whole-token suffixes to the previous one. */

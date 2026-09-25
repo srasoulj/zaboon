@@ -12,7 +12,7 @@
  */
 import type { AnswerGraph } from '@zaboon/content-schema'
 import { NORMALIZER_VERSION } from '@zaboon/farsi'
-import { gradeText, type DiffToken, type GradeOptions, type Verdict } from './grade'
+import { firstPath, gradeText, type DiffToken, type GradeOptions, type Verdict } from './grade'
 import type { Lang } from './keys'
 
 export const IMPLEMENTATION: 'stub' | 'real' = 'real'
@@ -55,7 +55,7 @@ export function enumerate(graph: AnswerGraph, limit = 1000): string[] {
 
 /** The first accepted answer: the canonical solution shown in feedback. */
 export function canonical(graph: AnswerGraph): string {
-  return enumerate(graph, 1)[0] ?? ''
+  return firstPath(graph).join(' ')
 }
 
 /** Grades an answer (typed text or word-bank tiles) against a compiled graph. */
