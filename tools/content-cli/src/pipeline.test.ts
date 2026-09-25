@@ -73,6 +73,14 @@ describe('validate: distractors', () => {
     )
   })
 
+  it('rejects interchangeable match_pairs items', () => {
+    const c = clone()
+    lexeme(c, 'lx_maman').glosses = ['mom', 'hello']
+    expect(errors(c)).toContainEqual(
+      'level u01-s0 pinned[3] (match_pairs): lx_salam and lx_maman cannot both be pairs (shared gloss "hello")',
+    )
+  })
+
   it('rejects a pinned sentence distractor whose answer the target accepts', () => {
     const c = clone()
     const level = c.units[0]!.levels.find((l) => l.id === 'u01-l1')!

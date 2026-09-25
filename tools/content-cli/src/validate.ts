@@ -337,6 +337,17 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
           }
           if (why) err(file, `${at}: distractor ${d} could also be a correct answer (${why})`)
         }
+        if (p.type === 'match_pairs') {
+          // Every pair is a distractor for the others: two items must never be interchangeable.
+          p.items.forEach((a, x) =>
+            p.items.slice(x + 1).forEach((b) => {
+              const la = lexemes.get(a)
+              const lb = lexemes.get(b)
+              const why = la && lb ? lexemeConflict(la, lb) : null
+              if (why) err(file, `${at}: ${a} and ${b} cannot both be pairs (${why})`)
+            }),
+          )
+        }
         if ((p.type === 'translate_bank' || p.type === 'listen_tap') && target) {
           const c = compiled.get(target)
           if (!c) return
