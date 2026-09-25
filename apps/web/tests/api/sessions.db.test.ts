@@ -275,6 +275,45 @@ describe('POST /api/sessions/:id/complete', () => {
     expect(answersRows.map((r) => r.verdict)).toContain('skipped')
   })
 
+  it('keeps a mistake open when another challenge of the session exercised the same item', async () => {
+    const alice = await h.guest()
+    await play(h, alice)
+    await play(h, alice, { levelId: 'u01-l1' })
+    // u01-l2: 0 letter_intro(l_be, always passes), 1 letter_sound(l_be), 2 letter_forms(l_be, …)
+    const s = await start(h, alice, { levelId: 'u01-l2' })
+    expect(s.challenges.slice(0, 3).map((c) => c.type)).toEqual([
+      'letter_intro',
+      'letter_sound',
+      'letter_forms',
+    ])
+    await finish(h, alice, s, { wrong: [1] })
+    const [row] = await h.sql`
+      SELECT resolved_at, times_wrong FROM mistakes WHERE user_id = ${alice.id} AND item_ref = 'letter:l_be'`
+    expect(row).toMatchObject({ resolved_at: null, times_wrong: 1 })
+  })
+
+  it('counts a skip as wrong for hearts and "perfect", once even when its event arrived', async () => {
+    const alice = await h.guest()
+    const skipFirst = (answers: ReturnType<typeof answersFor>) =>
+      answers.map((a) =>
+        a.index === 0
+          ? { ...a, response: { kind: 'skip' as const }, verdict: 'skipped' as const }
+          : a,
+      )
+    const s = await start(h, alice)
+    const r = await finish(h, alice, s, { answers: skipFirst(answersFor(s.challenges)) })
+    expect(r).toMatchObject({
+      perfect: false,
+      xp: { base: 10, bonus: 0, total: 10 },
+      lives: { count: 4 },
+    })
+
+    const s2 = await start(h, alice)
+    await wrongEvent(h, alice, s2.sessionId, 0) // the player reports the skip as a wrong event
+    const r2 = await finish(h, alice, s2, { answers: skipFirst(answersFor(s2.challenges)) })
+    expect(r2).toMatchObject({ perfect: false, lives: { count: 3 } })
+  })
+
   it('keeps a mistake open when its challenge is only skipped (or wrong, then skipped)', async () => {
     const alice = await h.guest()
     const ref = 'sentence:s_u01_0001' // u01-s0 challenge 0
