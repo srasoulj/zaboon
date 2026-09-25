@@ -25,13 +25,20 @@
 | ws-db | 1 | `supabase/migrations`, `packages/db` | ✅ merged | #6, #15 |
 | ws-ui | 1 | `packages/ui` | ✅ merged | #7, #16 |
 | ws-content-cli | 1 | `packages/ai`, `tools/content-cli` | ✅ merged | #14 |
-| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged | #17, #23 |
-| ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ merged | #21 |
-| ws-player | 2 | lesson player, offline outbox, resume | ✅ merged | #22 |
-| ws-path-letters | 2 | path, guidebook, letters, practice | 🔄 spawning ([spec](../ops/prompts/ws-path-letters.md)) | |
-| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | 🔄 spawning ([spec](../ops/prompts/ws-pages.md)) | |
+| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged; 🔧 review fixes in progress | #17, #23 |
+| ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ merged; 🔧 review fixes in progress | #21 |
+| ws-player | 2 | lesson player, offline outbox, resume | ✅ merged; 🔧 review fixes in progress | #22 |
+| ws-path-letters | 2 | path, guidebook, letters, practice | 🔄 working ([spec](../ops/prompts/ws-path-letters.md)) | |
+| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | 🔄 working ([spec](../ops/prompts/ws-pages.md)) | |
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; 🔄 Unit 1 media | |
-| ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | 🔄 spawning ([spec](../ops/prompts/ws-qa.md)) | |
+| ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | 🔄 working ([spec](../ops/prompts/ws-qa.md)) | |
+
+**Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
+the real renderers, the lesson player, the API and Postgres on desktop and mobile Chromium: all 13 MVP
+challenge types graded correct, XP awarded, no console or network errors. The post-merge reviews of
+#21–#23 found one blocker (letter_sound played the answer before CHECK) and several majors (outbox
+identity and head-of-line blocking, skip semantics, Enter on focused buttons, per-item mistakes,
+matching focus); they went back to their owners as fix rounds.
 
 Post-merge follow-ups applied by the orchestrator: the lesson outbox now replays app-wide
 (`providers.tsx`), cached queries reset when the signed-in identity changes, `app_server` has lock,

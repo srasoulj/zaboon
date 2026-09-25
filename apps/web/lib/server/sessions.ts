@@ -397,7 +397,11 @@ export async function completeSession(
     const first = new Map<number, Verdict>()
     for (const a of graded) if (!first.has(a.index)) first.set(a.index, a.verdict)
     const firstPass = [...first.values()].filter(passes).length
-    const wrongAttempts = graded.filter((a) => a.verdict === 'wrong').length
+    // A skip counts as a wrong attempt for hearts and "perfect" (Duolingo parity; the player sends
+    // a wrong event for each skip). SRS ratings ignore skips, and a skip never clears a mistake.
+    const wrongAttempts = graded.filter(
+      (a) => a.verdict === 'wrong' || a.verdict === 'skipped',
+    ).length
     const wrongIndexes = new Set(graded.filter((a) => a.verdict === 'wrong').map((a) => a.index))
     const accuracy = challenges.length === 0 ? 0 : firstPass / challenges.length
 
@@ -479,18 +483,13 @@ export async function completeSession(
     const level = await recordLevelProgress(tx, userId, session, current, at)
 
     const mistakes = [...new Set([...wrongIndexes].flatMap((i) => refItems(challenges[i]!.ref)))]
-    // A challenge clears its items' open mistakes only when it was answered (not just skipped)
-    // and never wrong: the same rule as the SRS rating.
-    const answeredOk = new Set(
-      graded.filter((a) => a.verdict !== 'skipped' && passes(a.verdict)).map((a) => a.index),
-    )
+    // Per item, like the SRS rating: an item is cleared only when a challenge that exercised it
+    // passed and no challenge in this session got it wrong (an item often appears in several).
+    const wrongItems = new Set(mistakes)
+    const answeredOk = new Set(graded.filter((a) => passes(a.verdict)).map((a) => a.index))
     const cleared = [
-      ...new Set(
-        [...answeredOk]
-          .filter((i) => !wrongIndexes.has(i))
-          .flatMap((i) => refItems(challenges[i]!.ref)),
-      ),
-    ]
+      ...new Set([...answeredOk].flatMap((i) => refItems(challenges[i]!.ref))),
+    ].filter((item) => !wrongItems.has(item))
     await repos.learning.recordMistakes(tx, userId, mistakes, at)
     await repos.learning.resolveMistakes(tx, userId, cleared, at)
     await applySrs(tx, userId, { attempts: graded, challenges, view, now, config })
