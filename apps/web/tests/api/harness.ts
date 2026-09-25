@@ -9,13 +9,15 @@
  *
  * AUTH_MODE=local + ZABOON_DEV_AUTH=1: tokens are minted with `signLocalToken`, users live in the
  * dev user store (auth.users over a loopback superuser connection), and `now` time-travels with the
- * `x-test-now` header.
+ * `x-test-now` header. Every rate-limit bucket is raised. Feature flags: per request with
+ * `call(…, { flags: { leagues: true } })` (the `x-test-flags` header), or for every request with
+ * `await h.setFlags({ leagues: true })` (the app_config `flags` row).
  */
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import postgres from 'postgres'
-import { TEST_NOW_HEADER } from '@zaboon/contracts'
+import { DEFAULT_APP_CONFIG, TEST_FLAGS_HEADER, TEST_NOW_HEADER } from '@zaboon/contracts'
 import { createDb, repos, withSystem, type DbHandle } from '@zaboon/db'
 import { createTestDatabase, type TestDatabase } from '@zaboon/db/testing'
 import { loadCourse, type LoadedCourse } from '../../../../tools/content-cli/src/load'
@@ -29,6 +31,7 @@ import {
   type DevUser,
 } from '../../lib/server/auth/dev-users'
 import { signLocalToken } from '../../lib/server/auth/local'
+import { resetRuntimeConfig } from '../../lib/server/config'
 import { resetContentCache } from '../../lib/server/content'
 import { resetServerEnv } from '../../lib/server/env'
 
@@ -48,6 +51,8 @@ export interface CallOptions {
   user?: TestUser | null
   /** Server clock for this request (x-test-now). */
   now?: Date | string
+  /** Feature-flag overrides for this request only (x-test-flags). */
+  flags?: Record<string, boolean>
   params?: Record<string, string>
   headers?: Record<string, string>
 }
@@ -73,6 +78,11 @@ export interface Harness {
   /** Links an email to a guest (same user id, no longer anonymous). */
   link(user: TestUser, email: string): Promise<TestUser>
   call<T = Json>(handler: Handler, opts: CallOptions): Promise<CallResult<T>>
+  /**
+   * Sets feature flags for every later request (the app_config `flags` row, merged over
+   * FLAG_DEFAULTS; replaces what an earlier call set). `setFlags({})` restores the defaults.
+   */
+  setFlags(flags: Record<string, boolean>): Promise<void>
   /** Publishes a course (by folder name, or an edited LoadedCourse) as its next current version. */
   publish(course: 'fixtures' | 'fa-en' | LoadedCourse): Promise<PublishResult>
   close(): Promise<void>
@@ -124,13 +134,11 @@ export async function createHarness(
       tx,
       'rateLimits',
       Object.fromEntries(
-        ['default', 'sessions', 'events', 'complete', 'reports', 'auth'].map((k) => [
-          k,
-          { perMinute: 100_000 },
-        ]),
+        Object.keys(DEFAULT_APP_CONFIG.rateLimits).map((k) => [k, { perMinute: 100_000 }]),
       ),
     ),
   )
+  resetRuntimeConfig()
   const sql = postgres(tdb.adminUrl, { max: 2, onnotice: () => {} })
 
   const publish = async (course: 'fixtures' | 'fa-en' | LoadedCourse) => {
@@ -161,6 +169,7 @@ export async function createHarness(
       if (o.user) headers.authorization = `Bearer ${o.user.token}`
       if (o.now !== undefined)
         headers[TEST_NOW_HEADER] = typeof o.now === 'string' ? o.now : o.now.toISOString()
+      if (o.flags !== undefined) headers[TEST_FLAGS_HEADER] = JSON.stringify(o.flags)
       const method = o.method ?? (o.body === undefined ? 'GET' : 'POST')
       if (o.body !== undefined) headers['content-type'] = 'application/json'
       const res = await handler(
@@ -174,6 +183,10 @@ export async function createHarness(
       return { status: res.status, body: await res.json() }
     },
     publish,
+    async setFlags(flags) {
+      await withSystem(db.db, (tx) => repos.content.setAppConfig(tx, 'flags', flags))
+      resetRuntimeConfig()
+    },
     async close() {
       const g = globalThis as Globals
       await g.__zaboonDb?.close()

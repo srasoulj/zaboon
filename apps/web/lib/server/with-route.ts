@@ -5,7 +5,8 @@
  *
  * It authenticates the caller per the route's `auth`, rejects outdated clients (426), applies the
  * route's rate-limit bucket, validates the request and the response against the zod contracts,
- * reads the time from the Clock seam, and turns every failure into the error envelope.
+ * reads the time from the Clock seam and the feature flags from the flags seam (flags.ts: the
+ * `x-test-flags` header in local mode only), and turns every failure into the error envelope.
  */
 import type { z } from 'zod'
 import {
@@ -16,11 +17,13 @@ import {
 } from '@zaboon/contracts'
 import { ConflictError, NotFoundError, repos, type Db } from '@zaboon/db'
 import { authenticate, type AuthUser } from './auth'
+import { cronAuthorized } from './auth/cron'
 import { requestNow } from './clock'
 import { getRuntimeConfig } from './config'
 import { getDb } from './db'
 import { serverEnv } from './env'
 import { ApiError, errorResponse } from './errors'
+import { requestFlags } from './flags'
 
 type SignedIn = 'user' | 'member' | 'admin'
 
@@ -33,6 +36,7 @@ export interface RouteContext<R extends RouteDef> {
   now: Date
   db: Db
   config: AppConfig
+  /** Feature flags for this request: configured flags, plus `x-test-flags` in local mode only. */
   flags: Record<string, boolean>
 }
 
@@ -66,7 +70,7 @@ async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null
       if (!env.devAuth) throw new ApiError('not_found', 'not found')
       return authenticate(req)
     case 'cron': {
-      if (!env.cronSecret || req.headers.get('authorization') !== `Bearer ${env.cronSecret}`) {
+      if (!cronAuthorized(req.headers.get('authorization'), env.cronSecret)) {
         throw new ApiError('unauthorized', 'cron secret required')
       }
       return null
@@ -131,8 +135,10 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
     try {
       const db = getDb()
       const user = await authorize(def.auth, req)
-      const { config, flags } = await getRuntimeConfig(db)
+      const runtime = await getRuntimeConfig(db)
+      const config = runtime.config
       const now = requestNow(req)
+      const flags = requestFlags(req, runtime.flags)
 
       const clientVersion = req.headers.get(APP_VERSION_HEADER)
       if (clientVersion && compareVersions(clientVersion, config.minAppVersion) < 0) {

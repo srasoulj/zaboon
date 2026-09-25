@@ -7,12 +7,21 @@
  * - `guest`: a fresh anonymous user (dev auth) with its bearer header, for API setup calls.
  * - `guestPage`: a page already signed in as `guest` (session stored like the app's auth client).
  * - `setTestNow(page, iso)`: time travel for the app's API calls (local mode `x-test-now`).
+ * - `setTestFlags(page, flags)`: feature-flag overrides for the app's API calls (local mode
+ *   `x-test-flags`), e.g. `setTestFlags(page, { shop: true })`; `flagsHeader(flags)` gives the
+ *   same header for `request` calls in API specs.
  */
 import { test as base, expect, type Page } from '@playwright/test'
 
-/** Must match apps/web/lib/auth-client.ts LOCAL_SESSION_KEY and apps/web/lib/api-client.ts TEST_NOW_KEY. */
+/**
+ * Must match apps/web/lib/auth-client.ts LOCAL_SESSION_KEY and apps/web/lib/api-client.ts
+ * TEST_NOW_KEY / TEST_FLAGS_KEY.
+ */
 const LOCAL_SESSION_KEY = 'zaboon.session'
 const TEST_NOW_KEY = 'zaboon.testNow'
+const TEST_FLAGS_KEY = 'zaboon.testFlags'
+/** Must match TEST_FLAGS_HEADER in @zaboon/contracts. */
+const TEST_FLAGS_HEADER = 'x-test-flags'
 
 export interface Guest {
   userId: string
@@ -59,6 +68,26 @@ export async function setTestNow(page: Page, iso: string): Promise<void> {
     ([key, value]) => window.localStorage.setItem(key!, value!),
     [TEST_NOW_KEY, iso],
   )
+}
+
+/**
+ * Turns feature flags on (or off) for the app's API calls in this page (AUTH_MODE=local only), e.g.
+ * `await setTestFlags(page, { leagues: true })`. Call before navigating; the server rejects
+ * unknown flag names with a 400.
+ */
+export async function setTestFlags(page: Page, flags: Record<string, boolean>): Promise<void> {
+  await page.addInitScript(
+    ([key, value]) => window.localStorage.setItem(key!, value!),
+    [TEST_FLAGS_KEY, JSON.stringify(flags)],
+  )
+}
+
+/**
+ * The `x-test-flags` header for direct API calls in API specs, e.g.
+ * `request.get('/api/shop', { headers: { authorization, ...flagsHeader({ shop: true }) } })`.
+ */
+export function flagsHeader(flags: Record<string, boolean>): Record<string, string> {
+  return { [TEST_FLAGS_HEADER]: JSON.stringify(flags) }
 }
 
 export { expect }

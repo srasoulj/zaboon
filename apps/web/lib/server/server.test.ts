@@ -1,11 +1,13 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import type { Challenge } from '@zaboon/contracts'
+import { FLAG_DEFAULTS, type Challenge } from '@zaboon/contracts'
 import { compile } from '@zaboon/grader'
 import { userFromClaims } from './auth/claims'
+import { cronAuthorized } from './auth/cron'
 import { signLocalToken, verifyLocalToken } from './auth/local'
 import { requestNow } from './clock'
 import { resetServerEnv, serverEnv } from './env'
 import { ApiError } from './errors'
+import { parseTestFlags, requestFlags } from './flags'
 import { serverVerdict } from './grading'
 
 const USER = '11111111-2222-4333-8444-555555555555'
@@ -151,6 +153,68 @@ describe('clock', () => {
       DATABASE_URL_APP_SERVER: 'postgres://u@db:5432/x',
     })
     expect(requestNow(req('2030-01-02T03:04:05Z')).getFullYear()).not.toBe(2030)
+  })
+})
+
+describe('feature flags (x-test-flags)', () => {
+  const configured = { ...FLAG_DEFAULTS }
+  const req = (flags?: string) =>
+    new Request('http://x/', { headers: flags === undefined ? {} : { 'x-test-flags': flags } })
+
+  it('merges the header over the configured flags in local mode', () => {
+    setEnv({ AUTH_MODE: 'local', VERCEL_ENV: undefined, DATABASE_URL_APP_SERVER: undefined })
+    expect(requestFlags(req(), configured)).toEqual(configured)
+    expect(requestFlags(req('{"leagues":true,"shop":true}'), configured)).toEqual({
+      ...configured,
+      leagues: true,
+      shop: true,
+    })
+    expect(requestFlags(req('{"leagues":false}'), { ...configured, leagues: true }).leagues).toBe(
+      false,
+    )
+    expect(requestFlags(req(''), configured)).toEqual(configured)
+  })
+
+  it('rejects malformed values and unknown flags with a 400', () => {
+    setEnv({ AUTH_MODE: 'local', VERCEL_ENV: undefined, DATABASE_URL_APP_SERVER: undefined })
+    for (const bad of ['{', '[true]', 'true', 'null', '{"leagues":1}', '{"leagues":"on"}'])
+      expect(() => requestFlags(req(bad), configured), bad).toThrow(
+        expect.objectContaining({ code: 'validation', status: 400 }),
+      )
+    expect(() => requestFlags(req('{"leauges":true}'), configured)).toThrow(/unknown flag/)
+    // A flag that exists only in app_config is known too.
+    expect(parseTestFlags('{"experiment":true}', { experiment: false })).toEqual({ experiment: true })
+  })
+
+  it('is ignored in production mode, even when malformed', () => {
+    setEnv({
+      AUTH_MODE: 'supabase',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://x.supabase.co',
+      DATABASE_URL_APP_SERVER: 'postgres://u@db:5432/x',
+    })
+    expect(requestFlags(req('{"leagues":true}'), configured)).toEqual(configured)
+    expect(requestFlags(req('{'), configured)).toEqual(configured)
+    setEnv({ AUTH_MODE: undefined })
+    expect(requestFlags(req('{"shop":true}'), configured).shop).toBe(false)
+  })
+})
+
+describe('cron secret (Vercel Cron)', () => {
+  it('accepts exactly "Bearer <secret>"', () => {
+    const secret = 'cron-secret-for-tests' // pragma: allowlist secret
+    expect(cronAuthorized(`Bearer ${secret}`, secret)).toBe(true)
+    expect(cronAuthorized(`Bearer ${secret}x`, secret)).toBe(false)
+    expect(cronAuthorized(`Bearer ${secret.slice(0, -1)}`, secret)).toBe(false)
+    expect(cronAuthorized(secret, secret)).toBe(false)
+    expect(cronAuthorized(`bearer ${secret}`, secret)).toBe(false)
+    expect(cronAuthorized('', secret)).toBe(false)
+    expect(cronAuthorized(null, secret)).toBe(false)
+  })
+
+  it('fails closed when no secret is configured', () => {
+    expect(cronAuthorized('Bearer ', null)).toBe(false)
+    expect(cronAuthorized('Bearer ', '')).toBe(false)
+    expect(cronAuthorized('Bearer null', null)).toBe(false)
   })
 })
 

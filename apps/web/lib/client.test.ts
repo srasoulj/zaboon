@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiClientError, createApiClient, TEST_NOW_KEY } from './api-client'
+import { ApiClientError, createApiClient, queryKeys, TEST_FLAGS_KEY, TEST_NOW_KEY } from './api-client'
 import { createAuthClient, createLocalAuthClient, LOCAL_SESSION_KEY } from './auth-client'
 
 const USER = '11111111-2222-4333-8444-555555555555'
@@ -32,6 +32,7 @@ describe('api client', () => {
   it('builds the request from the route registry and validates the response', async () => {
     vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'local')
     localStorage.setItem(TEST_NOW_KEY, '2031-01-02T00:00:00Z')
+    localStorage.setItem(TEST_FLAGS_KEY, '{"shop":true}')
     const fetchMock = vi.fn(async () => json(200, { deleted: true }))
     const api = createApiClient({ getAccessToken: async () => 'abc', fetch: fetchMock })
     await expect(api('deleteAccount')).resolves.toEqual({ deleted: true })
@@ -42,12 +43,25 @@ describe('api client', () => {
       authorization: 'Bearer abc',
       'x-zaboon-app-version': '0.1.0',
       'x-test-now': '2031-01-02T00:00:00Z',
+      'x-test-flags': '{"shop":true}',
     })
   })
 
-  it('fills path params, sends JSON bodies and never sends x-test-now outside local mode', async () => {
+  it('sends no test headers in local mode when nothing is stored', async () => {
+    vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'local')
+    localStorage.setItem(TEST_FLAGS_KEY, '')
+    const fetchMock = vi.fn(async () => json(200, { deleted: true }))
+    const api = createApiClient({ getAccessToken: async () => 'abc', fetch: fetchMock })
+    await api('deleteAccount')
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(init.headers).not.toHaveProperty('x-test-now')
+    expect(init.headers).not.toHaveProperty('x-test-flags')
+  })
+
+  it('fills path params, sends JSON bodies and never sends test headers outside local mode', async () => {
     vi.stubEnv('NEXT_PUBLIC_AUTH_MODE', 'supabase')
     localStorage.setItem(TEST_NOW_KEY, '2031-01-02T00:00:00Z')
+    localStorage.setItem(TEST_FLAGS_KEY, '{"shop":true}')
     const fetchMock = vi.fn(async () =>
       json(200, {
         lives: { policy: 'hearts', count: 4, max: 5, nextRegenAt: null },
@@ -63,6 +77,7 @@ describe('api client', () => {
     expect(url).toBe('/api/sessions/abc/events')
     expect(JSON.parse(init.body as string)).toEqual({ attemptSeq: 1, index: 0, kind: 'wrong' })
     expect(init.headers).not.toHaveProperty('x-test-now')
+    expect(init.headers).not.toHaveProperty('x-test-flags')
     expect(init.headers).not.toHaveProperty('authorization')
   })
 
@@ -155,5 +170,16 @@ describe('createAuthClient', () => {
     expect(auth.mode).toBe('supabase')
     await expect(auth.getSession()).rejects.toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
     expect(() => auth.subscribe(() => {})).toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
+  })
+})
+
+describe('query keys', () => {
+  it('has one distinct key per read, including the P2 reads', () => {
+    for (const k of ['leaderboard', 'quests', 'shop', 'practice'] as const)
+      expect(queryKeys[k]).toEqual([k])
+    const flat = Object.values(queryKeys).flatMap((k) =>
+      typeof k === 'function' ? [k('x').join('/')] : [k.join('/')],
+    )
+    expect(new Set(flat).size).toBe(flat.length)
   })
 })

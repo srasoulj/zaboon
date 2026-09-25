@@ -9,6 +9,11 @@ export interface RuntimeConfig {
 const TTL_MS = 30_000
 let cache: { at: number; value: Promise<RuntimeConfig> } | undefined
 
+/** Tests only: forget the cached config, so the next request reads app_config again. */
+export function resetRuntimeConfig(): void {
+  cache = undefined
+}
+
 /** AppConfig + flags with app_config overrides, cached for 30 s per server instance. */
 export function getRuntimeConfig(db: Db): Promise<RuntimeConfig> {
   const now = Date.now()
