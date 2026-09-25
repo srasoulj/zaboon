@@ -70,6 +70,14 @@ describe('looseKey (beyond the oracle)', () => {
     expect(looseKey('ها')).toBe('ها')
   })
 
+  it('stays idempotent when a joined suffix makes a new prefix (fast-check counterexample)', () => {
+    // م + the suffix ی = می, itself a prefix: one more pass joined it to the next token.
+    const key = looseKey('م ی\nا')
+    expect(key).toBe('میا')
+    expect(looseKey(key)).toBe(key)
+    expect(looseKey('ن م ی خوام')).toBe(looseKey(looseKey('ن م ی خوام')))
+  })
+
   it('tokenizes the strict and loose forms', () => {
     expect(tokenize(`کتاب ها رو می${ZWNJ}خوام`)).toEqual(['کتاب', 'ها', 'رو', `می${ZWNJ}خوام`])
     expect(looseTokens(`کتاب ها رو می${ZWNJ}خوام`)).toEqual(['کتابها', 'رو', 'میخوام'])
