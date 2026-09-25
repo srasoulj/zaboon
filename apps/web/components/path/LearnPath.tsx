@@ -94,7 +94,7 @@ export function LearnPath() {
           <p>We couldn&apos;t load your path.</p>
           <button
             type="button"
-            className="font-extrabold text-lajvard-500 underline"
+            className="font-extrabold text-ink underline"
             onClick={() => void path.refetch()}
           >
             Try again

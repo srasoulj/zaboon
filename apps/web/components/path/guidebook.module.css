@@ -7,12 +7,10 @@
 
 .back {
   justify-self: start;
-  color: var(--color-lajvard-500);
+  color: var(--color-ink);
   font-weight: 800;
-  text-decoration: none;
-}
-.back:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .title {
@@ -65,7 +63,8 @@
   margin-block: 4px;
 }
 .markdown a {
-  color: var(--color-lajvard-500);
+  color: var(--color-ink);
+  font-weight: 700;
   text-decoration: underline;
 }
 .markdown code {
@@ -120,7 +119,7 @@
   border: var(--lip-border) solid var(--color-line);
   border-radius: 50%;
   background: var(--color-bg);
-  color: var(--color-lajvard-500);
+  color: var(--color-ink);
   cursor: pointer;
 }
 .speaker:hover {

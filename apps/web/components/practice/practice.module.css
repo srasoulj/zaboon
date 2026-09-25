@@ -73,7 +73,7 @@
   border: var(--lip-border) solid var(--color-line);
   border-radius: 50%;
   background: var(--color-bg);
-  color: var(--color-lajvard-500);
+  color: var(--color-ink);
   cursor: pointer;
 }
 .listen:focus-visible {

@@ -62,9 +62,10 @@ button.tile:focus-visible {
   outline: 3px solid var(--color-lajvard-500);
   outline-offset: 2px;
 }
-/* Not introduced yet: dimmed, but the text keeps AA contrast (stone on bg). */
+/* Not introduced yet: dimmed (dashed outline, grey glyph), but the text keeps AA contrast (stone on bg). */
 .dim {
-  background: var(--color-surface);
+  border-style: dashed;
+  border-block-end-width: var(--lip-border);
   color: var(--color-stone);
 }
 .dim .bars {
@@ -109,7 +110,7 @@ button.tile:focus-visible {
   border-radius: var(--radius-tile);
 }
 .lesson[data-state='locked'] {
-  background: var(--color-surface);
+  border-style: dashed;
 }
 .lessonIcon {
   display: grid;
@@ -150,7 +151,7 @@ button.tile:focus-visible {
   border: var(--lip-border) solid var(--color-line);
   border-block-end-width: var(--lip-card);
   border-radius: var(--radius-button);
-  color: var(--color-lajvard-500);
+  color: var(--color-ink);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
