@@ -1,0 +1,39 @@
+# Provenance of style-bible/shape-language.png (art run, draft). Set status: approved and approvedBy after art-director review.
+asset: style-bible/shape-language.png
+model: openai/gpt-5.4-image-2
+prompt: art/style-bible-shape-language@1
+generatedAt: 2026-09-25T12:06:35.159Z
+status: draft
+generation:
+  id: gen-1790337995-seaRz0zzlvhqJbZmBNy6
+  costUsd: 0.242157
+postProcessing: "sharp: trimmed and padded to a square on its plain white background (kept opaque because it is passed to the model as a reference image), 1024 px. No WebP copy here: content-cli sends every png/webp in style-bible/ as a reference, so a copy would be sent twice."
+notes: "Known flaws for review: the teardrop leaf and the long beak sample end in pointed tips; the white wing bands have faint grey edges; the pistachio uses two tints outside the palette."
+promptText: |-
+  Create a style-guide reference sheet that defines the SHAPE LANGUAGE of a flat, friendly, geometric illustration style for a cheerful language-learning app.
+
+  Canvas: square, plain pure white background (#FFFFFF), generous margins, nothing touching the edges.
+
+  Palette: use ONLY these exact solid colors and nothing else:
+  - #0E9F99 turquoise
+  - #FFB020 saffron
+  - #2D5BD7 lapis blue
+  - #E5484D pomegranate red
+  - #7B4BC4 eggplant purple
+  - #8CC63F pistachio green
+  - #2F2F2F ink (dark charcoal)
+  - #FFFFFF white
+
+  Style rules (strict):
+  - Flat vector illustration built only from circles, pills (fully rounded rectangles), rounded rectangles and rounded triangles.
+  - Every corner is rounded: no sharp points or pointed tips anywhere.
+  - No outlines or strokes of any kind. No gradients, no shading, no textures, no drop shadows, no 3D effects, no glow. Every shape is one flat solid fill.
+  - Absolutely no text, letters, numbers, labels, captions, logos, signatures or watermarks anywhere in the image.
+
+  Layout: four tidy rows, evenly spaced and clearly separated by white space.
+  Row 1, palette: seven identical rounded-square color swatches in this order: turquoise, saffron, lapis blue, pomegranate red, eggplant purple, pistachio green, ink.
+  Row 2, building blocks: a circle, a pill, a rounded rectangle with large corner radii, a rounded triangle with soft rounded corners, a half-circle with rounded corners and a rounded teardrop, one palette color each.
+  Row 3, objects built only from those blocks (3 to 6 overlapping shapes each): a small tulip-shaped glass tea cup on a saucer, a pomegranate with a rounded crown, a round teapot, a pistachio nut, a potted plant with rounded leaves, and a five-point star whose tips are fully rounded.
+  Row 4, character parts built from the same blocks: a pair of eyes (ink ovals, each with one small white circle highlight), eyebrows as short ink pills, three mouths (a small closed smile, an open happy smile as a rounded ink half-circle with a pomegranate tongue, a small flat worried mouth), two pomegranate cheek circles, a bird wing made of stacked pill-shaped feathers in alternating ink and white bands, a fan-shaped crest of rounded saffron feathers with ink tips, and a long, gently curved ink beak with a rounded tip.
+
+  Overall: bold, simple, modern and warm; one consistent corner radius and scale throughout; balanced, airy composition like a professional brand style-guide page. Remember: no text of any kind.
