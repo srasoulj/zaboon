@@ -1,0 +1,12 @@
+/* Orchestrator-owned. Tailwind v4 + the Zaboon design tokens (packages/ui). */
+@import 'tailwindcss';
+@import '@zaboon/ui/styles.css';
+
+/* Tailwind must scan the shared UI package, not just this app. */
+@source '../../../packages/ui/src';
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-latin);
+}

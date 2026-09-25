@@ -1,7 +1,7 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in.",
-  "updatedAt": "2026-09-25T10:40:00Z",
-  "wave": "0b",
+  "updatedAt": "2026-09-25T10:50:00Z",
+  "wave": "0b/1",
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
@@ -25,6 +25,20 @@
       "id": "session_01Fx9PzDpMNGy2kTgo56EGZV",
       "purpose": "verify Wave 0a environment",
       "status": "completed: CANARY PASS (hook auto-ran, pnpm verify 17s, idempotent)"
+    },
+    "ws-db": {
+      "id": "session_0172d5pN43xji8PgEBpoeWLJ",
+      "branch": "claude/zaboon-ws-db",
+      "startedAt": "2026-09-25T10:43:32Z",
+      "restarts": 0,
+      "status": "working"
+    },
+    "ws-ui": {
+      "id": "session_019e4DiSNMURTw63RfcC9YtL",
+      "branch": "claude/zaboon-ws-ui",
+      "startedAt": "2026-09-25T10:44:08Z",
+      "restarts": 0,
+      "status": "working"
     }
   },
   "workstreams": {
@@ -38,11 +52,11 @@
     },
     "ws-db": {
       "wave": 1,
-      "status": "pending"
+      "status": "working"
     },
     "ws-ui": {
       "wave": 1,
-      "status": "pending"
+      "status": "working"
     },
     "ws-content-cli": {
       "wave": 1,
@@ -89,6 +103,16 @@
   ],
   "mergedPrs": [
     1,
-    2
+    2,
+    3
+  ],
+  "routines": {
+    "hourly": "trig_01Kp8fBefCCmUMchhp34dDWY",
+    "dailyAudit": "trig_01E3FFpKr6d8jLws9Ua1kDvF"
+  },
+  "trackerIssue": 4,
+  "notes": [
+    "User merges orchestrator PRs quickly (PR #1-#3 merged by srasoulj within minutes); always restart the branch from main after a merge.",
+    "Never `git add -A` while local subagents write into the tree; stage explicit paths."
   ]
 }

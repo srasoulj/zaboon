@@ -1,0 +1,141 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+# `order` is alphabetical among these ten letters; `lessons` give the teaching order
+# (non-connectors first, then frequent connectors).
+letters:
+  - id: l_alef
+    letter: ا
+    name: alef
+    translit: ā/a
+    ipa: ɒː/æ
+    connects: false
+    family: alef
+    order: 1
+    examples: [lx_baba, lx_maman, lx_salam]
+    audio: audio/l_alef.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_be
+    letter: ب
+    name: be
+    translit: b
+    ipa: b
+    connects: true
+    family: be
+    order: 2
+    examples: [lx_baba, lx_ab, lx_sib]
+    audio: audio/l_be.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_dal
+    letter: د
+    name: dāl
+    translit: d
+    ipa: d
+    connects: false
+    family: dal
+    order: 3
+    examples: [lx_bad]
+    audio: audio/l_dal.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_re
+    letter: ر
+    name: re
+    translit: r
+    ipa: r
+    connects: false
+    family: re
+    order: 4
+    examples: [lx_ruz, lx_mersi]
+    audio: audio/l_re.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_ze
+    letter: ز
+    name: ze
+    translit: z
+    ipa: z
+    connects: false
+    family: re
+    order: 5
+    examples: [lx_ruz]
+    audio: audio/l_ze.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_sin
+    letter: س
+    name: sin
+    translit: s
+    ipa: s
+    connects: true
+    family: sin
+    order: 6
+    examples: [lx_sib, lx_salam, lx_mersi]
+    audio: audio/l_sin.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_mim
+    letter: م
+    name: mim
+    translit: m
+    ipa: m
+    connects: true
+    family: mim
+    order: 7
+    examples: [lx_man, lx_maman, lx_salam]
+    audio: audio/l_mim.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_nun
+    letter: ن
+    name: nun
+    translit: n
+    ipa: n
+    connects: true
+    family: nun
+    order: 8
+    examples: [lx_nun, lx_man, lx_maman]
+    audio: audio/l_nun.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_vav
+    letter: و
+    name: vāv
+    translit: v/u
+    ipa: v/uː
+    connects: false
+    family: vav
+    order: 9
+    examples: [lx_nun, lx_khub, lx_ruz]
+    audio: audio/l_vav.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+  - id: l_ye
+    letter: ی
+    name: ye
+    translit: y/i
+    ipa: j/iː
+    connects: true
+    family: ye
+    order: 10
+    examples: [lx_sib, lx_chay, lx_mersi]
+    audio: audio/l_ye.mp3
+    status: approved
+    provenance: { author: fixtures }
+
+lessons:
+  - id: u01-letters-1
+    title: Letters that never connect
+    letters: [l_alef, l_dal, l_re, l_ze, l_vav]
+  - id: u01-letters-2
+    title: First connecting letters
+    letters: [l_be, l_mim, l_nun, l_sin, l_ye]

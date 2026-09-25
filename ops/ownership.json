@@ -1,7 +1,14 @@
 {
   "$comment": "Path ownership for parallel workstreams (CLAUDE.md). Checked in CI by scripts/check-ownership.ts. Orchestrator-owned.",
-  "orchestratorBranches": ["claude/affectionate-ptolemy-b4ypuw", "claude/zaboon-orchestrator"],
-  "alwaysAllowed": ["pnpm-lock.yaml"],
+  "orchestratorBranches": [
+    "claude/affectionate-ptolemy-b4ypuw",
+    "claude/zaboon-orchestrator"
+  ],
+  "alwaysAllowed": [
+    "pnpm-lock.yaml",
+    "apps/web/AGENTS.md",
+    "apps/web/CLAUDE.md"
+  ],
   "protected": [
     ".github/**",
     ".claude/**",
@@ -39,12 +46,52 @@
     "e2e/fixtures/**"
   ],
   "workstreams": {
-    "ws-farsi-grader": { "wave": 1, "paths": ["packages/farsi/**", "packages/grader/**"] },
-    "ws-engine": { "wave": 1, "paths": ["packages/session-engine/**", "packages/srs/**", "packages/game-rules/**"] },
-    "ws-db": { "wave": 1, "paths": ["supabase/migrations/**", "supabase/tests/**", "packages/db/**"] },
-    "ws-ui": { "wave": 1, "paths": ["packages/ui/**", "apps/web/app/(dev)/**", "e2e/ui/**"] },
-    "ws-content-cli": { "wave": 1, "paths": ["packages/ai/**", "tools/content-cli/**"] },
-    "ws-api": { "wave": 2, "paths": ["apps/web/app/api/**", "apps/web/lib/server/**", "apps/web/tests/api/**"] },
+    "ws-farsi-grader": {
+      "wave": 1,
+      "paths": [
+        "packages/farsi/**",
+        "packages/grader/**"
+      ]
+    },
+    "ws-engine": {
+      "wave": 1,
+      "paths": [
+        "packages/session-engine/**",
+        "packages/srs/**",
+        "packages/game-rules/**"
+      ]
+    },
+    "ws-db": {
+      "wave": 1,
+      "paths": [
+        "supabase/migrations/**",
+        "supabase/tests/**",
+        "packages/db/**"
+      ]
+    },
+    "ws-ui": {
+      "wave": 1,
+      "paths": [
+        "packages/ui/**",
+        "apps/web/app/(dev)/**",
+        "e2e/ui/**"
+      ]
+    },
+    "ws-content-cli": {
+      "wave": 1,
+      "paths": [
+        "packages/ai/**",
+        "tools/content-cli/**"
+      ]
+    },
+    "ws-api": {
+      "wave": 2,
+      "paths": [
+        "apps/web/app/api/**",
+        "apps/web/lib/server/**",
+        "apps/web/tests/api/**"
+      ]
+    },
     "ws-pages": {
       "wave": 2,
       "paths": [
@@ -58,8 +105,20 @@
         "apps/web/components/pages/**"
       ]
     },
-    "ws-player": { "wave": 2, "paths": ["apps/web/lib/lesson/**", "apps/web/app/lesson/**", "apps/web/components/lesson/**"] },
-    "ws-renderers": { "wave": 2, "paths": ["apps/web/components/challenges/**"] },
+    "ws-player": {
+      "wave": 2,
+      "paths": [
+        "apps/web/lib/lesson/**",
+        "apps/web/app/lesson/**",
+        "apps/web/components/lesson/**"
+      ]
+    },
+    "ws-renderers": {
+      "wave": 2,
+      "paths": [
+        "apps/web/components/challenges/**"
+      ]
+    },
     "ws-path-letters": {
       "wave": 2,
       "paths": [
@@ -70,6 +129,12 @@
         "apps/web/components/letters/**"
       ]
     },
-    "ws-qa": { "wave": 2, "paths": ["e2e/**", "apps/web/tests/**"] }
+    "ws-qa": {
+      "wave": 2,
+      "paths": [
+        "e2e/**",
+        "apps/web/tests/**"
+      ]
+    }
   }
 }
