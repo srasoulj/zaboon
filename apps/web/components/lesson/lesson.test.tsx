@@ -24,7 +24,10 @@ import {
   outboxUser,
   retagOutboxUser,
   sharedLessonStores,
+  type RendererResolver,
 } from './services'
+import { fixture } from '@/components/challenges/testing'
+import { rendererFor } from '@/lib/challenge-registry'
 import { correctResponse, resolveTestRenderer, wrongResponse } from './test-renderers'
 
 afterEach(() => {
@@ -247,13 +250,19 @@ describe('test renderer responses', () => {
 })
 
 // ------------------------------------------------------------------------------------ the player
-function renderPlayer(opts: { api?: Partial<Record<string, (o: unknown) => unknown>> } = {}) {
+function renderPlayer(
+  opts: {
+    api?: Partial<Record<string, (o: unknown) => unknown>>
+    session?: ReturnType<typeof testSession>
+    resolve?: RendererResolver
+  } = {},
+) {
   const calls: { name: string; opts: unknown }[] = []
   const api = (async (name: string, o: unknown) => {
     calls.push({ name, opts: o })
     const impl = opts.api?.[name]
     if (impl) return impl(o)
-    if (name === 'createSession') return testSession()
+    if (name === 'createSession') return opts.session ?? testSession()
     if (name === 'sessionEvent')
       return { lives: { ...testSession().lives, count: 4 }, duplicate: false }
     if (name === 'completeSession') return testResult()
@@ -276,7 +285,7 @@ function renderPlayer(opts: { api?: Partial<Record<string, (o: unknown) => unkno
             snapshots,
             outbox,
             audio: createSilentAudio(),
-            resolveRenderer: resolveTestRenderer,
+            resolveRenderer: opts.resolve ?? resolveTestRenderer,
           }}
         >
           {children}
@@ -588,5 +597,38 @@ describe('Enter on an already-selected choice', () => {
     card.focus()
     expect(fireEvent.keyDown(card, { key: 'Enter' })).toBe(true)
     expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+  })
+})
+
+describe('Enter with the real renderers (ws-renderers)', () => {
+  /** A browser activates a focused button on an Enter keydown that nobody prevented. */
+  const pressEnter = (el: HTMLElement) => {
+    el.focus()
+    const notPrevented = fireEvent.keyDown(el, { key: 'Enter' })
+    if (notPrevented) fireEvent.click(el)
+    return notPrevented
+  }
+
+  it('Enter on the selected select_translation card (a draft exists) is CHECK', async () => {
+    const challenge = { ...fixture('select_translation'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const card = (await screen.findAllByRole('button', { pressed: false }))[0]!
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(pressEnter(card)).toBe(false)
+    expect(await screen.findByTestId('lesson-feedback')).toBeInTheDocument()
+  })
+
+  it('Enter on a half-selected match card is not CHECK: the card deselects', async () => {
+    const challenge = { ...fixture('match_pairs'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const persian = await screen.findByRole('group', { name: 'Persian' })
+    const card = within(persian).getAllByRole('button')[0]!
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(pressEnter(card)).toBe(true) // left to the card
+    expect(card).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    expect(screen.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'locked')
   })
 })
