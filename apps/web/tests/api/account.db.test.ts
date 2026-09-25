@@ -1,5 +1,6 @@
 /** POST /api/account/merge, GET /api/account/export and DELETE /api/account. */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { repos, withSystem } from '@zaboon/db'
 import { api, get, play } from './flows'
 import { createHarness, type Harness, type TestUser } from './harness'
 
@@ -101,6 +102,45 @@ describe('POST /api/account/merge', () => {
       merged: true,
       home: { xpTotal: 15, user: { isAnonymous: false } },
     })
+  })
+})
+
+describe('POST /api/account/merge: current level and retries', () => {
+  it('takes the current level from the merged progress when the guest is ahead', async () => {
+    const guest = await h.guest()
+    await play(h, guest)
+    await play(h, guest, { levelId: 'u01-l1' })
+    const member = await h.member()
+    await play(h, member, { kind: 'practice' }) // enrolled, still on the first level
+    const res = await merge(member, guest.token)
+    expect(res.body).toMatchObject({ merged: true, home: { course: { currentLevelId: 'u01-l2' } } })
+  })
+
+  it('finishes a merge whose request failed after the database commit', async () => {
+    const guest = await h.guest()
+    await play(h, guest, { now: day(1) })
+    await play(h, guest, { now: day(2) })
+    await play(h, guest, { levelId: 'u01-l1', now: day(2) })
+    const member = await h.member()
+    await play(h, member, { kind: 'practice', now: day(3) })
+    // The first attempt merged the rows, then died before rebuilding state and deleting the guest.
+    await withSystem(h.db.db, (tx) =>
+      repos.merge.mergeGuestIntoMember(tx, { guestId: guest.id, memberId: member.id }),
+    )
+    const [stale] = await h.sql`SELECT current FROM streaks WHERE user_id = ${member.id}`
+    expect(stale!.current).toBe(2) // each field's max, not the real streak
+    expect(await h.sql`SELECT id FROM auth.users WHERE id = ${guest.id}`).toHaveLength(1)
+
+    const retry = await merge(member, guest.token)
+    expect(retry.status).toBe(200)
+    expect(retry.body).toMatchObject({
+      merged: false,
+      home: { streak: { current: 3 }, course: { currentLevelId: 'u01-l2' } },
+    })
+    const [pub] =
+      await h.sql`SELECT streak_current FROM public_profiles WHERE user_id = ${member.id}`
+    expect(pub!.streak_current).toBe(3)
+    expect(await h.sql`SELECT id FROM auth.users WHERE id = ${guest.id}`).toHaveLength(0)
   })
 })
 

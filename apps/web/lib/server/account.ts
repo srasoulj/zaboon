@@ -2,13 +2,13 @@
  * Account operations: guest → member merge (§10.3), GDPR export and delete (§12).
  */
 import type { AppConfig } from '@zaboon/contracts'
-import { repos, withSystem, withUser, withUserLock, type Db } from '@zaboon/db'
+import { repos, withSystem, withUser, withUserLock, type Db, type Tx } from '@zaboon/db'
 import { applyActivity, initialStreak } from '@zaboon/game-rules'
 import { verifyAccessToken, type AuthUser } from './auth'
 import { authAdmin } from './auth/admin'
 import { currentVersion, loadBundle } from './content'
 import { ApiError } from './errors'
-import { migrateEnrollment } from './path'
+import { currentOf, migrateEnrollment, pathStates } from './path'
 
 interface Ctx {
   db: Db
@@ -31,11 +31,44 @@ async function migrateAllEnrollments(db: Db, userId: string): Promise<void> {
 }
 
 /**
+ * Rebuilds what the repository merge can't: the streak from the merged days (game-rules is the one
+ * implementation of streak math), the public stats, and each enrollment's current level from the
+ * merged progress (the repository keeps the member's). Deterministic, so running it again is safe.
+ */
+async function rebuildMemberState(tx: Tx, memberId: string, config: AppConfig): Promise<void> {
+  const days = await repos.progress.listDailyActivity(tx, memberId)
+  let state = initialStreak(config)
+  const frozen: string[] = []
+  for (const d of days) {
+    if (d.sessions === 0) continue
+    const r = applyActivity(state, d.localDate, config)
+    state = r.state
+    frozen.push(...r.frozenDates)
+  }
+  await repos.state.saveStreak(tx, memberId, state)
+  await repos.progress.markFreezeUsed(tx, memberId, frozen)
+  await repos.profiles.syncPublicStats(tx, memberId, {
+    xpTotal: await repos.progress.getXpTotal(tx, memberId),
+    streakCurrent: state.current,
+  })
+  for (const e of await repos.enrollments.listEnrollments(tx, memberId)) {
+    const cv = await currentVersion(tx, e.courseId)
+    if (!cv || e.contentVersion !== cv.version) continue
+    const { states } = await pathStates(tx, memberId, await loadBundle(cv))
+    await repos.enrollments.updateEnrollment(tx, memberId, e.courseId, {
+      currentLevelId: currentOf(states),
+    })
+  }
+}
+
+/**
  * POST /api/account/merge. The caller (a linked member) proves they also hold the guest session by
  * sending its access token. Both learners are brought to the current content version first (the
- * repository merge unions level_progress by level id), then everything of the guest's moves into
- * the member, the streak is recomputed from the merged days, and the guest's auth user is deleted.
- * Idempotent: once the guest is gone, a replay reports `merged: false`.
+ * repository merge unions level_progress by level id); then, in ONE transaction, everything of the
+ * guest's moves into the member and the member's derived state is rebuilt; finally the guest's
+ * auth user is deleted.
+ * Idempotent and retryable: a replay reports `merged: false` but still rebuilds the member's state
+ * and deletes the guest's auth user, so a request that failed after the commit completes on retry.
  */
 export async function mergeAccounts(ctx: Ctx, guestToken: string): Promise<{ merged: boolean }> {
   const guest = await verifyAccessToken(guestToken)
@@ -45,32 +78,18 @@ export async function mergeAccounts(ctx: Ctx, guestToken: string): Promise<{ mer
 
   await migrateAllEnrollments(ctx.db, guest.id)
   await migrateAllEnrollments(ctx.db, ctx.user.id)
-  const summary = await withSystem(ctx.db, (tx) =>
-    repos.merge.mergeGuestIntoMember(tx, { guestId: guest.id, memberId: ctx.user.id }),
-  )
-  if (!summary.merged) return { merged: false }
-
-  // The merge takes each streak field's max; the real streak follows from the merged days.
-  await withUserLock(ctx.db, ctx.user.id, async (tx) => {
-    const days = await repos.progress.listDailyActivity(tx, ctx.user.id)
-    let state = initialStreak(ctx.config)
-    const frozen: string[] = []
-    for (const d of days) {
-      if (d.sessions === 0) continue
-      const r = applyActivity(state, d.localDate, ctx.config)
-      state = r.state
-      frozen.push(...r.frozenDates)
-    }
-    await repos.state.saveStreak(tx, ctx.user.id, state)
-    await repos.progress.markFreezeUsed(tx, ctx.user.id, frozen)
-    await repos.profiles.syncPublicStats(tx, ctx.user.id, {
-      xpTotal: await repos.progress.getXpTotal(tx, ctx.user.id),
-      streakCurrent: state.current,
+  const summary = await withSystem(ctx.db, async (tx) => {
+    const r = await repos.merge.mergeGuestIntoMember(tx, {
+      guestId: guest.id,
+      memberId: ctx.user.id,
     })
+    await rebuildMemberState(tx, ctx.user.id, ctx.config)
+    return r
   })
   await authAdmin().deleteUser(guest.id)
-  console.info('[account] merged guest into member', { memberId: ctx.user.id, ...summary })
-  return { merged: true }
+  if (summary.merged)
+    console.info('[account] merged guest into member', { memberId: ctx.user.id, ...summary })
+  return { merged: summary.merged }
 }
 
 /** GET /api/account/export: every row we hold about the caller. */

@@ -57,7 +57,7 @@ async function withCourse<T>(
 ): Promise<T> {
   return withUserLock(ctx.db, ctx.userId, async (tx) => {
     const courseId = ctx.courseId ?? (await activeCourseId(tx, ctx.userId))
-    const bundle = await loadBundle(await requireCurrentVersion(ctx.db, courseId))
+    const bundle = await loadBundle(await requireCurrentVersion(tx, courseId))
     await migrateEnrollment(tx, ctx.userId, bundle)
     return fn(tx, bundle)
   })

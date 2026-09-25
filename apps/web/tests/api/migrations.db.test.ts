@@ -12,6 +12,7 @@ import { createHarness, loadCourseDir, type Harness, type TestUser } from './har
 let h: Harness
 let alice: TestUser
 let guest: TestUser
+let carol: TestUser
 let pending: StartedSession
 
 const RENAMES = { 'u01-s0': 'u01-s0b', 'u01-l1': 'u01-l1b' } as const
@@ -24,6 +25,8 @@ beforeAll(async () => {
   pending = await start(h, alice, { levelId: 'u01-l1' })
   guest = await h.guest()
   await play(h, guest)
+  carol = await h.guest()
+  await play(h, carol)
 
   // v2 renames two levels and ships the migration.
   const course = structuredClone(loadCourseDir('fixtures'))
@@ -70,6 +73,17 @@ describe('lazy path migrations', () => {
       'u01-l1b': 'completed',
       'u01-l2': 'current',
     })
+  })
+
+  it('GET /api/home migrates too, so its current level exists at the version it reports', async () => {
+    const home = await get(h, api.home, '/api/home', carol)
+    expect(home.status).toBe(200)
+    expect(home.body.course).toMatchObject({
+      id: 'fixture',
+      contentVersion: 2,
+      currentLevelId: 'u01-l1b',
+    })
+    await start(h, carol, { levelId: home.body.course.currentLevelId })
   })
 
   it('refuses the old level ids for new sessions', async () => {
