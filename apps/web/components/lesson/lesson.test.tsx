@@ -91,6 +91,12 @@ describe('LessonFeedback', () => {
     expect(screen.getByRole('heading', { name: 'Correct solution:' })).toBeInTheDocument()
     const fa = screen.getByText('سلام').closest('[lang="fa"]')
     expect(fa).toHaveAttribute('dir', 'rtl')
+    // An RTL island: its own block, aligned to its start (the right), like the RTL answer line.
+    const island = screen.getByTestId('feedback-solution-fa')
+    expect(island).toHaveAttribute('lang', 'fa')
+    expect(island).toHaveAttribute('dir', 'rtl')
+    expect(island).toHaveStyle({ textAlign: 'start' })
+    expect(island).toContainElement(screen.getByText('سلام'))
     fireEvent.click(screen.getByRole('button', { name: 'Report a problem' }))
     expect(onReport).toHaveBeenCalled()
   })
