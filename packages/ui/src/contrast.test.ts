@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { aaMinimum, contrastRatio, relativeLuminance, resolveColor, TEXT_PAIRS } from './contrast'
+import {
+  aaMinimum,
+  contrastRatio,
+  FOCUS_RING_SURFACES,
+  focusRingContrast,
+  relativeLuminance,
+  resolveColor,
+  TEXT_PAIRS,
+} from './contrast'
 import { BRAND_NAMES, tokens, type ThemeName } from './tokens'
 
 describe('contrast math (WCAG 2.2)', () => {
@@ -53,5 +61,35 @@ describe('every text/background pair passes WCAG AA', () => {
     for (const p of TEXT_PAIRS) {
       if ('brand' in p.fg && p.fg.shade === 'label' && largeOnly.includes(p.fg.brand)) expect(p.large).toBe(true)
     }
+  })
+})
+
+describe('the focus ring is visible on every surface (WCAG 1.4.11, ≥3:1)', () => {
+  for (const theme of ['light', 'dark'] as const) {
+    for (const { use, surface } of FOCUS_RING_SURFACES) {
+      it(`${theme}: ${use}`, () => {
+        const { between, vsSurface } = focusRingContrast(surface, theme)
+        expect(between, 'ink band vs bg halo').toBeGreaterThanOrEqual(3)
+        expect(vsSurface, `ring vs ${resolveColor(surface, theme)}`).toBeGreaterThanOrEqual(3)
+      })
+    }
+  }
+
+  it('covers the surfaces the review measured (brand banners, feedback bars, surface)', () => {
+    const uses = FOCUS_RING_SURFACES.map((f) => f.use).join('\n')
+    for (const b of ['lajvard', 'anar', 'firouzeh', 'pesteh']) expect(uses).toContain(`${b}-500 fill`)
+    expect(uses).toContain('correct feedback bar')
+    expect(uses).toContain('wrong feedback bar')
+    expect(uses).toContain('surface (')
+  })
+})
+
+describe('styles.css focus ring', () => {
+  it('uses the ink band and bg halo (not a single brand colour)', async () => {
+    const { readFileSync } = await import('node:fs')
+    const css = readFileSync(new URL('./styles.css', import.meta.url), 'utf8')
+    expect(css).toContain('outline: 3px solid var(--color-ink);')
+    expect(css).toMatch(/--zb-ring-halo: 0 0 0 calc\(var\(--zb-ring-offset\) \+ 6px\) var\(--color-bg\);/)
+    expect(css).not.toContain('outline: 3px solid var(--color-lajvard-500)')
   })
 })

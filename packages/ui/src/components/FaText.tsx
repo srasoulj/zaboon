@@ -28,7 +28,10 @@ export interface FaTextProps {
   /** Element to render: inline by default; `p`/`div` for blocks. */
   as?: 'span' | 'p' | 'div'
   className?: string
-  /** Accessible label override, e.g. when the text is a prompt ("Translate: …"). */
+  /**
+   * Accessible name for the phrase, e.g. "Prompt: I want water". When set, the root gets
+   * `role="group"` (a span/p/div cannot carry a name on its own) and keeps its readable content.
+   */
   'aria-label'?: string
 }
 
@@ -103,6 +106,7 @@ export function FaText({
       lang="fa"
       dir="rtl"
       className={clsx('zb-fa', `zb-fa--${size}`, anyTranslit && 'zb-fa--translit', className)}
+      role={ariaLabel !== undefined ? 'group' : undefined}
       aria-label={ariaLabel}
     >
       {words}

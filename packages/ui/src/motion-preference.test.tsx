@@ -50,3 +50,36 @@ describe('usePrefersReducedMotion', () => {
     expect(screen.getByText('reduce')).toBeInTheDocument()
   })
 })
+
+describe('MotionPreferenceProvider → <html data-motion>', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.motion
+  })
+
+  it('mirrors the in-app toggle and restores the attribute on unmount', () => {
+    const { rerender, unmount } = render(
+      <MotionPreferenceProvider reduce>
+        <Probe />
+      </MotionPreferenceProvider>,
+    )
+    expect(document.documentElement.dataset.motion).toBe('reduce')
+    rerender(
+      <MotionPreferenceProvider reduce={false}>
+        <Probe />
+      </MotionPreferenceProvider>,
+    )
+    expect(document.documentElement.dataset.motion).toBe('full')
+    unmount()
+    expect(document.documentElement.dataset.motion).toBeUndefined()
+  })
+
+  it('leaves the attribute alone when following the OS setting', () => {
+    document.documentElement.dataset.motion = 'full'
+    render(
+      <MotionPreferenceProvider>
+        <Probe />
+      </MotionPreferenceProvider>,
+    )
+    expect(document.documentElement.dataset.motion).toBe('full')
+  })
+})

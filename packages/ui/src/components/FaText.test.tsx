@@ -89,7 +89,13 @@ describe('FaText', () => {
   })
 
   it('supports block elements and an accessible label', () => {
-    render(<FaText as="p" text="سلام" aria-label="Persian: hello" />)
-    expect(screen.getByLabelText('Persian: hello').tagName).toBe('P')
+    const { rerender } = render(<FaText as="p" text="سلام" aria-label="Persian: hello" />)
+    const group = screen.getByRole('group', { name: 'Persian: hello' })
+    expect(group).toHaveAccessibleName('Persian: hello')
+    expect(group.tagName).toBe('P')
+    expect(group).toHaveTextContent('سلام')
+    rerender(<FaText as="p" text="سلام" />)
+    expect(screen.queryByRole('group')).toBeNull()
+    expect(screen.getByText('سلام').closest('p')).not.toHaveAttribute('aria-label')
   })
 })

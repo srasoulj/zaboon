@@ -236,9 +236,47 @@
     border: 0;
   }
 
-  :where(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-unit__guide, .zb-stat, .zb-fa__tap, .zb-feedback__report, .zb-dialog__close, .zb-toast__close):focus-visible {
-    outline: 3px solid var(--color-lajvard-500);
-    outline-offset: 3px;
+  /* Two-tone focus ring (WCAG 1.4.11 / 2.4.7): a 3px ink band wrapped in a bg-coloured halo on
+     both sides. Ink vs bg is ≥3:1 in both themes, and on any surface at least one of the two
+     tones is ≥3:1 against it (contrast.test.ts checks every surface a control sits on).
+     Controls whose 3D lip is a box-shadow keep it and add the halo as a second shadow. */
+  .zb-btn,
+  .zb-choice,
+  .zb-tile,
+  .zb-node__button,
+  .zb-unit__guide,
+  .zb-stat,
+  .zb-fa__tap,
+  .zb-feedback__report,
+  .zb-dialog__close,
+  .zb-toast__close {
+    --zb-ring-offset: 3px;
+    --zb-ring-halo: 0 0 0 calc(var(--zb-ring-offset) + 6px) var(--color-bg);
+  }
+  :is(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-unit__guide, .zb-stat, .zb-fa__tap, .zb-feedback__report, .zb-dialog__close, .zb-toast__close):focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: var(--zb-ring-offset);
+    box-shadow: var(--zb-ring-halo);
+  }
+  /* The lip sits below the box: push the ring past it. */
+  .zb-btn,
+  .zb-node__button {
+    --zb-ring-offset: 7px;
+  }
+  .btn-3d.zb-btn:focus-visible {
+    box-shadow:
+      0 var(--lip-button) 0 var(--lip),
+      var(--zb-ring-halo);
+  }
+  .btn-3d.zb-btn:focus-visible:active:not(:disabled, [aria-disabled='true']) {
+    box-shadow:
+      0 0 0 var(--lip),
+      var(--zb-ring-halo);
+  }
+  .zb-node__button:focus-visible {
+    box-shadow:
+      0 calc(var(--lip-button) + 3px) 0 var(--lip),
+      var(--zb-ring-halo);
   }
 
   /* ---------- Button3D ---------- */
