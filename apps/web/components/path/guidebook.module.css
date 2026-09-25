@@ -104,6 +104,10 @@
   border-block-end: 0;
 }
 
+/* Persian takes the size of its context (a heading, a table cell), scaled like the kit's FaText. */
+.phrase :global(.zb-fa) {
+  font-size: calc(1em * var(--font-persian-scale));
+}
 .phrase {
   display: inline-flex;
   align-items: center;

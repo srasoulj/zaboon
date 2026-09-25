@@ -63,9 +63,49 @@ test('a locked node explains itself; Escape closes and returns focus', async ({
   const dialog = page.getByRole('dialog', { name: 'Letter challenges' })
   await expect(dialog.getByText('Complete the levels above to unlock this')).toBeVisible()
   await expect(dialog.getByRole('link')).toHaveCount(0)
+  // The arrow draws only its two outer sides, dashed; the inner two stay off (no dark "V").
+  const arrow = await dialog.evaluate((el) => {
+    const s = getComputedStyle(el, '::before')
+    return {
+      start: s.borderInlineStartStyle,
+      top: s.borderBlockStartStyle,
+      end: s.borderInlineEndStyle,
+      bottom: s.borderBlockEndStyle,
+      endWidth: s.borderInlineEndWidth,
+      bottomWidth: s.borderBlockEndWidth,
+    }
+  })
+  expect(arrow).toMatchObject({
+    start: 'dashed',
+    top: 'dashed',
+    endWidth: '0px',
+    bottomWidth: '0px',
+  })
+  expect([arrow.end, arrow.bottom]).not.toContain('dashed')
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(node(page, 'u01-l2')).toBeFocused()
+})
+
+test('Persian in a guidebook heading takes the heading size', async ({ guestPage: page }) => {
+  await page.route('**/api/guidebooks/**', async (route) => {
+    const res = await route.fetch()
+    const body = (await res.json()) as { markdown: string }
+    await route.fulfill({
+      response: res,
+      json: { ...body, markdown: `## سلام hello\n\n${body.markdown}` },
+    })
+  })
+  await page.goto('/learn/guidebook/u01-fixture?course=fixture')
+  const heading = page.getByRole('heading', { level: 3, name: /hello/ }).first()
+  await expect(heading.locator('[lang="fa"]')).toHaveText('سلام')
+  const [headingPx, faPx, bodyPx] = await heading.evaluate((h) => {
+    const fa = h.querySelector('[lang="fa"]')!
+    const p = document.querySelector('[data-testid="guidebook-content"] p')!
+    return [h, fa, p].map((e) => parseFloat(getComputedStyle(e).fontSize))
+  })
+  expect(faPx).toBeGreaterThan(headingPx!)
+  expect(faPx).toBeGreaterThan(bodyPx! * 1.15)
 })
 
 test('the Guidebook renders its Persian phrases with audio', async ({ guestPage: page }) => {

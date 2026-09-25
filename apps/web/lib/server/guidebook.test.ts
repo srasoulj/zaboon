@@ -29,11 +29,16 @@ describe('rewriteGuidebookAudio', () => {
       '<fa audio="">نان</fa>',
     )
     expect(rewriteGuidebookAudio('<fa audio="">نان</fa>', resolve)).toBe('<fa audio="">نان</fa>')
-    expect(rewriteGuidebookAudio('<FA AUDIO=audio/a.mp3>نان</FA>', resolve)).toBe(
+    expect(rewriteGuidebookAudio('<FA AUDIO="audio/a.mp3">نان</FA>', resolve)).toBe(
       '<fa audio="/content/assets/audio/a.0123456789.mp3">نان</FA>',
     )
-    // Outside URLs are not bundle media, so they never survive.
+    // Only refs in the bundle index resolve: an outside URL, or another /content/ file that is not
+    // this bundle's media, is dropped. (A cleanup: the client's isContentAudioUrl is the
+    // enforcement point for what can play.)
     expect(rewriteGuidebookAudio('<fa audio="https://evil.test/x.mp3">نان</fa>', resolve)).toBe(
+      '<fa audio="">نان</fa>',
+    )
+    expect(rewriteGuidebookAudio('<fa audio="/content/other/v1/x.mp3">نان</fa>', resolve)).toBe(
       '<fa audio="">نان</fa>',
     )
   })
@@ -58,13 +63,11 @@ describe('rewriteGuidebookAudio', () => {
     expect(
       rewriteGuidebookAudio('<fa title="a>b" audio="https://evil.test/y.mp3">سلام</fa>', resolve),
     ).toBe('<fa audio="">سلام</fa>')
-    // "/" separates attributes: this audio is real, and still has to resolve.
-    expect(rewriteGuidebookAudio('<fa/audio="https://evil.test/z.mp3">آب</fa>', resolve)).toBe(
-      '<fa audio="">آب</fa>',
-    )
-    expect(rewriteGuidebookAudio('<fa/audio="audio/a.mp3">آب</fa>', resolve)).toBe(
-      '<fa audio="/content/assets/audio/a.0123456789.mp3">آب</fa>',
-    )
+    // Not markdown inline HTML (no space before the attribute): the page shows it as text and
+    // renders no <fa> element, so there is nothing to rewrite.
+    const slash = '<fa/audio="https://evil.test/z.mp3">آب</fa>'
+    expect(faStartTags(slash)).toEqual([])
+    expect(rewriteGuidebookAudio(slash, resolve)).toBe(slash)
     // A fake ` audio=` inside another attribute is not the audio attribute.
     expect(
       rewriteGuidebookAudio(
@@ -75,6 +78,34 @@ describe('rewriteGuidebookAudio', () => {
     expect(rewriteGuidebookAudio(`<fa title=' audio="audio/a.mp3"'>نان</fa>`, resolve)).toBe(
       '<fa audio="">نان</fa>',
     )
+  })
+
+  it('markdown code spans and backslash escapes cannot hide an <fa> from the rewrite', () => {
+    // A code span that looks like an open attribute.
+    expect(
+      rewriteGuidebookAudio(
+        '`<a title="` <fa audio="https://evil.test/x.mp3">سلام</fa> `">`',
+        resolve,
+      ),
+    ).toBe('`<a title="` <fa audio="">سلام</fa> `">`')
+    // An escaped "<" that looks like an open tag.
+    expect(
+      rewriteGuidebookAudio('\\<a title=" <fa audio="https://evil.test/y.mp3">آب</fa>', resolve),
+    ).toBe('\\<a title=" <fa audio="">آب</fa>')
+    // A code span that looks like an open comment, before a later <fa>.
+    expect(
+      rewriteGuidebookAudio(
+        '`<!--` then\n\nlater <fa audio="https://evil.test/z.mp3">نان</fa>',
+        resolve,
+      ),
+    ).toBe('`<!--` then\n\nlater <fa audio="">نان</fa>')
+  })
+
+  it('leaves <fa> inside code spans and fences untouched', () => {
+    const md =
+      'Write `<fa audio="audio/a.mp3">x</fa>` like this:\n\n```html\n<fa audio="https://evil.test/q.mp3">y</fa>\n```\n'
+    expect(faStartTags(md)).toEqual([])
+    expect(rewriteGuidebookAudio(md, resolve)).toBe(md)
   })
 
   it('finds each <fa> start tag at its parsed position', () => {

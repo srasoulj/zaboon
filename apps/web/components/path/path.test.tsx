@@ -244,10 +244,13 @@ describe('level popover', () => {
     const user = userEvent.setup()
     const { container } = renderWithServices(<PathView path={FIXTURE_PATH} />)
     await user.click(nodeButton(container, 'u01-l1'))
-    nodeButton(container, 'u01-l1').focus()
+    // Focus leaves for the page body (no related target, so the popover stays open).
+    ;(document.activeElement as HTMLElement).blur()
+    expect(document.activeElement).toBe(document.body)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(nodeButton(container, 'u01-l1')).toHaveFocus()
+    expect(document.activeElement).toBe(document.body)
   })
 
   it('keeps aria-expanded right when a level changes state while its popover is open', async () => {
