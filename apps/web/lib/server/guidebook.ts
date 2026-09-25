@@ -4,11 +4,14 @@
  * The content build hashes every media ref it copies (`audio/x.mp3` → `audio/x.<sha10>.mp3`) but
  * leaves the refs inside guidebook markdown as authored, so this module maps each
  * `<fa audio="audio/x.mp3">` ref to its hashed bundle ref and then to a public URL. A ref with no
- * media in the bundle (an outside URL included) becomes `audio=""` (no speaker button).
+ * media in the bundle (an outside URL included) becomes `audio=""` (no speaker button). The
+ * client's `isContentAudioUrl` stays the enforcement point for what can play.
  */
 import type { GuidebookResponse } from '@zaboon/contracts'
 import { UnitId } from '@zaboon/content-schema'
+import Markdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 import type { Db } from '@zaboon/db'
 import { withCourse } from './catalog'
 import { mediaUrl, type LoadedBundle } from './content'
@@ -48,10 +51,6 @@ export function bundleMediaIndex(bundle: Pick<LoadedBundle, 'units' | 'letters' 
   return index
 }
 
-type RawTransform = ReturnType<typeof rehypeRaw>
-type RawTree = Parameters<RawTransform>[0]
-type RawFile = Parameters<RawTransform>[1]
-
 /** The parts of a hast node this module reads (hast's types are not a direct dependency). */
 interface HastNode {
   type: string
@@ -86,50 +85,48 @@ export interface FaStartTag {
 }
 
 /**
- * Every `<fa>` start tag in the markdown, found by parsing it as HTML (parse5 via rehype-raw), so
- * quoting tricks (`title="a>b"`, `<fa/audio=…>`, a fake ` audio=` inside another attribute) are
- * read exactly like a browser would.
+ * Every `<fa>` start tag in the markdown, found by running the renderer's own parse (react-markdown
+ * with remark-gfm, then rehype-raw/parse5 on the raw HTML; see GuidebookMarkdown). So this sees
+ * exactly the `<fa>` elements the page will render: code spans, fences and backslash escapes hide
+ * nothing and are never touched, and quoting tricks (`title="a>b"`, `<fa/audio=…>`, a fake
+ * ` audio=` inside another attribute) are read like a browser reads them. The plugin list must stay
+ * in step with GuidebookMarkdown's (before its sanitizer, which keeps `fa`).
  */
 export function faStartTags(markdown: string): FaStartTag[] {
-  const tree = {
-    type: 'root',
-    children: [
-      {
-        type: 'raw',
-        value: markdown,
-        position: {
-          start: { line: 1, column: 1, offset: 0 },
-          end: { line: 1, column: 1, offset: markdown.length },
-        },
-      },
-    ],
-  } as unknown as RawTree
-  // hast-util-raw only reads the text (for positions) and `message` from the file.
-  const file = { value: markdown, toString: () => markdown, messages: [], message() {} }
-  const root = rehypeRaw()(tree, file as unknown as RawFile) as unknown as HastNode
-  const out: FaStartTag[] = []
-  const walk = (node: HastNode) => {
-    if (node.type === 'element' && node.tagName === 'fa') {
+  const found: HastNode[] = []
+  const capture = () => (tree: HastNode) => {
+    const walk = (node: HastNode) => {
+      if (node.type === 'element' && node.tagName === 'fa') found.push(node)
+      node.children?.forEach(walk)
+    }
+    walk(tree)
+  }
+  // Run for its tree only: the React elements it returns are discarded.
+  Markdown({ children: markdown, remarkPlugins: [remarkGfm], rehypePlugins: [rehypeRaw, capture] })
+  return found
+    .map((node) => {
       const start = node.position?.start.offset
       if (start === undefined) throw new Error('guidebook <fa> element without a source position')
       const firstChild = node.children?.[0]?.position?.start.offset
       const audio = node.properties?.audio
-      out.push({
+      return {
         start,
         end: firstChild ?? startTagEnd(markdown, start),
         audio: typeof audio === 'string' ? audio : null,
-      })
-    }
-    node.children?.forEach(walk)
-  }
-  walk(root)
-  return out.sort((a, b) => a.start - b.start)
+      }
+    })
+    .sort((x, y) => x.start - y.start)
 }
 
 /**
  * Replaces every `<fa …>` start tag with `<fa audio="URL">`: the parsed `audio` ref resolved
- * through the bundle (`resolve`), `""` when it has none or it doesn't resolve. Other attributes
- * are dropped; the rest of the markdown is left byte for byte (sanitizing is the renderer's job).
+ * through the bundle index (`resolve`), `""` when it has none or it doesn't resolve, so no audio
+ * the bundle doesn't have survives (an outside URL or another `/content/…` path included). Other
+ * attributes are dropped; the rest of the markdown is left byte for byte.
+ *
+ * This is a cleanup, not the security boundary: the renderer sanitizes the HTML, and the client
+ * only ever plays course media (`isContentAudioUrl` in components/path/play-audio.ts), which is
+ * the enforcement point for what audio can play.
  */
 export function rewriteGuidebookAudio(
   markdown: string,

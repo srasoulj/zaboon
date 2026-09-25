@@ -37,14 +37,21 @@
     0 calc(var(--lip-button) + 3px) 0 var(--lip),
     0 0 0 5px var(--color-zaferan-500);
 }
+.legendary :global(.zb-node__button):focus-visible {
+  box-shadow:
+    0 calc(var(--lip-button) + 3px) 0 var(--lip),
+    0 0 0 5px var(--color-zaferan-500),
+    var(--zb-ring-halo);
+}
+/* Pressed comes last so it wins over focus-visible (same specificity), like the kit's order. */
 .legendary :global(.zb-node__button):active {
   box-shadow:
     0 0 0 var(--lip),
     0 0 0 5px var(--color-zaferan-500);
 }
-.legendary :global(.zb-node__button):focus-visible {
+.legendary :global(.zb-node__button):focus-visible:active {
   box-shadow:
-    0 calc(var(--lip-button) + 3px) 0 var(--lip),
+    0 0 0 var(--lip),
     0 0 0 5px var(--color-zaferan-500),
     var(--zb-ring-halo);
 }
@@ -112,7 +119,9 @@
   border-style: dashed;
 }
 .popover[data-state='locked']::before {
-  border-style: dashed;
+  /* Only the two drawn sides: `border-style` would switch on the other two (in currentColor). */
+  border-inline-start-style: dashed;
+  border-block-start-style: dashed;
 }
 
 .linkButton {

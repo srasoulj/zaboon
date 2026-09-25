@@ -2,7 +2,8 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { GuidebookMarkdown, GuidebookView, textOf } from './GuidebookView'
+import rehypeSanitize from 'rehype-sanitize'
+import { GUIDEBOOK_SCHEMA, GuidebookMarkdown, GuidebookView, textOf } from './GuidebookView'
 import { isContentAudioUrl, playAudio } from './play-audio'
 import { renderWithServices } from './test-support'
 
@@ -138,6 +139,34 @@ describe('guidebook hardening', () => {
     vi.stubGlobal('Audio', AudioMock)
     playAudio('https://evil.test/x.mp3')
     expect(AudioMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('GUIDEBOOK_SCHEMA', () => {
+  type Tree = Parameters<ReturnType<typeof rehypeSanitize>>[0]
+  const sanitizedAudio = (audio: string): unknown => {
+    const tree = {
+      type: 'root',
+      children: [
+        { type: 'element', tagName: 'fa', properties: { audio, onClick: 'x' }, children: [] },
+      ],
+    } as unknown as Tree
+    const out = rehypeSanitize(GUIDEBOOK_SCHEMA)(tree) as unknown as {
+      children: { tagName: string; properties: Record<string, unknown> }[]
+    }
+    expect(out.children[0]!.tagName).toBe('fa')
+    expect(out.children[0]!.properties).not.toHaveProperty('onClick')
+    return out.children[0]!.properties.audio
+  }
+
+  it('keeps fa[audio] only for relative and http(s) URLs', () => {
+    expect(sanitizedAudio('/content/fixture/assets/audio/a.mp3')).toBe(
+      '/content/fixture/assets/audio/a.mp3',
+    )
+    expect(sanitizedAudio('https://cdn.zaboon.test/a.mp3')).toBe('https://cdn.zaboon.test/a.mp3')
+    expect(sanitizedAudio('')).toBe('')
+    expect(sanitizedAudio('javascript:alert(1)')).toBeUndefined()
+    expect(sanitizedAudio('data:audio/mp3;base64,AAAA')).toBeUndefined()
   })
 })
 
