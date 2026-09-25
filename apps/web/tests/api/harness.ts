@@ -18,7 +18,7 @@ import postgres from 'postgres'
 import { TEST_NOW_HEADER } from '@zaboon/contracts'
 import { createDb, repos, withSystem, type DbHandle } from '@zaboon/db'
 import { createTestDatabase, type TestDatabase } from '@zaboon/db/testing'
-import { loadCourse } from '../../../../tools/content-cli/src/load'
+import { loadCourse, type LoadedCourse } from '../../../../tools/content-cli/src/load'
 import { publishLocal, type PublishResult } from '../../../../tools/content-cli/src/publish'
 import { repoRoot } from '../../../../tools/content-cli/src/paths'
 import {
@@ -73,7 +73,8 @@ export interface Harness {
   /** Links an email to a guest (same user id, no longer anonymous). */
   link(user: TestUser, email: string): Promise<TestUser>
   call<T = Json>(handler: Handler, opts: CallOptions): Promise<CallResult<T>>
-  publish(course: 'fixtures' | 'fa-en'): Promise<PublishResult>
+  /** Publishes a course (by folder name, or an edited LoadedCourse) as its next current version. */
+  publish(course: 'fixtures' | 'fa-en' | LoadedCourse): Promise<PublishResult>
   close(): Promise<void>
 }
 
@@ -83,6 +84,11 @@ type Globals = typeof globalThis & {
 }
 
 let emailSeq = 0
+
+/** A course from content/<name> (fixtures is the frozen e2e course). */
+export function loadCourseDir(name: 'fixtures' | 'fa-en'): LoadedCourse {
+  return loadCourse(join(repoRoot(), 'content', name))
+}
 
 async function withToken(user: DevUser): Promise<TestUser> {
   const { accessToken } = await signLocalToken({
@@ -127,9 +133,9 @@ export async function createHarness(
   )
   const sql = postgres(tdb.adminUrl, { max: 2, onnotice: () => {} })
 
-  const publish = async (course: 'fixtures' | 'fa-en') => {
+  const publish = async (course: 'fixtures' | 'fa-en' | LoadedCourse) => {
     const r = await publishLocal({
-      course: loadCourse(join(repoRoot(), 'content', course)),
+      course: typeof course === 'string' ? loadCourseDir(course) : course,
       outRoot: contentDir,
       databaseUrl: tdb.appUrl,
       allowDrafts: course === 'fa-en',
