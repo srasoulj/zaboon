@@ -15,6 +15,9 @@ describe('select_image', () => {
     const cards = within(screen.getByRole('group', { name: 'Choices' })).getAllByRole('button')
     expect(cards).toHaveLength(4)
     expect(cards[0]!.querySelector('img')).toHaveAttribute('src', c.choices[0]!.image)
+    // CORS mode, so CDN images are cacheable by the service worker (an opaque response is not).
+    for (const card of cards)
+      expect(card.querySelector('img')).toHaveAttribute('crossorigin', 'anonymous')
     expect(cards.map((b) => b.getAttribute('aria-keyshortcuts'))).toEqual(['1', '2', '3', '4'])
   })
 

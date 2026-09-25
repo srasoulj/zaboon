@@ -22,9 +22,17 @@ export function SelectImage(props: Props) {
           </span>
         ))}
         media={challenge.choices.map((c) => (
-          // The label names the card; the picture is decorative for screen readers.
+          // The label names the card; the picture is decorative for screen readers. crossOrigin asks
+          // for a CORS response (not an opaque one) so the service worker can cache it offline.
           // eslint-disable-next-line @next/next/no-img-element -- content SVGs, sized by CSS
-          <img key={c.lexeme} className={styles.image} src={c.image} alt="" draggable={false} />
+          <img
+            key={c.lexeme}
+            className={styles.image}
+            src={c.image}
+            alt=""
+            crossOrigin="anonymous"
+            draggable={false}
+          />
         ))}
       />
     </ChallengeFrame>

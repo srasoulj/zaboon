@@ -35,13 +35,17 @@ describe('select_translation', () => {
       if (e.key === 'Enter') seen(e.defaultPrevented)
     }
     window.addEventListener('keydown', onKey)
-    const h = renderChallenge(c)
-    await h.user.click(screen.getByRole('button', { name: correct }))
-    expect(screen.getByRole('button', { name: correct })).toHaveFocus()
-    await h.user.keyboard('{Enter}')
-    window.removeEventListener('keydown', onKey)
-    expect(seen).toHaveBeenCalledWith(false)
-    expect(h.last()).toEqual({ kind: 'choice', value: c.answer }) // the draft is unchanged
+    try {
+      const h = renderChallenge(c)
+      await h.user.click(screen.getByRole('button', { name: correct }))
+      expect(screen.getByRole('button', { name: correct })).toHaveFocus()
+      expect(screen.getByRole('button', { name: correct })).toHaveAttribute('aria-pressed', 'true')
+      await h.user.keyboard('{Enter}')
+      expect(seen).toHaveBeenCalledWith(false)
+      expect(h.last()).toEqual({ kind: 'choice', value: c.answer }) // the draft is unchanged
+    } finally {
+      window.removeEventListener('keydown', onKey)
+    }
   })
 
   it('digit keys pick an option', async () => {

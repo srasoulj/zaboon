@@ -1,6 +1,7 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ANNOUNCE_DELAY_MS } from '../MatchColumns'
 import { MatchPairs } from '../MatchPairs'
 import { DISPLAY, fixture, renderChallenge, startsWith, tabTo } from '../testing'
 
@@ -76,16 +77,54 @@ describe('match_pairs', () => {
     const texts: string[] = []
     const observer = new MutationObserver(() => texts.push(status().textContent ?? ''))
     observer.observe(status(), { childList: true, characterData: true, subtree: true })
-    for (let round = 0; round < 2; round++) {
-      await h.user.click(faCard(1))
-      await h.user.click(enCard(2))
-      await waitFor(() => expect(status()).toHaveTextContent('Not a match. Try again.'))
+    try {
+      for (let round = 0; round < 2; round++) {
+        await h.user.click(faCard(1))
+        await h.user.click(enCard(2))
+        await waitFor(() => expect(status()).toHaveTextContent('Not a match. Try again.'))
+      }
+    } finally {
+      observer.disconnect()
     }
-    observer.disconnect()
     const shown = texts.filter((t) => t === 'Not a match. Try again.')
     expect(shown).toHaveLength(2)
     expect(texts[texts.lastIndexOf('Not a match. Try again.') - 1]).toBe('')
     expect(h.onMismatch).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a new message at once, without waiting for a timer', () => {
+    vi.useFakeTimers()
+    try {
+      renderChallenge(c)
+      fireEvent.click(faCard(0))
+      fireEvent.click(enCard(0))
+      expect(status()).toHaveTextContent(`Matched. 1 of ${c.pairs.length} pairs done.`)
+      fireEvent.click(faCard(1))
+      fireEvent.click(enCard(2))
+      expect(status()).toHaveTextContent('Not a match. Try again.')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('clears a repeated message, then sets it again after the delay', () => {
+    vi.useFakeTimers()
+    try {
+      const h = renderChallenge(c)
+      fireEvent.click(faCard(1))
+      fireEvent.click(enCard(2))
+      expect(status()).toHaveTextContent('Not a match. Try again.')
+      fireEvent.click(faCard(1))
+      fireEvent.click(enCard(2))
+      expect(status().textContent).toBe('')
+      act(() => vi.advanceTimersByTime(ANNOUNCE_DELAY_MS - 1))
+      expect(status().textContent).toBe('')
+      act(() => vi.advanceTimersByTime(1))
+      expect(status()).toHaveTextContent('Not a match. Try again.')
+      expect(h.onMismatch).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not swallow Enter on a selected card (the player turns it into CHECK)', async () => {
@@ -94,10 +133,15 @@ describe('match_pairs', () => {
       if (e.key === 'Enter') seen(e.defaultPrevented)
     }
     window.addEventListener('keydown', onKey)
-    const h = renderChallenge(c)
-    await tabTo(h.user, faCard(0))
-    await h.user.keyboard('{Enter}{Enter}')
-    window.removeEventListener('keydown', onKey)
+    try {
+      const h = renderChallenge(c)
+      await tabTo(h.user, faCard(0))
+      await h.user.keyboard('{Enter}')
+      expect(faCard(0)).toHaveAttribute('aria-pressed', 'true')
+      await h.user.keyboard('{Enter}')
+    } finally {
+      window.removeEventListener('keydown', onKey)
+    }
     expect(seen).toHaveBeenCalledTimes(2)
     expect(seen).toHaveBeenLastCalledWith(false)
   })

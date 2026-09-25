@@ -30,8 +30,8 @@ export interface MatchColumnsProps extends Pick<
 }
 
 const SHAKE_MS = 400
-/** Gap between clearing the live region and setting its new text. */
-const ANNOUNCE_DELAY_MS = 50
+/** Gap between clearing the live region and setting a repeated message again. */
+export const ANNOUNCE_DELAY_MS = 100
 
 /** The shortcut key of the k-th card in reading order: 1–9, then 0 for the tenth. */
 export function shortcutKey(k: number): string | undefined {
@@ -83,18 +83,24 @@ export function MatchColumns({
   )
   const [selected, setSelected] = useState<{ side: Side; index: number } | null>(null)
   const [shake, setShake] = useState<{ left: number; right: number } | null>(null)
-  // The live region's text: `queued` is shown one tick after the region was cleared, so a message
-  // identical to the previous one (a second mismatch) is still a change screen readers announce.
+  // The live region's text. A new message replaces the old one at once. A message identical to the
+  // current one (a second mismatch) would be no change, so the region is cleared and `repeat` sets
+  // the text again ANNOUNCE_DELAY_MS later, which screen readers announce.
   const [announcement, setAnnouncement] = useState('')
-  const [queued, setQueued] = useState<{ text: string } | null>(null)
+  const [repeat, setRepeat] = useState<{ text: string } | null>(null)
   useEffect(() => {
-    if (queued === null) return
-    const t = setTimeout(() => setAnnouncement(queued.text), ANNOUNCE_DELAY_MS)
+    if (repeat === null) return
+    const t = setTimeout(() => setAnnouncement(repeat.text), ANNOUNCE_DELAY_MS)
     return () => clearTimeout(t)
-  }, [queued])
+  }, [repeat])
   const announce = (text: string) => {
+    if (text !== announcement) {
+      setRepeat(null)
+      setAnnouncement(text)
+      return
+    }
     setAnnouncement('')
-    setQueued({ text })
+    setRepeat({ text })
   }
   const leftOrder = useState(() => seededOrder(count, `${seed}:l`))[0]
   const rightOrder = useState(() => seededOrder(count, `${seed}:r`))[0]
