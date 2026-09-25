@@ -1,7 +1,7 @@
 'use client'
 import clsx from 'clsx'
 import { LayoutGroup, motion } from 'motion/react'
-import { useId, type KeyboardEvent, type Ref } from 'react'
+import { useEffect, useId, useRef, type KeyboardEvent, type Ref } from 'react'
 import { usePrefersReducedMotion } from '../motion-preference'
 import { ms, tokens } from '../tokens'
 
@@ -61,6 +61,16 @@ export function TilePlaceholder({ text, lang }: { text: string; lang: TileLang }
   )
 }
 
+/** The bank tile to focus after `movedId` left the bank: the next one, else the previous one. */
+export function nextBankFocus(tiles: readonly Tile[], answer: readonly string[], movedId: string): string | null {
+  const inAnswer = new Set(answer)
+  const idx = tiles.findIndex((t) => t.id === movedId)
+  const after = tiles.slice(idx + 1).find((t) => !inAnswer.has(t.id))
+  const before = [...tiles.slice(0, Math.max(idx, 0))].reverse().find((t) => !inAnswer.has(t.id))
+  const target = after ?? before
+  return target ? `bank:${target.id}` : null
+}
+
 export interface TileBankProps {
   tiles: readonly Tile[]
   /** Ids of tiles on the answer line, in order (controlled). */
@@ -80,6 +90,9 @@ export interface TileBankProps {
  * Word bank → answer line. Tapping a bank tile appends it to the answer; tapping an answer tile
  * sends it back. Tiles fly with a shared-layout animation (≈250ms, instant under reduced motion)
  * and leave a grey placeholder in the bank. Backspace on the answer line removes the last tile.
+ * Keyboard focus follows the move: to the next bank tile after adding (the last answer tile once
+ * the bank is empty), to the neighbouring answer tile after removing (the returned bank tile once
+ * the answer line is empty).
  */
 export function TileBank({
   tiles,
@@ -98,22 +111,53 @@ export function TileBank({
   const answerTiles = answer.map((id) => byId.get(id)).filter((t): t is Tile => t !== undefined)
   const layoutId = (id: string) => `${uid}-tile-${id}`
 
+  // Moving a tile unmounts the focused button, so focus is placed explicitly after the parent
+  // re-renders with the new answer (only when focus was inside this bank to begin with).
+  const rootRef = useRef<HTMLDivElement>(null)
+  const buttons = useRef(new Map<string, HTMLButtonElement>())
+  const pendingFocus = useRef<string | null>(null)
+  const setButton = (key: string) => (el: HTMLButtonElement | null) => {
+    if (el) buttons.current.set(key, el)
+    else buttons.current.delete(key)
+  }
+  useEffect(() => {
+    const key = pendingFocus.current
+    if (key === null) return
+    const el = buttons.current.get(key)
+    if (el) {
+      pendingFocus.current = null
+      el.focus({ preventScroll: true })
+    }
+  })
+  const hadFocus = () => rootRef.current?.contains(document.activeElement) ?? false
+
+  const move = (next: string[], focusKey: string | null) => {
+    if (hadFocus()) pendingFocus.current = focusKey
+    onChange(next)
+  }
   const add = (id: string) => {
-    if (!disabled && !used.has(id)) onChange([...answer, id])
+    if (disabled || used.has(id)) return
+    const next = [...answer, id]
+    move(next, nextBankFocus(tiles, next, id) ?? `answer:${id}`)
   }
   const remove = (id: string) => {
-    if (!disabled) onChange(answer.filter((a) => a !== id))
+    if (disabled) return
+    const next = answer.filter((a) => a !== id)
+    const at = Math.min(answer.indexOf(id), next.length - 1)
+    move(next, at >= 0 ? `answer:${next[at]}` : `bank:${id}`)
   }
   const onAnswerKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Backspace' && answer.length > 0 && !disabled) {
       e.preventDefault()
-      onChange(answer.slice(0, -1))
+      const last = answer[answer.length - 1]!
+      const next = answer.slice(0, -1)
+      move(next, next.length > 0 ? `answer:${next[next.length - 1]}` : `bank:${last}`)
     }
   }
 
   return (
     <LayoutGroup id={uid}>
-      <div className={clsx('zb-tilebank', className)}>
+      <div className={clsx('zb-tilebank', className)} ref={rootRef}>
         <div
           role="group"
           aria-label={answerLabel}
@@ -125,6 +169,7 @@ export function TileBank({
           {answerTiles.map((t) => (
             <WordTile
               key={t.id}
+              ref={setButton(`answer:${t.id}`)}
               layoutId={layoutId(t.id)}
               text={t.text}
               lang={t.lang}
@@ -141,6 +186,7 @@ export function TileBank({
             ) : (
               <WordTile
                 key={t.id}
+                ref={setButton(`bank:${t.id}`)}
                 layoutId={layoutId(t.id)}
                 text={t.text}
                 lang={t.lang}

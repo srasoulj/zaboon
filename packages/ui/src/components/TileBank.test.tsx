@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { TileBank, WordTile, type Tile } from './TileBank'
+import { nextBankFocus, TileBank, WordTile, type Tile } from './TileBank'
 
 const ZWNJ = '\u200C'
 const TILES: Tile[] = [
@@ -91,18 +91,70 @@ describe('TileBank', () => {
     expect(bankGroup().querySelector('.zb-tile--placeholder')).toBeNull()
   })
 
-  it('works from the keyboard: Enter adds, Backspace on the answer line removes the last tile', async () => {
+  it('keyboard only: focus follows every move (Tab, Enter, Space, Backspace)', async () => {
     const onChange = vi.fn()
     render(<Harness onChange={onChange} />)
     const user = userEvent.setup()
-    within(bankGroup()).getByRole('button', { name: 'من' }).focus()
+    const bankTile = (i: number) => within(bankGroup()).getAllByRole('button')[i]
+    const answerTile = (i: number) => within(answerGroup()).getAllByRole('button')[i]
+
+    await user.tab()
+    expect(document.activeElement).toBe(bankTile(0)) // من (a)
     await user.keyboard('{Enter}')
-    within(bankGroup()).getAllByRole('button', { name: 'آب' })[0]!.focus()
+    expect(onChange).toHaveBeenLastCalledWith(['a'])
+    expect(document.activeElement).toHaveTextContent('آب') // next bank tile (b)
+    expect(bankGroup()).toContainElement(document.activeElement as HTMLElement)
+
     await user.keyboard(' ')
     expect(onChange).toHaveBeenLastCalledWith(['a', 'b'])
-    within(answerGroup()).getAllByRole('button')[0]!.focus()
-    await user.keyboard('{Backspace}')
-    expect(onChange).toHaveBeenLastCalledWith(['a'])
+    expect(document.activeElement).toBe(within(bankGroup()).getByRole('button', { name: `می${ZWNJ}خوام` }))
+
+    await user.tab({ shift: true })
+    expect(document.activeElement).toBe(answerTile(1))
+    await user.tab({ shift: true })
+    expect(document.activeElement).toBe(answerTile(0))
+    await user.keyboard('{Enter}') // remove a → focus the neighbouring answer tile (b)
+    expect(onChange).toHaveBeenLastCalledWith(['b'])
+    expect(document.activeElement).toBe(answerTile(0))
+    expect(document.activeElement).toHaveTextContent('آب')
+
+    await user.keyboard('{Backspace}') // answer line empty → focus the returned bank tile (b)
+    expect(onChange).toHaveBeenLastCalledWith([])
+    expect(document.activeElement).toBe(bankTile(1))
+    expect(document.activeElement).toHaveTextContent('آب')
+  })
+
+  it('keyboard only: when the bank empties, focus lands on the last answer tile', async () => {
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    const user = userEvent.setup()
+    await user.tab()
+    for (let i = 0; i < TILES.length; i++) await user.keyboard('{Enter}')
+    expect(onChange).toHaveBeenLastCalledWith(['a', 'b', 'c', 'd'])
+    const answers = within(answerGroup()).getAllByRole('button')
+    expect(document.activeElement).toBe(answers[answers.length - 1])
+  })
+
+  it('moving a tile without focus in the bank does not steal focus', async () => {
+    function Outer() {
+      const [answer, setAnswer] = useState<string[]>([])
+      return (
+        <>
+          <button onClick={() => setAnswer(['a'])}>external</button>
+          <TileBank tiles={TILES} answer={answer} onChange={setAnswer} dir="rtl" />
+        </>
+      )
+    }
+    render(<Outer />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'external' }))
+    expect(screen.getByRole('button', { name: 'external' })).toHaveFocus()
+  })
+
+  it('picks the next bank tile, else the previous one', () => {
+    expect(nextBankFocus(TILES, ['b'], 'b')).toBe('bank:c')
+    expect(nextBankFocus(TILES, ['b', 'd'], 'd')).toBe('bank:c')
+    expect(nextBankFocus(TILES, ['a', 'b', 'c', 'd'], 'd')).toBeNull()
   })
 
   it('ignores taps when disabled', async () => {

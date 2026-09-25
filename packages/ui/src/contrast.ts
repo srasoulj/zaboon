@@ -79,3 +79,37 @@ const BRAND_PAIRS: TextPair[] = BRAND_NAMES.map((brand) => ({
 }))
 
 export const TEXT_PAIRS: readonly TextPair[] = [...NEUTRAL_PAIRS, ...BRAND_PAIRS]
+
+/** The focus ring: an ink band inside a bg-coloured halo (components.css). */
+export const FOCUS_RING = { band: { semantic: 'ink' } as ColorRef, halo: { semantic: 'bg' } as ColorRef }
+
+export interface FocusSurface {
+  use: string
+  surface: ColorRef
+}
+
+/** Every surface a focusable kit control sits on. Add one when a control lands somewhere new. */
+export const FOCUS_RING_SURFACES: readonly FocusSurface[] = [
+  { use: 'page background', surface: s('bg') },
+  { use: 'surface (toast, gallery panels, hover)', surface: s('surface') },
+  { use: 'correct feedback bar (CONTINUE, auto-focused)', surface: s('correct-bg') },
+  { use: 'wrong feedback bar (CONTINUE, report flag)', surface: s('wrong-bg') },
+  { use: 'selected card (tap-for-hint words inside)', surface: s('selected-bg') },
+  { use: 'line-grey placeholders and locked controls', surface: s('line') },
+  ...BRAND_NAMES.map((brand) => ({
+    use: `${brand}-500 fill (UnitBanner guidebook button, tinted containers)`,
+    surface: { brand, shade: '500' } as ColorRef,
+  })),
+  ...BRAND_NAMES.map((brand) => ({ use: `${brand}-100 tint`, surface: { brand, shade: '100' } as ColorRef })),
+]
+
+/**
+ * A two-tone ring is visible when its two tones differ by ≥3:1 and at least one tone is ≥3:1
+ * against the surrounding surface (WCAG 1.4.11 non-text contrast).
+ */
+export function focusRingContrast(surface: ColorRef, theme: ThemeName, t: DesignTokens = tokens): { between: number; vsSurface: number } {
+  const band = resolveColor(FOCUS_RING.band, theme, t)
+  const halo = resolveColor(FOCUS_RING.halo, theme, t)
+  const bg = resolveColor(surface, theme, t)
+  return { between: contrastRatio(band, halo), vsSurface: Math.max(contrastRatio(band, bg), contrastRatio(halo, bg)) }
+}

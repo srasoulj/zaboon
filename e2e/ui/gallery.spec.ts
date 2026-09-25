@@ -77,3 +77,25 @@ test('tap-for-hint opens a bottom sheet with the gloss', async ({ page }) => {
   await sheet.getByRole('button', { name: 'Got it' }).click()
   await expect(sheet).toHaveCount(0)
 })
+
+test.describe('in-app reduce-animations toggle', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } })
+
+  const ANIMATED = ['.zb-node__start', '.zb-feedback', '.zb-progress__badge', '.zb-toast']
+  const animationNames = (page: Page) =>
+    page.evaluate(
+      (sels) => sels.map((s) => getComputedStyle(document.querySelector(s)!).animationName),
+      ANIMATED,
+    )
+
+  test('stops the CSS animations of the START bubble, feedback bar, streak badge and toast', async ({ page }) => {
+    await openGallery(page)
+    expect(await animationNames(page)).not.toContain('none')
+    await page.getByRole('checkbox', { name: 'Reduce animations' }).check()
+    await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduce')
+    expect(await animationNames(page)).toEqual(ANIMATED.map(() => 'none'))
+    await page.getByRole('checkbox', { name: 'Reduce animations' }).uncheck()
+    await expect(page.locator('html')).not.toHaveAttribute('data-motion', 'reduce')
+    expect(await animationNames(page)).not.toContain('none')
+  })
+})
