@@ -196,11 +196,27 @@ describe('oracles/mvp-sessions.golden.json', () => {
     expect(golden).toHaveLength(cases.length)
   })
 
+  it('the config really carries the gated Wave 3 categories (so this oracle proves something)', () => {
+    const profiles = Object.values(DEFAULT_APP_CONFIG.mixProfiles)
+    expect(profiles.some((w) => (w.typing ?? 0) > 0)).toBe(true)
+    expect((DEFAULT_APP_CONFIG.mixProfiles.letters?.letterTrace ?? 0) > 0).toBe(true)
+  })
+
   describe('features absent', () => {
     it.each(cases.map(({ sc, seed }) => [`${sc.name} / ${seed}`, sc, seed] as const))(
       '%s',
       (_, sc, seed) => {
         expect(run(sc, seed)).toEqual(recorded(sc, seed))
+      },
+    )
+  })
+
+  describe('features off', () => {
+    const off = { features: { persianTyping: false, letterTrace: false } }
+    it.each(cases.map(({ sc, seed }) => [`${sc.name} / ${seed}`, sc, seed] as const))(
+      '%s',
+      (_, sc, seed) => {
+        expect(run(sc, seed, off)).toEqual(recorded(sc, seed))
       },
     )
   })

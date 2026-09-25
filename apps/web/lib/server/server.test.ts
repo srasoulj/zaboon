@@ -9,6 +9,7 @@ import { resetServerEnv, serverEnv } from './env'
 import { ApiError } from './errors'
 import { parseTestFlags, requestFlags } from './flags'
 import { serverVerdict } from './grading'
+import { sessionFeatures } from './sessions'
 
 const USER = '11111111-2222-4333-8444-555555555555'
 const saved = { ...process.env }
@@ -196,6 +197,20 @@ describe('feature flags (x-test-flags)', () => {
     expect(requestFlags(req('{'), configured)).toEqual(configured)
     setEnv({ AUTH_MODE: undefined })
     expect(requestFlags(req('{"shop":true}'), configured).shop).toBe(false)
+  })
+})
+
+describe('session features from flags', () => {
+  it('turns engine features on only for their flags', () => {
+    const off = { persianTyping: false, letterTrace: false }
+    expect(sessionFeatures()).toEqual(off)
+    expect(sessionFeatures({ ...FLAG_DEFAULTS })).toEqual(off)
+    expect(sessionFeatures({ ...FLAG_DEFAULTS, leagues: true, shop: true })).toEqual(off)
+    expect(sessionFeatures({ ...FLAG_DEFAULTS, persianKeyboard: true })).toEqual({
+      persianTyping: true,
+      letterTrace: false,
+    })
+    expect(sessionFeatures({ letterTrace: true })).toEqual({ persianTyping: false, letterTrace: true })
   })
 })
 

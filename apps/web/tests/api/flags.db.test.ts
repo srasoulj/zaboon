@@ -80,6 +80,28 @@ describe('feature flags in route tests', () => {
     expect(result.level).toMatchObject({ levelId: 'u01-l1', completed: true })
   })
 
+  it('accepts a practice mode on practice sessions only, with or without the practice hub', async () => {
+    const alice = await h.guest()
+    const create = (body: Record<string, unknown>, flags?: Record<string, boolean>) =>
+      h.call(api.createSession, {
+        path: '/api/sessions',
+        user: alice,
+        ...(flags ? { flags } : {}),
+        body: { courseId: 'fixture', tz: 'UTC', ...body },
+      })
+    const plain = await create({ kind: 'practice' })
+    expect(plain.status).toBe(200)
+    expect((await create({ kind: 'practice', mode: 'mistakes' })).status).toBe(200)
+    const hub = await create({ kind: 'practice', mode: 'typing' }, { practiceHub: true })
+    expect(hub.status).toBe(200)
+    expect(hub.body.kind).toBe('practice')
+    const lesson = await create({ kind: 'lesson', levelId: 'u01-s0', mode: 'mixed' })
+    expect(lesson.status).toBe(400)
+    expect(lesson.body.error.details).toEqual([
+      { path: 'mode', message: 'mode is only allowed for practice sessions' },
+    ])
+  })
+
   it('raises every rate-limit bucket, including the P2 shop and cron buckets', async () => {
     const [row] = await h.sql`SELECT value FROM app_config WHERE key = 'rateLimits'`
     const limits = row!.value as Record<string, { perMinute: number }>

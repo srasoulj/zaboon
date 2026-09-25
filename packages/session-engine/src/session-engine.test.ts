@@ -742,6 +742,44 @@ function checkScenario(scenarios: Scenario[], runs: number) {
   )
 }
 
+describe('Wave 3 seams (features, practiceMode)', () => {
+  const on = { persianTyping: true, letterTrace: true }
+  const learner = { ...fresh, lexemeCards: cards(indexContent(fx).lexemeList.map((l) => l.id)) }
+  const sessions = [
+    { content: withSpec(fx, { mix: 'standard' }), kind: 'lesson' as const, levelId: 'u01-gen', learner },
+    { content: fx, kind: 'practice' as const, levelId: null, learner },
+    { content: fx, kind: 'letters' as const, levelId: 'u01-letters-2', learner: fresh },
+  ]
+
+  it('with the features on, sessions stay valid MVP sessions until the P2 builders exist', () => {
+    for (const s of sessions)
+      for (const seed of ['w3-a', 'w3-b', 'w3-c']) {
+        const out = gen(s.content, { ...s, seed, features: on })
+        expect(out.challenges.length).toBeGreaterThan(0)
+        for (const c of out.challenges) {
+          expect(Challenge.safeParse(c).success).toBe(true)
+          expect(MVP_CHALLENGE_TYPES).toContain(c.type)
+        }
+        expect(out.refs.length).toBeLessThanOrEqual(cfg.session.lengths[s.kind]!)
+        expect(rebuildChallenges(out.refs, s.content)).toEqual(out.challenges)
+      }
+  })
+
+  it('features absent and features off build the same session', () => {
+    for (const s of sessions) {
+      const off = gen(s.content, { ...s, features: { persianTyping: false, letterTrace: false } })
+      expect(gen(s.content, s)).toEqual(off)
+    }
+  })
+
+  it('accepts a practice mode and ignores it for now', () => {
+    const practice = sessions[1]!
+    expect(gen(practice.content, { ...practice, practiceMode: 'mistakes' })).toEqual(
+      gen(practice.content, practice),
+    )
+  })
+})
+
 // Each property run generates, regenerates and rebuilds a whole session with the real grader
 // (tens of ms), so 150 runs need more than Vitest's 5 s default.
 const PROPERTY_TIMEOUT_MS = 60_000

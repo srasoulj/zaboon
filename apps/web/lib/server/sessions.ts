@@ -18,6 +18,7 @@ import {
   type CreateSessionResponse,
   type LivesState,
   type LivesView,
+  type PracticeMode,
   type SessionKind,
   type Verdict,
 } from '@zaboon/contracts'
@@ -37,7 +38,12 @@ import {
   streakView,
 } from '@zaboon/game-rules'
 import { GRADER_VERSION } from '@zaboon/grader'
-import { ContentError, generateSession, rebuildChallenges } from '@zaboon/session-engine'
+import {
+  ContentError,
+  generateSession,
+  rebuildChallenges,
+  type SessionFeatures,
+} from '@zaboon/session-engine'
 import { plausibilityFlags } from './anticheat'
 import type { AuthUser } from './auth'
 import {
@@ -67,6 +73,16 @@ export interface Ctx {
   user: AuthUser
   now: Date
   config: AppConfig
+  /** The request's feature flags (ctx.flags); absent = every Wave 3 feature off. */
+  flags?: Readonly<Record<string, boolean>>
+}
+
+/** Wave 3 session-engine features from the request's flags (each off unless its flag is on). */
+export function sessionFeatures(flags: Readonly<Record<string, boolean>> = {}): SessionFeatures {
+  return {
+    persianTyping: flags.persianKeyboard === true,
+    letterTrace: flags.letterTrace === true,
+  }
 }
 
 /** Session kinds this server can generate. legendary and jump_test are P2. */
@@ -171,7 +187,14 @@ async function resolveTarget(
 
 export async function createSession(
   ctx: Ctx,
-  input: { courseId: string; kind: SessionKind; levelId?: string | undefined; tz: string },
+  input: {
+    courseId: string
+    kind: SessionKind
+    levelId?: string | undefined
+    tz: string
+    /** Practice sessions only (the contract enforces it); used while flags.practiceHub is on. */
+    mode?: PracticeMode | undefined
+  },
 ): Promise<CreateSessionResponse> {
   if (!MVP_KINDS.has(input.kind))
     throw new ApiError('validation', `session kind ${input.kind} is not available yet`)
@@ -201,6 +224,8 @@ export async function createSession(
         seed,
         now,
         config,
+        features: sessionFeatures(ctx.flags),
+        ...(input.mode && ctx.flags?.practiceHub === true ? { practiceMode: input.mode } : {}),
       })
     } catch (e) {
       if (e instanceof ContentError) throw new ApiError('validation', e.message)
