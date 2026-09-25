@@ -1,10 +1,7 @@
 'use client'
 import clsx from 'clsx'
-import { motion } from 'motion/react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Icon } from '../icons'
-import { usePrefersReducedMotion } from '../motion-preference'
-import { ms, tokens } from '../tokens'
 import { Button3D } from './Button3D'
 
 export type FeedbackStatus = 'correct' | 'wrong'
@@ -29,7 +26,7 @@ export interface FeedbackBarProps {
 
 /**
  * The lesson footer after CHECK. Announced through a live region, always icon + text (never color
- * alone), slides up with a ≈300ms spring unless reduced motion is on.
+ * alone), slides up with a ≈300ms spring (CSS, so SSR and hydration agree) unless reduced motion is on.
  */
 export function FeedbackBar({
   status,
@@ -43,7 +40,6 @@ export function FeedbackBar({
   autoFocus = true,
   className,
 }: FeedbackBarProps) {
-  const reduce = usePrefersReducedMotion()
   const continueRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     if (autoFocus) continueRef.current?.focus({ preventScroll: true })
@@ -51,13 +47,10 @@ export function FeedbackBar({
 
   const heading = title ?? (status === 'correct' ? 'Nice!' : 'Correct solution:')
   return (
-    <motion.section
+    <section
       className={clsx('zb-feedback', `zb-feedback--${status}`, className)}
       aria-label={status === 'correct' ? 'Correct answer' : 'Incorrect answer'}
       data-status={status}
-      initial={reduce ? false : { y: '100%' }}
-      animate={{ y: 0 }}
-      transition={reduce ? { duration: 0 } : { type: 'spring', duration: ms(tokens.motion.feedbackSpring) / 1000, bounce: 0.25 }}
     >
       <div className="zb-feedback__inner">
         <div className="zb-feedback__body" role="alert">
@@ -81,6 +74,6 @@ export function FeedbackBar({
           </Button3D>
         </div>
       </div>
-    </motion.section>
+    </section>
   )
 }

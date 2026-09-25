@@ -4,7 +4,7 @@ export const PACKAGE = 'ui' as const
 export * from './tokens'
 export * from './contrast'
 export { Icon, type IconName, type IconProps } from './icons'
-export { MotionPreferenceProvider, usePrefersReducedMotion, type MotionPreferenceProviderProps } from './motion-preference'
+export { MotionPreferenceProvider, useOsReducedMotion, usePrefersReducedMotion, type MotionPreferenceProviderProps } from './motion-preference'
 
 export { Button3D, type Button3DProps, type Button3DVariant } from './components/Button3D'
 export { ChoiceCard, useDigitShortcuts, type ChoiceCardProps, type ChoiceState } from './components/ChoiceCard'
