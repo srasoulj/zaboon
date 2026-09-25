@@ -10,6 +10,8 @@
  * - `setTestFlags(page, flags)`: feature-flag overrides for the app's API calls (local mode
  *   `x-test-flags`), e.g. `setTestFlags(page, { shop: true })`; `flagsHeader(flags)` gives the
  *   same header for `request` calls in API specs.
+ * - `cronHeaders()`: `Authorization: Bearer <E2E_CRON_SECRET>` for calling `/api/cron/*` like
+ *   Vercel Cron (the local e2e server runs with that fake secret).
  */
 import { test as base, expect, type Page } from '@playwright/test'
 
@@ -90,4 +92,5 @@ export function flagsHeader(flags: Record<string, boolean>): Record<string, stri
   return { [TEST_FLAGS_HEADER]: JSON.stringify(flags) }
 }
 
+export { cronHeaders, E2E_CRON_SECRET } from './cron'
 export { expect }

@@ -4,6 +4,7 @@
  * Set ZABOON_E2E_BROWSERS=chromium,webkit where WebKit is installed (CI).
  */
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_CRON_SECRET } from './e2e/fixtures/cron'
 
 const browsers = (process.env.ZABOON_E2E_BROWSERS ?? 'chromium').split(',').map((b) => b.trim())
 const PORT = Number(process.env.ZABOON_E2E_PORT ?? 3100)
@@ -57,6 +58,8 @@ export default defineConfig({
       NEXT_PUBLIC_AUTH_MODE: 'local',
       ZABOON_DEV_AUTH: '1',
       NEXT_TELEMETRY_DISABLED: '1',
+      // A fixed, fake test value so API specs can call /api/cron/* (e2e/fixtures/cron.ts).
+      CRON_SECRET: E2E_CRON_SECRET,
     },
   },
 })
