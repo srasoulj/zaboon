@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useMachine } from '@xstate/react'
 import { fromPromise } from 'xstate'
 import { usePrefersReducedMotion } from '@zaboon/ui'
-import type { Settings } from '@zaboon/contracts'
+import type { CreateSessionResponse, Settings } from '@zaboon/contracts'
 import { GRADER_VERSION } from '@zaboon/grader'
 import { queryKeys } from '../../lib/api-client'
 import { useApi } from '../../lib/app-services'
@@ -20,6 +20,7 @@ import type {
   ChallengeRendererProps,
 } from '../../lib/challenge-registry'
 import { solutionFor } from '../../lib/lesson/grading'
+import { createInFlight } from '../../lib/lesson/inflight'
 import {
   currentChallenge,
   lessonMachine,
@@ -68,6 +69,18 @@ export interface LessonPlayerProps {
   home: HomeBefore | null
   onExit: (href: string) => void
   now?: () => number
+}
+
+/** One createSession per user and lesson at a time (see inflight.ts). */
+const creating = createInFlight<CreateSessionResponse>()
+
+const INTERACTIVE =
+  'button, a[href], input, textarea, select, [role="button"], [contenteditable="true"]'
+
+/** True when Enter on this element should be left to the element itself. */
+export function isInteractive(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || target.closest(INTERACTIVE) !== null
 }
 
 function browserTimeZone(): string {
@@ -130,14 +143,16 @@ export function LessonPlayer({
               }
             await snapshots.remove(saved.sessionId).catch(() => {})
           }
-          const session = await api('createSession', {
-            body: {
-              courseId: input.request.courseId,
-              kind: input.request.kind,
-              ...(input.request.levelId !== null ? { levelId: input.request.levelId } : {}),
-              tz: browserTimeZone(),
-            },
-          })
+          const session = await creating.run(`${input.userId}|${requestKey(input.request)}`, () =>
+            api('createSession', {
+              body: {
+                courseId: input.request.courseId,
+                kind: input.request.kind,
+                ...(input.request.levelId !== null ? { levelId: input.request.levelId } : {}),
+                tz: browserTimeZone(),
+              },
+            }),
+          )
           return { session, resume: null }
         }),
         preload: fromPromise(async ({ input }) => audio.preload(input.session.challenges)),
@@ -198,14 +213,16 @@ export function LessonPlayer({
         const sessionId = actor.getSnapshot().context.session?.sessionId
         if (d.type === 'complete') void invalidate()
         if (!sessionId || d.entry.sessionId !== sessionId) return
-        if (d.type === 'event')
-          actor.send({
-            type: 'LIVES_SYNCED',
-            lives: d.response.lives,
-            attemptSeq: d.entry.body.attemptSeq,
-          })
-        else if (d.type === 'complete') actor.send({ type: 'RECONCILED', result: d.result })
-        else if (d.code === 'gone') actor.send({ type: 'EXPIRED' })
+        if (d.type === 'event') {
+          if (d.response)
+            actor.send({
+              type: 'LIVES_SYNCED',
+              lives: d.response.lives,
+              attemptSeq: d.entry.body.attemptSeq,
+            })
+        } else if (d.type === 'complete') {
+          if (d.result) actor.send({ type: 'RECONCILED', result: d.result })
+        } else if (d.code === 'gone') actor.send({ type: 'EXPIRED' })
       }),
     [outbox, actor, invalidate],
   )
@@ -244,18 +261,13 @@ export function LessonPlayer({
         return
       }
       if (e.key !== 'Enter' || e.repeat || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
-      const target = e.target instanceof HTMLElement ? e.target : null
-      const tag = target?.tagName
-      // Text fields submit through the renderer (onSubmit); focused buttons activate natively.
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
-      const nativeButton =
-        (tag === 'BUTTON' || tag === 'A') && target?.closest('[data-lesson-chrome]')
-      if (nativeButton) return
+      // A focused control (a choice card, tile, speaker, Undo, CONTINUE…) handles Enter itself, and
+      // text fields submit through the renderer (onSubmit): only an unfocused Enter checks/continues.
+      if (isInteractive(e.target)) return
       if (s.matches({ playing: 'answering' })) {
         e.preventDefault()
         actor.send({ type: 'CHECK' })
       } else if (s.matches({ playing: 'feedback' }) || s.matches('complete')) {
-        if (tag === 'BUTTON' || tag === 'A') return
         e.preventDefault()
         actor.send({ type: 'CONTINUE' })
       }
@@ -329,7 +341,7 @@ export function LessonPlayer({
       data-session={ctx.session?.sessionId}
       data-resumed={ctx.resumed ? 'true' : 'false'}
     >
-      <div data-lesson-chrome>
+      <div>
         <TopBar
           progress={ctx.progress ? progressValue(ctx.progress) : 0}
           combo={ctx.progress?.combo ?? 0}
@@ -362,7 +374,7 @@ export function LessonPlayer({
           />
         )}
       </main>
-      <div data-lesson-chrome className="sticky bottom-0 bg-bg">
+      <div className="sticky bottom-0 bg-bg">
         {!showFooter ? null : inFeedback && feedback && challenge ? (
           <LessonFeedback
             verdict={feedback.verdict}

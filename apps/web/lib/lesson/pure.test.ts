@@ -4,15 +4,20 @@ import type { Challenge } from '@zaboon/contracts'
 import { gradeAttempt, sessionLexicon, solutionFor } from './grading'
 import {
   costsHeart,
+  countsAsWrong,
+  finishEarly,
   firstTryAccuracy,
   initialProgress,
   loseHeart,
+  mustFinish,
   outOfHearts,
   progressValue,
   recordAttempt,
   recordMismatch,
+  unattempted,
   wrongAttempts,
 } from './progress'
+import { createInFlight } from './inflight'
 import { exitHref, lessonHref, parseLessonRequest, requestKey } from './request'
 import { MemorySnapshotStore } from './stores'
 import { formatDuration, localSummary, streakDaysAfter, summaryFromResult } from './summary'
@@ -90,8 +95,34 @@ describe('progress', () => {
     }).progress
     expect(p.passed).toEqual([2, 0])
     expect(p.answers.map((a) => a.attemptSeq)).toEqual([0, 1, 2, 3])
-    expect(wrongAttempts(p)).toBe(1)
+    expect(wrongAttempts(p)).toBe(2) // the skip counts as wrong
     expect(firstTryAccuracy(p)).toBeCloseTo(1 / 3)
+  })
+
+  it('the attempt cap: unattempted challenges, when to finish, finishing early', () => {
+    let p = initialProgress(testChallenges())
+    expect(unattempted(p)).toEqual([0, 1, 2])
+    expect(mustFinish(p, 4)).toBe(false)
+    expect(mustFinish(p, 3)).toBe(true)
+    p = recordAttempt(p, {
+      index: 0,
+      response: { kind: 'choice', value: 0 },
+      verdict: 'wrong',
+      ms: 5,
+    }).progress
+    expect(unattempted(p)).toEqual([1, 2])
+    expect(mustFinish(p, 4)).toBe(false) // 1 answer + 2 still owed = 3: room for one more attempt
+    expect(mustFinish(p, 3)).toBe(true)
+    const done = finishEarly(p)
+    expect(done.queue).toEqual([])
+    expect(done.answers.map((a) => [a.index, a.attemptSeq, a.verdict])).toEqual([
+      [0, 0, 'wrong'],
+      [1, 1, 'skipped'],
+      [2, 2, 'skipped'],
+    ])
+    expect(mustFinish(done, 1)).toBe(false) // nothing left to play
+    expect(countsAsWrong('skipped')).toBe(true)
+    expect(countsAsWrong('typo')).toBe(false)
   })
 
   it('clamps answer times into the contract bounds', () => {
@@ -240,5 +271,30 @@ describe('memory snapshot store', () => {
     await store.remove('b')
     expect((await store.find(USER_ID, 'k'))?.sessionId).toBe('a')
     expect(await store.find(USER_ID, 'nope')).toBeNull()
+  })
+})
+
+describe('in-flight sharing', () => {
+  it('shares a pending promise per key and frees the key when it settles', async () => {
+    const inflight = createInFlight<number>()
+    let calls = 0
+    let release!: (n: number) => void
+    const fn = () => {
+      calls++
+      return new Promise<number>((r) => (release = r))
+    }
+    const a = inflight.run('k', fn)
+    const b = inflight.run('k', fn)
+    expect(a).toBe(b)
+    expect(calls).toBe(1)
+    release(7)
+    await expect(b).resolves.toBe(7)
+    expect(inflight.has('k')).toBe(false)
+    const c = inflight.run('k', async () => 8)
+    await expect(c).resolves.toBe(8)
+    await expect(inflight.run('x', async () => Promise.reject(new Error('no')))).rejects.toThrow(
+      'no',
+    )
+    expect(inflight.has('x')).toBe(false)
   })
 })

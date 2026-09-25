@@ -10,7 +10,7 @@ import {
   type StartOutput,
 } from './machine'
 import type { CompleteOutcome } from './outbox'
-import { initialProgress, recordAttempt } from './progress'
+import { initialProgress, maxAnswers, recordAttempt, recordMismatch } from './progress'
 import type { LessonSnapshot } from './stores'
 import { lives, testResult, testSession, USER_ID } from './test-support'
 
@@ -234,15 +234,52 @@ describe('lesson machine: wrong answers, hearts and re-queue', () => {
     expect(actor.getSnapshot().context.progress!.combo).toBe(0)
   })
 
-  it('SKIP shows the solution and re-queues without costing a heart', async () => {
-    const { actor, calls } = run()
+  it('SKIP counts as a wrong attempt: heart, event, solution, re-queue, not perfect', async () => {
+    const { actor, calls } = run({
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
+      complete: async () => ({ status: 'queued' }),
+    })
     await ready(actor)
     actor.send({ type: 'SKIP' })
     const s = actor.getSnapshot().context
-    expect(s.feedback).toMatchObject({ verdict: 'skipped', heartLost: false })
-    expect(s.hearts!.count).toBe(5)
+    expect(s.feedback).toMatchObject({ verdict: 'skipped', heartLost: true })
+    expect(s.hearts!.count).toBe(4)
+    expect(calls.wrong).toEqual([{ sessionId: s.session!.sessionId, attemptSeq: 0, index: 0 }])
+    expect(calls.sounds).toEqual(['wrong'])
+    expect(s.progress!.queue).toEqual([0])
+    actor.send({ type: 'CONTINUE' })
+    answerRight(actor)
+    actor.send({ type: 'CONTINUE' })
+    await waitFor(actor, (st) => st.matches('complete'))
+    // the offline estimate agrees with the server: a skip spoils a perfect lesson
+    expect(actor.getSnapshot().context.summary).toMatchObject({ perfect: false, xp: 10 })
+  })
+
+  it('SKIP in practice costs nothing', async () => {
+    const { actor, calls } = run({
+      start: async () => ({
+        session: testSession({ kind: 'practice', levelId: null }),
+        resume: null,
+      }),
+      input: { request: { courseId: 'fixture', kind: 'practice', levelId: null } },
+    })
+    await ready(actor)
+    actor.send({ type: 'SKIP' })
+    expect(actor.getSnapshot().context.hearts!.count).toBe(5)
     expect(calls.wrong).toEqual([])
-    expect(s.progress!.queue).toEqual([1, 2, 0])
+  })
+
+  it('skipping away the last heart leads to out-of-hearts', async () => {
+    const { actor } = run({
+      start: async () => ({ session: testSession({ lives: lives(1) }), resume: null }),
+    })
+    await ready(actor)
+    actor.send({ type: 'SKIP' })
+    actor.send({ type: 'CONTINUE' })
+    expect(actor.getSnapshot().value).toBe('outOfHearts')
   })
 
   it('practice never costs hearts or sends events', async () => {
@@ -539,5 +576,94 @@ describe('lesson machine: resume and offline completion', () => {
       result: testResult({ xp: { base: 10, bonus: 0, total: 10 } }),
     })
     expect(actor.getSnapshot().context.summary).toMatchObject({ source: 'server', xp: 10 })
+  })
+})
+
+describe('lesson machine: the attempt cap of /complete', () => {
+  it(`ends the lesson before the answers pass the cap (${maxAnswers()}), recording unattempted challenges as skipped`, async () => {
+    const cap = maxAnswers()
+    const session = testSession({ kind: 'practice', levelId: null })
+    // Challenge 0 was retried until one attempt short of the cap; 1 and 2 were never attempted.
+    let progress = initialProgress(session.challenges)
+    while (progress.answers.length < cap - 3)
+      progress = recordAttempt(progress, {
+        index: 0,
+        response: { kind: 'choice', value: 0 },
+        verdict: 'wrong',
+        ms: 900,
+      }).progress
+    progress = { ...progress, queue: [0, 1, 2] }
+    const { actor, calls } = run({
+      start: async () => ({ session, resume: { progress, hearts: lives(5), startedAt: 1 } }),
+      input: { request: { courseId: 'fixture', kind: 'practice', levelId: null } },
+    })
+    await ready(actor)
+    answerWrong(actor) // one more wrong attempt: now answers + unattempted = cap
+    actor.send({ type: 'CONTINUE' })
+    await waitFor(actor, (s) => s.matches('complete'))
+    const answers = calls.completed[0]!.progress.answers
+    expect(answers).toHaveLength(cap)
+    expect(new Set(answers.map((a) => a.index))).toEqual(new Set([0, 1, 2]))
+    expect(answers.slice(-2).map((a) => [a.index, a.verdict])).toEqual([
+      [1, 'skipped'],
+      [2, 'skipped'],
+    ])
+  })
+
+  it('a mismatch that reaches the cap also ends the lesson', async () => {
+    const cap = maxAnswers()
+    const session = testSession({
+      kind: 'practice',
+      levelId: null,
+      challenges: testSession().challenges.slice(2),
+    })
+    let progress = initialProgress(session.challenges)
+    while (progress.answers.length < cap - 1) progress = recordMismatch(progress, 2, 900).progress
+    const { actor, calls } = run({
+      start: async () => ({ session, resume: { progress, hearts: lives(5), startedAt: 1 } }),
+      input: { request: { courseId: 'fixture', kind: 'practice', levelId: null } },
+    })
+    await ready(actor)
+    actor.send({ type: 'MISMATCH' })
+    await waitFor(actor, (s) => s.matches('complete'))
+    expect(calls.completed[0]!.progress.answers).toHaveLength(cap)
+  })
+
+  it('reads the cap from the contract', () => {
+    expect(maxAnswers()).toBeGreaterThanOrEqual(200)
+  })
+})
+
+describe('lesson machine: failed completion', () => {
+  it('discards the resume snapshot when completion fails for good', async () => {
+    const { actor, calls } = run({
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
+      complete: async () => {
+        throw new CodedError('validation')
+      },
+    })
+    await ready(actor)
+    answerRight(actor)
+    actor.send({ type: 'CONTINUE' })
+    await waitFor(actor, (s) => s.matches('error'))
+    expect(calls.discarded).toEqual([actor.getSnapshot().context.session!.sessionId])
+  })
+
+  it('a completion stored without a readable answer shows the local summary', async () => {
+    const { actor } = run({
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
+      complete: async () => ({ status: 'saved' }),
+    })
+    await ready(actor)
+    answerRight(actor)
+    actor.send({ type: 'CONTINUE' })
+    await waitFor(actor, (s) => s.matches('complete'))
+    expect(actor.getSnapshot().context.summary!.source).toBe('local')
   })
 })

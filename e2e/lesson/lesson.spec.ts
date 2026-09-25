@@ -85,6 +85,30 @@ test('a wrong answer costs a heart and comes back at the end', async ({
   expect((await home(request, guest)).lives.count).toBe(4)
 })
 
+test('skipping costs a heart, shows the solution and comes back at the end', async ({
+  guestPage: page,
+  guest,
+  request,
+}) => {
+  await page.goto(FIRST_LESSON)
+  expect(await currentIndex(page)).toBe(0)
+  await page.getByTestId('lesson-skip').click()
+  const feedback = page.getByTestId('lesson-feedback')
+  await expect(feedback).toHaveAttribute('data-verdict', 'skipped')
+  await expect(feedback.getByText('Correct solution:')).toBeVisible()
+  await expect(page.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
+  await continueLesson(page)
+  const order: number[] = []
+  for (let i = 0; i < FIRST_LESSON_LENGTH; i++) {
+    order.push(await currentIndex(page))
+    await answer(page, 'correct', { human: false })
+    await continueLesson(page)
+  }
+  expect(order).toEqual([1, 2, 3, 0])
+  await expect(page.getByTestId('complete-summary')).toBeVisible()
+  expect((await home(request, guest)).lives.count).toBe(4)
+})
+
 test('the report flag opens the report sheet and posts a report', async ({ guestPage: page }) => {
   await page.goto(FIRST_LESSON)
   await answer(page, 'wrong', { human: false })
