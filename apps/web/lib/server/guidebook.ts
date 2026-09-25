@@ -4,10 +4,11 @@
  * The content build hashes every media ref it copies (`audio/x.mp3` → `audio/x.<sha10>.mp3`) but
  * leaves the refs inside guidebook markdown as authored, so this module maps each
  * `<fa audio="audio/x.mp3">` ref to its hashed bundle ref and then to a public URL. A ref with no
- * media in the bundle becomes `audio=""` (the page then shows no speaker button).
+ * media in the bundle (an outside URL included) becomes `audio=""` (no speaker button).
  */
 import type { GuidebookResponse } from '@zaboon/contracts'
 import { UnitId } from '@zaboon/content-schema'
+import rehypeRaw from 'rehype-raw'
 import type { Db } from '@zaboon/db'
 import { withCourse } from './catalog'
 import { mediaUrl, type LoadedBundle } from './content'
@@ -47,27 +48,103 @@ export function bundleMediaIndex(bundle: Pick<LoadedBundle, 'units' | 'letters' 
   return index
 }
 
-const FA_OPEN_TAG = /<fa\b[^>]*>/gi
-const AUDIO_ATTR = /(\saudio\s*=\s*)(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i
+type RawTransform = ReturnType<typeof rehypeRaw>
+type RawTree = Parameters<RawTransform>[0]
+type RawFile = Parameters<RawTransform>[1]
+
+/** The parts of a hast node this module reads (hast's types are not a direct dependency). */
+interface HastNode {
+  type: string
+  tagName?: string
+  properties?: Record<string, unknown>
+  children?: HastNode[]
+  position?: { start: { offset?: number }; end: { offset?: number } }
+}
 
 const escapeAttr = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 
+/** End offset (exclusive) of the start tag at `from`, honoring quoted attribute values. */
+function startTagEnd(html: string, from: number): number {
+  let quote: string | null = null
+  for (let i = from + 1; i < html.length; i++) {
+    const c = html[i]!
+    if (quote) {
+      if (c === quote) quote = null
+    } else if ((c === '"' || c === "'") && /=\s*$/.test(html.slice(from, i))) quote = c
+    else if (c === '>') return i + 1
+  }
+  return html.length
+}
+
+export interface FaStartTag {
+  /** Offsets of the start tag (`<fa …>`) in the markdown, end exclusive. */
+  start: number
+  end: number
+  /** The parsed `audio` attribute, or null when there is none. */
+  audio: string | null
+}
+
 /**
- * Rewrites the `audio` attribute of every `<fa>` open tag with `resolve(ref)` (null → `""`).
- * Everything else in the markdown is left byte for byte; sanitizing is the renderer's job.
+ * Every `<fa>` start tag in the markdown, found by parsing it as HTML (parse5 via rehype-raw), so
+ * quoting tricks (`title="a>b"`, `<fa/audio=…>`, a fake ` audio=` inside another attribute) are
+ * read exactly like a browser would.
+ */
+export function faStartTags(markdown: string): FaStartTag[] {
+  const tree = {
+    type: 'root',
+    children: [
+      {
+        type: 'raw',
+        value: markdown,
+        position: {
+          start: { line: 1, column: 1, offset: 0 },
+          end: { line: 1, column: 1, offset: markdown.length },
+        },
+      },
+    ],
+  } as unknown as RawTree
+  // hast-util-raw only reads the text (for positions) and `message` from the file.
+  const file = { value: markdown, toString: () => markdown, messages: [], message() {} }
+  const root = rehypeRaw()(tree, file as unknown as RawFile) as unknown as HastNode
+  const out: FaStartTag[] = []
+  const walk = (node: HastNode) => {
+    if (node.type === 'element' && node.tagName === 'fa') {
+      const start = node.position?.start.offset
+      if (start === undefined) throw new Error('guidebook <fa> element without a source position')
+      const firstChild = node.children?.[0]?.position?.start.offset
+      const audio = node.properties?.audio
+      out.push({
+        start,
+        end: firstChild ?? startTagEnd(markdown, start),
+        audio: typeof audio === 'string' ? audio : null,
+      })
+    }
+    node.children?.forEach(walk)
+  }
+  walk(root)
+  return out.sort((a, b) => a.start - b.start)
+}
+
+/**
+ * Replaces every `<fa …>` start tag with `<fa audio="URL">`: the parsed `audio` ref resolved
+ * through the bundle (`resolve`), `""` when it has none or it doesn't resolve. Other attributes
+ * are dropped; the rest of the markdown is left byte for byte (sanitizing is the renderer's job).
  */
 export function rewriteGuidebookAudio(
   markdown: string,
   resolve: (ref: string) => string | null,
 ): string {
-  return markdown.replace(FA_OPEN_TAG, (tag) =>
-    tag.replace(AUDIO_ATTR, (_all, prefix: string, dq?: string, sq?: string, bare?: string) => {
-      const ref = (dq ?? sq ?? bare ?? '').trim()
-      const url = ref ? resolve(ref) : null
-      return `${prefix}"${escapeAttr(url ?? '')}"`
-    }),
-  )
+  let out = ''
+  let at = 0
+  for (const tag of faStartTags(markdown)) {
+    if (tag.start < at) continue
+    const ref = tag.audio?.trim() ?? ''
+    const url = ref ? resolve(ref) : null
+    out += `${markdown.slice(at, tag.start)}<fa audio="${escapeAttr(url ?? '')}">`
+    at = tag.end
+  }
+  return out + markdown.slice(at)
 }
 
 /** A resolver from authoring refs to public URLs for one bundle. */

@@ -51,8 +51,9 @@
 button.tile {
   cursor: pointer;
 }
+/* Hover changes the border, not the fill: stone text must stay on the page color (AA). */
 button.tile:hover {
-  background: var(--color-surface);
+  border-color: var(--color-mist);
 }
 button.tile:active {
   transform: translateY(2px);
@@ -67,9 +68,6 @@ button.tile:focus-visible {
   border-style: dashed;
   border-block-end-width: var(--lip-border);
   color: var(--color-stone);
-}
-.dim .bars {
-  opacity: 0.6;
 }
 .glyph {
   line-height: 1.6;
@@ -90,8 +88,9 @@ button.tile:focus-visible {
   border-radius: 3px;
   background: var(--color-line);
 }
+/* The only strength signal: ≥3:1 against the page and against an empty bar, in both themes. */
 .barOn {
-  background: var(--color-zaferan-500);
+  background: var(--color-correct-fg);
 }
 
 .lessons {

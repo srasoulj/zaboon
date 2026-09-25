@@ -55,12 +55,15 @@ export function renderWithServices(
   const { api, calls } = fakeApi(opts.handlers ?? {})
   const auth = fakeAuth(opts.session === undefined ? TEST_SESSION : opts.session)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const utils = render(
+  const wrap = (el: ReactElement) => (
     <QueryClientProvider client={queryClient}>
       <AppServicesProvider auth={auth} api={api}>
-        {ui}
+        {el}
       </AppServicesProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   )
-  return { ...utils, api, calls, auth }
+  const utils = render(wrap(ui))
+  /** Re-renders inside the same providers (keeps component state). */
+  const rerender = (el: ReactElement) => utils.rerender(wrap(el))
+  return { ...utils, rerender, api, calls, auth }
 }

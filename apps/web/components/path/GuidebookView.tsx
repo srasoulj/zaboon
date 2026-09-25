@@ -2,7 +2,9 @@
 /**
  * A unit's Guidebook (GET /api/guidebooks/:unitId): markdown rendered with react-markdown, GFM
  * tables, and raw HTML parsed then sanitized with the default schema plus ONLY
- * `<fa audio="…">` (Persian phrases). Never dangerouslySetInnerHTML.
+ * `<fa audio="…">` (Persian phrases; `audio` must be a relative or http(s) URL, and only content
+ * media ever plays). Bare Persian text outside `<fa>` is wrapped too (rehypePersianRuns).
+ * Never dangerouslySetInnerHTML.
  */
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -15,7 +17,8 @@ import type { GuidebookResponse } from '@zaboon/contracts'
 import { FaText } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useSession } from '@/lib/app-services'
-import { playAudio } from './play-audio'
+import { rehypePersianRuns } from './persian-runs'
+import { isContentAudioUrl, playAudio } from './play-audio'
 import styles from './guidebook.module.css'
 
 /** The default GitHub-style schema plus one element: `<fa>` with an `audio` attribute. */
@@ -23,6 +26,7 @@ export const GUIDEBOOK_SCHEMA: SanitizeSchema = {
   ...defaultSchema,
   tagNames: [...(defaultSchema.tagNames ?? []), 'fa'],
   attributes: { ...defaultSchema.attributes, fa: ['audio'] },
+  protocols: { ...defaultSchema.protocols, audio: ['http', 'https'] },
 }
 
 /** The plain text inside a React subtree (a phrase is plain text; stray markup is flattened). */
@@ -50,13 +54,17 @@ function SpeakerIcon() {
   )
 }
 
-/** `<fa audio>` → FaText (lang="fa" dir="rtl", whole words) with a speaker button when there is audio. */
+/**
+ * `<fa audio>` → FaText (lang="fa" dir="rtl", whole words) with a speaker button when the audio is
+ * course media.
+ */
 export function FaPhrase({ audio, children }: { audio?: string; children?: ReactNode }) {
   const text = textOf(children).trim()
+  const playable = audio !== undefined && isContentAudioUrl(audio)
   return (
     <span className={styles.phrase} data-testid="guidebook-phrase">
       <FaText text={text} />
-      {audio ? (
+      {playable ? (
         <button
           type="button"
           className={styles.speaker}
@@ -70,14 +78,21 @@ export function FaPhrase({ audio, children }: { audio?: string; children?: React
   )
 }
 
+/** react-markdown also passes its hast `node`; it must not reach the DOM. */
+type Rendered<T extends 'h2' | 'h3' | 'h4' | 'h5' | 'table'> = ComponentPropsWithoutRef<T> & {
+  node?: unknown
+}
+
 // Guidebook headings sit under the page's own h1, so each level moves down by one.
 const components = {
-  fa: FaPhrase,
-  h1: (p: ComponentPropsWithoutRef<'h2'>) => <h2 {...p} />,
-  h2: (p: ComponentPropsWithoutRef<'h3'>) => <h3 {...p} />,
-  h3: (p: ComponentPropsWithoutRef<'h4'>) => <h4 {...p} />,
-  h4: (p: ComponentPropsWithoutRef<'h5'>) => <h5 {...p} />,
-  table: (p: ComponentPropsWithoutRef<'table'>) => (
+  fa: ({ audio, children }: { audio?: string; children?: ReactNode; node?: unknown }) => (
+    <FaPhrase audio={audio}>{children}</FaPhrase>
+  ),
+  h1: ({ node: _node, ...p }: Rendered<'h2'>) => <h2 {...p} />,
+  h2: ({ node: _node, ...p }: Rendered<'h3'>) => <h3 {...p} />,
+  h3: ({ node: _node, ...p }: Rendered<'h4'>) => <h4 {...p} />,
+  h4: ({ node: _node, ...p }: Rendered<'h5'>) => <h5 {...p} />,
+  table: ({ node: _node, ...p }: Rendered<'table'>) => (
     <div className={styles.tableWrap}>
       <table {...p} />
     </div>
@@ -90,7 +105,7 @@ export function GuidebookMarkdown({ markdown }: { markdown: string }) {
     <div className={styles.markdown} data-testid="guidebook-content">
       <Markdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, [rehypeSanitize, GUIDEBOOK_SCHEMA]]}
+        rehypePlugins={[rehypeRaw, [rehypeSanitize, GUIDEBOOK_SCHEMA], rehypePersianRuns]}
         components={components}
       >
         {markdown}

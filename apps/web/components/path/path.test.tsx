@@ -1,7 +1,7 @@
 /** DOM tests for the Learn path: node states × kinds, popovers, START links, keyboard, banners. */
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { LearnPath, PathView } from './LearnPath'
 import { LOCKED_MESSAGE, type LevelState } from './path-model'
 import { FIXTURE_PATH, level, renderWithServices, testPath } from './test-support'
@@ -224,6 +224,47 @@ describe('level popover', () => {
     fireEvent.pointerDown(document.body)
     expect(screen.queryByRole('dialog')).toBeNull()
   })
+
+  it('closes when focus moves past it, leaving focus where it went (WCAG 2.4.11)', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithServices(<PathView path={FIXTURE_PATH} />)
+    await user.click(nodeButton(container, 'u01-l1'))
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveFocus()
+    await user.tab()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(nodeButton(container, 'u01-l2')).toHaveFocus()
+    // Shift+Tab from the START link back to its own node keeps it open.
+    await user.click(nodeButton(container, 'u01-l1'))
+    await user.tab({ shift: true })
+    expect(nodeButton(container, 'u01-l1')).toHaveFocus()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('Escape with focus outside the popover closes it without moving focus', async () => {
+    const user = userEvent.setup()
+    const { container } = renderWithServices(<PathView path={FIXTURE_PATH} />)
+    await user.click(nodeButton(container, 'u01-l1'))
+    nodeButton(container, 'u01-l1').focus()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(nodeButton(container, 'u01-l1')).toHaveFocus()
+  })
+
+  it('keeps aria-expanded right when a level changes state while its popover is open', async () => {
+    const { container, rerender } = renderWithServices(<PathView path={FIXTURE_PATH} />)
+    await userEvent.click(nodeButton(container, 'u01-l2'))
+    const changed = testPath([
+      {
+        id: 'u01-fixture',
+        levels: FIXTURE_PATH.sections[0]!.units[0]!.levels.map((l) =>
+          l.id === 'u01-l2' ? { ...l, kind: 'chest', state: 'available' as const } : l,
+        ),
+      },
+    ])
+    rerender(<PathView path={changed} />)
+    expect(nodeButton(container, 'u01-l2')).toHaveAttribute('aria-expanded', 'true')
+    expect(nodeButton(container, 'u01-l2')).toHaveAttribute('aria-haspopup', 'dialog')
+  })
 })
 
 describe('LearnPath', () => {
@@ -239,7 +280,11 @@ describe('LearnPath', () => {
 
   it('loads the active course path with no query and scrolls the current node into view', async () => {
     const scroll = vi.fn()
+    const original = Element.prototype.scrollIntoView
     Element.prototype.scrollIntoView = scroll
+    onTestFinished(() => {
+      Element.prototype.scrollIntoView = original
+    })
     const { calls, container } = renderWithServices(<LearnPath />, {
       handlers: { path: () => FIXTURE_PATH },
     })
