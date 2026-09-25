@@ -7,10 +7,12 @@ import {
   bigint,
   boolean,
   date,
+  doublePrecision,
   integer,
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -142,4 +144,250 @@ export const appConfig = pgTable('app_config', {
   key: text('key').primaryKey(),
   value: jsonb('value').notNull(),
   updatedAt: tstz('updated_at').notNull().defaultNow(),
+})
+
+// ---------------------------------------------------------------------------------------------
+// MVP tables added by 20260925000200_mvp_tables.sql
+// ---------------------------------------------------------------------------------------------
+export const consents = pgTable(
+  'consents',
+  {
+    userId: uuid('user_id').notNull(),
+    kind: text('kind').$type<'analytics' | 'marketing'>().notNull(),
+    granted: boolean('granted').notNull(),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+)
+
+export const levelProgress = pgTable(
+  'level_progress',
+  {
+    userId: uuid('user_id').notNull(),
+    courseId: text('course_id').notNull(),
+    levelId: text('level_id').notNull(),
+    lessonsDone: integer('lessons_done').notNull().default(0),
+    legendary: boolean('legendary').notNull().default(false),
+    completedAt: tstz('completed_at'),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.courseId, t.levelId] })],
+)
+
+export const sessionAnswers = pgTable(
+  'session_answers',
+  {
+    sessionId: uuid('session_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    idx: integer('idx').notNull(),
+    attemptSeq: integer('attempt_seq').notNull(),
+    challengeType: text('challenge_type').notNull(),
+    itemRefs: text('item_refs').array().notNull().default(sql`'{}'`),
+    contentVersion: integer('content_version').notNull(),
+    response: jsonb('response').notNull(),
+    verdict: text('verdict').notNull(),
+    ms: integer('ms').notNull(),
+    hinted: boolean('hinted').notNull().default(false),
+    rolledUp: boolean('rolled_up').notNull().default(false),
+    createdAt: tstz('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.sessionId, t.idx, t.attemptSeq] })],
+)
+
+export const userItems = pgTable(
+  'user_items',
+  {
+    userId: uuid('user_id').notNull(),
+    item: text('item').notNull(),
+    qty: integer('qty').notNull().default(0),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.item] })],
+)
+
+/** FSRS columns shared by lexeme_memory and letter_memory (mirror the contracts' FsrsCard). */
+const fsrsColumns = () => ({
+  due: tstz('due').notNull(),
+  stability: doublePrecision('stability').notNull(),
+  difficulty: doublePrecision('difficulty').notNull(),
+  elapsedDays: doublePrecision('elapsed_days').notNull().default(0),
+  scheduledDays: doublePrecision('scheduled_days').notNull().default(0),
+  learningSteps: integer('learning_steps').notNull().default(0),
+  reps: integer('reps').notNull().default(0),
+  lapses: integer('lapses').notNull().default(0),
+  state: smallint('state').notNull().default(0),
+  lastReview: tstz('last_review'),
+  exposures: integer('exposures').notNull().default(0),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+})
+
+export const lexemeMemory = pgTable(
+  'lexeme_memory',
+  {
+    userId: uuid('user_id').notNull(),
+    lexemeId: text('lexeme_id').notNull(),
+    ...fsrsColumns(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.lexemeId] })],
+)
+
+export const letterMemory = pgTable(
+  'letter_memory',
+  {
+    userId: uuid('user_id').notNull(),
+    letterId: text('letter_id').notNull(),
+    ...fsrsColumns(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.letterId] })],
+)
+
+export const mistakes = pgTable(
+  'mistakes',
+  {
+    userId: uuid('user_id').notNull(),
+    itemRef: text('item_ref').notNull(),
+    timesWrong: integer('times_wrong').notNull().default(1),
+    lastWrongAt: tstz('last_wrong_at').notNull(),
+    resolvedAt: tstz('resolved_at'),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.itemRef] })],
+)
+
+export const reports = pgTable('reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  sessionId: uuid('session_id'),
+  itemRef: text('item_ref').notNull(),
+  kind: text('kind').notNull(),
+  answer: text('answer'),
+  text: text('text'),
+  status: text('status').notNull().default('new'),
+  createdAt: tstz('created_at').notNull().defaultNow(),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+})
+
+export interface TopWrongAnswer {
+  answer: string
+  count: number
+}
+
+export const itemStats = pgTable(
+  'item_stats',
+  {
+    itemRef: text('item_ref').notNull(),
+    contentVersion: integer('content_version').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    wrong: integer('wrong').notNull().default(0),
+    errorRate: doublePrecision('error_rate').notNull().default(0),
+    topWrongAnswers: jsonb('top_wrong_answers').$type<TopWrongAnswer[]>().notNull().default(sql`'[]'::jsonb`),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.itemRef, t.contentVersion] })],
+)
+
+export const rateLimits = pgTable('rate_limits', {
+  key: text('key').primaryKey(),
+  tokens: doublePrecision('tokens').notNull(),
+  updatedAt: tstz('updated_at').notNull(),
+})
+
+// ---------------------------------------------------------------------------------------------
+// P2 tables added by 20260925000300_p2_tables.sql
+// ---------------------------------------------------------------------------------------------
+export const wallet = pgTable('wallet', {
+  userId: uuid('user_id').primaryKey(),
+  coins: integer('coins').notNull().default(0),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+})
+
+export const coinLedger = pgTable('coin_ledger', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  userId: uuid('user_id').notNull(),
+  amount: integer('amount').notNull(),
+  reason: text('reason').notNull(),
+  ref: text('ref'),
+  createdAt: tstz('created_at').notNull().defaultNow(),
+})
+
+export const leagueWeeks = pgTable('league_weeks', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  startsAt: tstz('starts_at').notNull(),
+  endsAt: tstz('ends_at').notNull(),
+  closedAt: tstz('closed_at'),
+})
+
+export const leagueCohorts = pgTable('league_cohorts', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  weekId: bigint('week_id', { mode: 'number' }).notNull(),
+  tier: text('tier').notNull(),
+  size: integer('size').notNull().default(0),
+  createdAt: tstz('created_at').notNull().defaultNow(),
+})
+
+export const leagueMembers = pgTable(
+  'league_members',
+  {
+    cohortId: bigint('cohort_id', { mode: 'number' }).notNull(),
+    weekId: bigint('week_id', { mode: 'number' }).notNull(),
+    userId: uuid('user_id').notNull(),
+    weeklyXp: integer('weekly_xp').notNull().default(0),
+    finalRank: integer('final_rank'),
+    outcome: text('outcome').$type<'promote' | 'stay' | 'demote'>(),
+    joinedAt: tstz('joined_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.cohortId, t.userId] })],
+)
+
+export const userLeague = pgTable('user_league', {
+  userId: uuid('user_id').primaryKey(),
+  tier: text('tier').notNull().default('mes'),
+  updatedAt: tstz('updated_at').notNull().defaultNow(),
+})
+
+export const questDefs = pgTable('quest_defs', {
+  id: text('id').primaryKey(),
+  template: text('template').notNull(),
+  target: integer('target').notNull(),
+  reward: integer('reward').notNull(),
+  active: boolean('active').notNull().default(true),
+})
+
+export const userQuests = pgTable(
+  'user_quests',
+  {
+    userId: uuid('user_id').notNull(),
+    localDate: date('local_date', { mode: 'string' }).notNull(),
+    questId: text('quest_id').notNull(),
+    progress: integer('progress').notNull().default(0),
+    claimed: boolean('claimed').notNull().default(false),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.localDate, t.questId] })],
+)
+
+export const entitlements = pgTable(
+  'entitlements',
+  {
+    userId: uuid('user_id').notNull(),
+    entitlement: text('entitlement').notNull(),
+    source: text('source').notNull(),
+    expiresAt: tstz('expires_at'),
+    createdAt: tstz('created_at').notNull().defaultNow(),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.entitlement] })],
+)
+
+export const webhookEvents = pgTable('webhook_events', {
+  eventId: text('event_id').primaryKey(),
+  type: text('type').notNull(),
+  receivedAt: tstz('received_at').notNull().defaultNow(),
+})
+
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  endpoint: text('endpoint').notNull().unique(),
+  keys: jsonb('keys').$type<{ p256dh: string; auth: string }>().notNull(),
+  createdAt: tstz('created_at').notNull().defaultNow(),
 })

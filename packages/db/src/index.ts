@@ -16,6 +16,8 @@ import postgres from 'postgres'
 import * as schema from './schema'
 
 export { schema }
+export * as repos from './repos/index'
+export { ConflictError, NotFoundError, ScopeError, type Queryable } from './repos/shared'
 export type Db = PostgresJsDatabase<typeof schema>
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
