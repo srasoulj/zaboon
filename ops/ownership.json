@@ -131,11 +131,15 @@
         "!apps/web/app/api/lives/**",
         "!apps/web/app/api/practice/**",
         "!apps/web/app/api/cron/**",
+        "!apps/web/app/api/guidebooks/**",
         "apps/web/lib/server/**",
         "!apps/web/lib/server/home.ts",
         "!apps/web/lib/server/sessions.ts",
         "!apps/web/lib/server/engagement/**",
-        "apps/web/tests/api/**"
+        "!apps/web/lib/server/guidebook.ts",
+        "!apps/web/lib/server/guidebook.test.ts",
+        "apps/web/tests/api/**",
+        "!apps/web/tests/api/guidebook.db.test.ts"
       ]
     },
     "ws-pages": {

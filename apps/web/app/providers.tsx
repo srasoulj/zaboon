@@ -65,9 +65,10 @@ function PendingMergeFinisher() {
     if (!memberId) return
     // Not tied to this effect run: in dev StrictMode the first run does the merge and the second
     // finds nothing pending, so the merged home must survive the first run's cleanup.
-    void completePendingMerge({ auth, api, outbox }).then(
-      (home) => home && applyMergedHome(auth, queryClient, memberId, home),
-    )
+    completePendingMerge({ auth, api, outbox })
+      .then((home) => home && applyMergedHome(auth, queryClient, memberId, home))
+      // A failed session read: nothing to show; a kept pending entry is retried on the next load.
+      .catch(() => {})
   }, [auth, api, outbox, memberId, queryClient])
   return null
 }

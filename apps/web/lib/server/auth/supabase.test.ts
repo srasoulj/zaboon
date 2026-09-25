@@ -23,7 +23,10 @@ async function codeOf(error: unknown): Promise<string> {
 }
 
 describe('verifySupabaseToken', () => {
-  beforeEach(() => jwtVerify.mockReset())
+  beforeEach(() => {
+    jwtVerify.mockReset()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
 
   it('returns the payload of a valid token', async () => {
     jwtVerify.mockResolvedValueOnce({ payload: { sub: 'u1', role: 'authenticated' } })
@@ -49,5 +52,9 @@ describe('verifySupabaseToken', () => {
     expect(await codeOf(new errors.JWKSTimeout())).toBe('internal')
     expect(await codeOf(new errors.JWKSInvalid())).toBe('internal')
     expect(await codeOf(new TypeError('fetch failed'))).toBe('internal')
+    // A 5xx/429/3xx or non-JSON answer from the JWKS endpoint: jose's bare JOSEError.
+    expect(
+      await codeOf(new errors.JOSEError('Expected 200 OK from the JSON Web Key Set HTTP response')),
+    ).toBe('internal')
   })
 })

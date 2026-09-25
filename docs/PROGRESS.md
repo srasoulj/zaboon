@@ -58,7 +58,12 @@
 **Deployment:** the user is deploying `main` to Vercel. Hotfix #34 (from the user's own session)
 made `next build` independent of runtime auth configuration; `pnpm verify` now runs a production
 build too, so a build break is caught before merge. The Vercel project still needs its environment
-variables (names in `.env.example`; list in #34).
+variables (names in `.env.example`; list in #34). Deploy runbook notes:
+
+- The Vercel project's Root Directory must be `apps/web`. `apps/web/vercel.json` holds the Monday 00:00 UTC league-rollover cron.
+- Set `CRON_SECRET`, or the cron route refuses every call.
+- Until ws-engagement adds the route, the cron gets a harmless 404.
+- `CONTENT_BASE_URL` must be set at build time and at runtime. The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
 
 **Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
 the real renderers, the lesson player, the API and Postgres on desktop and mobile Chromium: all 13 MVP

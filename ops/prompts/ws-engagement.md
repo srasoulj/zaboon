@@ -16,6 +16,9 @@ DELIVER
      - The outbox sends only through `identitySender`: `{ userId, token }` come from one `getSession()` of the mounted replayer's auth.
      - A mismatch is `blocked`, never permanent.
      - Keep `sharedLessonStores(api)` and `retagOutboxUser` signatures (ws-pages uses them).
+   - **The cron route:** `apps/web/vercel.json` already schedules `GET /api/cron/league-rollover` (Mondays 00:00 UTC, `Authorization: Bearer $CRON_SECRET`). Build it with `withRoute(routes.leagueRollover, …)` so the cron auth applies; until then the cron gets a 404.
+   - **Two `NotImplementedError` classes:** `@zaboon/game-rules` exports one from the engagement stub, and `lib/server/sessions.ts` maps only session-engine's to a 400. With the real engagement API the stub never throws; don't let it reach a route.
+   - **Local cron e2e specs:** they need the dev server Playwright starts (its env has a fake `CRON_SECRET`). A dev server you started yourself on the e2e port gets reused (`reuseExistingServer`), and without the secret its cron calls answer 401.
    - **Practice audio:** the practice hub plays word audio through `components/path/play-audio.ts` (ws-path-letters'). It only plays content-origin URLs: same-origin `/content/…` or `NEXT_PUBLIC_CONTENT_BASE_URL`, which next.config.ts inlines from `CONTENT_BASE_URL`. Keep using it.
 
 RULES AND PITFALLS
