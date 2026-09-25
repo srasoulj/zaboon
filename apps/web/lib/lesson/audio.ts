@@ -47,11 +47,19 @@ type HowlCtor = typeof HowlType
 
 const PRELOAD_TIMEOUT_MS = 8_000
 
-export function createHowlerAudio(
-  opts: { fetch?: typeof fetch; timeoutMs?: number } = {},
-): LessonAudio {
+export interface HowlerAudioOptions {
+  fetch?: typeof fetch
+  timeoutMs?: number
+  /** Loads Howler's `Howl` class (injectable for tests). */
+  loadHowl?: () => Promise<HowlCtor>
+}
+
+export function createHowlerAudio(opts: HowlerAudioOptions = {}): LessonAudio {
   const doFetch = opts.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a))
+  const loadHowl = opts.loadHowl ?? (async () => (await import('howler')).Howl)
   let enabled = true
+  /** After dispose() nothing plays and nothing new is created; late creations are unloaded. */
+  let disposed = false
   let Howl: HowlCtor | null = null
   let effects: HowlType | null = null
   const clips = new Map<string, HowlType>()
@@ -60,15 +68,17 @@ export function createHowlerAudio(
   const envelopes = new Map<string, number[]>()
   let playing: { howl: HowlType; envelope: number[] | null; rate: number } | null = null
 
-  async function load(): Promise<HowlCtor> {
-    if (!Howl) Howl = (await import('howler')).Howl
-    return Howl
+  /** Howler's Howl class, or null once disposed (checked after the await). */
+  async function load(): Promise<HowlCtor | null> {
+    if (!Howl) Howl = await loadHowl()
+    return disposed ? null : Howl
   }
 
-  async function ensureEffects(): Promise<void> {
-    if (effects) return
+  async function ensureEffects(): Promise<HowlType | null> {
     const H = await load()
-    effects = new H({ src: EFFECTS_SRC, sprite: EFFECT_SPRITE, preload: true, volume: 0.8 })
+    if (!H) return null
+    effects ??= new H({ src: EFFECTS_SRC, sprite: EFFECT_SPRITE, preload: true, volume: 0.8 })
+    return effects
   }
 
   function clipFor(H: HowlCtor, url: string): HowlType {
@@ -94,13 +104,16 @@ export function createHowlerAudio(
     },
 
     effect(name) {
-      if (!enabled) return
+      if (!enabled || disposed) return
       void ensureEffects()
-        .then(() => effects?.play(name))
+        .then((fx) => {
+          if (fx && enabled && !disposed) fx.play(name)
+        })
         .catch(() => {})
     },
 
     async preload(challenges) {
+      if (disposed) return
       const media = sessionMedia(challenges)
       for (const m of media) {
         if (m.normal) byUrl.set(m.normal, m)
@@ -109,33 +122,38 @@ export function createHowlerAudio(
       const { audio, envelopes: envUrls } = mediaUrls(media)
       const work = (async () => {
         const H = await load()
-        await ensureEffects()
+        if (!H || !(await ensureEffects())) return
         await Promise.all([
-          ...audio.map((u) => loaded(clipFor(H, u))),
+          ...audio.map((u) => (disposed ? Promise.resolve() : loaded(clipFor(H, u)))),
           ...envUrls.map(async (u) => {
             try {
               const res = await doFetch(u)
               const env = res.ok ? parseEnvelope(await res.json()) : null
-              if (env) envelopes.set(u, env)
+              if (env && !disposed) envelopes.set(u, env)
             } catch {
               // lip-sync is decoration: a missing envelope just keeps the mouth still
             }
           }),
         ])
       })()
+      let timer: ReturnType<typeof setTimeout> | undefined
       await Promise.race([
         work.catch(() => {}),
-        new Promise<void>((r) => setTimeout(r, opts.timeoutMs ?? PRELOAD_TIMEOUT_MS)),
+        new Promise<void>((r) => {
+          timer = setTimeout(r, opts.timeoutMs ?? PRELOAD_TIMEOUT_MS)
+        }),
       ])
+      clearTimeout(timer)
     },
 
     play(url, o) {
-      if (!enabled) return
+      if (!enabled || disposed) return
       const media = byUrl.get(url)
       const slow = o?.slow === true && media?.slow !== undefined
       const src = slow ? media!.slow! : url
       void load()
         .then((H) => {
+          if (!H || !enabled) return
           playing?.howl.stop()
           const howl = clipFor(H, src)
           const envelope = media?.envelope ? (envelopes.get(media.envelope) ?? null) : null
@@ -160,6 +178,8 @@ export function createHowlerAudio(
     },
 
     dispose() {
+      if (disposed) return
+      disposed = true
       this.stop()
       for (const h of clips.values()) h.unload()
       clips.clear()
