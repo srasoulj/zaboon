@@ -1,0 +1,90 @@
+/** A recorded-shape model answer for `draft` of u02-about-me (tests and CLI tests). */
+import type { DraftOutput } from '../draft'
+
+export const goodDraft = (): DraftOutput => ({
+  lexemes: [
+    {
+      key: 'ahl',
+      fa: 'اهل',
+      faFormal: null,
+      faVocalized: 'اَهل',
+      translit: 'ahl',
+      translitFormal: null,
+      pos: 'adjective',
+      glosses: ['from (a place)'],
+      forms: [],
+      tags: [],
+    },
+    {
+      key: 'iran',
+      fa: 'ایران',
+      faFormal: null,
+      faVocalized: null,
+      translit: 'irān',
+      translitFormal: null,
+      pos: 'noun',
+      glosses: ['Iran'],
+      forms: [],
+      tags: ['place'],
+    },
+    // Arabic kaf and yeh slip in: draft fixes them to Persian ک and ی.
+    {
+      key: 'koja',
+      fa: 'كجا',
+      faFormal: null,
+      faVocalized: null,
+      translit: 'kojā',
+      translitFormal: null,
+      pos: 'adverb',
+      glosses: ['where'],
+      forms: [{ key: '2sg', value: 'کجايي' }],
+      tags: ['question'],
+    },
+  ],
+  sentences: [
+    {
+      ref: 's1',
+      fa: 'من اهل ایرانم.',
+      faFormal: 'من اهل ایران هستم.',
+      faVocalized: null,
+      translit: 'man ahl-e irānam.',
+      translitFormal: 'man ahl-e irān hastam.',
+      tokens: [
+        { surface: 'من', lexeme: 'lx_man', translit: 'man', gloss: 'I' },
+        { surface: 'اهل', lexeme: 'ahl', translit: 'ahl-e', gloss: 'from' },
+        { surface: 'ایرانم.', lexeme: 'lx_iran', translit: 'irānam', gloss: "(I'm) Iran" },
+      ],
+      en: ["I'm from Iran"],
+      faAccept: [],
+      speaker: 'kian',
+      tags: [],
+    },
+    {
+      ref: 's2',
+      fa: 'تو اهل کجایی?',
+      faFormal: 'تو اهل کجا هستی؟',
+      faVocalized: null,
+      translit: 'to ahl-e kojāyi?',
+      translitFormal: 'to ahl-e kojā hasti?',
+      tokens: [
+        { surface: 'تو', lexeme: 'lx_to', translit: 'to', gloss: 'you' },
+        { surface: 'اهل', lexeme: 'lx_ahl', translit: 'ahl-e', gloss: 'from' },
+        { surface: 'کجایی', lexeme: 'koja', translit: 'kojāyi', gloss: 'where (are you)' },
+      ],
+      en: ['Where are you from?'],
+      faAccept: ['تو اهل کجایی؟'],
+      speaker: 'shirin',
+      tags: ['question'],
+    },
+  ],
+  chats: [{ speaker: 'shirin', prompt: 's2', options: ['s1', 's_u01_0005'], answer: 0 }],
+  levels: [
+    {
+      title: 'Where are you from?',
+      lexemes: ['lx_ahl', 'iran', 'koja'],
+      sentences: ['s1', 's2'],
+      chats: [0],
+    },
+  ],
+  guidebook: '# About me\n\nSay where you are from: <fa audio="">من اهل ایرانم.</fa>',
+})

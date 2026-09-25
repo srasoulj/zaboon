@@ -106,6 +106,18 @@ describe('daily_activity', () => {
     expect(await withUser(ctx.h.db, u, (tx) => progress.getDailyActivity(tx, u, '2026-09-25'))).toBeNull()
   })
 
+  it('marks freeze days given duplicate dates without aborting the transaction', async () => {
+    const u = await ctx.newUser()
+    const days = await withUserLock(ctx.h.db, u, async (tx) => {
+      await progress.markFreezeUsed(tx, u, ['2026-09-20', '2026-09-20', '2026-09-21'])
+      return progress.listDailyActivity(tx, u)
+    })
+    expect(days.map((d) => [d.localDate, d.freezeUsed])).toEqual([
+      ['2026-09-20', true],
+      ['2026-09-21', true],
+    ])
+  })
+
   it("is invisible to and unwritable by other users", async () => {
     await withUserLock(ctx.h.db, bob, (tx) => progress.addDailyActivity(tx, bob, { localDate: '2026-09-25', xp: 5 }))
     expect(await withUser(ctx.h.db, alice, (tx) => progress.listDailyActivity(tx, bob))).toEqual([])

@@ -83,6 +83,36 @@ describe('lexeme and letter memory', () => {
     expect(await withUser(ctx.h.db, alice, (tx) => memory.getLetterCards(tx, alice, ['l_pe']))).toHaveLength(1)
   })
 
+  it('accepts duplicate ids in one upsert (last entry wins) without aborting the transaction', async () => {
+    const u = await ctx.newUser()
+    const after = await withUserLock(ctx.h.db, u, async (tx) => {
+      await memory.upsertLexemeCards(tx, u, [
+        { id: 'lx_dup', card: card({ reps: 1 }), exposures: 1 },
+        { id: 'lx_other', card: card({ reps: 7 }) },
+        { id: 'lx_dup', card: card({ reps: 2 }), exposures: 2 },
+      ])
+      await memory.upsertLetterCards(tx, u, [
+        { id: 'l_dup', card: card({ lapses: 1 }) },
+        { id: 'l_dup', card: card({ lapses: 3 }) },
+      ])
+      // Also with the row already present, mixing entries with and without exposures.
+      await memory.upsertLexemeCards(tx, u, [
+        { id: 'lx_dup', card: card({ reps: 5 }) },
+        { id: 'lx_dup', card: card({ reps: 6 }), exposures: 9 },
+      ])
+      // The transaction is still usable afterwards.
+      return {
+        lexemes: await memory.getLexemeCards(tx, u),
+        letters: await memory.getLetterCards(tx, u),
+      }
+    })
+    expect(after.lexemes.map((e) => [e.id, e.card.reps, e.exposures])).toEqual([
+      ['lx_dup', 6, 9],
+      ['lx_other', 7, 0],
+    ])
+    expect(after.letters.map((e) => [e.id, e.card.lapses])).toEqual([['l_dup', 3]])
+  })
+
   it("never exposes or accepts another user's cards", async () => {
     expect(await withUser(ctx.h.db, bob, (tx) => memory.getLexemeCards(tx, alice))).toEqual([])
     expect(await withUser(ctx.h.db, bob, (tx) => memory.listDueLetters(tx, alice, '2030-01-01T00:00:00Z'))).toEqual([])
