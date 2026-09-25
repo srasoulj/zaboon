@@ -1,7 +1,7 @@
-import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { joinedForm } from '../LetterIntro'
-import { fixture, renderChallenge } from '../testing'
+import { render, screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { LetterIntro, joinedForm } from '../LetterIntro'
+import { DISPLAY, fixture, renderChallenge } from '../testing'
 
 const ZWJ = '‍'
 const c = fixture('letter_intro')
@@ -49,6 +49,28 @@ describe('letter_intro', () => {
     expect(screen.getByRole('button', { name: `Play the letter ${c.letter.name}` })).toHaveFocus()
     await h.user.keyboard('{Enter}')
     expect(h.audio.play).toHaveBeenCalledWith(c.letter.audio)
+  })
+
+  it('reports once even if the player re-renders with a new callback and no draft', () => {
+    const audio = { play: vi.fn(), stop: vi.fn(), mouthOpen: () => 0 }
+    const calls = vi.fn()
+    const el = () => (
+      <LetterIntro
+        challenge={c}
+        response={null}
+        onResponse={(r) => calls(r)}
+        onSubmit={() => {}}
+        onMismatch={() => {}}
+        phase="answering"
+        verdict={null}
+        display={DISPLAY}
+        audio={audio}
+      />
+    )
+    const { rerender } = render(el())
+    rerender(el())
+    rerender(el())
+    expect(calls).toHaveBeenCalledTimes(1)
   })
 
   it('does not report again when the draft is already set (feedback)', () => {

@@ -1,7 +1,7 @@
 'use client'
 import type { ChallengeOf, LetterInfo } from '@zaboon/contracts'
 import { FaText } from '@zaboon/ui'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
 import { AudioButton, ChallengeFrame, FaInline, playMedia, styles } from './shared'
 
@@ -68,10 +68,13 @@ function LetterCard({ letter, onPlay }: { letter: LetterInfo; onPlay: (() => voi
 export function LetterIntro(props: Props) {
   const { challenge, display, audio, response, onResponse } = props
   const { letter } = challenge
-  const ready = response?.kind === 'none'
+  // Nothing to answer: report the draft once on mount (CHECK is enabled right away).
+  const reported = useRef(response?.kind === 'none')
   useEffect(() => {
-    if (!ready) onResponse({ kind: 'none' })
-  }, [ready, onResponse])
+    if (reported.current) return
+    reported.current = true
+    onResponse({ kind: 'none' })
+  }, [onResponse])
   return (
     <ChallengeFrame type={challenge.type} display={display} heading="New letter">
       <LetterCard
