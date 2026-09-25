@@ -4,9 +4,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { MotionPreferenceProvider } from '@zaboon/ui'
 import { OutboxReplayer } from '@/components/lesson/services'
-import { createApiClient } from '@/lib/api-client'
+import { useOutboxPort } from '@/components/pages/hooks'
+import { completePendingMerge } from '@/components/pages/identity'
+import { PwaProvider } from '@/components/pages/PwaProvider'
+import { createApiClient, queryKeys } from '@/lib/api-client'
 import { createAuthClient } from '@/lib/auth-client'
-import { AppServicesProvider, useApi, useHome, useSession } from '@/lib/app-services'
+import { AppServicesProvider, useApi, useAuth, useHome, useSession } from '@/lib/app-services'
 
 /**
  * Replays lesson writes queued offline (events, completions) on every page, not only /lesson:
@@ -41,6 +44,34 @@ function QueriesFollowIdentity() {
     if (previous.current !== null && previous.current !== identity) void queryClient.resetQueries()
     previous.current = identity
   }, [identity, queryClient])
+  return null
+}
+
+/**
+ * Supabase mode: a guest who links an email that already belongs to an account signs in through the
+ * emailed link, so the merge finishes here, when that member session appears (ws-pages'
+ * `completePendingMerge`; a no-op when nothing is pending, and local mode merges immediately).
+ */
+function PendingMergeFinisher() {
+  const auth = useAuth()
+  const api = useApi()
+  const outbox = useOutboxPort()
+  const session = useSession()
+  const queryClient = useQueryClient()
+  const memberId =
+    session.status === 'signed_in' && !session.session.isAnonymous ? session.session.userId : null
+  useEffect(() => {
+    if (!memberId) return
+    let alive = true
+    void completePendingMerge({ auth, api, outbox }).then((home) => {
+      if (!alive || !home) return
+      queryClient.setQueryData(queryKeys.home, home)
+      void queryClient.invalidateQueries()
+    })
+    return () => {
+      alive = false
+    }
+  }, [auth, api, outbox, memberId, queryClient])
   return null
 }
 
@@ -85,7 +116,11 @@ export function Providers({ children }: { children: ReactNode }) {
       <AppServicesProvider auth={services.auth} api={services.api}>
         <OutboxAtAppStart />
         <QueriesFollowIdentity />
-        <MotionFromSettings>{children}</MotionFromSettings>
+        <PendingMergeFinisher />
+        <MotionFromSettings>
+          {/* Registers the service worker in production builds only (ws-pages). */}
+          <PwaProvider>{children}</PwaProvider>
+        </MotionFromSettings>
       </AppServicesProvider>
     </QueryClientProvider>
   )

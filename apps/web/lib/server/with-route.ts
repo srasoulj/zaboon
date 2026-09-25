@@ -103,10 +103,25 @@ async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
   return parsed.data
 }
 
+/**
+ * A foreign-key violation on a `user_id` column: the row being written belongs to a user that no
+ * longer exists, i.e. the (still unexpired) token of a deleted or merged-away account (#27).
+ */
+export function isGoneUserViolation(err: unknown): boolean {
+  for (let e: unknown = err, depth = 0; e && depth < 3; depth++) {
+    const pg = e as { code?: unknown; constraint_name?: unknown; constraint?: unknown; cause?: unknown }
+    const constraint = String(pg.constraint_name ?? pg.constraint ?? '')
+    if (pg.code === '23503' && /user_id/.test(constraint)) return true
+    e = pg.cause
+  }
+  return false
+}
+
 function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err
   if (err instanceof NotFoundError) return new ApiError('not_found', err.message)
   if (err instanceof ConflictError) return new ApiError('conflict', err.message)
+  if (isGoneUserViolation(err)) return new ApiError('unauthorized', 'This account no longer exists')
   console.error('[api] unhandled error', err)
   return new ApiError('internal', 'internal error')
 }

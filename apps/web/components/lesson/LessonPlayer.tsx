@@ -202,6 +202,7 @@ export function LessonPlayer({
         queryClient.invalidateQueries({ queryKey: queryKeys.home }),
         queryClient.invalidateQueries({ queryKey: queryKeys.path }),
         queryClient.invalidateQueries({ queryKey: queryKeys.letters }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.words }),
       ]),
     [queryClient],
   )

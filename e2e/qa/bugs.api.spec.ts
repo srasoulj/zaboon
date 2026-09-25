@@ -1,7 +1,6 @@
 /**
- * Regression tests for bugs QA found in the API. Each one is marked `test.fail()` until its issue
- * is fixed: when a fix lands the test starts passing, Playwright reports it, and the `test.fail()`
- * line must be removed (the test then guards the fix).
+ * Regression tests for bugs QA found in the API (#27, #28 — both fixed; these tests guard the
+ * fixes). A new bug gets a `test.fail()` test here until its fix lands.
  */
 import { expect, test } from '@playwright/test'
 import { call, expectEnvelope, finishRaw, guest, start } from './support'
@@ -10,7 +9,6 @@ import { call, expectEnvelope, finishRaw, guest, start } from './support'
 test("a deleted account's token is refused with 401 on every user route, never 500", async ({
   request,
 }) => {
-  test.fail() // #27: the profile insert fails on the auth.users foreign key → 500
   const alice = await guest(request)
   const s = await start(request, alice, { kind: 'practice' })
   expect((await call(request, alice, '/api/account', { method: 'DELETE' })).status).toBe(200)
@@ -37,7 +35,6 @@ test("a deleted account's token is refused with 401 on every user route, never 5
 test('a completion whose server clock is before the session start still commits', async ({
   request,
 }) => {
-  test.fail() // #28: durationMs comes out negative and the result fails its contract → 500
   const alice = await guest(request)
   const s = await start(request, alice, { now: '2032-01-01T12:00:00.000Z' })
   const res = await finishRaw(request, alice, s, { now: '2032-01-01T11:59:00.000Z' })

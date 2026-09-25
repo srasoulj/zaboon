@@ -27,10 +27,9 @@ type Scheme = 'light' | 'dark'
 const SUMMARY_HEADING = '[data-testid="complete-summary"] h1'
 const SUMMARY_XP_LABEL = '[data-testid="complete-xp"] .bg-zaferan-500'
 const KNOWN: Record<Scheme, Record<string, string[]>> = {
-  // https://github.com/srasoulj/zaboon/issues/29: saffron (zaferan-600) heading text is below 3:1 on white.
-  light: { 'complete summary': [SUMMARY_HEADING] },
-  // https://github.com/srasoulj/zaboon/issues/29: the XP label is light ink on saffron (zaferan-500) in the dark theme.
-  dark: { 'complete summary': [SUMMARY_XP_LABEL] },
+  // #29 (saffron summary text contrast) is fixed; its regression tests below guard it.
+  light: {},
+  dark: {},
 }
 
 function violations(results: {
@@ -204,7 +203,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
   })
 }
 
-// Regression tests for #29 (expected to fail until it is fixed).
+// Regression tests for #29 (https://github.com/srasoulj/zaboon/issues/29, fixed).
 for (const [scheme, selector] of [
   ['light', SUMMARY_HEADING],
   ['dark', SUMMARY_XP_LABEL],
@@ -215,7 +214,6 @@ for (const [scheme, selector] of [
     test(`regression: the lesson-complete summary text has enough contrast (${selector})`, async ({
       guestPage: page,
     }) => {
-      test.fail() // https://github.com/srasoulj/zaboon/issues/29: remove this line and the KNOWN entry once it is fixed.
       test.slow()
       const session = await openLesson(page)
       await playLesson(page, session, async () => {})

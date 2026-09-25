@@ -8,11 +8,10 @@
  */
 import type { GuidebookResponse } from '@zaboon/contracts'
 import { UnitId } from '@zaboon/content-schema'
-import { withUserLock, type Db } from '@zaboon/db'
-import { activeCourseId } from './catalog'
-import { loadBundle, mediaUrl, requireCurrentVersion, type LoadedBundle } from './content'
+import type { Db } from '@zaboon/db'
+import { withCourse } from './catalog'
+import { mediaUrl, type LoadedBundle } from './content'
 import { ApiError } from './errors'
-import { migrateEnrollment } from './path'
 
 /** `audio/x.0123456789.mp3` → `audio/x.mp3` (the build's hashedRef, reversed); null if not hashed. */
 export function unhashedRef(ref: string): string | null {
@@ -90,12 +89,7 @@ export interface GuidebookCtx {
 
 export function buildGuidebook(ctx: GuidebookCtx): Promise<GuidebookResponse> {
   if (!UnitId.safeParse(ctx.unitId).success) throw new ApiError('not_found', 'unknown unit')
-  // Same steps as catalog.ts `withCourse` (not exported): the active course, its current bundle,
-  // and the lazy path migration, all under the user lock.
-  return withUserLock(ctx.db, ctx.userId, async (tx) => {
-    const courseId = ctx.courseId ?? (await activeCourseId(tx, ctx.userId))
-    const bundle = await loadBundle(await requireCurrentVersion(tx, courseId))
-    await migrateEnrollment(tx, ctx.userId, bundle)
+  return withCourse(ctx, async (_tx, bundle) => {
     const unit = bundle.units.find((u) => u.unit.id === ctx.unitId)
     if (!unit) throw new ApiError('not_found', `unknown unit ${ctx.unitId}`)
     if (!unit.guidebook) throw new ApiError('not_found', `unit ${ctx.unitId} has no guidebook`)
