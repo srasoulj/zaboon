@@ -15,5 +15,8 @@
     "@zaboon/farsi": "workspace:*",
     "@zaboon/grader": "workspace:*",
     "@zaboon/srs": "workspace:*"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
   }
 }

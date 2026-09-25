@@ -1,0 +1,830 @@
+# ORACLE: packages/farsi normalize() and looseKey() -- READ-ONLY, owned by the orchestrator.
+# Workers implementing packages/farsi must make every case pass and must not edit this file.
+# Rules: docs/LEARNING-ENGINE.md section 1.5, as pinned by the orchestrator:
+#   normalized = normalize(input): NFC; ي/ى->ی, ك->ک; strip bidi controls (U+200E/F, U+202A-E,
+#     U+2066-9), BOM, ZWSP, ZWJ, tatweel, diacritics U+064B-U+0652 and U+0670; digits -> ASCII;
+#     NBSP -> space; strip the punctuation ، ؛ ؟ « » . ! ? , ; : ; then collapse whitespace runs to one
+#     space and trim. ZWNJ (U+200C) is KEPT. No case folding.
+#   loose = looseKey(input): the normalized form, then ە/ة->ه, ۀ and هٔ->ه, word-final ه + ZWNJ + ی
+#     (written ezāfe)->ه (ه‌ای and a non-final ه‌ی are NOT folded), أ/إ/ٱ->ا, ئی->یی, remove every
+#     ZWNJ, and remove the space after a whole-token prefix می/نمی and before a whole-token suffix
+#     ها های ی ای تر ترین ام ات اش مان تان شان.
+# Escapes: every string is YAML double-quoted. Invisible characters, combining marks and look-alike
+# non-Persian letters/digits (Arabic ي ى ك ة ە ۀ أ إ ٱ and Arabic-Indic digits) are written as
+# \uXXXX escapes; any literal Persian letter or digit is the standard Persian code point.
+
+- id: n001
+  input: "عل\u064A"
+  normalized: "علی"
+  loose: "علی"
+  note: "Arabic yeh U+064A at word end becomes Persian yeh U+06CC"
+
+- id: n002
+  input: "\u0643تاب"
+  normalized: "کتاب"
+  loose: "کتاب"
+  note: "Arabic kaf U+0643 becomes Persian kaf U+06A9 (ketāb \"book\")"
+
+- id: n003
+  input: "مرس\u0649"
+  normalized: "مرسی"
+  loose: "مرسی"
+  note: "alef maksura U+0649 becomes Persian yeh (mersi)"
+
+- id: n004
+  input: "\u064A\u0643"
+  normalized: "یک"
+  loose: "یک"
+  note: "Arabic yeh and Arabic kaf in one word (yek \"one\")"
+
+- id: n005
+  input: "\u0643\u064A\u0643"
+  normalized: "کیک"
+  loose: "کیک"
+  note: "Arabic kaf, yeh, kaf (keyk \"cake\")"
+
+- id: n006
+  input: "چا\u064A"
+  normalized: "چای"
+  loose: "چای"
+  note: "Arabic yeh after a non-connector (chāy \"tea\")"
+
+- id: n007
+  input: "م\u064A\u200Cخوام"
+  normalized: "می\u200Cخوام"
+  loose: "میخوام"
+  note: "Arabic yeh inside a ZWNJ compound: letter mapped, ZWNJ kept in strict form, dropped in loose key"
+
+- id: n008
+  input: "\u0643تاب\u200Cها\u064A من"
+  normalized: "کتاب\u200Cهای من"
+  loose: "کتابهای من"
+  note: "Arabic-keyboard spelling of ketābhā-ye man: kaf and yeh mapped; suffix joined in loose key"
+
+- id: n009
+  input: "۱۲۳"
+  normalized: "123"
+  loose: "123"
+  note: "Persian digits become ASCII"
+
+- id: n010
+  input: "\u0661\u0662\u0663"
+  normalized: "123"
+  loose: "123"
+  note: "Arabic-Indic digits become ASCII"
+
+- id: n011
+  input: "۴۵۶"
+  normalized: "456"
+  loose: "456"
+  note: "Persian 4 5 6 (their shapes differ from Arabic-Indic)"
+
+- id: n012
+  input: "\u0664\u0665\u0666"
+  normalized: "456"
+  loose: "456"
+  note: "Arabic-Indic 4 5 6"
+
+- id: n013
+  input: "۱2\u0663"
+  normalized: "123"
+  loose: "123"
+  note: "Persian, ASCII and Arabic-Indic digits mixed in one number"
+
+- id: n014
+  input: "۰۹۱۲"
+  normalized: "0912"
+  loose: "0912"
+  note: "leading zero kept: digits are mapped one by one, never parsed"
+
+- id: n015
+  input: "۱۰۰ تومن"
+  normalized: "100 تومن"
+  loose: "100 تومن"
+  note: "digits inside a Persian phrase (sad toman)"
+
+- id: n016
+  input: "I have 2 sisters"
+  normalized: "I have 2 sisters"
+  loose: "I have 2 sisters"
+  note: "ASCII digits unchanged"
+
+- id: n017
+  input: "م\u064Eن آب می\u200Cخوام"
+  normalized: "من آب می\u200Cخوام"
+  loose: "من آب میخوام"
+  note: "faVocalized input: fatha U+064E stripped"
+
+- id: n018
+  input: "س\u064Eلام"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "fatha stripped (salām)"
+
+- id: n019
+  input: "کتاب\u0650 من"
+  normalized: "کتاب من"
+  loose: "کتاب من"
+  note: "ezāfe written as kasra U+0650 is stripped"
+
+- id: n020
+  input: "او\u0651ل"
+  normalized: "اول"
+  loose: "اول"
+  note: "shadda U+0651 stripped (avval \"first\")"
+
+- id: n021
+  input: "حتما\u064B"
+  normalized: "حتما"
+  loose: "حتما"
+  note: "tanwin fathatan U+064B (start of the range) stripped (hatman)"
+
+- id: n022
+  input: "لطفا\u064B"
+  normalized: "لطفا"
+  loose: "لطفا"
+  note: "fathatan on lotfan \"please\""
+
+- id: n023
+  input: "خ\u064Fب"
+  normalized: "خب"
+  loose: "خب"
+  note: "damma U+064F stripped (khob \"well\")"
+
+- id: n024
+  input: "خوب\u0652"
+  normalized: "خوب"
+  loose: "خوب"
+  note: "sukun U+0652 (end of the range) stripped"
+
+- id: n025
+  input: "موس\u0649\u0670"
+  normalized: "موسی"
+  loose: "موسی"
+  note: "superscript alef U+0670 stripped and alef maksura mapped"
+
+- id: n026
+  input: "ب\u064Eراد\u064Eر"
+  normalized: "برادر"
+  loose: "برادر"
+  note: "two fathas in barādar \"brother\""
+
+- id: n027
+  input: "خانه\u0654 من"
+  normalized: "خانه\u0654 من"
+  loose: "خانه من"
+  note: "hamza above U+0654 is outside the stripped range: kept in strict form; heh + hamza folds to heh in loose key"
+
+- id: n028
+  input: "س\u0640لام"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "tatweel U+0640 stripped"
+
+- id: n029
+  input: "خ\u0640\u0640\u0640وب"
+  normalized: "خوب"
+  loose: "خوب"
+  note: "a run of tatweels stripped"
+
+- id: n030
+  input: "\u200Fسلام"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "leading RLM U+200F stripped"
+
+- id: n031
+  input: "سلام\u200E"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "trailing LRM U+200E stripped"
+
+- id: n032
+  input: "\u202Bسلام\u202C"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "RLE U+202B and PDF U+202C stripped"
+
+- id: n033
+  input: "\u202Eسلام\u202C"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "RLO U+202E (end of the U+202A-E range) stripped"
+
+- id: n034
+  input: "\u202AI want\u202C \u2067آب\u2069"
+  normalized: "I want آب"
+  loose: "I want آب"
+  note: "LRE U+202A, RLI U+2067 and PDI U+2069 around mixed text"
+
+- id: n035
+  input: "\u2066\u2068سلام\u2069\u2069"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "LRI U+2066, FSI U+2068 and PDI stripped"
+
+- id: n036
+  input: "من\u200F آب"
+  normalized: "من آب"
+  loose: "من آب"
+  note: "RLM before a space: removed, one space remains"
+
+- id: n037
+  input: "\uFEFFسلام"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "leading BOM U+FEFF stripped"
+
+- id: n038
+  input: "سل\uFEFFام"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "BOM inside a word is removed, not turned into a space (JS \\s matches U+FEFF, so strip before collapsing whitespace)"
+
+- id: n039
+  input: "می\u200Bخوام"
+  normalized: "میخوام"
+  loose: "میخوام"
+  note: "ZWSP U+200B removed; it does not become a ZWNJ or a space"
+
+- id: n040
+  input: "می\u200Dخوام"
+  normalized: "میخوام"
+  loose: "میخوام"
+  note: "ZWJ U+200D removed"
+
+- id: n041
+  input: "سلام\u200B خوبی"
+  normalized: "سلام خوبی"
+  loose: "سلام خوبی"
+  note: "ZWSP next to a space"
+
+- id: n042
+  input: "می\u200Cخوام"
+  normalized: "می\u200Cخوام"
+  loose: "میخوام"
+  note: "prefix می with ZWNJ: kept in strict form, dropped in loose key"
+
+- id: n043
+  input: "می خوام"
+  normalized: "می خوام"
+  loose: "میخوام"
+  note: "prefix می with a space: kept in strict form, removed in loose key"
+
+- id: n044
+  input: "میخوام"
+  normalized: "میخوام"
+  loose: "میخوام"
+  note: "prefix می attached: same loose key as the ZWNJ and space forms"
+
+- id: n045
+  input: "نمی\u200Cدونم"
+  normalized: "نمی\u200Cدونم"
+  loose: "نمیدونم"
+  note: "prefix نمی with ZWNJ (nemidunam)"
+
+- id: n046
+  input: "نمی دونم"
+  normalized: "نمی دونم"
+  loose: "نمیدونم"
+  note: "prefix نمی with a space"
+
+- id: n047
+  input: "نمیدونم"
+  normalized: "نمیدونم"
+  loose: "نمیدونم"
+  note: "prefix نمی attached"
+
+- id: n048
+  input: "کتاب\u200Cها"
+  normalized: "کتاب\u200Cها"
+  loose: "کتابها"
+  note: "plural ها with ZWNJ"
+
+- id: n049
+  input: "کتاب ها"
+  normalized: "کتاب ها"
+  loose: "کتابها"
+  note: "plural ها with a space"
+
+- id: n050
+  input: "کتاب های من"
+  normalized: "کتاب های من"
+  loose: "کتابهای من"
+  note: "suffix های (plural + ezāfe) with a space"
+
+- id: n051
+  input: "بزرگ\u200Cتر"
+  normalized: "بزرگ\u200Cتر"
+  loose: "بزرگتر"
+  note: "comparative تر with ZWNJ"
+
+- id: n052
+  input: "بزرگ تر"
+  normalized: "بزرگ تر"
+  loose: "بزرگتر"
+  note: "comparative تر with a space"
+
+- id: n053
+  input: "بزرگ\u200Cترین"
+  normalized: "بزرگ\u200Cترین"
+  loose: "بزرگترین"
+  note: "superlative ترین with ZWNJ"
+
+- id: n054
+  input: "بزرگ ترین"
+  normalized: "بزرگ ترین"
+  loose: "بزرگترین"
+  note: "superlative ترین with a space"
+
+- id: n055
+  input: "خسته\u200Cام"
+  normalized: "خسته\u200Cام"
+  loose: "خستهام"
+  note: "clitic ام with ZWNJ (khaste-am)"
+
+- id: n056
+  input: "خسته ام"
+  normalized: "خسته ام"
+  loose: "خستهام"
+  note: "clitic ام with a space"
+
+- id: n057
+  input: "خونه ات"
+  normalized: "خونه ات"
+  loose: "خونهات"
+  note: "clitic ات with a space"
+
+- id: n058
+  input: "خونه\u200Cاش"
+  normalized: "خونه\u200Cاش"
+  loose: "خونهاش"
+  note: "clitic اش with ZWNJ"
+
+- id: n059
+  input: "خانه مان"
+  normalized: "خانه مان"
+  loose: "خانهمان"
+  note: "clitic مان with a space"
+
+- id: n060
+  input: "خانه\u200Cتان"
+  normalized: "خانه\u200Cتان"
+  loose: "خانهتان"
+  note: "clitic تان with ZWNJ"
+
+- id: n061
+  input: "خانه شان"
+  normalized: "خانه شان"
+  loose: "خانهشان"
+  note: "clitic شان with a space"
+
+- id: n062
+  input: "خسته ای"
+  normalized: "خسته ای"
+  loose: "خستهای"
+  note: "suffix ای with a space (khaste-i \"you are tired\")"
+
+- id: n063
+  input: "دانشجو ی خوب"
+  normalized: "دانشجو ی خوب"
+  loose: "دانشجوی خوب"
+  note: "ezāfe ی typed as a separate word after a vowel: the space before the suffix ی is removed"
+
+- id: n064
+  input: "خونه\u200Cی من"
+  normalized: "خونه\u200Cی من"
+  loose: "خونه من"
+  note: "written ezāfe ه + ZWNJ + ی: kept in strict form, folds to ه in loose key"
+
+- id: n065
+  input: "کتاب\u200Cهاشان"
+  normalized: "کتاب\u200Cهاشان"
+  loose: "کتابهاشان"
+  note: "ZWNJ removed; no spaces involved"
+
+- id: n066
+  input: "من کتاب\u200Cهای بزرگ\u200Cتر رو نمی\u200Cخوام"
+  normalized: "من کتاب\u200Cهای بزرگ\u200Cتر رو نمی\u200Cخوام"
+  loose: "من کتابهای بزرگتر رو نمیخوام"
+  note: "sentence with three ZWNJ affixes"
+
+- id: n067
+  input: "من کتاب های بزرگ تر رو نمی خوام"
+  normalized: "من کتاب های بزرگ تر رو نمی خوام"
+  loose: "من کتابهای بزرگتر رو نمیخوام"
+  note: "the same sentence typed with spaces has the same loose key; the space between an affix and the next word stays"
+
+- id: n068
+  input: "میخ\u200Cوام"
+  normalized: "میخ\u200Cوام"
+  loose: "میخوام"
+  note: "misplaced ZWNJ: kept in strict form, gone from loose key"
+
+- id: n069
+  input: "ته\u200Cدیگ"
+  normalized: "ته\u200Cدیگ"
+  loose: "تهدیگ"
+  note: "ZWNJ inside a compound noun (tahdig)"
+
+- id: n070
+  input: "ته دیگ"
+  normalized: "ته دیگ"
+  loose: "ته دیگ"
+  note: "دیگ is not a known affix, so the space stays in the loose key"
+
+- id: n071
+  input: "سه\u200Cشنبه"
+  normalized: "سه\u200Cشنبه"
+  loose: "سهشنبه"
+  note: "ZWNJ in a day name (seshanbe)"
+
+- id: n072
+  input: "می\u00A0خوام"
+  normalized: "می خوام"
+  loose: "میخوام"
+  note: "NBSP after می becomes a space, which the loose key then removes"
+
+- id: n073
+  input: "کمی آب"
+  normalized: "کمی آب"
+  loose: "کمی آب"
+  note: "کمی ends in می but is not the prefix token: the space stays"
+
+- id: n074
+  input: "من این میز رو می\u200Cخوام"
+  normalized: "من این میز رو می\u200Cخوام"
+  loose: "من این میز رو میخوام"
+  note: "این starts with ای and میز starts with می: only whole tokens count as affixes"
+
+- id: n075
+  input: "من امروز خسته\u200Cام"
+  normalized: "من امروز خسته\u200Cام"
+  loose: "من امروز خستهام"
+  note: "امروز starts with ام but is not the clitic"
+
+- id: n076
+  input: "من یه کتاب دارم"
+  normalized: "من یه کتاب دارم"
+  loose: "من یه کتاب دارم"
+  note: "یه starts with ی but is not the suffix"
+
+- id: n077
+  input: "این اتاق"
+  normalized: "این اتاق"
+  loose: "این اتاق"
+  note: "اتاق starts with ات but is not the clitic"
+
+- id: n078
+  input: "من اشتباه کردم"
+  normalized: "من اشتباه کردم"
+  loose: "من اشتباه کردم"
+  note: "اشتباه starts with اش but is not the clitic"
+
+- id: n079
+  input: "خیلی ترش"
+  normalized: "خیلی ترش"
+  loose: "خیلی ترش"
+  note: "ترش starts with تر but is not the suffix"
+
+- id: n080
+  input: "این هال"
+  normalized: "این هال"
+  loose: "این هال"
+  note: "هال starts with ها but is not the suffix"
+
+- id: n081
+  input: "من ایرانی\u200Cام"
+  normalized: "من ایرانی\u200Cام"
+  loose: "من ایرانیام"
+  note: "ایرانی starts with ای; the clitic ام joins because the ZWNJ is removed"
+
+- id: n082
+  input: "خان\u06C0 من"
+  normalized: "خان\u06C0 من"
+  loose: "خانه من"
+  note: "heh with yeh above U+06C0 kept in strict form, folds to heh in loose key"
+
+- id: n083
+  input: "خان\u06D5\u0654 من"
+  normalized: "خان\u06C0 من"
+  loose: "خانه من"
+  note: "U+06D5 + hamza above composes to U+06C0 under NFC"
+
+- id: n084
+  input: "خانه\u200Cی من"
+  normalized: "خانه\u200Cی من"
+  loose: "خانه من"
+  note: "written ezāfe ه\u200Cی folds like \u06C0 (n082) and ه\u0654 (n027): all three give خانه من"
+
+- id: n085
+  input: "پائیز"
+  normalized: "پائیز"
+  loose: "پاییز"
+  note: "ئی folds to یی in the loose key only"
+
+- id: n086
+  input: "پاییز"
+  normalized: "پاییز"
+  loose: "پاییز"
+  note: "standard spelling already has یی"
+
+- id: n087
+  input: "بفرمائید"
+  normalized: "بفرمائید"
+  loose: "بفرمایید"
+  note: "ئی inside befarmāyid"
+
+- id: n088
+  input: "مسئله"
+  normalized: "مسئله"
+  loose: "مسئله"
+  note: "ئ not followed by ی is not folded"
+
+- id: n089
+  input: "پا\u064A\u0654یز"
+  normalized: "پائیز"
+  loose: "پاییز"
+  note: "decomposed ئ (Arabic yeh + hamza above) is composed by NFC before the letter map runs"
+
+- id: n090
+  input: "ت\u0623ثیر"
+  normalized: "ت\u0623ثیر"
+  loose: "تاثیر"
+  note: "alef with hamza above kept in strict form, folds to ا in loose key"
+
+- id: n091
+  input: "\u0625سلام"
+  normalized: "\u0625سلام"
+  loose: "اسلام"
+  note: "alef with hamza below folds to ا in loose key"
+
+- id: n092
+  input: "\u0671سم"
+  normalized: "\u0671سم"
+  loose: "اسم"
+  note: "alef wasla folds to ا in loose key"
+
+- id: n093
+  input: "تا\u0654ثیر"
+  normalized: "ت\u0623ثیر"
+  loose: "تاثیر"
+  note: "decomposed alef + hamza above composes to U+0623 under NFC"
+
+- id: n094
+  input: "ا\u0653ب"
+  normalized: "آب"
+  loose: "آب"
+  note: "decomposed alef + madda composes to آ under NFC"
+
+- id: n095
+  input: "آب"
+  normalized: "آب"
+  loose: "آب"
+  note: "آ is never folded to ا (mixing them up is a grader typo, not a normalization)"
+
+- id: n096
+  input: "مدرس\u0629"
+  normalized: "مدرس\u0629"
+  loose: "مدرسه"
+  note: "teh marbuta kept in strict form, folds to ه in loose key"
+
+- id: n097
+  input: "خون\u06D5"
+  normalized: "خون\u06D5"
+  loose: "خونه"
+  note: "U+06D5 (ae) kept in strict form, folds to ه in loose key"
+
+- id: n098
+  input: "سلام، خوبی؟"
+  normalized: "سلام خوبی"
+  loose: "سلام خوبی"
+  note: "Persian comma and question mark"
+
+- id: n099
+  input: "«سلام»"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "guillemets"
+
+- id: n100
+  input: "نه؛ مرسی."
+  normalized: "نه مرسی"
+  loose: "نه مرسی"
+  note: "Persian semicolon and period"
+
+- id: n101
+  input: "خوبی ؟"
+  normalized: "خوبی"
+  loose: "خوبی"
+  note: "space before ؟ (common in Persian typing): the result is still trimmed"
+
+- id: n102
+  input: "سلام , خوبی"
+  normalized: "سلام خوبی"
+  loose: "سلام خوبی"
+  note: "ASCII comma between spaces: whitespace is collapsed after punctuation is removed"
+
+- id: n103
+  input: "چی؟!"
+  normalized: "چی"
+  loose: "چی"
+  note: "Persian question mark + exclamation mark"
+
+- id: n104
+  input: "سلام!!!"
+  normalized: "سلام"
+  loose: "سلام"
+  note: "repeated exclamation marks"
+
+- id: n105
+  input: "Hello, world!"
+  normalized: "Hello world"
+  loose: "Hello world"
+  note: "ASCII punctuation removed; case is NOT changed by normalize()"
+
+- id: n106
+  input: "Hi; how are you?"
+  normalized: "Hi how are you"
+  loose: "Hi how are you"
+  note: "ASCII semicolon and question mark"
+
+- id: n107
+  input: "Note: water"
+  normalized: "Note water"
+  loose: "Note water"
+  note: "ASCII colon"
+
+- id: n108
+  input: "I'm fine."
+  normalized: "I'm fine"
+  loose: "I'm fine"
+  note: "the apostrophe is not in the strip list"
+
+- id: n109
+  input: "Wait..."
+  normalized: "Wait"
+  loose: "Wait"
+  note: "ellipsis typed as three periods"
+
+- id: n110
+  input: "«آب» می\u200Cخوام."
+  normalized: "آب می\u200Cخوام"
+  loose: "آب میخوام"
+  note: "guillemets and period in a sentence"
+
+- id: n111
+  input: "من\u00A0آب"
+  normalized: "من آب"
+  loose: "من آب"
+  note: "NBSP becomes a space"
+
+- id: n112
+  input: "من   آب    می\u200Cخوام"
+  normalized: "من آب می\u200Cخوام"
+  loose: "من آب میخوام"
+  note: "runs of spaces collapse to one"
+
+- id: n113
+  input: "  سلام  "
+  normalized: "سلام"
+  loose: "سلام"
+  note: "leading and trailing spaces trimmed"
+
+- id: n114
+  input: "من\tآب\nمی\u200Cخوام"
+  normalized: "من آب می\u200Cخوام"
+  loose: "من آب میخوام"
+  note: "tab and newline count as whitespace"
+
+- id: n115
+  input: "من \u00A0 آب"
+  normalized: "من آب"
+  loose: "من آب"
+  note: "space + NBSP + space collapse to one space"
+
+- id: n116
+  input: "I want water."
+  normalized: "I want water"
+  loose: "I want water"
+  note: "English: only punctuation and whitespace change"
+
+- id: n117
+  input: "Hello,  World!"
+  normalized: "Hello World"
+  loose: "Hello World"
+  note: "English: case kept, whitespace collapsed"
+
+- id: n118
+  input: "I'm FINE"
+  normalized: "I'm FINE"
+  loose: "I'm FINE"
+  note: "no lowercasing in normalize() (the grader lowercases English)"
+
+- id: n119
+  input: "Don't worry!"
+  normalized: "Don't worry"
+  loose: "Don't worry"
+  note: "contraction untouched (expansion is the grader's job)"
+
+- id: n120
+  input: "Tea, please"
+  normalized: "Tea please"
+  loose: "Tea please"
+  note: "the loose key leaves English alone"
+
+- id: n121
+  input: "I want آب"
+  normalized: "I want آب"
+  loose: "I want آب"
+  note: "mixed English and Persian"
+
+- id: n122
+  input: "سلام Sara!"
+  normalized: "سلام Sara"
+  loose: "سلام Sara"
+  note: "Persian greeting + Latin name"
+
+- id: n123
+  input: "من Sara هستم."
+  normalized: "من Sara هستم"
+  loose: "من Sara هستم"
+  note: "Latin word inside a Persian sentence"
+
+- id: n124
+  input: "من ۲ تا book می\u200Cخوام"
+  normalized: "من 2 تا book می\u200Cخوام"
+  loose: "من 2 تا book میخوام"
+  note: "mixed scripts with a Persian digit"
+
+- id: n125
+  input: ""
+  normalized: ""
+  loose: ""
+  note: "empty string"
+
+- id: n126
+  input: "   "
+  normalized: ""
+  loose: ""
+  note: "whitespace only"
+
+- id: n127
+  input: "؟!"
+  normalized: ""
+  loose: ""
+  note: "punctuation only"
+
+- id: n128
+  input: "\u200F\u200E\uFEFF"
+  normalized: ""
+  loose: ""
+  note: "invisible controls only"
+
+- id: n129
+  input: "\u200Fم\u064Eن\u00A0آب  م\u064A\u200Cخوام؟"
+  normalized: "من آب می\u200Cخوام"
+  loose: "من آب میخوام"
+  note: "whole pipeline: RLM, fatha, NBSP, double space, Arabic yeh, ZWNJ, ؟"
+
+- id: n130
+  input: "\uFEFF\u0643\u0640تاب ها\u064A من"
+  normalized: "کتاب های من"
+  loose: "کتابهای من"
+  note: "whole pipeline: BOM, Arabic kaf, tatweel, Arabic yeh, affix spacing"
+
+- id: n131
+  input: "خانه\u200Cای بزرگ"
+  normalized: "خانه\u200Cای بزرگ"
+  loose: "خانهای بزرگ"
+  note: "indefinite ه\u200Cای (\"a big house\") is not an ezāfe and is never folded"
+
+- id: n132
+  input: "ما خسته\u200Cیم"
+  normalized: "ما خسته\u200Cیم"
+  loose: "ما خستهیم"
+  note: "ه\u200Cی folds only at the end of a word: ه\u200Cیم (khaste-im) keeps its ی"
+
+- id: n133
+  input: "ماهی"
+  normalized: "ماهی"
+  loose: "ماهی"
+  note: "final هی without ZWNJ belongs to the word (māhi \"fish\") and is never folded"
+
+- id: n134
+  input: "کتابخونه\u200Cی دانشگاه"
+  normalized: "کتابخونه\u200Cی دانشگاه"
+  loose: "کتابخونه دانشگاه"
+  note: "written ezāfe after a compound noun (the university library)"
+
+- id: n135
+  input: "خانه\u200Cی"
+  normalized: "خانه\u200Cی"
+  loose: "خانه"
+  note: "ه\u200Cی at the very end of the text also counts as word-final"
+
+- id: n136
+  input: "خانه من"
+  normalized: "خانه من"
+  loose: "خانه من"
+  note: "plain form: the same loose key as خانه\u200Cی من (n084), خان\u06C0 من (n082) and خانه\u0654 من (n027)"

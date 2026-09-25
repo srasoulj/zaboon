@@ -22,3 +22,6 @@ blob-report/
 
 # OS / editor
 .DS_Store
+
+# Local content builds (content-cli publish --local)
+apps/web/public/content/

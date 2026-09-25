@@ -11,5 +11,8 @@
   },
   "dependencies": {
     "@persian-tools/persian-tools": "4.0.4"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
   }
 }

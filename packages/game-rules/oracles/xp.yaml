@@ -1,0 +1,316 @@
+# ORACLE (read-only, orchestrator-owned; see README.md): session XP and the daily goal.
+# Config: xp.base lesson 10, practice 10, letters 10, unit_review 20, legendary 40, jump_test 20;
+# xp.perfectBonus 5 (zero wrong attempts, every kind).
+#
+# rule sessionXp: input {kind, wrongAttempts} -> expected {base, bonus, total, perfect}
+# rule dailyGoal: input {goal, sessions: [{kind, wrongAttempts, localDate}]} -> expected {steps,
+#   totals}. Sessions commit in order and each adds its XP to its own localDate. steps[i] =
+#   {sessionXp, dayXp: that date's total afterwards, met: dayXp >= goal, justMet: met now but not
+#   before this session}; totals = XP per local date at the end.
+
+- id: xp-01-lesson-perfect
+  rule: sessionXp
+  note: >-
+    lesson with no wrong attempts: 10 + perfect bonus 5.
+  input:
+    kind: lesson
+    wrongAttempts: 0
+  expected:
+    base: 10
+    bonus: 5
+    total: 15
+    perfect: true
+
+- id: xp-02-lesson-with-mistakes
+  rule: sessionXp
+  note: >-
+    One wrong attempt anywhere means no perfect bonus.
+  input:
+    kind: lesson
+    wrongAttempts: 1
+  expected:
+    base: 10
+    bonus: 0
+    total: 10
+    perfect: false
+
+- id: xp-03-practice-perfect
+  rule: sessionXp
+  note: >-
+    practice: base 10, and the bonus applies to every kind.
+  input:
+    kind: practice
+    wrongAttempts: 0
+  expected:
+    base: 10
+    bonus: 5
+    total: 15
+    perfect: true
+
+- id: xp-04-practice-with-mistakes
+  rule: sessionXp
+  note: >-
+    practice with 3 wrong attempts: base only.
+  input:
+    kind: practice
+    wrongAttempts: 3
+  expected:
+    base: 10
+    bonus: 0
+    total: 10
+    perfect: false
+
+- id: xp-05-letters-perfect
+  rule: sessionXp
+  note: >-
+    letters: base 10 + 5.
+  input:
+    kind: letters
+    wrongAttempts: 0
+  expected:
+    base: 10
+    bonus: 5
+    total: 15
+    perfect: true
+
+- id: xp-06-letters-with-mistakes
+  rule: sessionXp
+  note: >-
+    letters with 2 wrong attempts: base only.
+  input:
+    kind: letters
+    wrongAttempts: 2
+  expected:
+    base: 10
+    bonus: 0
+    total: 10
+    perfect: false
+
+- id: xp-07-unit-review-perfect
+  rule: sessionXp
+  note: >-
+    unit_review: base 20 + 5.
+  input:
+    kind: unit_review
+    wrongAttempts: 0
+  expected:
+    base: 20
+    bonus: 5
+    total: 25
+    perfect: true
+
+- id: xp-08-unit-review-with-mistakes
+  rule: sessionXp
+  note: >-
+    unit_review with 1 wrong attempt: base only.
+  input:
+    kind: unit_review
+    wrongAttempts: 1
+  expected:
+    base: 20
+    bonus: 0
+    total: 20
+    perfect: false
+
+- id: xp-09-legendary-perfect
+  rule: sessionXp
+  note: >-
+    legendary: base 40 + 5.
+  input:
+    kind: legendary
+    wrongAttempts: 0
+  expected:
+    base: 40
+    bonus: 5
+    total: 45
+    perfect: true
+
+- id: xp-10-legendary-with-mistakes
+  rule: sessionXp
+  note: >-
+    legendary with 1 wrong attempt: base only.
+  input:
+    kind: legendary
+    wrongAttempts: 1
+  expected:
+    base: 40
+    bonus: 0
+    total: 40
+    perfect: false
+
+- id: xp-11-jump-test-perfect
+  rule: sessionXp
+  note: >-
+    jump_test: base 20 + 5.
+  input:
+    kind: jump_test
+    wrongAttempts: 0
+  expected:
+    base: 20
+    bonus: 5
+    total: 25
+    perfect: true
+
+- id: xp-12-jump-test-with-mistakes
+  rule: sessionXp
+  note: >-
+    jump_test with 4 wrong attempts: base only.
+  input:
+    kind: jump_test
+    wrongAttempts: 4
+  expected:
+    base: 20
+    bonus: 0
+    total: 20
+    perfect: false
+
+- id: dg-01-one-lesson-meets-goal-10
+  rule: dailyGoal
+  note: >-
+    Goal 10: a 10 XP lesson meets it exactly (>=).
+  input:
+    goal: 10
+    sessions:
+      - { kind: lesson, wrongAttempts: 2, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 10, dayXp: 10, met: true, justMet: true }
+    totals: { '2026-05-10': 10 }
+
+- id: dg-02-below-goal
+  rule: dailyGoal
+  note: >-
+    Goal 20: 10 XP is not enough.
+  input:
+    goal: 20
+    sessions:
+      - { kind: lesson, wrongAttempts: 1, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 10, dayXp: 10, met: false, justMet: false }
+    totals: { '2026-05-10': 10 }
+
+- id: dg-03-second-session-crosses
+  rule: dailyGoal
+  note: >-
+    Goal 20: 10 then 15 = 25. The second session is the one that meets it.
+  input:
+    goal: 20
+    sessions:
+      - { kind: lesson, wrongAttempts: 1, localDate: '2026-05-10' }
+      - { kind: practice, wrongAttempts: 0, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 10, dayXp: 10, met: false, justMet: false }
+      - { sessionXp: 15, dayXp: 25, met: true, justMet: true }
+    totals: { '2026-05-10': 25 }
+
+- id: dg-04-exact-goal-30
+  rule: dailyGoal
+  note: >-
+    Goal 30: two perfect lessons = 15 + 15 = 30, met on the second.
+  input:
+    goal: 30
+    sessions:
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-10' }
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 15, dayXp: 15, met: false, justMet: false }
+      - { sessionXp: 15, dayXp: 30, met: true, justMet: true }
+    totals: { '2026-05-10': 30 }
+
+- id: dg-05-just-short-of-50
+  rule: dailyGoal
+  note: >-
+    Goal 50: 25 + 10 + 10 = 45 is still short.
+  input:
+    goal: 50
+    sessions:
+      - { kind: unit_review, wrongAttempts: 0, localDate: '2026-05-10' }
+      - { kind: lesson, wrongAttempts: 1, localDate: '2026-05-10' }
+      - { kind: practice, wrongAttempts: 2, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 25, dayXp: 25, met: false, justMet: false }
+      - { sessionXp: 10, dayXp: 35, met: false, justMet: false }
+      - { sessionXp: 10, dayXp: 45, met: false, justMet: false }
+    totals: { '2026-05-10': 45 }
+
+- id: dg-06-met-once
+  rule: dailyGoal
+  note: >-
+    justMet is true only for the session that crosses the goal, not later ones.
+  input:
+    goal: 20
+    sessions:
+      - { kind: legendary, wrongAttempts: 0, localDate: '2026-05-10' }
+      - { kind: letters, wrongAttempts: 0, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 45, dayXp: 45, met: true, justMet: true }
+      - { sessionXp: 15, dayXp: 60, met: true, justMet: false }
+    totals: { '2026-05-10': 60 }
+
+- id: dg-07-days-are-separate
+  rule: dailyGoal
+  note: >-
+    Each session counts toward its own local date: 15 XP on May 9 does not help May 10.
+  input:
+    goal: 20
+    sessions:
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-09' }
+      - { kind: lesson, wrongAttempts: 1, localDate: '2026-05-10' }
+      - { kind: practice, wrongAttempts: 1, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 15, dayXp: 15, met: false, justMet: false }
+      - { sessionXp: 10, dayXp: 10, met: false, justMet: false }
+      - { sessionXp: 10, dayXp: 20, met: true, justMet: true }
+    totals: { '2026-05-09': 15, '2026-05-10': 20 }
+
+- id: dg-08-late-commit-counts-for-its-own-day
+  rule: dailyGoal
+  note: >-
+    A late commit for May 9 (committed after a May 10 session) adds to May 9 and meets its goal. May
+    10 is untouched.
+  input:
+    goal: 20
+    sessions:
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-09' }
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-10' }
+      - { kind: practice, wrongAttempts: 1, localDate: '2026-05-09' }
+  expected:
+    steps:
+      - { sessionXp: 15, dayXp: 15, met: false, justMet: false }
+      - { sessionXp: 15, dayXp: 15, met: false, justMet: false }
+      - { sessionXp: 10, dayXp: 25, met: true, justMet: true }
+    totals: { '2026-05-09': 25, '2026-05-10': 15 }
+
+- id: dg-09-jump-test-counts
+  rule: dailyGoal
+  note: >-
+    Every session kind counts: a jump_test (20 XP) meets goal 20.
+  input:
+    goal: 20
+    sessions:
+      - { kind: jump_test, wrongAttempts: 3, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 20, dayXp: 20, met: true, justMet: true }
+    totals: { '2026-05-10': 20 }
+
+- id: dg-10-legendary-plus-lesson-goal-50
+  rule: dailyGoal
+  note: >-
+    Goal 50: legendary 40 then a perfect lesson 15 = 55.
+  input:
+    goal: 50
+    sessions:
+      - { kind: legendary, wrongAttempts: 1, localDate: '2026-05-10' }
+      - { kind: lesson, wrongAttempts: 0, localDate: '2026-05-10' }
+  expected:
+    steps:
+      - { sessionXp: 40, dayXp: 40, met: false, justMet: false }
+      - { sessionXp: 15, dayXp: 55, met: true, justMet: true }
+    totals: { '2026-05-10': 55 }

@@ -85,12 +85,12 @@ build time, so both sides are always compared in the same form.
 | # | Step | Details |
 |---|---|---|
 | 1 | NFC | Unicode normalization. It runs first, because mapping letters before NFC breaks decomposed ئ |
-| 2 | Letter map | ي/ى → ی and ك → ک. For comparison only, ە/ة → ه |
-| 3 | Folds | ۀ ↔ هٔ ↔ ه (ezāfe); ئی ↔ یی (پائیز/پاییز); أ/إ/ٱ → ا. Mixing up آ and ا counts as a typo (§7) |
+| 2 | Letter map | ي/ى → ی and ك → ک |
+| 3 | Folds (loose key only) | Word-final ezāfe: ۀ ↔ هٔ ↔ ه‌ی ↔ ه (the indefinite ه‌ای is not folded); ئی ↔ یی (پائیز/پاییز); أ/إ/ٱ → ا; ە/ة → ه. Mixing up آ and ا counts as a typo (§7) |
 | 4 | Strip | Bidi controls (U+200E/F, U+202A–E, U+2066–9), BOM (U+FEFF), ZWSP (U+200B), tatweel (U+0640), diacritics (U+064B–U+0652, U+0670) |
 | 5 | Digits | Persian, Arabic-Indic and ASCII digits form one class. The grader also treats number words and digits as equal |
 | 6 | Spaces | NBSP → space. A **loose key** drops ZWNJ and the spaces next to known affixes: می/نمی, ها/های/ا, ی/ای, تر/ترین, and the clitics ام/ات/اش/مان/تان/شان |
-| 7 | Punctuation | Strip ، ؛ ؟ « » . ! ? |
+| 7 | Punctuation | Strip ، ؛ ؟ « » . ! ? **before** whitespace is collapsed and trimmed, so «خوبی ؟» becomes «خوبی» |
 
 - **Implementation:**
   - `@persian-tools/persian-tools` (MIT) provides `toPersianChars`, `halfSpace` and the `digits*` helpers.
@@ -447,13 +447,23 @@ instant feedback, the server for consistency.
 | Verdict | When | Result |
 |---|---|---|
 | `correct` | The answer matches the DAG exactly (after normalization) | Correct |
-| `typo` | A small edit inside a token: ≤1 edit on tokens of 4+ letters, ≤2 on 8+ (mostly English) | Accepted, with a "typo" note |
-| `spelling` | A Persian letter replaced by one that sounds the same, at **any** word length: ز ذ ض ظ · س ص ث · ت ط · ه ح · غ ق · ا/آ | Accepted, with a "watch the spelling" note, **unless the result is another course word** (صد sad "hundred" vs سد sad "dam"), in which case it's wrong |
+| `typo` | A small edit inside a token: ≤1 edit on tokens of 4+ letters, ≤2 on 8+ (mostly English). A missing or added madda (ا/آ) is a typo at any length | Accepted, with a "typo" note, **unless the result is another course word** (books for book, نمی‌دونن for نمی‌دونم), in which case it's wrong |
+| `spelling` | A Persian letter replaced by one that sounds the same, at **any** word length: ز ذ ض ظ · س ص ث · ت ط · ه ح · غ ق | Accepted, with a "watch the spelling" note, **unless the result is another course word** (صد sad "hundred" vs سد sad "dam"), in which case it's wrong |
 | `wrong` | A wrong, missing or extra token | Wrong |
 
 The `spelling` verdict exists because the usual typo rule rarely applies to Persian, where most
 words are shorter than four letters. Mixing up letters that sound the same is the most common
 learner mistake.
+
+Two more rules keep leniency from flipping the meaning:
+
+- **Negation is never a typo.** Adding or removing the negative prefix ن (نمی‌خوام vs
+  می‌خوام, ندارم vs دارم) is `wrong` in typed and word-bank answers, even though it is one edit.
+- **English apostrophes** ’ ‘ ʼ (U+2019, U+2018, U+02BC) count as `'` before contractions are
+  expanded, so answers typed on phones match.
+
+The executable specification is `packages/grader/oracles/golden.yaml` and
+`packages/farsi/oracles/normalize.yaml` (read-only; they win over this prose where the two differ).
 
 ### 7.2 Algorithm
 

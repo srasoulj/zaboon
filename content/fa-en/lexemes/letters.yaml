@@ -1,0 +1,178 @@
+# Example words for the Letters track (letters.yaml `examples`). Introduced with unit 1 so
+# read_word/build_word have data from day one. Each group uses only the letters taught so far,
+# plus آ (alef with madda). u01 words such as من, تو and مرسی are also used as examples.
+
+# --- letters-1: only non-joining letters (ا د ر ز و) ---------------------------------------------
+- id: lx_dar
+  fa: در
+  translit: dar
+  pos: noun
+  glosses: [door]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_rud
+  fa: رود
+  translit: rud
+  pos: noun
+  glosses: [river]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_ruz
+  fa: روز
+  translit: ruz
+  pos: noun
+  glosses: [day]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_zud
+  fa: زود
+  translit: zud
+  pos: adverb
+  glosses: [early, soon]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_zard
+  fa: زرد
+  translit: zard
+  pos: adjective
+  glosses: [yellow]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_daru
+  fa: دارو
+  translit: dāru
+  pos: noun
+  glosses: [medicine]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+# --- letters-2: + ب م ن --------------------------------------------------------------------------
+- id: lx_ab
+  fa: آب
+  translit: āb
+  pos: noun
+  glosses: [water]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_baba
+  fa: بابا
+  translit: bābā
+  pos: noun
+  glosses: [dad]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_maman
+  fa: مامان
+  translit: māmān
+  pos: noun
+  glosses: [mom]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_bad
+  fa: بد
+  translit: bad
+  pos: adjective
+  glosses: [bad]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_mard
+  fa: مرد
+  translit: mard
+  pos: noun
+  glosses: [man]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_nun
+  fa: نون
+  faFormal: نان
+  translit: nun
+  translitFormal: nān
+  pos: noun
+  glosses: [bread]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+# --- letters-3: + ی ت س --------------------------------------------------------------------------
+- id: lx_sib
+  fa: سیب
+  translit: sib
+  pos: noun
+  glosses: [apple]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_sard
+  fa: سرد
+  translit: sard
+  pos: adjective
+  glosses: [cold]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_dust
+  fa: دوست
+  translit: dust
+  pos: noun
+  glosses: [friend]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_tut
+  fa: توت
+  translit: tut
+  pos: noun
+  glosses: [mulberry]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: lx_bastani
+  fa: بستنی
+  translit: bastani
+  pos: noun
+  glosses: [ice cream]
+  introducedIn: u01-hello
+  tags: [letters]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }

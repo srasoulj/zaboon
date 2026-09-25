@@ -11,5 +11,8 @@
   },
   "dependencies": {
     "@zaboon/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "yaml": "2.9.1"
   }
 }

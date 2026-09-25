@@ -1,0 +1,187 @@
+# ORACLE (read-only, orchestrator-owned; see packages/game-rules/oracles/README.md): the FSRS
+# rating for each item in a session. Config: srs.slowMs 12000.
+#
+# rule rating: input {attempts: [{item, verdict, ms, hinted}]} -> expected {ratings: {item:
+#   again | hard | good | null}} (SrsRating values). Per item over its attempts in the session:
+#   any wrong attempt -> again; else (max ms > 12000 or any hinted) -> hard; else good. Passing
+#   verdicts (correct, typo, spelling) count as correct. skipped answers are not rated: an item
+#   whose attempts are all skipped gets null (no SRS update).
+
+- id: srs-01-clean-and-fast
+  rule: rating
+  note: >-
+    One correct, fast, unhinted attempt: good.
+  input:
+    attempts:
+      - { item: lx-salam, verdict: correct, ms: 2300, hinted: false }
+  expected:
+    ratings: { lx-salam: good }
+
+- id: srs-02-single-wrong
+  rule: rating
+  note: >-
+    A single wrong attempt: again.
+  input:
+    attempts:
+      - { item: lx-salam, verdict: wrong, ms: 4100, hinted: false }
+  expected:
+    ratings: { lx-salam: again }
+
+- id: srs-03-wrong-then-requeued-correct
+  rule: rating
+  note: >-
+    Wrong, then correct when re-queued: any wrong attempt in the session means again.
+  input:
+    attempts:
+      - { item: lx-ab, verdict: wrong, ms: 3000, hinted: false }
+      - { item: lx-ab, verdict: correct, ms: 2500, hinted: false }
+  expected:
+    ratings: { lx-ab: again }
+
+- id: srs-04-exactly-slowMs-is-not-slow
+  rule: rating
+  note: >-
+    ms 12000 is not > 12000: good.
+  input:
+    attempts:
+      - { item: lx-nan, verdict: correct, ms: 12000, hinted: false }
+  expected:
+    ratings: { lx-nan: good }
+
+- id: srs-05-just-over-slowMs
+  rule: rating
+  note: >-
+    ms 12001 > 12000: hard.
+  input:
+    attempts:
+      - { item: lx-nan, verdict: correct, ms: 12001, hinted: false }
+  expected:
+    ratings: { lx-nan: hard }
+
+- id: srs-06-hinted
+  rule: rating
+  note: >-
+    Correct and fast, but a hint was used: hard.
+  input:
+    attempts:
+      - { item: lx-chai, verdict: correct, ms: 1800, hinted: true }
+  expected:
+    ratings: { lx-chai: hard }
+
+- id: srs-07-one-slow-among-several
+  rule: rating
+  note: >-
+    The max ms over the item's attempts decides: one 15.5 s answer makes it hard.
+  input:
+    attempts:
+      - { item: lx-mersi, verdict: correct, ms: 2100, hinted: false }
+      - { item: lx-mersi, verdict: correct, ms: 15500, hinted: false }
+      - { item: lx-mersi, verdict: correct, ms: 1900, hinted: false }
+  expected:
+    ratings: { lx-mersi: hard }
+
+- id: srs-08-wrong-beats-slow-and-hinted
+  rule: rating
+  note: >-
+    again takes precedence over slow and hinted.
+  input:
+    attempts:
+      - { item: lx-ab, verdict: correct, ms: 20000, hinted: true }
+      - { item: lx-ab, verdict: wrong, ms: 3000, hinted: false }
+  expected:
+    ratings: { lx-ab: again }
+
+- id: srs-09-several-clean
+  rule: rating
+  note: >-
+    Several clean attempts: good.
+  input:
+    attempts:
+      - { item: lx-salam, verdict: correct, ms: 1500, hinted: false }
+      - { item: lx-salam, verdict: correct, ms: 1700, hinted: false }
+      - { item: lx-salam, verdict: correct, ms: 1400, hinted: false }
+  expected:
+    ratings: { lx-salam: good }
+
+- id: srs-10-hint-on-later-attempt
+  rule: rating
+  note: >-
+    A hint on any attempt of the item makes it hard.
+  input:
+    attempts:
+      - { item: lx-chai, verdict: correct, ms: 2000, hinted: false }
+      - { item: lx-chai, verdict: correct, ms: 2500, hinted: true }
+  expected:
+    ratings: { lx-chai: hard }
+
+- id: srs-11-typo-counts-as-correct
+  rule: rating
+  note: >-
+    typo is a passing verdict (PASSING_VERDICTS in contracts), so it counts as correct: good.
+  input:
+    attempts:
+      - { item: lx-mersi, verdict: typo, ms: 3000, hinted: false }
+  expected:
+    ratings: { lx-mersi: good }
+
+- id: srs-12-spelling-is-correct-but-slow
+  rule: rating
+  note: >-
+    spelling is passing. Slow (13 s), so hard.
+  input:
+    attempts:
+      - { item: lx-mersi, verdict: spelling, ms: 13000, hinted: false }
+  expected:
+    ratings: { lx-mersi: hard }
+
+- id: srs-13-slow-wrong-then-fast-correct
+  rule: rating
+  note: >-
+    Wrong (and slow), then fast correct: again.
+  input:
+    attempts:
+      - { item: lx-nan, verdict: wrong, ms: 16000, hinted: false }
+      - { item: lx-nan, verdict: correct, ms: 1200, hinted: false }
+  expected:
+    ratings: { lx-nan: again }
+
+- id: srs-14-per-item-aggregation
+  rule: rating
+  note: >-
+    Ratings are per item, over that item's attempts only, even when attempts interleave.
+  input:
+    attempts:
+      - { item: lx-salam, verdict: correct, ms: 1500, hinted: false }
+      - { item: lx-ab, verdict: wrong, ms: 2000, hinted: false }
+      - { item: lt-alef, verdict: correct, ms: 12500, hinted: false }
+      - { item: lx-chai, verdict: correct, ms: 1800, hinted: true }
+      - { item: lx-ab, verdict: correct, ms: 1900, hinted: false }
+      - { item: lt-be, verdict: typo, ms: 2200, hinted: false }
+      - { item: lx-salam, verdict: correct, ms: 1600, hinted: false }
+      - { item: lt-alef, verdict: correct, ms: 3000, hinted: false }
+  expected:
+    ratings: { lx-salam: good, lx-ab: again, lt-alef: hard, lx-chai: hard, lt-be: good }
+
+- id: srs-15-letter-items-same-rules
+  rule: rating
+  note: >-
+    Letter items follow the same rules as lexemes.
+  input:
+    attempts:
+      - { item: lt-pe, verdict: correct, ms: 900, hinted: false }
+      - { item: lt-pe, verdict: correct, ms: 11000, hinted: false }
+      - { item: lt-che, verdict: wrong, ms: 900, hinted: false }
+  expected:
+    ratings: { lt-pe: good, lt-che: again }
+
+- id: srs-16-all-skipped-not-rated
+  rule: rating
+  note: >-
+    Both challenges for this item were skipped (e.g. "can't listen now"). Skipped answers are not
+    rated, so the item gets null: no SRS update.
+  input:
+    attempts:
+      - { item: lx-nan, verdict: skipped, ms: 700, hinted: false }
+      - { item: lx-nan, verdict: skipped, ms: 650, hinted: false }
+  expected:
+    ratings: { lx-nan: null }

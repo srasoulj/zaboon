@@ -1,5 +1,6 @@
 # Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
-# u01-l1 pins the 8 course challenge types and u01-l2 the 5 letter types, in this exact order.
+# u01-s0 is the short first lesson (the walking skeleton's four types); u01-l1 pins the 8 course
+# challenge types and u01-l2 the 5 letter types, in this exact order.
 id: u01-fixture
 title: Fixture unit
 subtitle: Hello, tea and first letters
@@ -8,6 +9,23 @@ color: firouzeh
 guidebook: guidebooks/u01-fixture.md
 characters: [leila]
 levels:
+  - id: u01-s0
+    kind: lesson
+    title: First steps
+    lessons: 1
+    spec:
+      focus:
+        lexemes: [lx_salam, lx_mersi, lx_khub, lx_man, lx_ab, lx_mikham, lx_maman, lx_baba]
+        sentences: [s_u01_0001, s_u01_0002, s_u01_0006]
+        letters: []
+        chats: []
+      mix: intro
+      pinnedOnly: true
+      pinned:
+        - { type: select_translation, direction: fa_en, items: [s_u01_0001] }
+        - { type: translate_bank, direction: fa_en, items: [s_u01_0002] }
+        - { type: translate_type, direction: fa_en, items: [s_u01_0006] }
+        - { type: match_pairs, items: [lx_salam, lx_mersi, lx_maman, lx_baba, lx_khub] }
   - id: u01-l1
     kind: lesson
     title: Course challenges
