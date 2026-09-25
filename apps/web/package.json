@@ -1,0 +1,47 @@
+{
+  "name": "@zaboon/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@rive-app/react-canvas": "4.35.0",
+    "@serwist/turbopack": "9.5.12",
+    "@supabase/supabase-js": "2.117.1",
+    "@tanstack/react-query": "5.103.2",
+    "@xstate/react": "6.1.0",
+    "@zaboon/ai": "workspace:*",
+    "@zaboon/content-schema": "workspace:*",
+    "@zaboon/contracts": "workspace:*",
+    "@zaboon/db": "workspace:*",
+    "@zaboon/farsi": "workspace:*",
+    "@zaboon/game-rules": "workspace:*",
+    "@zaboon/grader": "workspace:*",
+    "@zaboon/session-engine": "workspace:*",
+    "@zaboon/srs": "workspace:*",
+    "@zaboon/ui": "workspace:*",
+    "clsx": "2.1.1",
+    "howler": "2.2.4",
+    "idb": "8.0.3",
+    "jose": "6.2.12",
+    "motion": "13.4.4",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "serwist": "9.5.12",
+    "xstate": "5.33.2",
+    "zod": "4.6.5",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/howler": "2.2.13",
+    "postcss": "8.5.28",
+    "tailwindcss": "4.3.3"
+  }
+}

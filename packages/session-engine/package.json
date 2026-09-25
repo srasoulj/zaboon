@@ -1,0 +1,19 @@
+{
+  "name": "@zaboon/session-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@zaboon/content-schema": "workspace:*",
+    "@zaboon/contracts": "workspace:*",
+    "@zaboon/farsi": "workspace:*",
+    "@zaboon/grader": "workspace:*",
+    "@zaboon/srs": "workspace:*"
+  }
+}
