@@ -27,8 +27,13 @@ type EventResponse = z.output<typeof SessionEventResponse>
 type EntryOf<K extends OutboxEntry['kind']> = Extract<OutboxEntry, { kind: K }>
 
 export interface OutboxSender {
-  event(sessionId: string, body: EntryOf<'event'>['body']): Promise<EventResponse>
-  complete(sessionId: string, body: EntryOf<'complete'>['body']): Promise<SessionResult>
+  /** `userId` is the entry's owner: a sender must only send it with that user's token. */
+  event(sessionId: string, body: EntryOf<'event'>['body'], userId: string): Promise<EventResponse>
+  complete(
+    sessionId: string,
+    body: EntryOf<'complete'>['body'],
+    userId: string,
+  ): Promise<SessionResult>
 }
 
 export type OutboxDelivery =
@@ -47,11 +52,23 @@ export const MAX_ATTEMPTS = 8
 /** Entries of other users (and dead letters) older than this are pruned. */
 export const STALE_ENTRY_MS = 30 * 24 * 3_600_000
 
-export type FailureKind = 'wait' | 'retry' | 'permanent'
+/** The signed-in user (and so the token) is not the entry's owner: the entry waits for them. */
+export const IDENTITY_MISMATCH = 'identity_mismatch'
+
+export class IdentityMismatchError extends Error {
+  readonly code = IDENTITY_MISMATCH
+  constructor(message = 'the signed-in user is not the owner of this write') {
+    super(message)
+    this.name = 'IdentityMismatchError'
+  }
+}
+
+export type FailureKind = 'blocked' | 'wait' | 'retry' | 'permanent'
 
 export function classify(error: unknown): FailureKind {
   const code = errorCode(error)
   if (code === null) return 'retry'
+  if (code === IDENTITY_MISMATCH) return 'blocked'
   if (WAIT.has(code)) return 'wait'
   if (RETRY.has(code)) return 'retry'
   return 'permanent'
@@ -283,6 +300,7 @@ export class Outbox {
       } else {
         const kind = classify(error)
         const code = errorCode(error) ?? 'internal'
+        if (kind === 'blocked') return 'blocked' // waits for its user; not a failure
         if (kind === 'wait') {
           report.stalled = true
           return 'blocked'
@@ -313,8 +331,8 @@ export class Outbox {
 
   private async deliver(entry: OutboxEntry): Promise<void> {
     if (entry.kind === 'event')
-      this.delivered(entry, await this.send.event(entry.sessionId, entry.body))
-    else this.delivered(entry, await this.send.complete(entry.sessionId, entry.body))
+      this.delivered(entry, await this.send.event(entry.sessionId, entry.body, entry.userId))
+    else this.delivered(entry, await this.send.complete(entry.sessionId, entry.body, entry.userId))
   }
 
   private delivered(entry: OutboxEntry, answer: EventResponse | SessionResult | null): void {

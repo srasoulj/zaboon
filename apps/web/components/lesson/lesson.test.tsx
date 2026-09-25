@@ -7,7 +7,6 @@ import type { ApiClient } from '../../lib/api-client'
 import { AppServicesProvider } from '../../lib/app-services'
 import type { AuthClient } from '../../lib/auth-client'
 import { createSilentAudio } from '../../lib/lesson/audio'
-import { Outbox } from '../../lib/lesson/outbox'
 import { MemoryOutboxStore, MemorySnapshotStore } from '../../lib/lesson/stores'
 import type { CompleteSummary } from '../../lib/lesson/summary'
 import { testChallenges, testResult, testSession, USER_ID } from '../../lib/lesson/test-support'
@@ -16,15 +15,17 @@ import { LessonFeedback, praiseFor } from './LessonFeedback'
 import { LessonFooter } from './LessonFooter'
 import { LessonPlayer } from './LessonPlayer'
 import { answerText, ReportSheet, reportItemRef } from './ReportSheet'
-import { MAX_ATTEMPTS } from '../../lib/lesson/outbox'
+import { MAX_ATTEMPTS, Outbox, type OutboxSender } from '../../lib/lesson/outbox'
 import {
-  apiSender,
   LessonServicesProvider,
   OutboxReplayer,
   outboxUser,
   retagOutboxUser,
   sharedLessonStores,
+  type RendererResolver,
 } from './services'
+import { fixture } from '@/components/challenges/testing'
+import { rendererFor } from '@/lib/challenge-registry'
 import { correctResponse, resolveTestRenderer, wrongResponse } from './test-renderers'
 
 afterEach(() => {
@@ -206,7 +207,8 @@ describe('complete screens', () => {
     expect(screen.getByText('Your progress is saved.')).toBeInTheDocument()
     // the count-up reaches the final value
     const shown = screen.getByTestId('complete-xp').querySelector('span[aria-hidden="true"]')
-    await waitFor(() => expect(shown).toHaveTextContent('15'))
+    // the count-up animates for ~900 ms
+    await waitFor(() => expect(shown).toHaveTextContent('15'), { timeout: 3000 })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     expect(onContinue).toHaveBeenCalled()
   })
@@ -246,13 +248,27 @@ describe('test renderer responses', () => {
 })
 
 // ------------------------------------------------------------------------------------ the player
-function renderPlayer(opts: { api?: Partial<Record<string, (o: unknown) => unknown>> } = {}) {
+/** A sender that uses the fake api as is (the player tests don't exercise identity). */
+function apiSender(api: ApiClient): OutboxSender {
+  return {
+    event: (id, body) => api('sessionEvent', { params: { id }, body }),
+    complete: (id, body) => api('completeSession', { params: { id }, body }),
+  }
+}
+
+function renderPlayer(
+  opts: {
+    api?: Partial<Record<string, (o: unknown) => unknown>>
+    session?: ReturnType<typeof testSession>
+    resolve?: RendererResolver
+  } = {},
+) {
   const calls: { name: string; opts: unknown }[] = []
   const api = (async (name: string, o: unknown) => {
     calls.push({ name, opts: o })
     const impl = opts.api?.[name]
     if (impl) return impl(o)
-    if (name === 'createSession') return testSession()
+    if (name === 'createSession') return opts.session ?? testSession()
     if (name === 'sessionEvent')
       return { lives: { ...testSession().lives, count: 4 }, duplicate: false }
     if (name === 'completeSession') return testResult()
@@ -275,7 +291,7 @@ function renderPlayer(opts: { api?: Partial<Record<string, (o: unknown) => unkno
             snapshots,
             outbox,
             audio: createSilentAudio(),
-            resolveRenderer: resolveTestRenderer,
+            resolveRenderer: opts.resolve ?? resolveTestRenderer,
           }}
         >
           {children}
@@ -449,15 +465,56 @@ describe('LessonPlayer', () => {
   })
 })
 
+/** The replayer needs the auth client (the outbox's sender reads { userId, token } from it). */
+/** Signed in as whoever the replayer sends for (one stable fake auth client). */
+const fakeAuth = {
+  getSession: async () => {
+    const u = outboxUser()
+    return u ? { accessToken: 't', expiresAt: 0, userId: u, isAnonymous: true, email: null } : null
+  },
+} as unknown as AuthClient
+const withAuth = (api: ApiClient, node: ReactNode) => (
+  <AppServicesProvider api={api} auth={fakeAuth}>
+    {node}
+  </AppServicesProvider>
+)
+
+/**
+ * The shared outbox sends through a client bound to the session's own token (real fetch), so these
+ * tests stub `fetch` and look at the requests that go out.
+ */
+function stubFetch(respond: (url: string) => { status: number; body: unknown }) {
+  const requests: { url: string; authorization: string | null }[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const headers = new Headers(init?.headers)
+      requests.push({ url, authorization: headers.get('authorization') })
+      const r = respond(url)
+      return new Response(JSON.stringify(r.body), {
+        status: r.status,
+        headers: { 'content-type': 'application/json' },
+      })
+    }),
+  )
+  return requests
+}
+const serverError = { status: 500, body: { error: { code: 'internal', message: 'boom' } } }
+const eventOk = { status: 200, body: { lives: testSession().lives, duplicate: false } }
+/** A fresh api identity per test, so each test gets its own shared outbox. */
+const freshApi = () => (async () => undefined) as unknown as ApiClient
+
 describe('OutboxReplayer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('sends for the latest mounted user, resets on unmount, and shows a notice when a write gave up', async () => {
-    const api = (async (name: string) => {
-      if (name === 'sessionEvent') throw new Error('500')
-      throw new Error(`unexpected ${name}`)
-    }) as unknown as ApiClient
+    const requests = stubFetch(() => serverError)
+    const api = freshApi()
     expect(outboxUser()).toBeNull()
-    const a = render(<OutboxReplayer api={api} userId={USER_ID} />)
-    const b = render(<OutboxReplayer api={api} userId="guest-2" />)
+    const a = render(withAuth(api, <OutboxReplayer api={api} userId={USER_ID} />))
+    const b = render(withAuth(api, <OutboxReplayer api={api} userId="guest-2" />))
     expect(outboxUser()).toBe('guest-2')
     b.unmount()
     expect(outboxUser()).toBe(USER_ID)
@@ -469,6 +526,8 @@ describe('OutboxReplayer', () => {
       kind: 'wrong',
     })
     for (let i = 0; i < MAX_ATTEMPTS; i++) await act(() => outbox.flush())
+    expect(requests).toHaveLength(MAX_ATTEMPTS)
+    expect(requests[0]!.authorization).toBe('Bearer t')
     expect(await screen.findByTestId('outbox-notice')).toHaveTextContent("couldn't be saved")
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(screen.queryByTestId('outbox-notice')).toBeNull()
@@ -478,15 +537,9 @@ describe('OutboxReplayer', () => {
   })
 
   it('retagOutboxUser moves a merged guest’s writes to the account and sends them', async () => {
-    const sent: string[] = []
-    const api = (async (name: string, o: { params: { id: string } }) => {
-      if (name === 'sessionEvent') {
-        sent.push(o.params.id)
-        return { lives: testSession().lives, duplicate: false }
-      }
-      throw new Error(`unexpected ${name}`)
-    }) as unknown as ApiClient
-    const view = render(<OutboxReplayer api={api} userId="account-1" />)
+    const requests = stubFetch(() => eventOk)
+    const api = freshApi()
+    const view = render(withAuth(api, <OutboxReplayer api={api} userId="account-1" />))
     const { outbox } = await sharedLessonStores(api)
     await outbox.enqueueEvent('guest-1', 'guest-session', {
       attemptSeq: 0,
@@ -494,7 +547,109 @@ describe('OutboxReplayer', () => {
       kind: 'wrong',
     })
     expect(await retagOutboxUser(api, 'guest-1', 'account-1')).toBe(1)
-    await waitFor(() => expect(sent).toEqual(['guest-session']))
+    await waitFor(() =>
+      expect(requests.map((r) => r.url)).toEqual(['/api/sessions/guest-session/events']),
+    )
     view.unmount()
+  })
+})
+
+describe('OutboxReplayer notice is per user', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("a new user doesn't see the previous user's notice", async () => {
+    stubFetch(() => serverError)
+    const api = freshApi()
+    const { outbox } = await sharedLessonStores(api)
+    const view = render(withAuth(api, <OutboxReplayer api={api} userId="user-a" />))
+    await outbox.enqueueEvent('user-a', 'sess-a', { attemptSeq: 0, index: 0, kind: 'wrong' })
+    for (let i = 0; i < MAX_ATTEMPTS; i++) await act(() => outbox.flush())
+    expect(await screen.findByTestId('outbox-notice')).toBeInTheDocument()
+    view.rerender(withAuth(api, <OutboxReplayer api={api} userId="user-b" />))
+    expect(screen.queryByTestId('outbox-notice')).toBeNull()
+    view.unmount()
+  })
+})
+
+describe('Enter on an already-selected choice', () => {
+  it('means CHECK, not "select again"', async () => {
+    renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByTestId('test-answer-correct'))
+    const card = document.createElement('button')
+    card.className = 'card-3d zb-choice' // a ChoiceCard
+    card.setAttribute('aria-pressed', 'true')
+    screen.getByTestId('test-renderer').appendChild(card)
+    card.focus()
+    const notPrevented = fireEvent.keyDown(card, { key: 'Enter' })
+    expect(notPrevented).toBe(false) // the card's own activation is suppressed
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
+  })
+
+  it('a focused, not-selected choice keeps its own Enter', async () => {
+    renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByTestId('test-answer-correct'))
+    const card = document.createElement('button')
+    card.className = 'card-3d zb-choice' // a ChoiceCard
+    card.setAttribute('aria-pressed', 'false')
+    screen.getByTestId('test-renderer').appendChild(card)
+    card.focus()
+    expect(fireEvent.keyDown(card, { key: 'Enter' })).toBe(true)
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+  })
+})
+
+describe('Enter with the real renderers (ws-renderers)', () => {
+  /** A browser activates a focused button on an Enter keydown that nobody prevented. */
+  const pressEnter = (el: HTMLElement) => {
+    el.focus()
+    const notPrevented = fireEvent.keyDown(el, { key: 'Enter' })
+    if (notPrevented) fireEvent.click(el)
+    return notPrevented
+  }
+
+  it('Enter on the selected select_translation card (a draft exists) is CHECK', async () => {
+    const challenge = { ...fixture('select_translation'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const card = (await screen.findAllByRole('button', { pressed: false }))[0]!
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(pressEnter(card)).toBe(false)
+    expect(await screen.findByTestId('lesson-feedback')).toBeInTheDocument()
+  })
+
+  it('Enter on a half-selected match card is not CHECK: the card deselects', async () => {
+    const challenge = { ...fixture('match_pairs'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const persian = await screen.findByRole('group', { name: 'Persian' })
+    const card = within(persian).getAllByRole('button')[0]!
+    fireEvent.click(card)
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(pressEnter(card)).toBe(true) // left to the card
+    expect(card).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    expect(screen.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'locked')
+  })
+})
+
+describe('Enter on a placed build_word tile', () => {
+  it('removes the letter (native), with no CHECK and no heart lost', async () => {
+    const challenge = { ...fixture('build_word'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const letters = await screen.findByRole('group', { name: 'Letters' })
+    const tile = within(letters).getAllByRole('button')[0]!
+    fireEvent.click(tile) // one letter placed: the renderer reports a (partial) draft
+    expect(tile).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'primary')
+    tile.focus()
+    const notPrevented = fireEvent.keyDown(tile, { key: 'Enter' })
+    expect(notPrevented).toBe(true) // left to the tile
+    fireEvent.click(tile) // the browser's native Enter activation
+    expect(tile).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
   })
 })
