@@ -39,7 +39,7 @@
     with a completely straight face.
   color: lajvard
   voice: coral
-  image: img/characters/shirin.png
+  image: characters/shirin/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -52,7 +52,7 @@
     to the price of tomatoes. He teaches directions, numbers and the city, whether you asked or not.
   color: pesteh
   voice: echo
-  image: img/characters/dariush.png
+  image: characters/dariush/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -65,7 +65,7 @@
     it. He is learning alongside you and isn't afraid to make mistakes out loud.
   color: firouzeh
   voice: ash
-  image: img/characters/kian.png
+  image: characters/kian/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -78,7 +78,7 @@
     the best way she knows: by making you taste everything.
   color: anar
   voice: shimmer
-  image: img/characters/leila.png
+  image: characters/leila/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -91,6 +91,6 @@
     and a little history into the course.
   color: bademjan
   voice: ballad
-  image: img/characters/babak.png
+  image: characters/babak/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }

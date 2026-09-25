@@ -1,4 +1,4 @@
-# Provenance of assets/img/lx_ab.png (content-cli). Set status: approved and approvedBy after review.
+# Provenance of assets/img/lx_ab.png (content-cli art, post-processed). Set status: approved and approvedBy after review.
 asset: img/lx_ab.png
 model: openai/gpt-5.4-image-2
 prompt: art-item@1
@@ -6,3 +6,7 @@ references:
   - style-bible/shape-language.png
 generatedAt: 2026-09-25T16:09:17.682Z
 status: draft
+generation:
+  id: gen-1790352460-XbrcH0N2n5ptV374ofMf
+  costUsd: 0.238954
+postProcessing: "sharp: near-white background removed by a flood fill from the image border (white details inside the figure are kept), cut edge un-blended from white, specks dropped, trimmed, padded to a transparent square, max 1024 px; PNG plus a WebP copy (quality 85); the object is centered. This PNG replaces the raw 1024 px RGB model output, which stays in git history."

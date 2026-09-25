@@ -6,3 +6,4 @@ voice: alloy
 input: شب
 generatedAt: 2026-09-25T16:01:27.738Z
 status: draft
+postProcessing: "Loudness fix: re-encoded from the cached raw gpt-audio output (same TTS trim as content-cli) with a measured two-pass normalization: pass 1 measures the EBU R128 integrated loudness, pass 2 applies the gain to -16 LUFS through a 5 ms lookahead peak limiter at 192 kHz (true peak <= -1.5 dBTP, limiter loudness loss capped at 3 LU), then mono 44.1 kHz 64 kbps MP3. Was -18.7 LUFS after content-cli's single-pass loudnorm, now -16.0 LUFS, true peak -2.6 dBTP (gain +2.5 dB, limiter loss 0.8 LU). ffmpeg's two-pass loudnorm was not used: the raw clip's peak-to-loudness ratio (16.9 dB) exceeds the 14.5 dB that -16 LUFS at -1.5 dBTP allows, so its linear mode cannot reach the target."

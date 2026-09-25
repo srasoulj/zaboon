@@ -1,0 +1,16 @@
+# Provenance of assets/characters/shirin/portrait.webp (content-cli art, post-processed). Set status: approved and approvedBy after review.
+asset: characters/shirin/portrait.webp
+model: openai/gpt-5.4-image-2
+prompt: art-character@1
+references:
+  - style-bible/shape-language.png
+  - assets/characters/hodhod/turnaround.png
+  - assets/characters/maman-bozorg/portrait.png
+generatedAt: 2026-09-25T16:27:33.412Z
+status: draft
+derivedFrom: characters/shirin/portrait.png
+generation:
+  id: gen-1790353549-LCvgH00PrC2STTM8WDCX
+  costUsd: 0.261274
+postProcessing: "sharp: near-white background removed by a flood fill from the image border (white details inside the figure are kept), cut edge un-blended from white, specks dropped, trimmed, padded to a transparent square, max 1024 px; PNG plus a WebP copy (quality 85); the bust is aligned to the bottom edge. Moved from img/characters/shirin.png to the character folder. Special case: a background pocket enclosed by the tube, the forearm and the coat was also cut out (seeded fill of that pocket, including its anti-aliased tip); eye highlights stay white."
+notes: "Skin and hair use colors outside the brand palette, like the Maman Bozorg portrait (people need skin tones). Regenerated once: the first take had a white top."
