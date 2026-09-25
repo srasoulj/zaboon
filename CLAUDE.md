@@ -45,12 +45,15 @@ Local DB: native Postgres 16 (no Docker), superuser `supabase_admin`, migration 
 8. **Server framework** (`apps/web/lib/server/`): `withRoute` does auth, 426, rate limits, zod in/out
    and the error envelope; throw `ApiError(code, …)` (or the repos' `NotFoundError`/`ConflictError`),
    never build error responses by hand. Time comes from `ctx.now` (the `x-test-now` header in local
-   mode), never `new Date()` in rule code. Content comes from `lib/server/content.ts` (current version
-   from `content_versions`, immutable bundles cached per version).
+   mode), never `new Date()` in rule code. Feature flags come from `ctx.flags` (app_config, plus the
+   `x-test-flags` header in local mode only). Content comes from `lib/server/content.ts` (current
+   version from `content_versions`, immutable bundles cached per version).
 9. **Tests against the running app**: `e2e/*.api.spec.ts` run once in the browserless `api` project;
    UI specs run in the browser projects. Get a token with `POST /api/dev/auth/anonymous` (or
    `sign-in`/`link`/`admin`). `e2e/global-setup.ts` publishes `content/fixtures` (course `fixture`)
    and `content/fa-en` to the local DB before every run; `u01-s0` is the fixture's short first lesson.
+   Turn a flagged feature on with `setTestFlags(page, …)` / `flagsHeader(…)` from `e2e/fixtures`
+   (DB tests: `h.call(…, { flags })` or `h.setFlags(…)`); call cron routes with `cronHeaders()`.
 
 ## Workstream protocol (parallel sessions)
 
