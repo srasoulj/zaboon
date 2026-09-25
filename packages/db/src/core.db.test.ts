@@ -14,8 +14,9 @@ beforeAll(async () => {
   h = createDb(tdb.appUrl)
   alice = await createAuthUser(tdb.adminUrl)
   bob = await createAuthUser(tdb.adminUrl)
+  // The auth.users trigger creates profiles; an explicit insert must stay harmless.
   for (const id of [alice, bob]) {
-    await withUser(h.db, id, (tx) => tx.insert(schema.profiles).values({ userId: id }))
+    await withUser(h.db, id, (tx) => tx.insert(schema.profiles).values({ userId: id }).onConflictDoNothing())
   }
 })
 
