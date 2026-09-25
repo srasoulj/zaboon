@@ -42,7 +42,16 @@ export {
   sameSoundGroup,
   soundKey,
 } from './letters'
-export { HALF_SPACE_CODE, KEYBOARD_LAYOUTS, keyChar, type KeyDef, type KeyboardLayout } from './keyboard'
+export {
+  HALF_SPACE_CODE,
+  KEYBOARD_LAYOUTS,
+  KEYBOARD_ROWS,
+  keyChar,
+  remapPhysicalKey,
+  type KeyDef,
+  type KeyboardLayout,
+  type PhysicalKeyEvent,
+} from './keyboard'
 export { HAZM_AFFIX_SPACING_PATTERNS, HAZM_DIACRITICS, HAZM_SUFFIXES, HAZM_TRANSLATION_DST, HAZM_TRANSLATION_SRC } from './hazm'
 
 /** True when the text contains a character from the Arabic block (Persian script). */

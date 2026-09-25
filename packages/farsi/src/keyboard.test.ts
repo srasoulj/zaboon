@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { ALPHABET, HALF_SPACE_CODE, KEYBOARD_LAYOUTS, keyChar, normalize, sameSoundGroup, ZWNJ } from './index'
+import {
+  ALPHABET,
+  HALF_SPACE_CODE,
+  KEYBOARD_LAYOUTS,
+  KEYBOARD_ROWS,
+  keyChar,
+  normalize,
+  remapPhysicalKey,
+  sameSoundGroup,
+  ZWNJ,
+  type PhysicalKeyEvent,
+} from './index'
 
 const typeable = (id: 'standard' | 'phonetic') => {
   const chars = new Set<string>()
@@ -58,5 +69,72 @@ describe('keyboard layouts', () => {
     expect(keyChar('phonetic', 'KeyZ', { variant: 9 })).toBeNull()
     expect(keyChar('phonetic', 'KeyS', { shift: true })).toBe('ش')
     expect(keyChar('phonetic', 'F13')).toBeNull()
+  })
+})
+
+describe('KEYBOARD_ROWS', () => {
+  it.each(['standard', 'phonetic'] as const)('%s: draws every mapped key exactly once', (id) => {
+    const drawn = KEYBOARD_ROWS[id].flat()
+    expect(new Set(drawn).size).toBe(drawn.length)
+    expect([...drawn].sort()).toEqual(Object.keys(KEYBOARD_LAYOUTS[id].keys).sort())
+  })
+
+  it.each(['standard', 'phonetic'] as const)('%s: rows are physical rows, space bar last', (id) => {
+    const rows = KEYBOARD_ROWS[id]
+    expect(rows.at(-1)).toEqual([HALF_SPACE_CODE])
+    expect(rows.find((r) => r.includes('KeyQ'))?.slice(0, 3)).toEqual(['KeyQ', 'KeyW', 'KeyE'])
+    expect(rows.find((r) => r.includes('KeyA'))?.[0]).toBe('KeyA')
+    expect(rows.find((r) => r.includes('KeyZ'))?.[0]).toBe('KeyZ')
+  })
+})
+
+describe('remapPhysicalKey', () => {
+  const ev = (over: Partial<PhysicalKeyEvent>): PhysicalKeyEvent => ({
+    key: 'a',
+    code: 'KeyA',
+    shiftKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    altKey: false,
+    isComposing: false,
+    ...over,
+  })
+
+  it('remaps a Latin key by its physical code', () => {
+    expect(remapPhysicalKey('standard', ev({}))).toBe('ش')
+    expect(remapPhysicalKey('phonetic', ev({}))).toBe('ا')
+    // The code decides, not the key: AZERTY's "q" sits on KeyA.
+    expect(remapPhysicalKey('standard', ev({ key: 'q' }))).toBe('ش')
+    expect(remapPhysicalKey('standard', ev({ key: 'H', code: 'KeyH', shiftKey: true }))).toBe('آ')
+    expect(remapPhysicalKey('phonetic', ev({ key: 'S', code: 'KeyS', shiftKey: true }))).toBe('ش')
+    expect(remapPhysicalKey('standard', ev({ key: ';', code: 'Semicolon' }))).toBe('ک')
+  })
+
+  it('Shift+Space types the half-space; Space a space', () => {
+    for (const id of ['standard', 'phonetic'] as const) {
+      expect(remapPhysicalKey(id, ev({ key: ' ', code: HALF_SPACE_CODE, shiftKey: true }))).toBe(ZWNJ)
+      expect(remapPhysicalKey(id, ev({ key: ' ', code: HALF_SPACE_CODE }))).toBe(' ')
+    }
+  })
+
+  it('leaves OS Persian layouts alone (event.key is already Persian)', () => {
+    expect(remapPhysicalKey('standard', ev({ key: 'ش' }))).toBeNull()
+    expect(remapPhysicalKey('phonetic', ev({ key: ZWNJ, code: 'KeyB', shiftKey: true }))).toBeNull()
+  })
+
+  it('never remaps while composing, on keyCode 229, or with Ctrl/Meta/Alt', () => {
+    expect(remapPhysicalKey('standard', ev({ isComposing: true }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ keyCode: 229 }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ key: 'Process', keyCode: 229 }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ ctrlKey: true }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ metaKey: true }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ altKey: true }))).toBeNull()
+  })
+
+  it('ignores named keys and unmapped codes', () => {
+    for (const key of ['Enter', 'Backspace', 'Tab', 'ArrowLeft', 'Dead', 'Unidentified'])
+      expect(remapPhysicalKey('standard', ev({ key, code: key }))).toBeNull()
+    expect(remapPhysicalKey('phonetic', ev({ key: '-', code: 'Minus' }))).toBeNull()
+    expect(remapPhysicalKey('standard', ev({ key: 'é', code: 'Digit2' }))).toBeNull()
   })
 })
