@@ -1,0 +1,118 @@
+/* Path screen additions on top of the kit's .zb-path / .zb-node styles (packages/ui). Tokens only. */
+
+.subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.row {
+  /* The popover is positioned against the row, which is centered in the column. */
+  position: relative;
+}
+
+.slot {
+  position: relative;
+}
+
+/* `available`: unlocked with nothing to start (chest, story). White face, unit-colored icon. */
+.available {
+  --fill: var(--color-bg);
+  --lip: var(--color-line);
+  --icon: var(--unit-fill);
+}
+.available :global(.zb-node__button) {
+  outline: var(--lip-border) solid var(--color-line);
+  outline-offset: -2px;
+}
+
+/* Legendary shares Bādemjān with a unit color, so it also gets a saffron ring and a crown. */
+.legendary :global(.zb-node__button) {
+  box-shadow:
+    0 calc(var(--lip-button) + 3px) 0 var(--lip),
+    0 0 0 5px var(--color-zaferan-500);
+}
+.crown {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: -14px;
+  inset-inline-end: -10px;
+  color: var(--color-zaferan-500);
+  filter: drop-shadow(0 2px 0 var(--color-zaferan-600));
+  pointer-events: none;
+}
+
+.popover {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: calc(100% + 14px);
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  inline-size: min(320px, 100%);
+  padding: 16px;
+  border: var(--lip-border) solid var(--color-line);
+  border-block-end-width: var(--lip-card);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  text-align: start;
+}
+.popover:focus-visible {
+  outline: 3px solid var(--color-lajvard-500);
+  outline-offset: 2px;
+}
+/* The arrow points at the node (the row's center plus the node's offset). */
+.popover::before {
+  content: '';
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline-start: calc(50% + var(--arrow-x, 0px));
+  inline-size: 16px;
+  block-size: 16px;
+  border-inline-start: var(--lip-border) solid var(--color-line);
+  border-block-start: var(--lip-border) solid var(--color-line);
+  background: var(--color-bg);
+  translate: -50% 9px;
+  rotate: 45deg;
+}
+.popoverTitle {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.popoverMeta {
+  margin: 4px 0 12px;
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.popoverNote {
+  margin: 0;
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.popover[data-state='locked'] {
+  background: var(--color-surface);
+}
+.popover[data-state='locked']::before {
+  background: var(--color-surface);
+}
+
+.linkButton {
+  text-decoration: none;
+}
+
+.status {
+  padding: 32px 0;
+  color: var(--color-stone);
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 400px) {
+  .aside {
+    display: none;
+  }
+}

@@ -1,0 +1,9 @@
+/* Applied only while Playwright takes screenshots: hide the Next.js dev-tools badge, and keep the
+   shell's sticky/fixed chrome in the flow so it never paints over a tall page-content capture. */
+nextjs-portal {
+  display: none !important;
+}
+header,
+nav[aria-label='Main'] {
+  position: static !important;
+}
