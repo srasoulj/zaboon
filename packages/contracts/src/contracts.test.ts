@@ -11,6 +11,8 @@ import {
   Settings,
   buildPath,
   routes,
+  CompleteSessionRequest,
+  MAX_ANSWERS,
 } from './index'
 
 describe('contracts', () => {
@@ -47,6 +49,25 @@ describe('contracts', () => {
       if (r.auth === 'dev') expect(r.path.startsWith('/api/dev/')).toBe(true)
       expect(Object.keys(DEFAULT_APP_CONFIG.rateLimits)).toContain(r.bucket)
     }
+  })
+
+  it('a completion may carry many more attempts than challenges, up to MAX_ANSWERS', () => {
+    const answer = (i: number) => ({
+      index: i % 20,
+      attemptSeq: i,
+      response: { kind: 'skip' as const },
+      verdict: 'skipped' as const,
+      ms: 900,
+      graderVersion: 1,
+    })
+    const body = (n: number) => ({
+      answers: Array.from({ length: n }, (_, i) => answer(i)),
+      completedAt: '2026-09-25T12:00:00.000Z',
+      graderVersion: 1,
+    })
+    expect(CompleteSessionRequest.safeParse(body(250)).success).toBe(true)
+    expect(CompleteSessionRequest.safeParse(body(MAX_ANSWERS)).success).toBe(true)
+    expect(CompleteSessionRequest.safeParse(body(MAX_ANSWERS + 1)).success).toBe(false)
   })
 
   it('buildPath fills params and rejects missing ones', () => {
