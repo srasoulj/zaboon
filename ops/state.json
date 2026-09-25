@@ -1,0 +1,94 @@
+{
+  "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in.",
+  "updatedAt": "2026-09-25T10:40:00Z",
+  "wave": "0b",
+  "integrationPr": 2,
+  "aiBudget": {
+    "capUsd": 9.5,
+    "keyLimitUsd": 10,
+    "spentUsd": 0
+  },
+  "limits": {
+    "maxConcurrentWorkers": 4,
+    "maxSessionsTotal": 20,
+    "maxRestartsPerWorkstream": 2,
+    "wallClockHours": 48,
+    "startedAt": "2026-09-25T10:05:00Z"
+  },
+  "ci": {
+    "workflowPushAllowed": true,
+    "runnersAvailable": false,
+    "note": "jobs fail in ~4s with runner_id 0 (no runner assigned) on PR, rerun and push-to-main; CI switched to workflow_dispatch only; pnpm verify is the gate"
+  },
+  "sessions": {
+    "canary": {
+      "id": "session_01Fx9PzDpMNGy2kTgo56EGZV",
+      "purpose": "verify Wave 0a environment",
+      "status": "completed: CANARY PASS (hook auto-ran, pnpm verify 17s, idempotent)"
+    }
+  },
+  "workstreams": {
+    "ws-farsi-grader": {
+      "wave": 1,
+      "status": "pending"
+    },
+    "ws-engine": {
+      "wave": 1,
+      "status": "pending"
+    },
+    "ws-db": {
+      "wave": 1,
+      "status": "pending"
+    },
+    "ws-ui": {
+      "wave": 1,
+      "status": "pending"
+    },
+    "ws-content-cli": {
+      "wave": 1,
+      "status": "pending"
+    },
+    "ws-api": {
+      "wave": 2,
+      "status": "pending"
+    },
+    "ws-pages": {
+      "wave": 2,
+      "status": "pending"
+    },
+    "ws-player": {
+      "wave": 2,
+      "status": "pending"
+    },
+    "ws-renderers": {
+      "wave": 2,
+      "status": "pending"
+    },
+    "ws-path-letters": {
+      "wave": 2,
+      "status": "pending"
+    },
+    "ws-content-gen": {
+      "wave": 2,
+      "status": "pending",
+      "runsIn": "orchestrator"
+    },
+    "ws-qa": {
+      "wave": 2,
+      "status": "pending"
+    }
+  },
+  "humanBacklog": [
+    "Native-speaker review of all course content and audio (everything is status: draft)",
+    "Art director approval of the style bible and generated art",
+    "Rive animator for character rigs",
+    "Legal review: trade dress, sanctions (contractors in Iran)",
+    "Accounts for deploy: Supabase, Vercel, Stripe, email, Turnstile, domain",
+    "More OpenRouter credit (key limit is $10) for Units 2-5 media",
+    "Add OPENROUTER_API_KEY_BUILD/APP to the environment settings so keys survive this container"
+  ],
+  "mergedPrs": [
+    1,
+    2
+  ]
+}

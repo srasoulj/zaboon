@@ -1,0 +1,155 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+# Imaged nouns (select_image): lx_ab, lx_nun, lx_chay, lx_sib. Every lexeme has audio.
+- id: lx_salam
+  fa: سلام
+  faVocalized: س%FATHA%لام
+  translit: salām
+  pos: interjection
+  glosses: [hello, hi]
+  audio: audio/lx_salam.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_mersi
+  fa: مرسی
+  faVocalized: م%KASRA%رسی
+  translit: mersi
+  pos: interjection
+  glosses: [thanks, thank you]
+  audio: audio/lx_mersi.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_khub
+  fa: خوب
+  translit: khub
+  pos: adjective
+  glosses: [good, well, fine]
+  forms: { 1sg: خوبم, 2sg: خوبی, 3sg: خوبه }
+  audio: audio/lx_khub.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_man
+  fa: من
+  faVocalized: م%FATHA%ن
+  translit: man
+  pos: pronoun
+  glosses: [I, me]
+  audio: audio/lx_man.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_to
+  fa: تو
+  translit: to
+  pos: pronoun
+  glosses: [you]
+  audio: audio/lx_to.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_ab
+  fa: آب
+  translit: āb
+  pos: noun
+  glosses: [water]
+  image: img/water.svg
+  audio: audio/lx_ab.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_nun
+  fa: نون
+  faFormal: نان
+  translit: nun
+  translitFormal: nān
+  pos: noun
+  glosses: [bread]
+  image: img/bread.svg
+  audio: audio/lx_nun.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_chay
+  fa: چای
+  translit: chāy
+  pos: noun
+  glosses: [tea]
+  image: img/tea.svg
+  audio: audio/lx_chay.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_sib
+  fa: سیب
+  translit: sib
+  pos: noun
+  glosses: [apple]
+  image: img/apple.svg
+  audio: audio/lx_sib.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_mikham
+  fa: می%ZWNJ%خوام
+  faFormal: می%ZWNJ%خواهم
+  translit: mikhām
+  translitFormal: mikhāham
+  pos: verb
+  glosses: [I want]
+  forms: { 2sg: می%ZWNJ%خوای }
+  audio: audio/lx_mikham.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_maman
+  fa: مامان
+  translit: māmān
+  pos: noun
+  glosses: [mom, mum, mother]
+  audio: audio/lx_maman.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_baba
+  fa: بابا
+  translit: bābā
+  pos: noun
+  glosses: [dad, father]
+  audio: audio/lx_baba.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_bad
+  fa: بد
+  faVocalized: ب%FATHA%د
+  translit: bad
+  pos: adjective
+  glosses: [bad]
+  audio: audio/lx_bad.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }
+
+- id: lx_ruz
+  fa: روز
+  translit: ruz
+  pos: noun
+  glosses: [day]
+  audio: audio/lx_ruz.mp3
+  introducedIn: u01-fixture
+  status: approved
+  provenance: { author: fixtures }

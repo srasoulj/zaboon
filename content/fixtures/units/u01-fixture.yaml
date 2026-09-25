@@ -1,0 +1,59 @@
+# Frozen e2e fixture: READ-ONLY for workers (see content/fixtures/README.md).
+# u01-l1 pins the 8 course challenge types and u01-l2 the 5 letter types, in this exact order.
+id: u01-fixture
+title: Fixture unit
+subtitle: Hello, tea and first letters
+register: colloquial
+color: firouzeh
+guidebook: guidebooks/u01-fixture.md
+characters: [leila]
+levels:
+  - id: u01-l1
+    kind: lesson
+    title: Course challenges
+    lessons: 1
+    spec:
+      focus:
+        lexemes:
+          [lx_ab, lx_nun, lx_chay, lx_sib, lx_salam, lx_mersi, lx_maman, lx_baba, lx_khub, lx_man, lx_mikham]
+        sentences: [s_u01_0001, s_u01_0002, s_u01_0003, s_u01_0005, s_u01_0006, s_u01_0007, s_u01_0008]
+        letters: []
+        chats: [c_u01_001]
+      mix: intro
+      pinnedOnly: true
+      pinned:
+        - { type: select_image, items: [lx_ab], distractors: [lx_nun, lx_chay, lx_sib] }
+        - { type: select_translation, direction: fa_en, items: [s_u01_0001] }
+        - { type: translate_bank, direction: fa_en, items: [s_u01_0002] }
+        - { type: translate_bank, direction: en_fa, items: [s_u01_0003] }
+        - { type: translate_type, direction: fa_en, items: [s_u01_0006] }
+        - { type: match_pairs, items: [lx_salam, lx_mersi, lx_maman, lx_baba, lx_khub] }
+        - { type: listen_tap, items: [s_u01_0005] }
+        - { type: cloze_choice, items: [s_u01_0007] }
+        - { type: complete_chat, items: [c_u01_001] }
+  - id: u01-l2
+    kind: lesson
+    title: Letter challenges
+    lessons: 1
+    spec:
+      focus:
+        lexemes: [lx_baba, lx_sib]
+        sentences: []
+        letters: [l_be, l_mim, l_nun]
+        chats: []
+      mix: letters
+      pinnedOnly: true
+      pinned:
+        - { type: letter_intro, items: [l_be] }
+        - { type: letter_sound, items: [l_be] }
+        - { type: letter_forms, items: [l_be, l_mim, l_nun] }
+        - { type: read_word, items: [lx_baba] }
+        - { type: build_word, items: [lx_sib] }
+  - id: u01-p1
+    kind: practice
+    title: Practice
+  - id: u01-r1
+    kind: unit_review
+    title: Unit review
+status: approved
+provenance: { author: fixtures }

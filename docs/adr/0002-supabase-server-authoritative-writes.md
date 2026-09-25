@@ -1,6 +1,7 @@
 # ADR 0002: Supabase with server-authoritative, transactional writes in TypeScript
 
 - **Status:** Accepted
+- **Amended by:** [ADR 0009](0009-api-first-data-access.md): reads also go through route handlers (replacing the "Reads" bullet below), and handlers verify JWTs against the JWKS with `jose`
 - **Date:** 2026-09-25
 
 ## Context

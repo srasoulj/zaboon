@@ -1,0 +1,75 @@
+{
+  "$comment": "Path ownership for parallel workstreams (CLAUDE.md). Checked in CI by scripts/check-ownership.ts. Orchestrator-owned.",
+  "orchestratorBranches": ["claude/affectionate-ptolemy-b4ypuw", "claude/zaboon-orchestrator"],
+  "alwaysAllowed": ["pnpm-lock.yaml"],
+  "protected": [
+    ".github/**",
+    ".claude/**",
+    "CLAUDE.md",
+    "ops/**",
+    "scripts/**",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "turbo.json",
+    "tsconfig.base.json",
+    "eslint.config.mjs",
+    "vitest.config.ts",
+    "vitest.setup.dom.ts",
+    "playwright.config.ts",
+    ".env.example",
+    ".gitignore",
+    "supabase/local/**",
+    "supabase/migrations/20260925000000_base.sql",
+    "supabase/migrations/20260925000100_core.sql",
+    "packages/contracts/**",
+    "packages/content-schema/**",
+    "packages/ui/tokens.json",
+    "**/oracles/**",
+    "content/**",
+    "apps/web/next.config.ts",
+    "apps/web/proxy.ts",
+    "apps/web/app/layout.tsx",
+    "apps/web/app/providers.tsx",
+    "apps/web/app/globals.css",
+    "apps/web/app/(app)/layout.tsx",
+    "apps/web/lib/server/with-route.ts",
+    "apps/web/lib/server/auth/**",
+    "apps/web/lib/api-client.ts",
+    "apps/web/lib/challenge-registry.ts",
+    "e2e/fixtures/**"
+  ],
+  "workstreams": {
+    "ws-farsi-grader": { "wave": 1, "paths": ["packages/farsi/**", "packages/grader/**"] },
+    "ws-engine": { "wave": 1, "paths": ["packages/session-engine/**", "packages/srs/**", "packages/game-rules/**"] },
+    "ws-db": { "wave": 1, "paths": ["supabase/migrations/**", "supabase/tests/**", "packages/db/**"] },
+    "ws-ui": { "wave": 1, "paths": ["packages/ui/**", "apps/web/app/(dev)/**", "e2e/ui/**"] },
+    "ws-content-cli": { "wave": 1, "paths": ["packages/ai/**", "tools/content-cli/**"] },
+    "ws-api": { "wave": 2, "paths": ["apps/web/app/api/**", "apps/web/lib/server/**", "apps/web/tests/api/**"] },
+    "ws-pages": {
+      "wave": 2,
+      "paths": [
+        "apps/web/app/(app)/onboarding/**",
+        "apps/web/app/(app)/profile/**",
+        "apps/web/app/(app)/settings/**",
+        "apps/web/app/admin/**",
+        "apps/web/app/(marketing)/**",
+        "apps/web/app/sw.ts",
+        "apps/web/public/**",
+        "apps/web/components/pages/**"
+      ]
+    },
+    "ws-player": { "wave": 2, "paths": ["apps/web/lib/lesson/**", "apps/web/app/lesson/**", "apps/web/components/lesson/**"] },
+    "ws-renderers": { "wave": 2, "paths": ["apps/web/components/challenges/**"] },
+    "ws-path-letters": {
+      "wave": 2,
+      "paths": [
+        "apps/web/app/(app)/learn/**",
+        "apps/web/app/(app)/letters/**",
+        "apps/web/app/(app)/practice/**",
+        "apps/web/components/path/**",
+        "apps/web/components/letters/**"
+      ]
+    },
+    "ws-qa": { "wave": 2, "paths": ["e2e/**", "apps/web/tests/**"] }
+  }
+}

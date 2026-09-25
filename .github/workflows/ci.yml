@@ -1,10 +1,15 @@
 name: CI
 
+# GitHub Actions runners are currently NOT being assigned for this account (every job fails in
+# ~4s before any step runs, with no logs; likely a billing/spending-limit or account setting).
+# Until that is fixed, CI runs only on manual dispatch and the merge gate is `pnpm verify`, run by
+# the worker and re-run by the orchestrator on the exact merge commit (CLAUDE.md).
+# To re-enable automatic CI, restore the `pull_request` and `push` triggers below.
 on:
-  pull_request:
-  push:
-    branches: [main]
   workflow_dispatch:
+  # pull_request:
+  # push:
+  #   branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
