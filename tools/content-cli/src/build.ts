@@ -12,7 +12,7 @@
  * The build is pure: it returns the files in memory; `writeBundle` puts them on disk.
  */
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import {
   CharactersBundle,
@@ -201,7 +201,7 @@ export function buildCourse(course: LoadedCourse, opts: BuildOptions): BuiltBund
     units: Object.fromEntries(course.units.map((u) => [u.id, `units/${u.id}.json`])),
     letters: 'letters.json',
     characters: 'characters.json',
-    pathMigrations: [],
+    pathMigrations: course.pathMigrations,
     assetsBase: ASSETS_BASE,
   }
 
@@ -264,6 +264,57 @@ export function writeBundle(
     writeFileSync(target, bytes)
   }
   return root
+}
+
+/** A file that differs between a fresh build and a written version (`build --check`). */
+export interface BundleDifference {
+  path: string
+  problem: 'missing' | 'changed' | 'unexpected'
+}
+
+/** The manifest without its build timestamp: the only field that may differ between rebuilds. */
+function comparableManifest(bytes: Buffer): string {
+  try {
+    const { generatedAt: _ignored, ...rest } = JSON.parse(bytes.toString('utf8')) as Record<
+      string,
+      unknown
+    >
+    return JSON.stringify(rest)
+  } catch {
+    return bytes.toString('utf8')
+  }
+}
+
+/**
+ * Compares a fresh build with `<outRoot>/<courseId>/v<N>/` on disk (and the hashed assets it
+ * references). An empty list means the written version is exactly what this source builds.
+ */
+export function compareBundle(bundle: BuiltBundle, outRoot: string): BundleDifference[] {
+  const root = join(outRoot, bundle.courseId)
+  const v = `v${bundle.version}`
+  const diffs: BundleDifference[] = []
+  for (const [rel, bytes] of bundle.files) {
+    const target = join(root, rel)
+    if (!existsSync(target)) {
+      diffs.push({ path: rel, problem: 'missing' })
+      continue
+    }
+    const onDisk = readFileSync(target)
+    const same =
+      rel === `${v}/manifest.json`
+        ? comparableManifest(onDisk) === comparableManifest(bytes)
+        : onDisk.equals(bytes)
+    if (!same) diffs.push({ path: rel, problem: 'changed' })
+  }
+  const walk = (dir: string, prefix: string): string[] =>
+    existsSync(dir)
+      ? readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+          e.isDirectory() ? walk(join(dir, e.name), `${prefix}${e.name}/`) : [`${prefix}${e.name}`],
+        )
+      : []
+  for (const rel of walk(join(root, v), `${v}/`))
+    if (!bundle.files.has(rel)) diffs.push({ path: rel, problem: 'unexpected' })
+  return diffs.sort((a, b) => a.path.localeCompare(b.path))
 }
 
 /** Reads `build-info.json` of a written version, or null when absent/unreadable. */

@@ -1,0 +1,112 @@
+[
+  {
+    "name": "chat-json",
+    "request": {
+      "method": "POST",
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "headers": {
+        "content-type": "application/json",
+        "http-referer": "https://github.com/srasoulj/zaboon",
+        "x-title": "Zaboon content-cli"
+      },
+      "body": {
+        "model": "openai/gpt-6-astra",
+        "messages": [
+          { "role": "system", "content": "You write Persian course content." },
+          { "role": "user", "content": "Give one colloquial greeting." }
+        ],
+        "response_format": {
+          "type": "json_schema",
+          "json_schema": {
+            "name": "greeting",
+            "strict": true,
+            "schema": {
+              "type": "object",
+              "properties": { "fa": { "type": "string" }, "translit": { "type": "string" } },
+              "required": ["fa", "translit"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "temperature": 0.4,
+        "usage": { "include": true }
+      }
+    },
+    "response": {
+      "status": 200,
+      "body": {
+        "id": "gen-1758800000-rec01",
+        "provider": "OpenAI",
+        "model": "openai/gpt-6-astra",
+        "object": "chat.completion",
+        "created": 1758800000,
+        "choices": [
+          {
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "{\"fa\":\"سلام، خوبی؟\",\"translit\":\"salām, khubi?\"}",
+              "refusal": null,
+              "reasoning": null
+            }
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 61,
+          "completion_tokens": 19,
+          "total_tokens": 80,
+          "cost": 0.00156,
+          "is_byok": false
+        }
+      }
+    }
+  },
+  {
+    "name": "rate-limited",
+    "request": { "method": "POST", "url": "https://openrouter.ai/api/v1/chat/completions" },
+    "response": {
+      "status": 429,
+      "headers": { "retry-after": "2" },
+      "body": { "error": { "code": 429, "message": "Rate limit exceeded: too many requests" } }
+    }
+  },
+  {
+    "name": "after-rate-limit",
+    "request": { "method": "POST", "url": "https://openrouter.ai/api/v1/chat/completions" },
+    "response": {
+      "status": 200,
+      "body": {
+        "id": "gen-1758800001-rec02",
+        "model": "openai/gpt-6-luna",
+        "choices": [
+          {
+            "finish_reason": "stop",
+            "index": 0,
+            "message": { "role": "assistant", "content": "ok" }
+          }
+        ],
+        "usage": { "prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6, "cost": 0.000001 }
+      }
+    }
+  },
+  {
+    "name": "key",
+    "request": { "method": "GET", "url": "https://openrouter.ai/api/v1/key" },
+    "response": {
+      "status": 200,
+      "body": {
+        "data": {
+          "label": "zaboon-build",
+          "limit": 10,
+          "usage": 2.5,
+          "limit_remaining": 7.5,
+          "is_free_tier": false,
+          "is_provisioning_key": false
+        }
+      }
+    }
+  }
+]
