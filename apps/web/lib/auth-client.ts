@@ -194,11 +194,32 @@ export function createSupabaseAuthClient(url: string, publishableKey: string): A
   }
 }
 
+/**
+ * Builds the real client at the first auth call. Providers create the auth client while rendering,
+ * and rendering also happens on the server (static prerendering at `next build` included), where the
+ * browser's Supabase configuration need not exist and nothing calls auth.
+ */
+function lazyAuthClient(mode: AuthMode, build: () => AuthClient): AuthClient {
+  let real: AuthClient | undefined
+  const client = () => (real ??= build())
+  return {
+    mode,
+    getSession: async () => client().getSession(),
+    signInAsGuest: async () => client().signInAsGuest(),
+    signInWithEmail: async (email) => client().signInWithEmail(email),
+    linkEmail: async (email) => client().linkEmail(email),
+    signOut: async () => client().signOut(),
+    subscribe: (listener) => client().subscribe(listener),
+  }
+}
+
 export function createAuthClient(): AuthClient {
   if (process.env.NEXT_PUBLIC_AUTH_MODE === 'local') return createLocalAuthClient()
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  if (!url || !key)
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are not set')
-  return createSupabaseAuthClient(url, key)
+  return lazyAuthClient('supabase', () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    if (!url || !key)
+      throw new Error('NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are not set')
+    return createSupabaseAuthClient(url, key)
+  })
 }

@@ -13,11 +13,13 @@ export const LOCAL_ISSUER = 'zaboon-local'
 export const LOCAL_AUDIENCE = 'authenticated'
 export const LOCAL_TOKEN_TTL_SECONDS = 3600
 
+// Local mode only: the ignore comments keep Turbopack from tracing the whole project into the
+// server bundle because of this walk up from the working directory.
 function repoRoot(): string {
-  let dir = resolve(process.cwd())
+  let dir = resolve(/*turbopackIgnore: true*/ process.cwd())
   while (!existsSync(join(dir, 'pnpm-workspace.yaml'))) {
     const parent = dirname(dir)
-    if (parent === dir) return resolve(process.cwd())
+    if (parent === dir) return resolve(/*turbopackIgnore: true*/ process.cwd())
     dir = parent
   }
   return dir
