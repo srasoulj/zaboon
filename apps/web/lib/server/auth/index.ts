@@ -16,10 +16,15 @@ export async function authenticate(req: Request): Promise<AuthUser | null> {
   if (!header) return null
   const match = /^Bearer\s+(\S+)$/i.exec(header)
   if (!match) throw new ApiError('unauthorized', 'malformed Authorization header')
+  return verifyAccessToken(match[1]!)
+}
+
+/** Verifies a raw access token (e.g. the guest token in an account merge); throws `unauthorized`. */
+export async function verifyAccessToken(token: string): Promise<AuthUser> {
   const env = serverEnv()
   const claims =
     env.authMode === 'local'
-      ? await verifyLocalToken(match[1]!)
-      : await verifySupabaseToken(match[1]!, env.supabaseUrl!)
+      ? await verifyLocalToken(token)
+      : await verifySupabaseToken(token, env.supabaseUrl!)
   return userFromClaims(claims)
 }

@@ -124,3 +124,10 @@ export async function createAdminUser(): Promise<DevUser> {
     RETURNING id, is_anonymous, email, raw_app_meta_data`
   return toUser(row!)
 }
+
+/** Deletes an auth user (Supabase Admin API in production); the learner's rows cascade. */
+export async function deleteUser(userId: string): Promise<boolean> {
+  const sql = adminSql()
+  const rows = await sql`DELETE FROM auth.users WHERE id = ${userId} RETURNING id`
+  return rows.length === 1
+}
