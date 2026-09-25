@@ -182,7 +182,9 @@ function run(sc: Scenario, seed: string, extra: Partial<GenerateInput> = {}): Re
 const cases = scenarios.flatMap((sc) => SEEDS.map((seed) => ({ sc, seed })))
 
 if (RECORD) {
-  writeFileSync(GOLDEN, `${JSON.stringify(cases.map(({ sc, seed }) => run(sc, seed)), null, 1)}\n`)
+  // One recorded session per line keeps the file (and its diffs) short.
+  const lines = cases.map(({ sc, seed }) => JSON.stringify(run(sc, seed)))
+  writeFileSync(GOLDEN, `[\n${lines.join(',\n')}\n]\n`)
 }
 
 const golden: Recorded[] = existsSync(GOLDEN)
