@@ -127,6 +127,21 @@ export async function expectPersianMarkup(
     .locator('#main .zb-fa__word')
     .evaluateAll((els) => els.filter((e) => e.childNodes.length !== 1).length)
   expect(split).toBe(0)
+  // No Arabic-script text anywhere in the content outside a [lang="fa"] element (code aside).
+  const stray = await page.locator('#main').evaluate((main) => {
+    const out: string[] = []
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT)
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const t = n.textContent ?? ''
+      if (
+        /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(t) &&
+        !n.parentElement?.closest('[lang="fa"], code')
+      )
+        out.push(t.trim())
+    }
+    return out
+  })
+  expect(stray).toEqual([])
 }
 
 /** Waits until web fonts are in, so screenshots are stable. */

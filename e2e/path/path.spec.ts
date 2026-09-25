@@ -102,6 +102,43 @@ test('practice START opens a practice session', async ({ guestPage: page }) => {
   await expect(page.getByTestId('lesson-player')).toBeVisible({ timeout: 20_000 })
 })
 
+test('a focused available node shows the kit focus ring', async ({ guestPage: page }) => {
+  // The fixture has no chest: serve u01-p1 as an available chest.
+  await page.route('**/api/path', async (route) => {
+    const res = await route.fetch()
+    const body = (await res.json()) as {
+      sections: { units: { levels: { id: string; kind: string; state: string }[] }[] }[]
+    }
+    for (const l of body.sections[0]!.units[0]!.levels)
+      if (l.id === 'u01-p1') Object.assign(l, { kind: 'chest', state: 'available' })
+    await route.fulfill({ response: res, json: body })
+  })
+  await openLearn(page)
+  await expect(row(page, 'u01-p1')).toHaveAttribute('data-state', 'available')
+  const ring = (id: string) =>
+    node(page, id).evaluate((b) => {
+      const s = getComputedStyle(b)
+      return {
+        style: s.outlineStyle,
+        width: s.outlineWidth,
+        color: s.outlineColor,
+        offset: s.outlineOffset,
+      }
+    })
+  // Keyboard focus (Tab) on a regular node, then on the available one right after it.
+  await node(page, 'u01-s0').focus()
+  await page.keyboard.press('Tab')
+  await expect(node(page, 'u01-l1')).toBeFocused()
+  const kit = await ring('u01-l1')
+  expect(kit).toMatchObject({ style: 'solid', width: '3px', offset: '7px' })
+  await node(page, 'u01-l2').focus()
+  await page.keyboard.press('Tab')
+  await expect(node(page, 'u01-p1')).toBeFocused()
+  expect(await ring('u01-p1')).toEqual(kit)
+  await page.keyboard.press('Tab')
+  expect(await ring('u01-p1')).toMatchObject({ width: '2px', offset: '-2px' })
+})
+
 const PAGES: { name: string; open(page: Page): Promise<void> }[] = [
   { name: 'learn', open: openLearn },
   {
@@ -137,12 +174,17 @@ for (const p of PAGES)
     }) => {
       await page.emulateMedia({ colorScheme: theme })
       await p.open(page)
-      if (p.name === 'learn') {
-        // Check the popover too.
-        await node(page, 'u01-l1').click()
-        await expect(page.getByRole('dialog')).toBeVisible()
-      }
       await expectNoAxeViolations(page)
+      if (p.name === 'learn') {
+        // Check the START and the locked popovers too.
+        for (const id of ['u01-l1', 'u01-l2']) {
+          await node(page, id).click()
+          await expect(page.getByRole('dialog')).toBeVisible()
+          await expectNoAxeViolations(page)
+          await page.keyboard.press('Escape')
+          await expect(page.getByRole('dialog')).toBeHidden()
+        }
+      }
       // The path itself shows no Persian text; the other pages must.
       await expectPersianMarkup(page, { requirePersian: p.name !== 'learn' })
     })

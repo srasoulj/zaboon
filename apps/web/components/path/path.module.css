@@ -17,22 +17,36 @@
   position: relative;
 }
 
-/* `available`: unlocked with nothing to start (chest, story). White face, unit-colored icon. */
+/* `available`: unlocked with nothing to start (chest, story). Page-colored face with an ink icon
+   (≥3:1 in both themes, whatever the unit color) on the unit's lip. */
 .available {
   --fill: var(--color-bg);
-  --lip: var(--color-line);
-  --icon: var(--unit-fill);
+  --lip: var(--unit-lip);
+  --icon: var(--color-ink);
 }
-.available :global(.zb-node__button) {
+/* Unlayered, so it would beat the kit's focus ring: never while focused. */
+.available :global(.zb-node__button):not(:focus-visible) {
   outline: var(--lip-border) solid var(--color-line);
   outline-offset: -2px;
 }
 
-/* Legendary shares Bādemjān with a unit color, so it also gets a saffron ring and a crown. */
+/* Legendary shares Bādemjān with a unit color, so it also gets a saffron ring and a crown.
+   Unlayered, so the kit's pressed and focused shadows are restated with the ring. */
 .legendary :global(.zb-node__button) {
   box-shadow:
     0 calc(var(--lip-button) + 3px) 0 var(--lip),
     0 0 0 5px var(--color-zaferan-500);
+}
+.legendary :global(.zb-node__button):active {
+  box-shadow:
+    0 0 0 var(--lip),
+    0 0 0 5px var(--color-zaferan-500);
+}
+.legendary :global(.zb-node__button):focus-visible {
+  box-shadow:
+    0 calc(var(--lip-button) + 3px) 0 var(--lip),
+    0 0 0 5px var(--color-zaferan-500),
+    var(--zb-ring-halo);
 }
 .crown {
   position: absolute;
@@ -94,10 +108,11 @@
   font-weight: 700;
 }
 .popover[data-state='locked'] {
-  background: var(--color-surface);
+  /* Stays on the page color (stone text needs it for AA); dashed marks it as locked. */
+  border-style: dashed;
 }
 .popover[data-state='locked']::before {
-  background: var(--color-surface);
+  border-style: dashed;
 }
 
 .linkButton {

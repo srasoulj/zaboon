@@ -254,7 +254,7 @@ function LevelRow({
     button.setAttribute('aria-expanded', String(open))
     if (open) button.setAttribute('aria-controls', popoverId)
     else button.removeAttribute('aria-controls')
-  }, [open, popoverId])
+  }, [open, popoverId, level.state])
 
   const closeAndFocus = useCallback(() => {
     onClose()
@@ -373,9 +373,9 @@ interface LevelPopoverProps {
   courseId: string
   offset: number
   anchor: RefObject<HTMLDivElement | null>
-  /** Escape: close and give focus back to the node. */
+  /** Escape from inside the popover: close and give focus back to the node. */
   onClose(): void
-  /** A click elsewhere: close and leave focus where the learner put it. */
+  /** A click or focus elsewhere: close and leave focus where the learner put it. */
   onDismiss(): void
 }
 
@@ -401,22 +401,34 @@ function LevelPopover({
   }, [])
 
   useEffect(() => {
+    const inside = (t: EventTarget | null) =>
+      t instanceof Node && (ref.current?.contains(t) || anchor.current?.contains(t))
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-      }
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      // Only pull focus back when the learner was in the popover.
+      if (ref.current?.contains(document.activeElement)) onClose()
+      else onDismiss()
     }
     const onPointer = (e: PointerEvent) => {
-      const t = e.target as Node | null
-      if (!t || ref.current?.contains(t) || anchor.current?.contains(t)) return
-      onDismiss()
+      if (!inside(e.target)) onDismiss()
     }
+    // Focus leaving for anything but the popover or its node closes it, so it never covers
+    // the next focused control (WCAG 2.4.11).
+    const onFocusOut = (e: FocusEvent) => {
+      if (e.relatedTarget !== null && !inside(e.relatedTarget)) onDismiss()
+    }
+    const popover = ref.current
+    const node = anchor.current
     document.addEventListener('keydown', onKey)
     document.addEventListener('pointerdown', onPointer)
+    popover?.addEventListener('focusout', onFocusOut)
+    node?.addEventListener('focusout', onFocusOut)
     return () => {
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('pointerdown', onPointer)
+      popover?.removeEventListener('focusout', onFocusOut)
+      node?.removeEventListener('focusout', onFocusOut)
     }
   }, [anchor, onClose, onDismiss])
 

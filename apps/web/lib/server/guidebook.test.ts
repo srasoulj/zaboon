@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bundleMediaIndex, rewriteGuidebookAudio, unhashedRef } from './guidebook'
+import { bundleMediaIndex, faStartTags, rewriteGuidebookAudio, unhashedRef } from './guidebook'
 
 describe('unhashedRef', () => {
   it('reverses the build hash', () => {
@@ -30,17 +30,59 @@ describe('rewriteGuidebookAudio', () => {
     )
     expect(rewriteGuidebookAudio('<fa audio="">نان</fa>', resolve)).toBe('<fa audio="">نان</fa>')
     expect(rewriteGuidebookAudio('<FA AUDIO=audio/a.mp3>نان</FA>', resolve)).toBe(
-      '<FA AUDIO="/content/assets/audio/a.0123456789.mp3">نان</FA>',
+      '<fa audio="/content/assets/audio/a.0123456789.mp3">نان</FA>',
+    )
+    // Outside URLs are not bundle media, so they never survive.
+    expect(rewriteGuidebookAudio('<fa audio="https://evil.test/x.mp3">نان</fa>', resolve)).toBe(
+      '<fa audio="">نان</fa>',
     )
   })
 
-  it('leaves other tags, attributes and text alone (ZWNJ included)', () => {
-    const md =
-      '<fa>می‌خوام</fa> <span audio="audio/a.mp3">x</span> <fast audio="audio/a.mp3"> audio="audio/a.mp3"'
-    expect(rewriteGuidebookAudio(md, resolve)).toBe(md)
-    expect(rewriteGuidebookAudio('<fa lang="x" audio="audio/a.mp3" id="p">آب</fa>', resolve)).toBe(
-      '<fa lang="x" audio="/content/assets/audio/a.0123456789.mp3" id="p">آب</fa>',
+  it('leaves other tags and text alone (ZWNJ included); normalizes <fa> start tags', () => {
+    const other =
+      '<span audio="audio/a.mp3">x</span> <fast audio="audio/a.mp3">y</fast> audio="audio/a.mp3"'
+    expect(rewriteGuidebookAudio(other, resolve)).toBe(other)
+    expect(rewriteGuidebookAudio('<fa>می\u200Cخوام</fa>', resolve)).toBe(
+      '<fa audio="">می\u200Cخوام</fa>',
     )
+    expect(rewriteGuidebookAudio('<fa lang="x" audio="audio/a.mp3" id="p">آب</fa>', resolve)).toBe(
+      '<fa audio="/content/assets/audio/a.0123456789.mp3">آب</fa>',
+    )
+    expect(rewriteGuidebookAudio('a\n\n<fa audio="audio/a.mp3"></fa>\n', resolve)).toBe(
+      'a\n\n<fa audio="/content/assets/audio/a.0123456789.mp3"></fa>\n',
+    )
+  })
+
+  it('reads attributes like a browser: quoting tricks cannot smuggle a URL through', () => {
+    // A ">" inside a quoted attribute does not end the tag.
+    expect(
+      rewriteGuidebookAudio('<fa title="a>b" audio="https://evil.test/y.mp3">سلام</fa>', resolve),
+    ).toBe('<fa audio="">سلام</fa>')
+    // "/" separates attributes: this audio is real, and still has to resolve.
+    expect(rewriteGuidebookAudio('<fa/audio="https://evil.test/z.mp3">آب</fa>', resolve)).toBe(
+      '<fa audio="">آب</fa>',
+    )
+    expect(rewriteGuidebookAudio('<fa/audio="audio/a.mp3">آب</fa>', resolve)).toBe(
+      '<fa audio="/content/assets/audio/a.0123456789.mp3">آب</fa>',
+    )
+    // A fake ` audio=` inside another attribute is not the audio attribute.
+    expect(
+      rewriteGuidebookAudio(
+        `<fa title=' audio="audio/a.mp3"' audio="https://evil.test/w.mp3">نان</fa>`,
+        resolve,
+      ),
+    ).toBe('<fa audio="">نان</fa>')
+    expect(rewriteGuidebookAudio(`<fa title=' audio="audio/a.mp3"'>نان</fa>`, resolve)).toBe(
+      '<fa audio="">نان</fa>',
+    )
+  })
+
+  it('finds each <fa> start tag at its parsed position', () => {
+    const md = 'x <fa title="a>b" audio="q">سلام</fa> y <fa>آب</fa>'
+    expect(faStartTags(md)).toEqual([
+      { start: 2, end: md.indexOf('سلام'), audio: 'q' },
+      { start: md.lastIndexOf('<fa>'), end: md.lastIndexOf('<fa>') + 4, audio: null },
+    ])
   })
 
   it('escapes the URL for the attribute', () => {
