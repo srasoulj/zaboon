@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { AccountScreen } from './AccountScreen'
 import { Onboarding } from './Onboarding'
+import { SignInScreen } from './SignInScreen'
 
 export function OnboardingRoute() {
   const router = useRouter()
@@ -12,4 +13,9 @@ export function OnboardingRoute() {
 export function AccountRoute() {
   const router = useRouter()
   return <AccountScreen navigate={router.replace} />
+}
+
+export function SignInRoute() {
+  const router = useRouter()
+  return <SignInScreen navigate={router.replace} />
 }

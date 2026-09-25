@@ -22,7 +22,7 @@ import {
 import type { z } from 'zod'
 import { Button3D, ChoiceCard, Icon, ProgressBar, useDigitShortcuts } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
-import { useApi, useHome, useSession } from '@/lib/app-services'
+import { useApi, useHome, useHydrated, useSession } from '@/lib/app-services'
 import { lessonHref } from '@/lib/lesson/request'
 import { MIN_AGE, isAgeBlocked, parseAge, rememberAgeBlock } from './age-gate'
 import { browserTimeZone, errorMessage } from './hooks'
@@ -83,14 +83,13 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
   const [level, setLevel] = useState<Level | null>(null)
   const [goal, setGoal] = useState<number>(goals.default)
   const [age, setAge] = useState('')
-  const [blocked, setBlocked] = useState(false)
+  const [blockedNow, setBlocked] = useState(false)
+  // Read the remembered block after hydration only (the server can't see localStorage).
+  const hydrated = useHydrated()
+  const blocked = blockedNow || (hydrated && isAgeBlocked())
   // Set once this flow has onboarded the learner: from then on the seeded home says "onboarded",
   // which must not trigger the "already onboarded" redirect.
   const finished = useRef(false)
-
-  useEffect(() => {
-    if (isAgeBlocked()) setBlocked(true)
-  }, [])
 
   useEffect(() => {
     if (!finished.current && home.data?.user.onboarded) navigate('/learn')

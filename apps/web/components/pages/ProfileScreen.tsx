@@ -5,11 +5,12 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { ProfilePatch, type ProfileResponse, type WordsResponse } from '@zaboon/contracts'
 import { Button3D, Icon, type IconName } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useSession } from '@/lib/app-services'
+import { ButtonLink } from './ButtonLink'
 import { errorMessage } from './hooks'
 
 export const USERNAME_RULE = 'Use 3–20 lowercase letters, numbers or underscores.'
@@ -119,9 +120,9 @@ export function ProfileScreen() {
           <p className="text-stone">
             Add your email so your streak and XP are safe, and pick a username.
           </p>
-          <Link href="/settings/account" className="btn-3d zb-btn zb-btn--primary zb-btn--full">
-            <span className="zb-btn__label">Create a profile</span>
-          </Link>
+          <ButtonLink href="/settings/account" fullWidth>
+            Create a profile
+          </ButtonLink>
         </section>
       ) : null}
 
@@ -151,11 +152,6 @@ function ProfileForm({ profile }: { profile: ProfileResponse }) {
   const [displayName, setDisplayName] = useState(profile.displayName ?? '')
   const [username, setUsername] = useState(profile.username ?? '')
   const [saved, setSaved] = useState(false)
-
-  useEffect(() => {
-    setDisplayName(profile.displayName ?? '')
-    setUsername(profile.username ?? '')
-  }, [profile.displayName, profile.username])
 
   const save = useMutation({
     mutationFn: (body: { displayName?: string; username?: string }) =>
