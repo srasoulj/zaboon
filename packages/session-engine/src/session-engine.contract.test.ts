@@ -6,10 +6,24 @@ import { generateSession, rebuildChallenges, seededRandom, type ContentView } fr
 
 const prov = { author: 'test' }
 const lx = (id: string, fa: string, en: string): Lexeme => ({
-  id, fa, translit: id, pos: 'noun', glosses: [en], introducedIn: 'u01-test', status: 'approved', provenance: prov,
+  id,
+  fa,
+  translit: id,
+  pos: 'noun',
+  glosses: [en],
+  introducedIn: 'u01-test',
+  status: 'approved',
+  provenance: prov,
 })
 const sent = (id: string, fa: string, en: string): CompiledSentence => ({
-  id, fa, translit: id, tokens: [{ surface: fa, translit: id }], en, unit: 'u01-test', status: 'approved', provenance: prov,
+  id,
+  fa,
+  translit: id,
+  tokens: [{ surface: fa, translit: id }],
+  en,
+  unit: 'u01-test',
+  status: 'approved',
+  provenance: prov,
   graphs: { en: compile([en], { lang: 'en' }), fa: compile([fa], { lang: 'fa' }) },
 })
 
@@ -18,33 +32,57 @@ const content: ContentView = {
   unit: {
     schema: 1,
     unit: {
-      id: 'u01-test', title: 'T', register: 'colloquial', color: 'firouzeh', characters: [], status: 'approved', provenance: prov,
-      levels: [{
-        id: 'u01-l1', kind: 'lesson', lessons: 1,
-        spec: {
-          focus: { lexemes: [], sentences: [], letters: [], chats: [] }, mix: 'standard', pinnedOnly: true,
-          pinned: [
-            { type: 'select_translation', items: ['s_a'] },
-            { type: 'translate_bank', items: ['s_a'], direction: 'fa_en' },
-            { type: 'translate_bank', items: ['s_b'], direction: 'en_fa' },
-            { type: 'translate_type', items: ['s_c'], direction: 'fa_en' },
-            { type: 'match_pairs', items: ['lx_a', 'lx_b', 'lx_c'] },
-          ],
+      id: 'u01-test',
+      title: 'T',
+      register: 'colloquial',
+      color: 'firouzeh',
+      characters: [],
+      status: 'approved',
+      provenance: prov,
+      levels: [
+        {
+          id: 'u01-l1',
+          kind: 'lesson',
+          lessons: 1,
+          spec: {
+            focus: { lexemes: [], sentences: [], letters: [], chats: [] },
+            mix: 'standard',
+            pinnedOnly: true,
+            pinned: [
+              { type: 'select_translation', items: ['s_a'] },
+              { type: 'translate_bank', items: ['s_a'], direction: 'fa_en' },
+              { type: 'translate_bank', items: ['s_b'], direction: 'en_fa' },
+              { type: 'translate_type', items: ['s_c'], direction: 'fa_en' },
+              { type: 'match_pairs', items: ['lx_a', 'lx_b', 'lx_c'] },
+            ],
+          },
         },
-      }],
+      ],
     },
-    lexemes: [], sentences: [], chats: [],
+    lexemes: [],
+    sentences: [],
+    chats: [],
   },
   letters: { schema: 1, track: { letters: [], lessons: [] } as never, lexemes: [] },
   characters: { schema: 1, characters: [] },
   knownLexemes: [lx('lx_a', 'آب', 'water'), lx('lx_b', 'نون', 'bread'), lx('lx_c', 'چای', 'tea')],
-  knownSentences: [sent('s_a', 'سلام', 'hello'), sent('s_b', 'آب', 'water'), sent('s_c', 'چای', 'tea')],
+  knownSentences: [
+    sent('s_a', 'سلام', 'hello'),
+    sent('s_b', 'آب', 'water'),
+    sent('s_c', 'چای', 'tea'),
+  ],
   mediaUrl: (r) => `/media/${r}`,
 }
 
 const input = {
-  content, kind: 'lesson' as const, levelId: 'u01-l1', lessonIndex: 0, seed: 'seed-1', now: new Date('2026-09-25T00:00:00Z'),
-  config: DEFAULT_APP_CONFIG, learner: { lexemeCards: {}, letterCards: {}, mistakes: [], exposures: {} },
+  content,
+  kind: 'lesson' as const,
+  levelId: 'u01-l1',
+  lessonIndex: 0,
+  seed: 'seed-1',
+  now: new Date('2026-09-25T00:00:00Z'),
+  config: DEFAULT_APP_CONFIG,
+  learner: { lexemeCards: {}, letterCards: {}, mistakes: [], exposures: {} },
 }
 
 describe('@zaboon/session-engine contract', () => {
