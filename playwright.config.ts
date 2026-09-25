@@ -8,19 +8,32 @@ import { defineConfig, devices } from '@playwright/test'
 const browsers = (process.env.ZABOON_E2E_BROWSERS ?? 'chromium').split(',').map((b) => b.trim())
 const PORT = Number(process.env.ZABOON_E2E_PORT ?? 3100)
 
+// `*.api.spec.ts` exercise the HTTP API only, so they run once, in the browserless `api` project.
+const API_SPECS = /\.api\.spec\.ts$/
+
 const projects = [
-  { name: 'chromium-desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-  { name: 'chromium-mobile', use: { ...devices['Pixel 7'] } },
+  { name: 'api', testMatch: API_SPECS },
+  {
+    name: 'chromium-desktop',
+    testIgnore: API_SPECS,
+    use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+  },
+  { name: 'chromium-mobile', testIgnore: API_SPECS, use: { ...devices['Pixel 7'] } },
   ...(browsers.includes('webkit')
     ? [
-        { name: 'webkit-desktop', use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 } } },
-        { name: 'webkit-mobile', use: { ...devices['iPhone 14'] } },
+        {
+          name: 'webkit-desktop',
+          testIgnore: API_SPECS,
+          use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 } },
+        },
+        { name: 'webkit-mobile', testIgnore: API_SPECS, use: { ...devices['iPhone 14'] } },
       ]
     : []),
 ]
 
 export default defineConfig({
   testDir: 'e2e',
+  globalSetup: './e2e/global-setup.ts',
   outputDir: 'test-results',
   fullyParallel: true,
   forbidOnly: true,
