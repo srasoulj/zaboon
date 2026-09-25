@@ -162,12 +162,18 @@ export function profile(over: Partial<ProfileResponse> = {}): ProfileResponse {
 }
 
 export function newQueryClient(): QueryClient {
-  return new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
 }
 
 export function renderWith(
   ui: ReactElement,
-  { auth = fakeAuth(), api, queryClient = newQueryClient() }: { auth?: AuthClient; api: ApiClient; queryClient?: QueryClient },
+  {
+    auth = fakeAuth(),
+    api,
+    queryClient = newQueryClient(),
+  }: { auth?: AuthClient; api: ApiClient; queryClient?: QueryClient },
 ) {
   const utils = render(
     <QueryClientProvider client={queryClient}>
@@ -188,10 +194,16 @@ export const noopNavigate = () => vi.fn<(href: string) => void>()
 export function fakeOutbox(
   log: string[],
   opts: { waiting?: number | 'throws' } = {},
-): OutboxPort & { retagged: [string, string][] } {
+): OutboxPort & { retagged: [string, string][]; forgotten: string[] } {
   const retagged: [string, string][] = []
+  const forgotten: string[] = []
   return {
     retagged,
+    forgotten,
+    forget: async (userId) => {
+      log.push('forget')
+      forgotten.push(userId)
+    },
     deliver: async (userId) => {
       log.push(`flush:${userId.slice(0, 4)}`)
       if (opts.waiting === 'throws') throw new Error('idb broken')

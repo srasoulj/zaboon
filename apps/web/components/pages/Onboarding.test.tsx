@@ -47,11 +47,14 @@ describe('Onboarding', () => {
       expect(screen.getByRole('button', { name: 'Continue' })).not.toHaveAttribute('aria-disabled'),
     )
     // Home must be seeded before navigating (the shell would bounce back to /onboarding).
+    // Capture the cache as navigate() sees it (an expect thrown inside onSuccess would be swallowed).
+    const homeAtNavigation: unknown[] = []
     navigate.mockImplementation(() => {
-      expect(queryClient.getQueryData(queryKeys.home)).toEqual(onboardedHome)
+      homeAtNavigation.push(queryClient.getQueryData(queryKeys.home))
     })
     click('Continue')
     await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1))
+    expect(homeAtNavigation).toEqual([onboardedHome])
     expect(called('onboarding')).toEqual([
       {
         body: {
@@ -97,11 +100,36 @@ describe('Onboarding', () => {
     expect(screen.queryByRole('button', { name: 'Get started' })).toBeNull()
   })
 
+  it('Enter in the age field posts once, even when pressed twice', async () => {
+    let resolve: (v: unknown) => void = () => {}
+    const fake = fakeApi({
+      home: () => home(),
+      onboarding: () => new Promise((r) => (resolve = r)),
+    })
+    const navigate = vi.fn<(href: string) => void>()
+    renderWith(<Onboarding navigate={navigate} />, { api: fake.api })
+    await answerUpToAge()
+    const input = screen.getByLabelText('Your age')
+    fireEvent.change(input, { target: { value: '30' } })
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Continue' })).not.toHaveAttribute('aria-disabled'),
+    )
+    fireEvent.submit(input.closest('form')!)
+    fireEvent.submit(input.closest('form')!)
+    await waitFor(() => expect(fake.called('onboarding')).toHaveLength(1))
+    resolve(home({ user: { ...home().user, onboarded: true } }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledTimes(1))
+    expect(fake.called('onboarding')).toHaveLength(1)
+  })
+
   it('rejects an age that is not a number', async () => {
     setup()
     await answerUpToAge()
     fireEvent.change(screen.getByLabelText('Your age'), { target: { value: 'ten' } })
-    expect(screen.getByRole('button', { name: 'Continue' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: 'Continue' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
   })
 
   it('goes back a step and keeps the answer', async () => {

@@ -5,6 +5,28 @@ import { THEMES, axeViolations } from './helpers'
 
 const stylePath = fileURLToPath(new URL('./screenshot.css', import.meta.url))
 
+/** RFC 9309 for the `*` group: the longest matching rule wins, Allow wins a tie; `*` and `$` work. */
+function robotsAllows(robotsTxt: string, path: string): boolean {
+  const rules = robotsTxt
+    .split('\n')
+    .map((l) => /^(Allow|Disallow):\s*(\S*)/i.exec(l.trim()))
+    .filter((m): m is RegExpExecArray => m !== null && m[2] !== '')
+    .map((m) => ({ allow: m[1]!.toLowerCase() === 'allow', pattern: m[2]! }))
+  let best: { allow: boolean; length: number } | null = null
+  for (const r of rules) {
+    const anchored = r.pattern.endsWith('$')
+    const body = (anchored ? r.pattern.slice(0, -1) : r.pattern)
+      .split('*')
+      .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+      .join('.*')
+    if (!new RegExp(`^${body}${anchored ? '$' : ''}`).test(path)) continue
+    const length = r.pattern.length
+    if (!best || length > best.length || (length === best.length && r.allow))
+      best = { allow: r.allow, length }
+  }
+  return best?.allow ?? true
+}
+
 test('the landing page has one h1 and its calls to action', async ({ page }) => {
   await page.goto('/')
   const h1 = page.locator('h1')
@@ -12,13 +34,22 @@ test('the landing page has one h1 and its calls to action', async ({ page }) => 
   await expect(h1).toContainText('Zaboon')
   await expect(h1).toContainText('Persian (Farsi)')
   const main = page.getByRole('main')
-  await expect(main.getByRole('link', { name: 'Get started' })).toHaveAttribute('href', '/onboarding')
+  await expect(main.getByRole('link', { name: 'Get started' })).toHaveAttribute(
+    'href',
+    '/onboarding',
+  )
   await expect(main.getByRole('link', { name: 'I already have an account' })).toHaveAttribute(
     'href',
     '/sign-in',
   )
-  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Persian \(Farsi\)/)
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /^https?:\/\/[^/]+\/?$/)
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    /Persian \(Farsi\)/,
+  )
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    /^https?:\/\/[^/]+\/?$/,
+  )
   // No national flag and no other course's branding: the badge is the ز tile.
   await expect(page.getByText(/duolingo/i)).toHaveCount(0)
 })
@@ -68,9 +99,24 @@ test('robots.txt, sitemap.xml and the manifest are served', async ({ request }) 
   const robots = await request.get('/robots.txt')
   expect(robots.status()).toBe(200)
   const robotsText = await robots.text()
-  expect(robotsText).toContain('Disallow: /api/')
-  expect(robotsText).toContain('Disallow: /admin')
   expect(robotsText).toMatch(/Sitemap: .*\/sitemap\.xml/)
+  for (const path of ['/', '/learn-persian', '/alphabet', '/alphabet/be', '/sign-in'])
+    expect(robotsAllows(robotsText, path), `${path} must be crawlable`).toBe(true)
+  for (const path of [
+    '/learn',
+    '/learn/guidebook/u01',
+    '/lesson?course=fa-en&kind=lesson&level=u01-l1',
+    '/letters',
+    '/practice',
+    '/profile',
+    '/settings',
+    '/settings/account',
+    '/onboarding',
+    '/admin',
+    '/api/home',
+    '/serwist/sw.js',
+  ])
+    expect(robotsAllows(robotsText, path), `${path} must be disallowed`).toBe(false)
 
   const sitemap = await request.get('/sitemap.xml')
   expect(sitemap.status()).toBe(200)
@@ -92,6 +138,8 @@ test('robots.txt, sitemap.xml and the manifest are served', async ({ request }) 
   expect(m).toMatchObject({ short_name: 'Zaboon', display: 'standalone', theme_color: '#0E9F99' })
   expect(m.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(['192x192', '512x512']))
   expect(m.icons.some((i) => i.purpose === 'maskable')).toBe(true)
+  // An installed app must follow the device's orientation (WCAG 1.3.4).
+  expect(m).not.toHaveProperty('orientation')
   for (const icon of m.icons) {
     const r = await request.get(icon.src)
     expect(r.status(), icon.src).toBe(200)

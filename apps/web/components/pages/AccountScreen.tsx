@@ -5,15 +5,16 @@
  * flushes the lesson outbox first and is refused while it can't be delivered (identity.ts).
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { z } from 'zod'
 import { Button3D } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useAuth, useSession } from '@/lib/app-services'
 import { errorMessage, useOutboxPort } from './hooks'
+import { MergeDroppedNotice } from './MergeDroppedNotice'
 import {
+  MergeFailedError,
   OutboxBlockedError,
-  completePendingMerge,
   leaveThenSignOut,
   linkOrMerge,
   signInAndMerge,
@@ -59,7 +60,7 @@ function switchMessage(r: SwitchResult, email: string): string {
 }
 
 function failure(error: unknown): string {
-  if (error instanceof OutboxBlockedError) return error.message
+  if (error instanceof OutboxBlockedError || error instanceof MergeFailedError) return error.message
   return errorMessage(error, "That didn't work. Please try again.")
 }
 
@@ -69,30 +70,11 @@ export function AccountScreen({
   saveFile = saveJsonFile,
   currentPath = windowPath,
 }: AccountScreenProps) {
-  const api = useApi()
-  const auth = useAuth()
-  const queryClient = useQueryClient()
   const session = useSession()
   const defaultOutbox = useOutboxPort()
   const outbox = outboxProp ?? defaultOutbox
   // Outcome of the last identity switch. Kept here, not in the form: a switch unmounts the guest form.
   const [notice, setNotice] = useState<Notice | null>(null)
-
-  // Finish a merge that waited for an emailed sign-in link (Supabase mode).
-  const signedInMember = session.status === 'signed_in' && !session.session.isAnonymous
-  useEffect(() => {
-    if (!signedInMember) return
-    let alive = true
-    void completePendingMerge({ auth, api, outbox }).then((merged) => {
-      if (!alive || !merged) return
-      queryClient.setQueryData(queryKeys.home, merged)
-      void queryClient.invalidateQueries()
-      setNotice({ tone: 'ok', text: 'Welcome back! Your guest progress was added to your account.' })
-    })
-    return () => {
-      alive = false
-    }
-  }, [signedInMember, auth, api, outbox, queryClient])
 
   if (session.status !== 'signed_in')
     return (
@@ -106,13 +88,20 @@ export function AccountScreen({
   return (
     <section className="flex flex-col gap-8" data-testid="account">
       <h1 className="text-2xl font-extrabold">Account</h1>
+      <MergeDroppedNotice />
       {notice?.tone === 'ok' && (
-        <p role="status" className="rounded-[var(--radius-card)] bg-correct-bg p-4 font-bold text-correct-fg">
+        <p
+          role="status"
+          className="rounded-[var(--radius-card)] bg-correct-bg p-4 font-bold text-correct-fg"
+        >
           {notice.text}
         </p>
       )}
       {notice?.tone === 'error' && (
-        <p role="alert" className="rounded-[var(--radius-card)] bg-wrong-bg p-4 font-bold text-wrong-fg">
+        <p
+          role="alert"
+          className="rounded-[var(--radius-card)] bg-wrong-bg p-4 font-bold text-wrong-fg"
+        >
           {notice.text}
         </p>
       )}
@@ -127,12 +116,25 @@ export function AccountScreen({
         />
       )}
       <ExportData saveFile={saveFile} />
-      <DeleteAccount navigate={navigate} currentPath={currentPath} />
+      <DeleteAccount
+        userId={s.userId}
+        outbox={outbox}
+        navigate={navigate}
+        currentPath={currentPath}
+      />
     </section>
   )
 }
 
-function Card({ title, children, danger = false }: { title: string; children: ReactNode; danger?: boolean }) {
+function Card({
+  title,
+  children,
+  danger = false,
+}: {
+  title: string
+  children: ReactNode
+  danger?: boolean
+}) {
   const id = useId()
   return (
     <section
@@ -275,9 +277,7 @@ function ExportData({ saveFile }: { saveFile: (data: unknown, filename: string) 
   })
   return (
     <Card title="Your data">
-      <p className="text-stone">
-        Download everything Zaboon stores about you, as a JSON file.
-      </p>
+      <p className="text-stone">Download everything Zaboon stores about you, as a JSON file.</p>
       {run.isError && (
         <p role="alert" className="text-wrong-fg">
           {failure(run.error)}
@@ -296,9 +296,13 @@ function ExportData({ saveFile }: { saveFile: (data: unknown, filename: string) 
 }
 
 function DeleteAccount({
+  userId,
+  outbox,
   navigate,
   currentPath,
 }: {
+  userId: string
+  outbox: OutboxPort
   navigate: (href: string) => void
   currentPath: () => string
 }) {
@@ -309,7 +313,9 @@ function DeleteAccount({
   const run = useMutation({
     mutationFn: async () => {
       await api('deleteAccount')
-      // The data is gone, so pending lesson writes have nowhere to go: no outbox flush here.
+      // The data is gone, so pending lesson writes have nowhere to go: drop them from this device
+      // (a failure here must not keep the learner signed in to a deleted account).
+      await outbox.forget(userId).catch(() => undefined)
       await leaveThenSignOut({ auth, navigate, currentPath })
     },
   })

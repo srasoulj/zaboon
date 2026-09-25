@@ -51,7 +51,12 @@ export const LEVELS: readonly { value: Level; label: string; hint: string }[] = 
   { value: 'basics', label: 'I know the basics', hint: 'I can read and hold a simple chat.' },
 ]
 
-const GOAL_NAMES: Record<number, string> = { 10: 'Casual', 20: 'Regular', 30: 'Serious', 50: 'Intense' }
+const GOAL_NAMES: Record<number, string> = {
+  10: 'Casual',
+  20: 'Regular',
+  30: 'Serious',
+  50: 'Intense',
+}
 export const goalLabel = (xp: number) => `${GOAL_NAMES[xp] ?? 'Custom'} · ${xp} XP a day`
 
 const STEPS = ['welcome', 'reason', 'level', 'goal', 'age'] as const
@@ -90,6 +95,8 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
   // Set once this flow has onboarded the learner: from then on the seeded home says "onboarded",
   // which must not trigger the "already onboarded" redirect.
   const finished = useRef(false)
+  // Set synchronously on submit: two quick Enters happen before `isPending` re-renders.
+  const submitting = useRef(false)
 
   useEffect(() => {
     if (!finished.current && home.data?.user.onboarded) navigate('/learn')
@@ -155,6 +162,7 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
     )
 
   const parsedAge = parseAge(age)
+  // Both the button and Enter in the field land here, so every guard lives here.
   const onAge = () => {
     if (parsedAge === null || !reason || !level) return
     if (parsedAge < MIN_AGE) {
@@ -162,7 +170,12 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
       setBlocked(true)
       return
     }
-    submit.mutate({ reason, selfLevel: level, dailyGoalXp: goal })
+    if (!signedIn || submitting.current || finished.current) return
+    submitting.current = true
+    submit.mutate(
+      { reason, selfLevel: level, dailyGoalXp: goal },
+      { onSettled: () => (submitting.current = false) },
+    )
   }
 
   return (

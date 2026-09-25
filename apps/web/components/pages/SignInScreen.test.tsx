@@ -5,6 +5,7 @@ import { SignInScreen } from './SignInScreen'
 import {
   GUEST_ID,
   MEMBER_ID,
+  apiError,
   fakeApi,
   fakeAuth,
   fakeOutbox,
@@ -68,6 +69,33 @@ describe('SignInScreen', () => {
   it('a member is offered to continue', async () => {
     setup(fakeAuth(session({ userId: MEMBER_ID, isAnonymous: false, email: 'm@example.com' })))
     expect(await screen.findByText('m@example.com')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Continue learning' })).toHaveAttribute('href', '/learn')
+    expect(screen.getByRole('link', { name: 'Continue learning' })).toHaveAttribute(
+      'href',
+      '/learn',
+    )
+  })
+
+  it('says so when the sign-in worked but the merge failed (not "already signed in")', async () => {
+    const auth = fakeAuth(session())
+    const fake = fakeApi({
+      mergeAccount: () => {
+        throw apiError('internal', 500)
+      },
+    })
+    const navigate = vi.fn<(href: string) => void>()
+    renderWith(<SignInScreen navigate={navigate} outbox={fakeOutbox([])} />, {
+      api: fake.api,
+      auth,
+    })
+    await signIn('sara@example.com')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /couldn't add your guest progress yet/,
+    )
+    expect(screen.queryByText(/already signed in/)).toBeNull()
+    expect(screen.getByRole('link', { name: 'Continue learning' })).toHaveAttribute(
+      'href',
+      '/learn',
+    )
+    expect(navigate).not.toHaveBeenCalled()
   })
 })

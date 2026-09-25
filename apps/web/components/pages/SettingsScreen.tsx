@@ -44,7 +44,8 @@ export function SettingsScreen({
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.settings })
       const previous = queryClient.getQueryData<Settings>(queryKeys.settings)
-      if (previous) queryClient.setQueryData<Settings>(queryKeys.settings, { ...previous, ...patch })
+      if (previous)
+        queryClient.setQueryData<Settings>(queryKeys.settings, { ...previous, ...patch })
       return { previous }
     },
     onError: (_err, _patch, ctx) => {
@@ -93,7 +94,15 @@ export function SettingsScreen({
             />
             <Choice
               legend="Vowel marks"
-              hint="Short-vowel marks (ـَ ـِ ـُ). Auto shows them while you learn a word."
+              hint={
+                <>
+                  Short-vowel marks (
+                  <span lang="fa" dir="rtl" style={{ fontFamily: 'var(--font-persian)' }}>
+                    ـَ ـِ ـُ
+                  </span>
+                  ). Auto shows them while you learn a word.
+                </>
+              }
               name="vowelMarks"
               value={s.vowelMarks}
               options={TRISTATE}
@@ -176,7 +185,7 @@ function Choice<T extends string | number>({
 }: {
   legend: string
   hideLegend?: boolean
-  hint?: string
+  hint?: ReactNode
   name: string
   value: T
   options: readonly { value: T; label: string }[]

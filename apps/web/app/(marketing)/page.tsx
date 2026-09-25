@@ -5,7 +5,7 @@ import { ButtonLink } from '@/components/pages/ButtonLink'
 import { ZaBadge } from '@/components/pages/ZaBadge'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Zaboon: learn Persian (Farsi), free and fun' },
+  title: { absolute: 'Zaboon: speak and read Persian (Farsi)' },
   description:
     'Learn Persian (Farsi) with short, playful lessons: speak, listen and read the Persian alphabet. Start in seconds, no account needed.',
   alternates: { canonical: '/' },
@@ -49,7 +49,7 @@ export default function Home() {
         </div>
         <div className="flex flex-1 flex-col items-center gap-6 text-center tablet:items-start tablet:text-start">
           <h1 className="text-4xl font-black tracking-tight desktop:text-5xl">
-            The fun, free way to learn Persian (Farsi) with Zaboon
+            Speak, read and fall for Persian (Farsi) with Zaboon
           </h1>
           <p className="text-lg text-stone">
             Short lessons, real conversations and the Persian alphabet, for heritage learners,
@@ -73,7 +73,10 @@ export default function Home() {
           </h2>
           <ul className="grid gap-4 tablet:grid-cols-3">
             {FEATURES.map((f) => (
-              <li key={f.title} className="rounded-[var(--radius-card)] border-2 border-b-4 border-line bg-bg p-6">
+              <li
+                key={f.title}
+                className="rounded-[var(--radius-card)] border-2 border-b-4 border-line bg-bg p-6"
+              >
                 <h3 className="mb-2 text-xl font-extrabold">{f.title}</h3>
                 <p className="text-stone">{f.body}</p>
               </li>
@@ -82,13 +85,16 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-labelledby="alphabet" className="mx-auto w-full max-w-5xl px-4 py-14 text-center">
+      <section
+        aria-labelledby="alphabet"
+        className="mx-auto w-full max-w-5xl px-4 py-14 text-center"
+      >
         <h2 id="alphabet" className="mb-4 text-3xl font-extrabold">
           Start with the alphabet
         </h2>
         <p className="mx-auto mb-6 max-w-xl text-stone">
-          Persian is written right to left with 32 letters. Most letters join the next one and change
-          shape as they do. See every letter, its sound and its four forms.
+          Persian is written right to left with 32 letters. Most letters join the next one and
+          change shape as they do. See every letter, its sound and its four forms.
         </p>
         <Link
           href="/alphabet"

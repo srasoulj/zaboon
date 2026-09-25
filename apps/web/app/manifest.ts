@@ -19,7 +19,6 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/learn',
     scope: '/',
     display: 'standalone',
-    orientation: 'portrait',
     lang: 'en',
     dir: 'ltr',
     categories: ['education'],
