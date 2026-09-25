@@ -32,14 +32,19 @@ test('a guest links an email, picks a username and sees "taken" for a duplicate'
   const email = uniqueEmail()
   await page.getByLabel('Email').fill(email)
   await page.getByRole('button', { name: 'Create a profile' }).click()
-  await expect(page.getByRole('main').getByRole('status')).toContainText(`Profile created. You're signed in as ${email}.`)
+  await expect(page.getByRole('main').getByRole('status')).toContainText(
+    `Profile created. You're signed in as ${email}.`,
+  )
   const linked = await storedSession(page)
   expect(linked).toMatchObject({ userId: guest.userId, isAnonymous: false })
 
   // Another learner already owns this username.
   const taken = unique('taken_')
   const other = await signInEmail(request, uniqueEmail())
-  const claim = await request.patch('/api/profile', { headers: other.headers, data: { username: taken } })
+  const claim = await request.patch('/api/profile', {
+    headers: other.headers,
+    data: { username: taken },
+  })
   expect(claim.status(), await claim.text()).toBe(200)
 
   await page.goto('/profile')
@@ -57,7 +62,10 @@ test('a guest links an email, picks a username and sees "taken" for a duplicate'
   await expect(page.getByText(`@${mine}`)).toBeVisible()
 })
 
-test('signing in merges the guest into the account and sums their XP', async ({ page, request }) => {
+test('signing in merges the guest into the account and sums their XP', async ({
+  page,
+  request,
+}) => {
   const email = uniqueEmail()
   const member = await signInEmail(request, email)
   await onboard(request, member)
@@ -74,7 +82,9 @@ test('signing in merges the guest into the account and sums their XP', async ({ 
   const merged = page.waitForResponse((r) => r.url().endsWith('/api/account/merge'))
   await page.getByRole('button', { name: 'Sign in' }).click()
   expect((await merged).status()).toBe(200)
-  await expect(page.getByRole('main').getByRole('status')).toContainText('Your guest progress was added')
+  await expect(page.getByRole('main').getByRole('status')).toContainText(
+    'Your guest progress was added',
+  )
   await expect(page.getByText(email)).toBeVisible()
   expect(await storedSession(page)).toMatchObject({ userId: member.userId, isAnonymous: false })
 
@@ -104,7 +114,8 @@ test('deleting the account signs out and returns to /', async ({ page, request }
   await del.click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Zaboon')
-  expect(await storedSession(page)).toBeNull()
+  // Sign-out follows the navigation (identity.leaveThenSignOut), so wait for it.
+  await expect.poll(() => storedSession(page)).toBeNull()
   const gone = await request.get('/api/home', { headers: guest.headers })
   expect(gone.status()).not.toBe(200)
 })
@@ -115,5 +126,6 @@ test('a member signs out from the account page', async ({ page, request }) => {
   await signInPage(page, member, '/settings/account')
   await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page).toHaveURL(/\/$/)
-  expect(await storedSession(page)).toBeNull()
+  // Sign-out follows the navigation (identity.leaveThenSignOut), so wait for it.
+  await expect.poll(() => storedSession(page)).toBeNull()
 })

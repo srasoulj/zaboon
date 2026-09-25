@@ -11,7 +11,7 @@ import { queryKeys } from '@/lib/api-client'
 import { useApi, useAuth, useSession } from '@/lib/app-services'
 import { ButtonLink } from './ButtonLink'
 import { errorMessage, useOutboxPort } from './hooks'
-import { OutboxBlockedError, signInAndMerge, type OutboxPort } from './identity'
+import { MergeFailedError, OutboxBlockedError, signInAndMerge, type OutboxPort } from './identity'
 
 const Email = z.string().trim().email()
 
@@ -50,7 +50,20 @@ export function SignInScreen({
   return (
     <section className="mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-14">
       <h1 className="text-3xl font-black tracking-tight">Sign in</h1>
-      {member && !run.isPending && !run.isSuccess ? (
+      {run.error instanceof MergeFailedError ? (
+        // Signed in, but the guest's progress didn't come along: say so, don't pretend all is well.
+        <div className="flex flex-col gap-4">
+          <p
+            role="alert"
+            className="rounded-[var(--radius-card)] bg-wrong-bg p-4 font-bold text-wrong-fg"
+          >
+            {run.error.message}
+          </p>
+          <ButtonLink href="/learn" fullWidth>
+            Continue learning
+          </ButtonLink>
+        </div>
+      ) : member && run.isIdle ? (
         <div className="flex flex-col gap-4">
           <p>
             You&apos;re already signed in
@@ -67,7 +80,10 @@ export function SignInScreen({
           </ButtonLink>
         </div>
       ) : sentTo ? (
-        <p role="status" className="rounded-[var(--radius-card)] bg-correct-bg p-4 font-bold text-correct-fg">
+        <p
+          role="status"
+          className="rounded-[var(--radius-card)] bg-correct-bg p-4 font-bold text-correct-fg"
+        >
           Check your email: we sent a sign-in link to {sentTo}.
         </p>
       ) : (

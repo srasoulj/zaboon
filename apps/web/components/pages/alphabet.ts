@@ -99,7 +99,7 @@ const ROWS: readonly Row[] = [
     name: 'he (jimi)',
     translit: 'h',
     ipa: 'h',
-    sound: 'Like the "h" in "hat". Sounds the same as the other he (ه).',
+    sound: 'Like the "h" in "hat". Sounds the same as the other he.',
     example: { fa: 'حال', translit: 'hāl', en: 'mood, how you are' },
   },
   {
@@ -171,7 +171,7 @@ const ROWS: readonly Row[] = [
     name: 'sād',
     translit: 's',
     ipa: 's',
-    sound: 'Like the "s" in "sun"; spelled differently from sin (س).',
+    sound: 'Like the "s" in "sun"; spelled differently from sin.',
     example: { fa: 'صبح', translit: 'sobh', en: 'morning' },
   },
   {
@@ -179,7 +179,7 @@ const ROWS: readonly Row[] = [
     name: 'zād',
     translit: 'z',
     ipa: 'z',
-    sound: 'Like the "z" in "zoo"; spelled differently from ze (ز).',
+    sound: 'Like the "z" in "zoo"; spelled differently from ze.',
     example: { fa: 'ضعیف', translit: "za'if", en: 'weak' },
   },
   {
@@ -187,7 +187,7 @@ const ROWS: readonly Row[] = [
     name: 'tā',
     translit: 't',
     ipa: 't',
-    sound: 'Like the "t" in "tea"; spelled differently from te (ت).',
+    sound: 'Like the "t" in "tea"; spelled differently from te.',
     example: { fa: 'طلا', translit: 'talā', en: 'gold' },
   },
   {
@@ -195,7 +195,7 @@ const ROWS: readonly Row[] = [
     name: 'zā',
     translit: 'z',
     ipa: 'z',
-    sound: 'Like the "z" in "zoo"; spelled differently from ze (ز).',
+    sound: 'Like the "z" in "zoo"; spelled differently from ze.',
     example: { fa: 'ظهر', translit: 'zohr', en: 'noon' },
   },
   {
@@ -211,7 +211,7 @@ const ROWS: readonly Row[] = [
     name: 'gheyn',
     translit: 'gh',
     ipa: 'ɢ/ɣ',
-    sound: 'A deep, throaty "g" (like a French r). Sounds the same as qāf (ق).',
+    sound: 'A deep, throaty "g" (like a French r). Sounds the same as qāf.',
     example: { fa: 'غذا', translit: 'ghazā', en: 'food' },
   },
   {
@@ -227,7 +227,7 @@ const ROWS: readonly Row[] = [
     name: 'qāf',
     translit: 'q',
     ipa: 'ɢ/ɣ',
-    sound: 'A deep, throaty "g", the same sound as gheyn (غ).',
+    sound: 'A deep, throaty "g", the same sound as gheyn.',
     example: { fa: 'قند', translit: 'qand', en: 'sugar cube' },
   },
   {

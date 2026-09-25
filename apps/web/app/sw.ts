@@ -3,13 +3,17 @@
 /// <reference lib="webworker" />
 /**
  * The Serwist service worker (ARCHITECTURE §12), bundled by app/serwist/[path]/route.ts and served at
- * /serwist/sw.js. It caches ONLY immutable things: hashed app assets and versioned course content
- * (components/pages/sw-matchers.ts). The API, pages and auth always go to the network; a failed
+ * /serwist/sw.js. It caches ONLY immutable things: hashed app assets, hashed course media and
+ * versioned course bundles (components/pages/sw-matchers.ts). The API, pages and auth always go to the network; a failed
  * navigation shows the precached offline page. The lesson outbox lives in the page, not here.
  */
 import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from 'serwist'
 import { CacheFirst, ExpirationPlugin, NetworkOnly, RangeRequestsPlugin, Serwist } from 'serwist'
 import { CACHE_NAMES, OFFLINE_URL, cacheBucket } from '../components/pages/sw-matchers'
+
+// The CONTENT_BASE_URL origin, inlined at bundle time by app/serwist/[path]/route.ts ('' = same origin).
+declare const __ZABOON_CONTENT_ORIGIN__: string
+const contentOrigins = __ZABOON_CONTENT_ORIGIN__ ? [__ZABOON_CONTENT_ORIGIN__] : []
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -25,7 +29,7 @@ const YEAR_SECONDS = 365 * 24 * 60 * 60
 const runtimeCaching: RuntimeCaching[] = [
   {
     matcher: ({ url, request, sameOrigin }) =>
-      cacheBucket({ url, method: request.method, sameOrigin }) === 'app-assets',
+      cacheBucket({ url, method: request.method, sameOrigin, contentOrigins }) === 'app-assets',
     handler: new CacheFirst({
       cacheName: CACHE_NAMES['app-assets'],
       plugins: [new ExpirationPlugin({ maxEntries: 400, maxAgeSeconds: YEAR_SECONDS })],
@@ -33,7 +37,7 @@ const runtimeCaching: RuntimeCaching[] = [
   },
   {
     matcher: ({ url, request, sameOrigin }) =>
-      cacheBucket({ url, method: request.method, sameOrigin }) === 'content',
+      cacheBucket({ url, method: request.method, sameOrigin, contentOrigins }) === 'content',
     handler: new CacheFirst({
       cacheName: CACHE_NAMES.content,
       plugins: [

@@ -9,10 +9,16 @@ test('settings survive a reload', async ({ page, request }) => {
 
   await expect(page.getByLabel('Regular · 20 XP a day')).toBeChecked()
   const saved = () =>
-    page.waitForResponse((r) => r.url().endsWith('/api/settings') && r.request().method() === 'PATCH')
+    page.waitForResponse(
+      (r) => r.url().endsWith('/api/settings') && r.request().method() === 'PATCH',
+    )
   let patch = saved()
   await page.getByText('Intense · 50 XP a day').click()
   expect((await patch).status()).toBe(200)
+  // Without a reload, the shell's daily goal follows (home was invalidated). The card is on the
+  // desktop rail only; the mobile project checks the API below.
+  if ((page.viewportSize()?.width ?? 0) >= 1024)
+    await expect(page.getByTestId('daily-goal')).toContainText('/ 50 XP')
   patch = saved()
   await page.getByRole('group', { name: 'Transliteration' }).getByText('Off').click()
   expect((await patch).status()).toBe(200)
@@ -27,9 +33,8 @@ test('settings survive a reload', async ({ page, request }) => {
     'aria-checked',
     'true',
   )
-  // The shell's daily goal follows (home was invalidated).
-  const goal = page.getByTestId('daily-goal').filter({ visible: true })
-  if (await goal.count()) await expect(goal).toContainText('/ 50 XP')
+  const homeRes = await request.get('/api/home', { headers: guest.headers })
+  expect(((await homeRes.json()) as { dailyGoal: { goal: number } }).dailyGoal.goal).toBe(50)
 
   const res = await request.get('/api/settings', { headers: guest.headers })
   expect(await res.json()).toMatchObject({

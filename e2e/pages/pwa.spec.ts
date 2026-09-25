@@ -24,7 +24,9 @@ test('the offline page is served', async ({ page }) => {
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
 })
 
-test('the registered worker caches app assets but never the API or pages', async ({ page }) => {
+test('the registered worker caches app assets and lesson media, never the API or pages', async ({
+  page,
+}) => {
   await page.goto('/alphabet')
   const scope = await page.evaluate(async () => {
     const reg = await navigator.serviceWorker.register('/serwist/sw.js', { scope: '/' })
@@ -37,10 +39,24 @@ test('the registered worker caches app assets but never the API or pages', async
   await expect
     .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
     .toBe(true)
-  await page.evaluate(async () => {
+  // A real lesson media URL, resolved like the server does (manifest.assetsBase relative to the
+  // bundle; the frozen fixture course is published at v1 by global-setup).
+  const mediaPath = await page.evaluate(async () => {
+    const base = new URL('/content/fixture/v1/manifest.json', location.origin)
+    const manifest = (await (await fetch(base)).json()) as {
+      assetsBase: string
+      units: Record<string, string>
+    }
+    const unitFile = Object.values(manifest.units)[0]!
+    const unit = await (await fetch(new URL(unitFile, base))).text()
+    const ref = /"audio":"([^"]+)"/.exec(unit)![1]!
+    const media = new URL(manifest.assetsBase + ref, base)
+    await fetch(media)
     await fetch('/api/meta')
     await fetch('/alphabet/be')
+    return media.pathname
   })
+  expect(mediaPath).toMatch(/^\/content\/fixture\/assets\/audio\/.+\.[0-9a-f]{10}\.mp3$/)
   await expect
     .poll(async () =>
       page.evaluate(async () => {
@@ -52,7 +68,7 @@ test('the registered worker caches app assets but never the API or pages', async
         return urls
       }),
     )
-    .toEqual(expect.arrayContaining([expect.stringMatching(/^\/_next\/static\//)]))
+    .toEqual(expect.arrayContaining([expect.stringMatching(/^\/_next\/static\//), mediaPath]))
   const cached = await page.evaluate(async () => {
     const urls: string[] = []
     for (const name of await caches.keys()) {

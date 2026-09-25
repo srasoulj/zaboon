@@ -7,14 +7,25 @@
  */
 import { randomUUID } from 'node:crypto'
 import { createSerwistRoute } from '@serwist/turbopack'
+import { contentOriginOf } from '@/components/pages/sw-matchers'
 
 // A new revision per build, so a deployment refreshes the precached offline page.
 const revision = process.env.VERCEL_GIT_COMMIT_SHA ?? randomUUID()
 
-export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute({
-  swSrc: 'app/sw.ts',
-  useNativeEsbuild: true,
-  additionalPrecacheEntries: [{ url: '/~offline', revision }],
-  // Course content is cached at runtime per version (sw.ts), never precached wholesale.
-  globIgnores: ['public/content/**'],
-})
+export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute(
+  {
+    swSrc: 'app/sw.ts',
+    useNativeEsbuild: true,
+    additionalPrecacheEntries: [{ url: '/~offline', revision }],
+    // Course content is cached at runtime per version (sw.ts), never precached wholesale.
+    globIgnores: ['public/content/**'],
+    // The worker may cache course media from this origin and the configured content origin only.
+    esbuildOptions: {
+      define: {
+        __ZABOON_CONTENT_ORIGIN__: JSON.stringify(
+          contentOriginOf(process.env.CONTENT_BASE_URL) ?? '',
+        ),
+      },
+    },
+  },
+)

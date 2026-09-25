@@ -32,15 +32,17 @@ function courseLetters(): CourseLetter[] {
     if (field && out.length > 0) out[out.length - 1]![field[1]!] = field[2]!.trim()
   }
   // `lessons:` entries share the `- id:` shape but have no letter.
-  return out.filter((r) => r.letter !== undefined).map((r) => ({
-    id: r.id!,
-    letter: r.letter!,
-    name: r.name!,
-    translit: r.translit!,
-    ipa: r.ipa!,
-    connects: r.connects === 'true',
-    order: Number(r.order),
-  }))
+  return out
+    .filter((r) => r.letter !== undefined)
+    .map((r) => ({
+      id: r.id!,
+      letter: r.letter!,
+      name: r.name!,
+      translit: r.translit!,
+      ipa: r.ipa!,
+      connects: r.connects === 'true',
+      order: Number(r.order),
+    }))
 }
 
 describe('the alphabet table', () => {
@@ -95,9 +97,17 @@ describe('the alphabet table', () => {
     }
   })
 
+  it('keeps Persian out of the English strings (it is rendered only with lang="fa" dir="rtl")', () => {
+    const persian = /[\u0600-\u06FF\u200C\u200D]/
+    for (const l of PERSIAN_ALPHABET)
+      for (const text of [l.name, l.sound, l.translit, l.ipa, l.example.translit, l.example.en])
+        expect(text, `${l.slug}: ${text}`).not.toMatch(persian)
+  })
+
   it('lists same-sound letters symmetrically', () => {
     for (const l of PERSIAN_ALPHABET)
-      for (const other of l.sameSoundAs) expect(letterByChar(other)!.sameSoundAs).toContain(l.letter)
+      for (const other of l.sameSoundAs)
+        expect(letterByChar(other)!.sameSoundAs).toContain(l.letter)
     expect(letterBySlug('sin')!.sameSoundAs).toEqual(['ص', 'ث'])
     expect(letterBySlug('be')!.sameSoundAs).toEqual([])
   })

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { MetaResponse } from '@zaboon/contracts'
 import { retagOutboxUser, sharedLessonStores } from '@/components/lesson/services'
 import { queryKeys } from '@/lib/api-client'
+import { openLessonStores } from '@/lib/lesson/idb'
 import { useApi } from '@/lib/app-services'
 import type { OutboxPort } from './identity'
 
@@ -20,6 +21,17 @@ export function useOutboxPort(): OutboxPort {
         return (await outbox.pending()).filter((e) => e.userId === userId && !e.dead).length
       },
       retag: (from, to) => retagOutboxUser(api, from, to),
+      forget: async (userId) => {
+        const { outbox, snapshots } = await sharedLessonStores(api)
+        const mine = (await outbox.pending()).filter((e) => e.userId === userId)
+        if (mine.length === 0) return
+        // The shared Outbox has no delete-by-user; its IndexedDB rows are removed directly.
+        const raw = await openLessonStores()
+        for (const e of mine) {
+          await raw.outbox.remove(e.id)
+          await snapshots.remove(e.sessionId)
+        }
+      },
     }),
     [api],
   )
@@ -41,7 +53,10 @@ export function browserTimeZone(): string {
 }
 
 /** A user-facing message for a failed API call. */
-export function errorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+export function errorMessage(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again.',
+): string {
   if (error && typeof error === 'object' && 'code' in error) {
     const code = (error as { code: unknown }).code
     if (code === 'network') return 'You seem to be offline. Check your connection and try again.'
