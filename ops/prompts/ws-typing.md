@@ -22,6 +22,7 @@ DELIVER
    - `MatchColumns`: set the live-region text immediately when it differs from the current text, and clear-then-set only for a repeated message, so "All pairs matched." isn't delayed behind the feedback bar. Consider 100 ms instead of 50 ms. Fix the "one tick" comment.
    - `LetterForms.test.tsx`: check `lang` on the element that holds the text (`within(name).getByText(…).closest('[lang]')`), not on the button.
    - The Enter tests in `MatchPairs.test.tsx` and `SelectTranslation.test.tsx`: assert `aria-pressed="true"` before the second Enter, and remove listeners and observers in `try/finally`.
+   - `SelectImage.tsx`: load the images with `crossOrigin="anonymous"`. Without it, CDN images come back opaque, and the service worker's CacheFirst only stores 200 responses, so lesson pictures are never cached offline in production.
 
 RULES AND PITFALLS
 - With every feature off, sessions are byte-identical to today's: `packages/session-engine/oracles/mvp-sessions.oracle.test.ts` (read-only) must stay green. Don't reorder existing pools or draw extra randomness while a feature is off; add P2 pools after the MVP ones.
