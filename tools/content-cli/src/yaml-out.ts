@@ -115,7 +115,9 @@ export function setItemFields(
     }
   }
   if (!target) throw new Error(`${file}: no item ${id ?? '(root)'}`)
-  for (const { path, value } of fields) {
+  for (const { path, value: raw } of fields) {
+    // An explicit null (e.g. `signedOffBy: null`); a bare null would print as a flow-map key only.
+    const value = raw === null ? Object.assign(new Scalar(null), { source: 'null' }) : raw
     if (value === undefined) target.deleteIn(path as string[])
     else {
       // A new nested map (e.g. audio) is written in flow style like the rest of the file.

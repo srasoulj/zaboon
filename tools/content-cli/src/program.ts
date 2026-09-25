@@ -36,6 +36,8 @@ export interface ProgramIO {
   fetch?: FetchLike
   /** Tests: storage uploader instead of Supabase. */
   uploader?: Uploader
+  /** Where .local/ai-cache and .local/ai-budget.json live (default: the repository root). */
+  aiRoot?: string
 }
 
 const positiveInt = (v: string): number => {
@@ -64,7 +66,7 @@ export function createProgram(io: ProgramIO = defaultIO()): Command {
   const aiContext = (budget: number): AiContext =>
     createAiContext({
       env: io.env,
-      root: repoRoot(),
+      root: io.aiRoot ?? repoRoot(),
       budgetUsd: budget,
       transport: io.transport,
       fetch: io.fetch,

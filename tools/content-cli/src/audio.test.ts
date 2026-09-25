@@ -1,0 +1,164 @@
+import { spawnSync } from 'node:child_process'
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterAll, describe, expect, it } from 'vitest'
+import {
+  envelopeFromPcm,
+  normalizeArgs,
+  pcmArgs,
+  processClip,
+  processUnitAudio,
+  slowArgs,
+  type FfmpegRunner,
+} from './audio'
+import { loadCourse } from './load'
+import { repoRoot } from './paths'
+import { validateCourse } from './validate'
+import { setItemFields } from './yaml-out'
+
+const dirs: string[] = []
+const temp = () => {
+  const d = mkdtempSync(join(tmpdir(), 'zaboon-audio-test-'))
+  dirs.push(d)
+  return d
+}
+afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
+
+/** 16-bit PCM: `silent` samples of silence, then `loud` samples of a full-scale square wave. */
+function pcm(silent: number, loud: number): Buffer {
+  const b = Buffer.alloc((silent + loud) * 2)
+  for (let i = 0; i < loud; i++) b.writeInt16LE(i % 2 ? 16000 : -16000, (silent + i) * 2)
+  return b
+}
+
+describe('audio processing', () => {
+  it('computes an RMS envelope per 50 ms frame, scaled to 0–1', () => {
+    const env = envelopeFromPcm(pcm(4000, 4000), 8000, 20)
+    expect(env).toHaveLength(20)
+    expect(env.slice(0, 10)).toEqual(Array(10).fill(0))
+    expect(env.slice(10)).toEqual(Array(10).fill(1))
+    expect(envelopeFromPcm(Buffer.alloc(0))).toEqual([])
+    expect(envelopeFromPcm(Buffer.alloc(800))).toEqual([0])
+  })
+
+  it('uses −16 LUFS loudnorm, mono 64 kbps MP3 and a pitch-keeping 0.7× atempo', () => {
+    const n = normalizeArgs('in.wav', 'out.mp3')
+    expect(n).toEqual(
+      expect.arrayContaining([
+        '-af',
+        'loudnorm=I=-16:TP=-1.5:LRA=11',
+        '-ac',
+        '1',
+        '-b:a',
+        '64k',
+        '-c:a',
+        'libmp3lame',
+      ]),
+    )
+    expect(n.at(-1)).toBe('out.mp3')
+    expect(slowArgs('in.wav', 'slow.mp3')).toContain('atempo=0.7,loudnorm=I=-16:TP=-1.5:LRA=11')
+    expect(pcmArgs('x.mp3').slice(-7)).toEqual(['-ac', '1', '-ar', '8000', '-f', 's16le', 'pipe:1'])
+  })
+
+  it('processes a unit: writes slow clips and envelopes and points the YAML at them', async () => {
+    const dir = join(temp(), 'fa-en')
+    cpSync(join(repoRoot(), 'content/fa-en'), dir, { recursive: true })
+    mkdirSync(join(dir, 'assets/audio'), { recursive: true })
+    writeFileSync(join(dir, 'assets/audio/s_u01_0001.mp3'), 'raw tts')
+    setItemFields(join(dir, 'sentences/u01-hello.yaml'), 's_u01_0001', [
+      { path: ['audio', 'normal'], value: 'audio/s_u01_0001.mp3' },
+    ])
+    const calls: string[][] = []
+    const fake: FfmpegRunner = async (args) => {
+      calls.push(args)
+      const out = args.at(-1)!
+      if (out === 'pipe:1') return pcm(800, 800)
+      writeFileSync(
+        out,
+        `processed ${args.includes('atempo=0.7,loudnorm=I=-16:TP=-1.5:LRA=11') ? 'slow' : 'normal'}`,
+      )
+      return Buffer.alloc(0)
+    }
+    const r = await processUnitAudio({ course: loadCourse(dir), unit: 'u01-hello', run: fake })
+    expect(r.processed).toEqual(['s_u01_0001'])
+    expect(r.skipped.find((s) => s.id === 's_u01_0002')).toEqual({
+      id: 's_u01_0002',
+      reason: 'no audio.normal file',
+    })
+    expect(calls).toHaveLength(3)
+    const audio = join(dir, 'assets/audio')
+    expect(readFileSync(join(audio, 's_u01_0001.mp3'), 'utf8')).toBe('processed normal')
+    expect(readFileSync(join(audio, 's_u01_0001.slow.mp3'), 'utf8')).toBe('processed slow')
+    expect(JSON.parse(readFileSync(join(audio, 's_u01_0001.envelope.json'), 'utf8'))).toEqual([
+      0, 0, 1, 1,
+    ])
+    const course = loadCourse(dir)
+    expect(course.sentences.find((s) => s.id === 's_u01_0001')!.audio).toEqual({
+      speaker: 'shirin',
+      normal: 'audio/s_u01_0001.mp3',
+      slow: 'audio/s_u01_0001.slow.mp3',
+      envelope: 'audio/s_u01_0001.envelope.json',
+    })
+    expect(
+      validateCourse(course, { allowDrafts: true }).filter((i) => i.severity === 'error'),
+    ).toEqual([])
+    const again = await processUnitAudio({
+      course,
+      unit: 'u01-hello',
+      ids: ['s_u01_0001'],
+      run: fake,
+    })
+    expect(again.skipped).toEqual([{ id: 's_u01_0001', reason: 'already processed (use --force)' }])
+  })
+
+  it('runs the real ffmpeg when it is installed, and says so clearly when it is not', async () => {
+    const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0
+    const dir = temp()
+    if (!hasFfmpeg) {
+      await expect(processClip(join(dir, 'x.wav'), dir, 'x')).rejects.toThrow(
+        /ffmpeg is not installed/,
+      )
+      return
+    }
+    const input = join(dir, 'tone.wav')
+    spawnSync('ffmpeg', [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:duration=1',
+      '-ac',
+      '2',
+      input,
+    ])
+    const out = await processClip(input, dir, 's_x_0001')
+    const probe = (f: string) =>
+      JSON.parse(
+        spawnSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', f], {
+          encoding: 'utf8',
+        }).stdout,
+      ) as {
+        streams: { codec_name: string; channels: number; bit_rate: string }[]
+        format: { duration: string }
+      }
+    const normal = probe(out.normal)
+    expect(normal.streams[0]).toMatchObject({ codec_name: 'mp3', channels: 1, bit_rate: '64000' })
+    const slow = probe(out.slow)
+    expect(Number(slow.format.duration) / Number(normal.format.duration)).toBeCloseTo(1 / 0.7, 1)
+    const env = JSON.parse(readFileSync(out.envelope, 'utf8')) as number[]
+    expect(env.length).toBeGreaterThanOrEqual(19)
+    expect(Math.max(...env)).toBe(1)
+    expect(existsSync(join(dir, 's_x_0001.mp3'))).toBe(true)
+  }, 30_000)
+})
