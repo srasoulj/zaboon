@@ -26,6 +26,10 @@ const nextConfig: NextConfig = {
   // Postgres drivers stay server-side Node modules; esbuild(-wasm) bundles the Serwist service
   // worker at request/build time (this is all `withSerwist` from @serwist/turbopack adds).
   serverExternalPackages: ['postgres', 'esbuild', 'esbuild-wasm'],
+  // The browser plays course media only from the content origin (components/path/play-audio.ts).
+  // One source of truth: the server's CONTENT_BASE_URL, inlined at build time ('' = same-origin
+  // `/content/…` only, as in local mode).
+  env: { NEXT_PUBLIC_CONTENT_BASE_URL: process.env.CONTENT_BASE_URL ?? '' },
 }
 
 export default nextConfig
