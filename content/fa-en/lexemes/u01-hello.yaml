@@ -10,6 +10,7 @@
   tags: [greeting]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_salam.mp3
 
 - id: lx_khubi
   fa: خوبی؟
@@ -22,6 +23,7 @@
   tags: [greeting, question]
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Assembly edit: kept the seed design: خوبی tokens in greetings link to this focus chunk." }
+  audio: audio/lx_khubi.mp3
 
 - id: lx_khub
   fa: خوب
@@ -32,6 +34,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_khub.mp3
 
 - id: lx_mersi
   fa: مرسی
@@ -44,6 +47,7 @@
   tags: [politeness]
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Everyday thanks, borrowed from French merci." }
+  audio: audio/lx_mersi.mp3
 
 - id: lx_bale
   fa: بله
@@ -54,6 +58,7 @@
   tags: [politeness]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. The polite yes; casual آره (āre) comes later. }
+  audio: audio/lx_bale.mp3
 
 - id: lx_na
   fa: نه
@@ -63,6 +68,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_na.mp3
 
 - id: lx_khodahafez
   fa: خداحافظ
@@ -73,6 +79,7 @@
   tags: [greeting]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_khodahafez.mp3
 
 - id: lx_mamnun
   fa: ممنون
@@ -84,6 +91,7 @@
   tags: [politeness]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Literally 'grateful'; ممنونم = 'I'm grateful'. }
+  audio: audio/lx_mamnun.mp3
 
 - id: lx_kheyli
   fa: خیلی
@@ -93,6 +101,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_kheyli.mp3
 
 - id: lx_bebakhshid
   fa: ببخشید
@@ -103,6 +112,7 @@
   tags: [politeness]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_bebakhshid.mp3
 
 - id: lx_man
   fa: من
@@ -113,6 +123,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_man.mp3
 
 - id: lx_to
   fa: تو
@@ -122,6 +133,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_to.mp3
 
 - id: lx_shoma
   fa: شما
@@ -132,6 +144,7 @@
   tags: [politeness]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_shoma.mp3
 
 - id: lx_chetor
   fa: چطور
@@ -144,6 +157,7 @@
   tags: [question]
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Colloquial chetor contrasts with careful standard chetowr. }
+  audio: audio/lx_chetor.mp3
 
 - id: lx_sobh_bekheyr
   fa: صبح بخیر
@@ -154,6 +168,7 @@
   tags: [greeting]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_sobh_bekheyr.mp3
 
 - id: lx_shab_bekheyr
   fa: شب بخیر
@@ -164,6 +179,7 @@
   tags: [greeting]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_shab_bekheyr.mp3
 
 - id: lx_maman_bozorg
   fa: مامان‌بزرگ
@@ -175,6 +191,7 @@
   tags: [family]
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Affectionate family address; retained in written dialogue. مادربزرگ is a neutral synonym. }
+  audio: audio/lx_maman_bozorg.mp3
 
 - id: lx_sobh
   fa: صبح
@@ -184,6 +201,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_sobh.mp3
 
 - id: lx_shab
   fa: شب
@@ -193,6 +211,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_shab.mp3
 
 - id: lx_bekheyr
   fa: بخیر
@@ -203,6 +222,7 @@
   tags: [greeting]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Literally 'with goodness' (به + خیر); also spelled به خیر. }
+  audio: audio/lx_bekheyr.mp3
 
 - id: lx_esm
   fa: اسم
@@ -213,6 +233,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_esm.mp3
 
 - id: lx_chi
   fa: چی
@@ -226,6 +247,7 @@
   tags: [question]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. چیه = 'what is' (formal چیست). }
+  audio: audio/lx_chi.mp3
 
 - id: lx_befarmayid
   fa: بفرمایید
@@ -237,6 +259,7 @@
   tags: [politeness, taarof]
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Fixed polite formula keeps -id; بفرما addresses one familiar person. }
+  audio: audio/lx_befarmayid.mp3
 
 - id: lx_chay
   fa: چایی
@@ -249,6 +272,8 @@
   tags: [food, taarof]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Tehrani speech says چایی; the written word is چای. }
+  audio: audio/lx_chay.mp3
+  image: img/lx_chay.webp
 
 - id: lx_taarof_nakon
   fa: تعارف نکن
@@ -259,6 +284,7 @@
   tags: [taarof]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_taarof_nakon.mp3
 
 - id: lx_bashe
   fa: باشه
@@ -270,6 +296,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_bashe.mp3
 
 - id: lx_khahesh_mikonam
   fa: خواهش می‌کنم
@@ -280,6 +307,7 @@
   tags: [politeness, taarof]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Literally 'I make a request'. }
+  audio: audio/lx_khahesh_mikonam.mp3
 
 - id: lx_taarof
   fa: تعارف
@@ -290,6 +318,7 @@
   tags: [taarof]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_taarof.mp3
 
 - id: lx_khahesh
   fa: خواهش
@@ -299,6 +328,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_khahesh.mp3
 
 - id: lx_kardan
   fa: کردن
@@ -309,6 +339,7 @@
   introducedIn: u01-hello
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_kardan.mp3
 
 - id: lx_name_shirin
   fa: شیرین
@@ -320,6 +351,7 @@
   tags: [name]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. The name; the adjective شیرین 'sweet' will get its own lexeme (lx_shirin). }
+  audio: audio/lx_name_shirin.mp3
 
 - id: lx_name_leila
   fa: لیلا
@@ -331,3 +363,4 @@
   tags: [name]
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+  audio: audio/lx_name_leila.mp3

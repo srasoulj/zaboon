@@ -1,0 +1,8 @@
+# Provenance of assets/audio/lx_maman.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/lx_maman.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: alloy
+input: مامان
+generatedAt: 2026-09-25T16:01:17.345Z
+status: draft

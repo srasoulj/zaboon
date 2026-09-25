@@ -1,13 +1,7 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import {
@@ -18,19 +12,21 @@ import {
   type ChatRequest,
   type ContentPart,
 } from '@zaboon/ai'
+import type { FfmpegRunner } from './audio'
 import { loadCourse } from './load'
 import { generateArt, generateTts, readSidecar } from './media'
 import { suggestVariants, type SuggestOutput } from './suggest'
-import { validateCourse } from './validate'
+import { mediaRefs, validateCourse } from './validate'
 import { setItemFields } from './yaml-out'
-import { seedCourseCopy } from './fixtures/seed-course'
+import { seedCourseWithoutMedia } from './fixtures/seed'
 import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
+/** content/fa-en without generated audio and illustrations (the live course may have some). */
 function seedCopy(): string {
   const root = mkdtempSync(join(tmpdir(), 'zaboon-authoring-'))
   dirs.push(root)
-  return seedCourseCopy(join(root, 'fa-en'))
+  return seedCourseWithoutMedia(root)
 }
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 
@@ -45,6 +41,8 @@ const WEBP = Buffer.concat([
   Buffer.alloc(24, 3),
 ])
 const MP3 = Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64, 1)])
+/** 16-bit PCM, what gpt-audio streams (speech() returns it as a WAV). */
+const PCM = Buffer.from([0, 0, 0x10, 0x27, 0xf0, 0xd8, 0, 0])
 const ai = (respond: (req: ChatRequest) => ReturnType<typeof chatResponse>) => {
   const transport = new MockTransport(respond)
   return { transport, ai: new AiClient({ apiKey: TEST_KEY, transport }) }
@@ -123,6 +121,19 @@ describe('suggest', () => {
   })
 })
 
+describe('test seed', () => {
+  it('copies the live course without generated media, so tests never depend on it', () => {
+    const dir = seedCopy()
+    expect(existsSync(join(dir, 'assets/audio'))).toBe(false)
+    expect(existsSync(join(dir, 'assets/img'))).toBe(false)
+    const course = loadCourse(dir)
+    expect(mediaRefs(course).filter((m) => /^(audio|img)\//.test(m.ref))).toEqual([])
+    expect(course.sentences.filter((s) => s.audio?.signedOffBy !== undefined)).toEqual([])
+    expect(course.sentences.length).toBeGreaterThan(0)
+    expect(errorsOf(dir)).toEqual([])
+  })
+})
+
 describe('art', () => {
   it('generates a character sheet with style-bible references, a sidecar and a draft image ref', async () => {
     const dir = seedCopy()
@@ -130,7 +141,10 @@ describe('art', () => {
     rmSync(join(dir, 'style-bible'), { recursive: true, force: true })
     mkdirSync(join(dir, 'style-bible'))
     const charactersFile = join(dir, 'characters.yaml')
-    writeFileSync(charactersFile, readFileSync(charactersFile, 'utf8').replace(/^ +image: .*\n/gm, ''))
+    writeFileSync(
+      charactersFile,
+      readFileSync(charactersFile, 'utf8').replace(/^ +image: .*\n/gm, ''),
+    )
     writeFileSync(join(dir, 'style-bible/shape-language.png'), PNG)
     writeFileSync(join(dir, 'style-bible/hodhod-turnaround.png'), PNG)
     writeFileSync(join(dir, 'style-bible/shirin-turnaround.png'), PNG)
@@ -212,9 +226,17 @@ describe('tts', () => {
   it('voices sentences from faVocalized/fa with the speaker voice and marks them for sign-off', async () => {
     const dir = seedCopy()
     setItemFields(join(dir, 'characters.yaml'), 'shirin', [{ path: ['voice'], value: 'coral' }])
+    setItemFields(join(dir, 'characters.yaml'), 'kian', [{ path: ['voice'], value: 'ash' }])
     const { ai: client, transport } = ai(() =>
-      chatResponse(null, { audio: { data: MP3.toString('base64') }, model: 'openai/gpt-audio' }),
+      chatResponse(null, { audio: { data: PCM.toString('base64') }, model: 'openai/gpt-audio' }),
     )
+    // The WAV from speech() is encoded to MP3 by ffmpeg; the fake records what it was given.
+    const encoded: Buffer[] = []
+    const run: FfmpegRunner = async (args) => {
+      encoded.push(readFileSync(args[args.indexOf('-i') + 1]!))
+      writeFileSync(args.at(-1)!, MP3)
+      return Buffer.alloc(0)
+    }
     const now = new Date('2026-09-25T00:00:00Z')
     const r = await generateTts({
       course: loadCourse(dir),
@@ -223,18 +245,23 @@ describe('tts', () => {
       lexemes: true,
       ai: client,
       now,
+      run,
     })
     expect(r.written).toEqual([
       'audio/s_u01_0001.mp3',
       'audio/s_u01_0004.mp3',
       'audio/lx_salam.mp3',
     ])
+    // Speakers use their own voice; lexemes (no speaker) use the default voice.
     expect(transport.calls.map((c) => [c.audio!.voice, c.messages.at(-1)!.content])).toEqual([
       ['coral', 'سلام!'],
-      ['alloy', 'مرسی، خوبم.'],
+      ['ash', 'مرسی، خوبم.'],
       ['alloy', 'سلام'],
     ])
     expect(transport.calls[0]!.model).toBe('openai/gpt-audio')
+    expect(encoded).toHaveLength(3)
+    expect(encoded[0]!.subarray(44).equals(PCM)).toBe(true)
+    expect(readFileSync(join(dir, 'assets/audio/s_u01_0001.mp3')).equals(MP3)).toBe(true)
 
     const course = loadCourse(dir)
     expect(course.sentences.find((s) => s.id === 's_u01_0001')!.audio).toEqual({
@@ -249,15 +276,50 @@ describe('tts', () => {
       voice: 'coral',
       input: 'سلام!',
     })
-    expect(readFileSync(join(dir, 'sentences/u01-hello.yaml'), 'utf8')).toContain(
-      '# Unit 1 sentences (STYLE.md).',
-    )
+    // Comments survive the edit: the file still starts with the seed file's header line.
+    const header = readFileSync(
+      fileURLToPath(new URL('./fixtures/seed-fa-en/sentences/u01-hello.yaml', import.meta.url)),
+      'utf8',
+    ).split('\n')[0]!
+    expect(header).toMatch(/^# Unit 1 sentences/)
+    expect(readFileSync(join(dir, 'sentences/u01-hello.yaml'), 'utf8').split('\n')[0]).toBe(header)
     expect(errorsOf(dir)).toEqual([])
 
     const again = await generateTts({ course, unit: 'u01-hello', ids: ['s_u01_0001'], ai: client })
     expect(again.skipped).toEqual([
       { id: 's_u01_0001', reason: 'already has TTS audio (use --force)' },
     ])
+  })
+
+  it('skips a clip whose audio is silent and voices the rest', async () => {
+    const dir = seedCopy()
+    const silent = Buffer.alloc(4800) // what gpt-audio sometimes streams for a one-word input
+    const { ai: client } = ai((req) =>
+      chatResponse(null, {
+        audio: { data: (req.messages.at(-1)!.content === 'چی' ? silent : PCM).toString('base64') },
+      }),
+    )
+    const run: FfmpegRunner = async (args) => {
+      writeFileSync(args.at(-1)!, MP3)
+      return Buffer.alloc(0)
+    }
+    const r = await generateTts({
+      course: loadCourse(dir),
+      unit: 'u01-hello',
+      ids: ['lx_chi', 'lx_salam'],
+      lexemes: true,
+      ai: client,
+      run,
+    })
+    expect(r.written).toEqual(['audio/lx_salam.mp3'])
+    expect(r.skipped).toEqual([
+      {
+        id: 'lx_chi',
+        reason: 'not written, unusable audio: the audio is silent (peak -90.3 dBFS)',
+      },
+    ])
+    expect(existsSync(join(dir, 'assets/audio/lx_chi.mp3'))).toBe(false)
+    expect(loadCourse(dir).lexemes.find((l) => l.id === 'lx_chi')!.audio).toBeUndefined()
   })
 
   it('never replaces a human recording, even with --force', async () => {
@@ -283,8 +345,9 @@ describe('tts', () => {
   })
 
   it('dry run lists one call per clip', async () => {
-    const r = await generateTts({ course: loadCourse(seedCopy()), unit: 'u01-hello', dryRun: true })
-    expect(r.dryRun).toHaveLength(25)
+    const course = loadCourse(seedCopy())
+    const r = await generateTts({ course, unit: 'u01-hello', dryRun: true })
+    expect(r.dryRun).toHaveLength(course.sentences.filter((s) => s.unit === 'u01-hello').length)
     expect(r.dryRun![0]).toMatchObject({ model: 'openai/gpt-audio', audioOutputTokens: 600 })
   })
 })

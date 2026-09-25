@@ -1,0 +1,9 @@
+# Provenance of assets/audio/s_u01_0016.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/s_u01_0016.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: ash
+input: ممنونم، شما چطورین؟
+generatedAt: 2026-09-25T16:01:14.317Z
+status: draft
+postProcessing: "Loudness fix: re-encoded from the cached raw gpt-audio output (same TTS trim as content-cli) with a measured two-pass normalization: pass 1 measures the EBU R128 integrated loudness, pass 2 applies the gain to -16 LUFS through a 5 ms lookahead peak limiter at 192 kHz (true peak <= -1.5 dBTP, limiter loudness loss capped at 3 LU), then mono 44.1 kHz 64 kbps MP3. Was -18.4 LUFS after content-cli's single-pass loudnorm, now -15.9 LUFS, true peak -2.3 dBTP (gain +2.9 dB, limiter loss 1.7 LU). ffmpeg's two-pass loudnorm was not used: the raw clip's peak-to-loudness ratio (16.5 dB) exceeds the 14.5 dB that -16 LUFS at -1.5 dBTP allows, so its linear mode cannot reach the target. The 0.7x slow clip was regenerated from this clip with `content audio --force` (-14.9 LUFS); the lip-sync envelope was recomputed from this clip with content-cli's envelopeFromPcm (`audio` also re-runs single-pass loudnorm on the normal clip, which was put back)."
