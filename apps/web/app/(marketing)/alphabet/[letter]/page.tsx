@@ -130,7 +130,7 @@ export default async function LetterPage({ params }: Props) {
 
       <section className="flex flex-col items-center gap-4 rounded-[var(--radius-card)] bg-surface p-8 text-center">
         <h2 className="text-2xl font-extrabold">Learn to read Persian</h2>
-        <p className="text-stone">Short lessons teach every letter, with sounds and real words.</p>
+        <p>Short lessons teach every letter, with sounds and real words.</p>
         <div className="w-full max-w-sm">
           <ButtonLink href="/onboarding" fullWidth>
             Get started

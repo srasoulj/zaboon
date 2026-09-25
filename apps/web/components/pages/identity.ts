@@ -155,8 +155,33 @@ export async function linkOrMerge(deps: Deps, email: string): Promise<SwitchResu
 
 const emptyReport: FlushReport = { delivered: 0, dropped: 0, stalled: false, remaining: 0 }
 
-/** Signs out after the outbox is delivered. */
-export async function signOutSafely(deps: Pick<Deps, 'auth' | 'flush'>): Promise<void> {
-  await ensureOutboxDelivered(deps.flush)
+/**
+ * Leaves the app for `href`, then signs out. The order matters: while an app screen is mounted, the
+ * app shell signs any signed-out visitor in as a new guest, so signing out in place would create
+ * a stray guest. The sign-out waits (up to `timeoutMs`) until the URL shows the new page.
+ */
+export async function leaveThenSignOut(
+  deps: Pick<Deps, 'auth'> & {
+    navigate: (href: string) => void
+    currentPath: () => string
+  },
+  href = '/',
+  timeoutMs = 5000,
+): Promise<void> {
+  deps.navigate(href)
+  const deadline = Date.now() + timeoutMs
+  while (deps.currentPath() !== href && Date.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 25))
   await deps.auth.signOut()
+}
+
+/** Signs out after the outbox is delivered, from the home page (see leaveThenSignOut). */
+export async function signOutSafely(
+  deps: Pick<Deps, 'auth' | 'flush'> & {
+    navigate: (href: string) => void
+    currentPath: () => string
+  },
+): Promise<void> {
+  await ensureOutboxDelivered(deps.flush)
+  await leaveThenSignOut(deps)
 }

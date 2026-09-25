@@ -133,14 +133,14 @@ export function ProfileScreen() {
 
 function Stat({ icon, label, value }: { icon: IconName; label: string; value: number | null }) {
   return (
-    <div className="flex items-center gap-3 rounded-[var(--radius-card)] border-2 border-line p-4">
-      <span className="text-zaferan-600" aria-hidden="true">
-        <Icon name={icon} size={28} />
-      </span>
-      <div className="flex flex-col-reverse">
-        <dt className="text-stone">{label}</dt>
-        <dd className="text-xl font-extrabold">{value ?? '–'}</dd>
-      </div>
+    <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border-2 border-line p-4">
+      <dt className="flex items-center gap-2 text-stone">
+        <span className="text-zaferan-600" aria-hidden="true">
+          <Icon name={icon} size={24} />
+        </span>
+        {label}
+      </dt>
+      <dd className="text-2xl font-extrabold">{value ?? '–'}</dd>
     </div>
   )
 }

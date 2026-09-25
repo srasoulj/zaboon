@@ -14,6 +14,7 @@ import { errorMessage, useFlushOutbox } from './hooks'
 import {
   OutboxBlockedError,
   completePendingMerge,
+  leaveThenSignOut,
   linkOrMerge,
   signInAndMerge,
   signOutSafely,
@@ -43,7 +44,11 @@ export interface AccountScreenProps {
   flushOutbox?: FlushOutbox
   /** Saves the export (defaults to a browser download). */
   saveFile?: (data: unknown, filename: string) => void
+  /** The current URL path (defaults to window.location.pathname). */
+  currentPath?: () => string
 }
+
+const windowPath = () => window.location.pathname
 
 function switchMessage(r: SwitchResult, email: string): string {
   if (r.status === 'email_sent') return `Check your email: we sent a link to ${email}.`
@@ -58,7 +63,12 @@ function failure(error: unknown): string {
   return errorMessage(error, "That didn't work. Please try again.")
 }
 
-export function AccountScreen({ navigate, flushOutbox, saveFile = saveJsonFile }: AccountScreenProps) {
+export function AccountScreen({
+  navigate,
+  flushOutbox,
+  saveFile = saveJsonFile,
+  currentPath = windowPath,
+}: AccountScreenProps) {
   const api = useApi()
   const auth = useAuth()
   const queryClient = useQueryClient()
@@ -109,10 +119,15 @@ export function AccountScreen({ navigate, flushOutbox, saveFile = saveJsonFile }
       {s.isAnonymous ? (
         <GuestIdentity flush={flush} onResult={setNotice} />
       ) : (
-        <MemberIdentity email={s.email} flush={flush} navigate={navigate} />
+        <MemberIdentity
+          email={s.email}
+          flush={flush}
+          navigate={navigate}
+          currentPath={currentPath}
+        />
       )}
       <ExportData saveFile={saveFile} />
-      <DeleteAccount navigate={navigate} />
+      <DeleteAccount navigate={navigate} currentPath={currentPath} />
     </section>
   )
 }
@@ -215,15 +230,16 @@ function MemberIdentity({
   email,
   flush,
   navigate,
+  currentPath,
 }: {
   email: string | null
   flush: FlushOutbox
   navigate: (href: string) => void
+  currentPath: () => string
 }) {
   const auth = useAuth()
   const signOut = useMutation({
-    mutationFn: () => signOutSafely({ auth, flush }),
-    onSuccess: () => navigate('/'),
+    mutationFn: () => signOutSafely({ auth, flush, navigate, currentPath }),
   })
   return (
     <Card title="Signed in">
@@ -279,7 +295,13 @@ function ExportData({ saveFile }: { saveFile: (data: unknown, filename: string) 
   )
 }
 
-function DeleteAccount({ navigate }: { navigate: (href: string) => void }) {
+function DeleteAccount({
+  navigate,
+  currentPath,
+}: {
+  navigate: (href: string) => void
+  currentPath: () => string
+}) {
   const api = useApi()
   const auth = useAuth()
   const [typed, setTyped] = useState('')
@@ -288,9 +310,8 @@ function DeleteAccount({ navigate }: { navigate: (href: string) => void }) {
     mutationFn: async () => {
       await api('deleteAccount')
       // The data is gone, so pending lesson writes have nowhere to go: no outbox flush here.
-      await auth.signOut()
+      await leaveThenSignOut({ auth, navigate, currentPath })
     },
-    onSuccess: () => navigate('/'),
   })
   const confirmed = typed.trim() === DELETE_CONFIRMATION
   return (

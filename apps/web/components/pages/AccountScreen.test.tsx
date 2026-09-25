@@ -47,10 +47,20 @@ function setup(opts: {
     if (opts.flush === 'throws') throw new Error('idb broken')
     return opts.flush ?? DELIVERED
   })
-  const navigate = vi.fn<(href: string) => void>()
+  // The URL changes only when the app navigates (the sign-out must wait for it).
+  let path = '/settings/account'
+  const navigate = vi.fn<(href: string) => void>((href) => {
+    auth.calls.push(`navigate:${href}`)
+    path = href
+  })
   const saveFile = vi.fn<(data: unknown, filename: string) => void>()
   const utils = renderWith(
-    <AccountScreen navigate={navigate} flushOutbox={flushOutbox} saveFile={saveFile} />,
+    <AccountScreen
+      navigate={navigate}
+      flushOutbox={flushOutbox}
+      saveFile={saveFile}
+      currentPath={() => path}
+    />,
     { api: fake.api, auth },
   )
   return { ...utils, ...fake, auth, flushOutbox, navigate, saveFile }
@@ -132,12 +142,13 @@ describe('AccountScreen: a guest creates a profile', () => {
 })
 
 describe('AccountScreen: a member', () => {
-  it('signs out after the outbox is delivered and goes home', async () => {
-    const { auth, navigate } = setup({ auth: fakeAuth(MEMBER) })
+  it('delivers the outbox, leaves for the home page, then signs out', async () => {
+    const { auth } = setup({ auth: fakeAuth(MEMBER) })
     expect(await screen.findByText('sara@example.com')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/'))
-    expect(auth.calls).toEqual(['flush', 'signOut'])
+    // Signing out while an app screen is mounted would make the shell create a new guest.
+    await waitFor(() => expect(auth.calls).toEqual(['flush', 'navigate:/', 'signOut']))
+    expect(auth.current).toBeNull()
   })
 
   it('stays signed in while the outbox is stuck', async () => {
@@ -159,8 +170,8 @@ describe('AccountScreen: your data', () => {
     expect(name).toMatch(/^zaboon-export-\d{4}-\d{2}-\d{2}\.json$/)
   })
 
-  it('deletes only after the typed confirmation, then signs out and goes to /', async () => {
-    const { auth, navigate, called } = setup({})
+  it('deletes only after the typed confirmation, then goes to / and signs out', async () => {
+    const { auth, called } = setup({})
     const del = await screen.findByRole('button', { name: 'Delete my account' })
     fireEvent.click(del)
     expect(called('deleteAccount')).toEqual([])
@@ -169,8 +180,7 @@ describe('AccountScreen: your data', () => {
     expect(called('deleteAccount')).toEqual([])
     fireEvent.change(screen.getByLabelText('Type DELETE to confirm'), { target: { value: 'DELETE' } })
     fireEvent.click(del)
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/'))
-    expect(auth.calls).toEqual(['delete', 'signOut'])
+    await waitFor(() => expect(auth.calls).toEqual(['delete', 'navigate:/', 'signOut']))
   })
 })
 
