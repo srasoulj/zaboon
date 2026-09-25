@@ -17,6 +17,7 @@ import { StatPill } from '@zaboon/ui'
 import type { FlagName, HomeResponse } from '@zaboon/contracts'
 import { EngagementRail } from '@/components/engagement/Rail'
 import { heartsPopover } from '@/components/engagement/hearts-popover'
+import { MergeDroppedNotice } from '@/components/pages/MergeDroppedNotice'
 import { useEnsureGuest, useHome } from '@/lib/app-services'
 import {
   CourseBadge,
@@ -146,6 +147,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main id="main" className="mx-auto w-full max-w-[600px] flex-1 px-4 pt-6 pb-28 tablet:pb-10">
+        {/* ws-pages: a guest merge that was given up on, shown app-wide to that member only. */}
+        <div className="mb-4 empty:hidden">
+          <MergeDroppedNotice />
+        </div>
         {children}
       </main>
 

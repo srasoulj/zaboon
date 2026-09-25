@@ -49,11 +49,11 @@ function home(over: Partial<HomeResponse> = {}): HomeResponse {
   }
 }
 
-function renderShell(data: HomeResponse) {
+function renderShell(data: HomeResponse, session: AuthSession = SESSION) {
   const auth = {
     mode: 'local',
-    getSession: async () => SESSION,
-    signInAsGuest: vi.fn(async () => SESSION),
+    getSession: async () => session,
+    signInAsGuest: vi.fn(async () => session),
     subscribe: () => () => {},
   } as unknown as AuthClient
   const api = vi.fn(async (name: string) => {
@@ -151,5 +151,34 @@ describe('AppShell', () => {
       ['Quests', 'quests'],
       ['Shop', 'shop'],
     ])
+  })
+})
+
+describe('AppShell: the dropped-merge notice (ws-pages)', () => {
+  const MEMBER: AuthSession = {
+    ...SESSION,
+    userId: '00000000-0000-4000-8000-00000000000b',
+    isAnonymous: false,
+  }
+  afterEach(() => window.localStorage.clear())
+  const member = home({ user: { ...home().user, id: MEMBER.userId, isAnonymous: false } })
+
+  it('shows the note to the member it is for, in the main column', async () => {
+    window.localStorage.setItem('zaboon.mergeDropped', JSON.stringify({ userId: MEMBER.userId }))
+    renderShell(member, MEMBER)
+    const note = await screen.findByTestId('merge-dropped')
+    expect(screen.getByRole('main')).toContainElement(note)
+  })
+
+  it('never shows it to another member or a guest', async () => {
+    window.localStorage.setItem('zaboon.mergeDropped', JSON.stringify({ userId: 'someone-else' }))
+    renderShell(member, MEMBER)
+    await loaded()
+    expect(screen.queryByTestId('merge-dropped')).toBeNull()
+    cleanup()
+    window.localStorage.setItem('zaboon.mergeDropped', JSON.stringify({ userId: SESSION.userId }))
+    renderShell(home())
+    await loaded()
+    expect(screen.queryByTestId('merge-dropped')).toBeNull()
   })
 })
