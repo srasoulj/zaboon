@@ -28,6 +28,7 @@ export type {
 } from './types'
 export { AiHttpError, AiResponseError, AiTimeoutError, BudgetExceededError } from './errors'
 export {
+  assembleChatStream,
   DEFAULT_REFERER,
   DEFAULT_TITLE,
   FetchTransport,
@@ -87,6 +88,9 @@ export {
   decodeDataUrl,
   extensionFor,
   looksLikeMp3,
+  looksLikeWav,
+  PCM16_SAMPLE_RATE,
+  pcm16ToWav,
   sniffImage,
   toDataUrl,
   type ImageMime,

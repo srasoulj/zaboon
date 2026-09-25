@@ -1,14 +1,14 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T17:10:00Z",
+  "updatedAt": "2026-09-25T19:55:00Z",
   "wave": 2,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
     "keyLimitUsd": 10,
-    "keyUsageUsd": 7.5636,
-    "accountBalanceUsd": 2.7449,
-    "note": "Internal cap $9.50; $1.94 left after Unit 1 media. Units 2–5 media need a larger budget (human backlog).",
+    "keyUsageUsd": 7.5677,
+    "accountBalanceUsd": 1.8349,
+    "note": "Internal cap $9.50; $1.93 left after Unit 1 media (checked 19:50 UTC). Units 2–5 media need a larger budget (human backlog).",
     "spent": {
       "textPilot": 0.0018,
       "text": 2.76,
@@ -70,27 +70,27 @@
       ]
     },
     "ws-renderers": {
-      "status": "done",
+      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
       "prs": [
         21,
         31
       ]
     },
     "ws-player": {
-      "status": "done",
+      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
       "prs": [
         22,
         30
       ]
     },
     "ws-path-letters": {
-      "status": "done",
+      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
       "prs": [
         32
       ]
     },
     "ws-pages": {
-      "status": "done",
+      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
       "prs": [
         35
       ]
@@ -150,7 +150,7 @@
     },
     "ws-content-gen": {
       "wave": 2,
-      "status": "text drafts done (units 1–5); Unit 1 media generated (78 clips, 8 illustrations, 5 portraits), integration PR pending",
+      "status": "text drafts done (units 1–5); Unit 1 media integrated by the orchestrator media PR: 79 clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits (WebP + PNG masters, provenance sidecars)",
       "runsIn": "orchestrator"
     },
     "ws-qa": {
@@ -197,7 +197,8 @@
     32,
     33,
     34,
-    35
+    35,
+    36
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -220,5 +221,15 @@
   },
   "external": {
     "vercel": "The user deploys main to Vercel (hotfix #34 made next build independent of runtime auth configuration). The project still needs its environment variables (see #34)."
-  }
+  },
+  "hardeningBacklog": [
+    "content-cli audio.ts: single-pass loudnorm undershoots on short clips (committed Unit 1 clips were two-pass normalized; `audio --force` would undo it)",
+    "Pending merge: replace the stored guest access token with a server-minted merge ticket (contract change)",
+    "auth-client.ts: PKCE flowType for Supabase email links",
+    "Cloze punctuation contract (grader vs renderer)",
+    "SRS should ignore declined traces",
+    "ws-api: repos.learning.deleteLevelProgress",
+    "Repo-wide formatter pass when no workers are active",
+    "WebKit e2e coverage (CI runners unavailable; Chromium only locally)"
+  ]
 }

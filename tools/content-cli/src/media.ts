@@ -3,7 +3,8 @@
  *
  *   art  character and illustration images with the pinned GPT Image model, passing style-bible
  *        images as references;
- *   tts  draft audio with the pinned audio model, from `faVocalized` (vowel marks disambiguate).
+ *   tts  draft audio with the pinned audio model, from `faVocalized` (vowel marks disambiguate),
+ *        encoded with ffmpeg as the house MP3 (−16 LUFS, mono, 64 kbps).
  *
  * Every generated file gets a provenance sidecar (`<file>.yaml`), the item's YAML points at the new
  * media, and the item becomes `status: draft` again: nothing generated ships without approval.
@@ -13,6 +14,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join, relative, sep } from 'node:path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import {
+  AiResponseError,
   extensionFor,
   mediaProvenance,
   MODELS,
@@ -22,8 +24,10 @@ import {
   type ChatMessage,
   type ContentPart,
   type MediaProvenance,
+  type SpeechResult,
 } from '@zaboon/ai'
 import type { DryRunCall } from './ai-context'
+import { encodeTtsMp3, type FfmpegRunner } from './audio'
 import type { LoadedCourse } from './load'
 import { ART_CHARACTER, ART_ITEM, TTS_LINE } from './prompts'
 import { setItemFields } from './yaml-out'
@@ -195,6 +199,8 @@ export interface TtsOptions {
   force?: boolean
   now?: Date
   log?: (line: string) => void
+  /** Tests: ffmpeg runner for the WAV → MP3 encode. */
+  run?: FfmpegRunner
 }
 
 export interface TtsJob {
@@ -280,17 +286,26 @@ export async function generateTts(opts: TtsOptions): Promise<TtsResult> {
   const written: string[] = []
   let costUsd = 0
   for (const j of jobs) {
-    const r = await opts.ai.speech(j.text, j.voice, {
-      model,
-      instructions: TTS_LINE.instructions,
-      promptVersion: promptId(TTS_LINE),
-      label: `tts ${j.id}`,
-    })
+    let r: SpeechResult
+    try {
+      r = await opts.ai.speech(j.text, j.voice, {
+        model,
+        instructions: TTS_LINE.instructions,
+        promptVersion: promptId(TTS_LINE),
+        label: `tts ${j.id}`,
+      })
+    } catch (e) {
+      // An unusable answer (e.g. silent audio) skips this clip; budget and HTTP errors still stop.
+      if (!(e instanceof AiResponseError)) throw e
+      skipped.push({ id: j.id, reason: `not written, unusable audio: ${e.message}` })
+      opts.log?.(`tts ${j.id}: ✘ ${e.message}`)
+      continue
+    }
     costUsd += r.costUsd
     writeMedia(
       course,
       j.ref,
-      r.bytes,
+      await encodeTtsMp3(r.bytes, opts.run),
       mediaProvenance(j.ref, r.model, TTS_LINE, { voice: j.voice, input: j.text, now: opts.now }),
     )
     setItemFields(
