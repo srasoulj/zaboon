@@ -80,3 +80,36 @@
   outline: 3px solid var(--color-lajvard-500);
   outline-offset: 2px;
 }
+
+/* Practice hub (P2, flags.practiceHub): one card per mode. */
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mode {
+  display: grid;
+  gap: 4px;
+  block-size: 100%;
+  padding: 14px 16px;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+.modeLocked {
+  color: var(--color-stone);
+}
+.modeTitle {
+  font-size: 19px;
+  font-weight: 800;
+}
+.modeBody {
+  color: var(--color-stone);
+  font-weight: 700;
+}
+.modeCount {
+  font-weight: 800;
+  color: var(--color-stone);
+}

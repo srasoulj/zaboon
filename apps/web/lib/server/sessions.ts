@@ -57,6 +57,7 @@ import {
 } from './content'
 import { ApiError } from './errors'
 import { gradingLexicon, serverVerdict } from './grading'
+import { commitEngagement } from './engagement/commit'
 import { applySrs, loadLearnerState } from './learner'
 import {
   currentOf,
@@ -436,7 +437,7 @@ export async function completeSession(
 
     // --- XP (server-counted; never the client's) ----------------------------------------------
     const earned = sessionXp(session.kind, wrongAttempts, config)
-    const flags = await plausibilityFlags(tx, {
+    const cheatFlags = await plausibilityFlags(tx, {
       userId,
       sessionId,
       answerMs: graded.filter((a) => a.verdict !== 'skipped').map((a) => a.ms),
@@ -444,7 +445,8 @@ export async function completeSession(
       xp: earned.total,
       config,
     })
-    const xp = flags.length === 0 ? earned : { base: 0, bonus: 0, total: 0 }
+    const flagged = cheatFlags.length > 0
+    const xp = flagged ? { base: 0, bonus: 0, total: 0 } : earned
 
     // The session counts at the client's completedAt clamped to [startedAt, now] (§6).
     const startedAt = new Date(session.startedAt)
@@ -550,6 +552,19 @@ export async function completeSession(
       streakCurrent: streak.state.current,
     })
 
+    // --- P2 engagement: league XP, quests, coins (only for the flags that are on) -------------
+    const engagement = await commitEngagement(tx, {
+      user: ctx.user,
+      flags: ctx.flags ?? {},
+      config,
+      now,
+      session: { kind: session.kind },
+      localDate,
+      xp: xp.total,
+      perfect: earned.perfect,
+      flagged,
+    })
+
     const result = SessionResult.parse({
       sessionId,
       kind: session.kind,
@@ -571,6 +586,7 @@ export async function completeSession(
       level,
       mistakes,
       graderMismatches,
+      ...engagement,
     })
     const stored = await repos.sessions.completeSession(tx, userId, sessionId, {
       result,

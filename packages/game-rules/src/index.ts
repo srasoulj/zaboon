@@ -512,33 +512,37 @@ export interface QuestTemplate {
   title: string
 }
 
-/** The daily quest templates (ARCHITECTURE §6, P2). Ids are stable: stored progress refers to them. */
+/**
+ * The daily quest templates (ARCHITECTURE §6, P2). Ids are stable: stored progress refers to them,
+ * and they follow the quest_defs.id rule (`^[a-z0-9_]{1,40}$`). The engagement migration seeds
+ * quest_defs with exactly these rows (a drift test checks it).
+ */
 export const QUEST_TEMPLATES: readonly QuestTemplate[] = [
-  { id: 'xp-20', metric: 'xp', target: 20, title: 'Earn 20 XP' },
-  { id: 'xp-40', metric: 'xp', target: 40, title: 'Earn 40 XP' },
-  { id: 'xp-60', metric: 'xp', target: 60, title: 'Earn 60 XP' },
-  { id: 'lessons-1', metric: 'lessons', target: 1, title: 'Complete a lesson' },
-  { id: 'lessons-2', metric: 'lessons', target: 2, title: 'Complete 2 lessons' },
-  { id: 'lessons-3', metric: 'lessons', target: 3, title: 'Complete 3 lessons' },
+  { id: 'xp_20', metric: 'xp', target: 20, title: 'Earn 20 XP' },
+  { id: 'xp_40', metric: 'xp', target: 40, title: 'Earn 40 XP' },
+  { id: 'xp_60', metric: 'xp', target: 60, title: 'Earn 60 XP' },
+  { id: 'lessons_1', metric: 'lessons', target: 1, title: 'Complete a lesson' },
+  { id: 'lessons_2', metric: 'lessons', target: 2, title: 'Complete 2 lessons' },
+  { id: 'lessons_3', metric: 'lessons', target: 3, title: 'Complete 3 lessons' },
   {
-    id: 'perfect-1',
+    id: 'perfect_1',
     metric: 'perfect_sessions',
     target: 1,
     title: 'Finish a session with no mistakes',
   },
   {
-    id: 'perfect-2',
+    id: 'perfect_2',
     metric: 'perfect_sessions',
     target: 2,
     title: 'Finish 2 sessions with no mistakes',
   },
   {
-    id: 'practice-1',
+    id: 'practice_1',
     metric: 'practice_sessions',
     target: 1,
     title: 'Complete a practice session',
   },
-  { id: 'letters-1', metric: 'letters_sessions', target: 1, title: 'Complete a letters lesson' },
+  { id: 'letters_1', metric: 'letters_sessions', target: 1, title: 'Complete a letters lesson' },
 ]
 
 export interface DailyQuest {
@@ -624,6 +628,6 @@ export function questIncrement(
 }
 
 // ---------------------------------------------------------------------------- engagement (P2)
-// League weeks and XP, rollover plan, coin grants, quest progress and the shop: stubs until
-// ws-engagement implements them (ENGAGEMENT_IMPLEMENTATION, oracles/engagement.yaml).
+// League weeks and XP, rollover plan, coin grants, quest progress and the shop
+// (oracles/engagement.yaml).
 export * from './engagement'

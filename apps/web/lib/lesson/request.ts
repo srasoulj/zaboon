@@ -1,9 +1,11 @@
 /**
  * The lesson URL contract (other workstreams link here):
  *   /lesson?course=<courseId>&kind=<lesson|practice|letters|unit_review>&level=<levelId>
- * `level` is omitted for practice. Leaving the player returns to the kind's home tab.
+ *   /lesson?course=<courseId>&kind=practice&mode=<mixed|mistakes|listening|typing>  (practice hub)
+ * `level` is omitted for practice. `mode` (practice only) reaches `createSession`. Leaving the
+ * player returns to the kind's home tab.
  */
-import { SessionKind } from '@zaboon/contracts'
+import { PracticeMode, SessionKind } from '@zaboon/contracts'
 
 export const PLAYER_KINDS = ['lesson', 'practice', 'letters', 'unit_review'] as const
 export type PlayerKind = (typeof PLAYER_KINDS)[number]
@@ -12,6 +14,8 @@ export interface LessonRequest {
   courseId: string
   kind: PlayerKind
   levelId: string | null
+  /** Practice hub mode (practice only); absent for every other entry point. */
+  mode?: PracticeMode
 }
 
 export type ParsedLessonRequest =
@@ -39,12 +43,19 @@ export function parseLessonRequest(params: ParamReader): ParsedLessonRequest {
   const levelId = level ? level : null
   if (levelId === null && (playerKind === 'lesson' || playerKind === 'unit_review'))
     return { ok: false, reason: `a ${playerKind} needs a level` }
-  return { ok: true, request: { courseId, kind: playerKind, levelId } }
+  const modeRaw = params.get('mode')
+  if (modeRaw === null || modeRaw === '')
+    return { ok: true, request: { courseId, kind: playerKind, levelId } }
+  const mode = PracticeMode.safeParse(modeRaw)
+  if (!mode.success) return { ok: false, reason: 'invalid practice mode' }
+  if (playerKind !== 'practice') return { ok: false, reason: 'a mode is only for practice' }
+  return { ok: true, request: { courseId, kind: playerKind, levelId, mode: mode.data } }
 }
 
 export function lessonHref(request: LessonRequest): string {
   const q = new URLSearchParams({ course: request.courseId, kind: request.kind })
   if (request.levelId !== null) q.set('level', request.levelId)
+  if (request.mode !== undefined) q.set('mode', request.mode)
   return `/lesson?${q.toString()}`
 }
 
@@ -57,5 +68,6 @@ export function exitHref(kind: PlayerKind): string {
 
 /** Identifies "the same lesson" across reloads (the URL carries no session id). */
 export function requestKey(request: LessonRequest): string {
-  return `${request.courseId}|${request.kind}|${request.levelId ?? ''}`
+  const base = `${request.courseId}|${request.kind}|${request.levelId ?? ''}`
+  return request.mode === undefined ? base : `${base}|${request.mode}`
 }

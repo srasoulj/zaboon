@@ -18,9 +18,16 @@ export interface LessonFeedbackProps {
   onReport: () => void
 }
 
+/**
+ * A Persian solution (e.g. a listening transcript) is an RTL island: its own block with
+ * `lang="fa" dir="rtl"` and `text-align: start`, so it lines up at the right like the RTL answer
+ * line instead of following the LTR feedback bar to the left.
+ */
 function SolutionText({ solution }: { solution: Solution }) {
   return solution.lang === 'fa' ? (
-    <FaText text={solution.text} size="md" />
+    <div lang="fa" dir="rtl" style={{ textAlign: 'start' }} data-testid="feedback-solution-fa">
+      <FaText text={solution.text} size="md" />
+    </div>
   ) : (
     <span lang="en">{solution.text}</span>
   )

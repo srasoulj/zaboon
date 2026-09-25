@@ -61,6 +61,34 @@ describe('lesson URL contract', () => {
   })
 })
 
+describe('practice hub modes in the lesson URL', () => {
+  it('parses a practice mode and carries it through hrefs and keys', () => {
+    const parsed = parseLessonRequest(q('course=fa-en&kind=practice&mode=mistakes'))
+    expect(parsed).toEqual({
+      ok: true,
+      request: { courseId: 'fa-en', kind: 'practice', levelId: null, mode: 'mistakes' },
+    })
+    if (!parsed.ok) throw new Error('unreachable')
+    expect(lessonHref(parsed.request)).toBe('/lesson?course=fa-en&kind=practice&mode=mistakes')
+    expect(requestKey(parsed.request)).toBe('fa-en|practice||mistakes')
+    // Without a mode the key is exactly the MVP's (saved snapshots keep resuming).
+    expect(requestKey({ courseId: 'fa-en', kind: 'practice', levelId: null })).toBe(
+      'fa-en|practice|',
+    )
+  })
+
+  it('rejects unknown modes and modes on other kinds; an empty mode is no mode', () => {
+    expect(parseLessonRequest(q('course=fa-en&kind=practice&mode=bogus')).ok).toBe(false)
+    expect(parseLessonRequest(q('course=fixture&kind=lesson&level=u01-s0&mode=mixed')).ok).toBe(
+      false,
+    )
+    expect(parseLessonRequest(q('course=fa-en&kind=practice&mode='))).toEqual({
+      ok: true,
+      request: { courseId: 'fa-en', kind: 'practice', levelId: null },
+    })
+  })
+})
+
 describe('progress', () => {
   it('re-queues wrong and skipped answers at the end, counting progress by passes', () => {
     let p = initialProgress(testChallenges())

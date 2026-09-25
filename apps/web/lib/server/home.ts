@@ -11,6 +11,9 @@ import {
 } from '@zaboon/game-rules'
 import type { AuthUser } from './auth'
 import { currentVersion, loadBundle } from './content'
+import { engagementFlags, showsCoins } from './engagement/flags'
+import { leagueSummary } from './engagement/leagues'
+import { readQuests } from './engagement/quests'
 import { ApiError } from './errors'
 import { migrateEnrollment } from './path'
 
@@ -42,6 +45,13 @@ export async function buildHome(
     const streak = (await repos.state.getStreak(tx, user.id)) ?? initialStreak(config)
     const lives = (await repos.state.getLives(tx, user.id)) ?? initialLives(now, config)
     const dayXp = (await repos.progress.getDailyActivity(tx, user.id, today))?.xp ?? 0
+    // P2 (each only while its flag is on; reads only).
+    const f = engagementFlags(flags)
+    const engagement: Pick<HomeResponse, 'coins' | 'league' | 'quests'> = {}
+    if (showsCoins(f)) engagement.coins = await repos.wallet.getCoins(tx, user.id)
+    if (f.leagues && !user.isAnonymous)
+      engagement.league = await leagueSummary(tx, user.id, now, config)
+    if (f.quests) engagement.quests = await readQuests(tx, user.id, today, config)
     return {
       user: {
         id: user.id,
@@ -62,6 +72,7 @@ export async function buildHome(
       xpTotal: await repos.progress.getXpTotal(tx, user.id),
       settings: profile.settings,
       flags,
+      ...engagement,
     }
   })
 }
