@@ -8,6 +8,9 @@
  * - Otherwise POST /api/onboarding, seed the home query with the response BEFORE navigating (the
  *   shell would otherwise see a stale "not onboarded" home and bounce back here), then go to the
  *   Letters tab ("I speak but can't read": the heritage fast track) or the first lesson.
+ * - The shell signs a first-time visitor in as a guest on arrival. When there is still no session at
+ *   Continue (that sign-in failed, e.g. anonymous sign-ins are off, or is still in flight), Continue
+ *   signs the learner in itself and shows a failure instead of staying locked without a word.
  * - Learners who already onboarded are sent to /learn.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -22,7 +25,7 @@ import {
 import type { z } from 'zod'
 import { Button3D, ChoiceCard, Icon, ProgressBar, useDigitShortcuts } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
-import { useApi, useHome, useHydrated, useSession } from '@/lib/app-services'
+import { useApi, useAuth, useHome, useHydrated, useSession } from '@/lib/app-services'
 import { lessonHref } from '@/lib/lesson/request'
 import { MIN_AGE, isAgeBlocked, parseAge, rememberAgeBlock } from './age-gate'
 import { browserTimeZone, errorMessage } from './hooks'
@@ -59,6 +62,14 @@ const GOAL_NAMES: Record<number, string> = {
 }
 export const goalLabel = (xp: number) => `${GOAL_NAMES[xp] ?? 'Custom'} · ${xp} XP a day`
 
+/** Continue could not sign the visitor in as a guest (the shell's sign-in on arrival had failed too). */
+export class GuestSignInError extends Error {
+  constructor(cause: unknown) {
+    super('guest sign-in failed', { cause })
+    this.name = 'GuestSignInError'
+  }
+}
+
 const STEPS = ['welcome', 'reason', 'level', 'goal', 'age'] as const
 type Step = (typeof STEPS)[number]
 
@@ -78,6 +89,7 @@ export interface OnboardingProps {
 
 export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: OnboardingProps) {
   const api = useApi()
+  const auth = useAuth()
   const queryClient = useQueryClient()
   const session = useSession()
   const signedIn = session.status === 'signed_in'
@@ -103,10 +115,23 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
   }, [home.data, navigate])
 
   const submit = useMutation({
-    mutationFn: (vars: { reason: Reason; selfLevel: Level; dailyGoalXp: number }) =>
-      api('onboarding', { body: { ...vars, ageConfirmed: true, tz: browserTimeZone() } }),
-    onSuccess: (res, vars) => {
+    mutationFn: async (vars: { reason: Reason; selfLevel: Level; dailyGoalXp: number }) => {
+      // No session by now means the shell's guest sign-in failed (or hasn't finished): sign in
+      // here, and let a failure show below rather than swallowing it.
+      if (!(await auth.getSession())) {
+        try {
+          await auth.signInAsGuest()
+        } catch (cause) {
+          throw new GuestSignInError(cause)
+        }
+      }
+      return api('onboarding', { body: { ...vars, ageConfirmed: true, tz: browserTimeZone() } })
+    },
+    onSuccess: async (res, vars) => {
       finished.current = true
+      // A sign-in just above makes the app fetch home; that "not onboarded" answer must not land
+      // after the seed below and bounce the learner back here.
+      await queryClient.cancelQueries({ queryKey: queryKeys.home })
       queryClient.setQueryData(queryKeys.home, res)
       navigate(firstStop(vars.selfLevel, res))
     },
@@ -170,7 +195,7 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
       setBlocked(true)
       return
     }
-    if (!signedIn || submitting.current || finished.current) return
+    if (submitting.current || finished.current) return
     submitting.current = true
     submit.mutate(
       { reason, selfLevel: level, dailyGoalXp: goal },
@@ -292,7 +317,17 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
 
       {submit.isError && (
         <p role="alert" className="text-wrong-fg">
-          {errorMessage(submit.error)}
+          {submit.error instanceof GuestSignInError ? (
+            <>
+              We couldn&apos;t sign you in as a guest. Try again, or{' '}
+              <Link href="/sign-in" className="font-extrabold underline">
+                sign in with your email
+              </Link>
+              .
+            </>
+          ) : (
+            errorMessage(submit.error)
+          )}
         </p>
       )}
 
@@ -300,7 +335,7 @@ export function Onboarding({ navigate, goals = DEFAULT_APP_CONFIG.dailyGoal }: O
         {step === 'age' ? (
           <Button3D
             fullWidth
-            variant={parsedAge === null || !signedIn ? 'locked' : 'primary'}
+            variant={parsedAge === null ? 'locked' : 'primary'}
             loading={submit.isPending}
             onClick={onAge}
           >

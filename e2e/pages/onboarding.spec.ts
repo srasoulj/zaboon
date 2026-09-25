@@ -18,7 +18,10 @@ async function answer(page: Page, level: RegExp, age: string) {
   await page.getByLabel('Your age').fill(age)
 }
 
-test('a new visitor onboards from /learn and lands in the first lesson', async ({ page, request }) => {
+test('a new visitor onboards from /learn and lands in the first lesson', async ({
+  page,
+  request,
+}) => {
   await page.goto('/learn')
   await expect(page).toHaveURL(/\/onboarding$/)
   await answer(page, /new to Persian/, '30')
@@ -59,6 +62,52 @@ test('"I speak but can\'t read" goes to the Letters tab', async ({ page }) => {
   await answer(page, /speak Persian but can't read/, '45')
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page).toHaveURL(/\/letters$/)
+})
+
+test('when the guest sign-in on arrival failed, Continue says so and then signs the visitor in', async ({
+  page,
+}) => {
+  // What production showed with anonymous sign-ins disabled: the shell's guest sign-in fails
+  // silently and the age step's Continue stayed locked. Refuse the shell's attempt and the first
+  // Continue; let the second one through.
+  let refusals = 0
+  let allow = false
+  await page.route('**/api/dev/auth/anonymous', async (route) => {
+    if (allow) return route.continue()
+    refusals++
+    await route.fulfill({
+      status: 422,
+      json: {
+        code: 422,
+        error_code: 'anonymous_provider_disabled',
+        msg: 'Anonymous sign-ins are disabled',
+      },
+    })
+  })
+  await page.goto('/onboarding')
+  await answer(page, /new to Persian/, '30')
+  expect(await storedSession(page)).toBeNull()
+  const cont = page.getByRole('button', { name: 'Continue' })
+  await expect(cont).not.toHaveAttribute('aria-disabled', 'true')
+  await cont.click()
+  // Scoped: Next's route announcer is a role="alert" too.
+  const alert = page.getByTestId('onboarding').getByRole('alert')
+  await expect(alert).toContainText("couldn't sign you in as a guest")
+  await expect(alert.getByRole('link', { name: 'sign in with your email' })).toHaveAttribute(
+    'href',
+    '/sign-in',
+  )
+  await expect(page).toHaveURL(/\/onboarding$/)
+
+  allow = true
+  const posted = page.waitForResponse(
+    (r) => r.url().endsWith('/api/onboarding') && r.request().method() === 'POST',
+  )
+  await cont.click()
+  expect((await posted).status()).toBe(200)
+  await expect(page).toHaveURL(/\/lesson\?course=fa-en&kind=lesson&level=[a-z0-9-]+$/)
+  expect(refusals).toBe(2)
+  expect(await storedSession(page)).toMatchObject({ isAnonymous: true })
 })
 
 test('under 13 is blocked: nothing is posted, and the block is remembered', async ({ page }) => {
