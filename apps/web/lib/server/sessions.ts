@@ -356,7 +356,7 @@ export async function completeSession(
       return EXPIRED // commit the expiry, then answer 410
     }
 
-    const bundle = await loadBundle(await versionOf(db, session.courseId, session.contentVersion))
+    const bundle = await loadBundle(await versionOf(tx, session.courseId, session.contentVersion))
     const loc = session.levelId ? findLevel(bundle, session.levelId) : null
     const view = contentView(bundle, loc?.unitIndex ?? null)
     const challenges = rebuildChallenges(session.challengeRefs, view)
@@ -470,7 +470,7 @@ export async function completeSession(
     await repos.state.saveLives(tx, userId, settled.state)
 
     // --- progress, mistakes, memory --------------------------------------------------------
-    const current = await loadBundle(await requireCurrentVersion(db, session.courseId))
+    const current = await loadBundle(await requireCurrentVersion(tx, session.courseId))
     await repos.enrollments.ensureEnrollment(tx, userId, {
       courseId: session.courseId,
       contentVersion: current.version,
@@ -479,9 +479,14 @@ export async function completeSession(
     const level = await recordLevelProgress(tx, userId, session, current, at)
 
     const mistakes = [...new Set([...wrongIndexes].flatMap((i) => refItems(challenges[i]!.ref)))]
+    // A challenge clears its items' open mistakes only when it was answered (not just skipped)
+    // and never wrong: the same rule as the SRS rating.
+    const answeredOk = new Set(
+      graded.filter((a) => a.verdict !== 'skipped' && passes(a.verdict)).map((a) => a.index),
+    )
     const cleared = [
       ...new Set(
-        [...first.keys()]
+        [...answeredOk]
           .filter((i) => !wrongIndexes.has(i))
           .flatMap((i) => refItems(challenges[i]!.ref)),
       ),

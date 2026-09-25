@@ -13,7 +13,7 @@ import {
   type CompiledSentence,
   type Lexeme,
 } from '@zaboon/content-schema'
-import { repos, type Db } from '@zaboon/db'
+import { repos, type Queryable } from '@zaboon/db'
 import type { ContentView } from '@zaboon/session-engine'
 import { serverEnv } from './env'
 import { ApiError } from './errors'
@@ -33,18 +33,26 @@ export interface LoadedBundle extends CourseVersion {
 }
 
 const CURRENT_TTL_MS = 10_000
-const currentCache = new Map<string, { at: number; value: Promise<CourseVersion | null> }>()
+// Resolved values only: a lookup made on one request's transaction never becomes another's promise.
+const currentCache = new Map<string, { at: number; value: CourseVersion | null }>()
 const bundleCache = new Map<string, Promise<LoadedBundle>>()
 
-/** The course's current published version, or null when nothing is published. */
-export function currentVersion(db: Db, courseId: string): Promise<CourseVersion | null> {
+/**
+ * The course's current published version, or null when nothing is published.
+ *
+ * Inside withUser/withUserLock pass the transaction, never the pool: a request that holds a pooled
+ * connection and waits for a second one deadlocks once every connection is held by requests
+ * queued on the same user's advisory lock.
+ */
+export async function currentVersion(
+  q: Queryable,
+  courseId: string,
+): Promise<CourseVersion | null> {
   const hit = currentCache.get(courseId)
   if (hit && Date.now() - hit.at < CURRENT_TTL_MS) return hit.value
-  const value = repos.content
-    .getCurrentContentVersion(db, courseId)
-    .then((cv) => (cv ? { courseId, version: cv.version, bundlePath: cv.bundlePath } : null))
+  const cv = await repos.content.getCurrentContentVersion(q, courseId)
+  const value = cv ? { courseId, version: cv.version, bundlePath: cv.bundlePath } : null
   currentCache.set(courseId, { at: Date.now(), value })
-  value.catch(() => currentCache.delete(courseId))
   return value
 }
 
@@ -53,15 +61,22 @@ export function resetContentCache(): void {
   currentCache.clear()
 }
 
-export async function requireCurrentVersion(db: Db, courseId: string): Promise<CourseVersion> {
-  const cv = await currentVersion(db, courseId)
+export async function requireCurrentVersion(
+  q: Queryable,
+  courseId: string,
+): Promise<CourseVersion> {
+  const cv = await currentVersion(q, courseId)
   if (!cv) throw new ApiError('not_found', `no published content for course ${courseId}`)
   return cv
 }
 
-/** A specific (immutable) version, e.g. the one a session was created with. */
-export async function versionOf(db: Db, courseId: string, version: number): Promise<CourseVersion> {
-  const cv = await repos.content.getContentVersion(db, courseId, version)
+/** A specific (immutable) version, e.g. the one a session was created with. Same `q` rule as above. */
+export async function versionOf(
+  q: Queryable,
+  courseId: string,
+  version: number,
+): Promise<CourseVersion> {
+  const cv = await repos.content.getContentVersion(q, courseId, version)
   if (!cv) throw new ApiError('gone', `content version ${courseId}@${version} is not available`)
   return { courseId, version: cv.version, bundlePath: cv.bundlePath }
 }

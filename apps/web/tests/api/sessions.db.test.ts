@@ -275,6 +275,37 @@ describe('POST /api/sessions/:id/complete', () => {
     expect(answersRows.map((r) => r.verdict)).toContain('skipped')
   })
 
+  it('keeps a mistake open when its challenge is only skipped (or wrong, then skipped)', async () => {
+    const alice = await h.guest()
+    const ref = 'sentence:s_u01_0001' // u01-s0 challenge 0
+    const openMistake = async () =>
+      (
+        await h.sql`
+          SELECT resolved_at FROM mistakes WHERE user_id = ${alice.id} AND item_ref = ${ref}`
+      )[0]?.resolved_at
+    const skip0 = (answers: ReturnType<typeof answersFor>) =>
+      answers.map((a) =>
+        a.index === 0 && a.verdict === 'correct'
+          ? { ...a, response: { kind: 'skip' as const }, verdict: 'skipped' as const }
+          : a,
+      )
+    let s = await start(h, alice)
+    await finish(h, alice, s, { wrong: [0] })
+    expect(await openMistake()).toBeNull()
+
+    s = await start(h, alice)
+    await finish(h, alice, s, { answers: skip0(answersFor(s.challenges)) })
+    expect(await openMistake()).toBeNull()
+
+    s = await start(h, alice)
+    await finish(h, alice, s, { answers: skip0(answersFor(s.challenges, { wrong: [0] })) })
+    expect(await openMistake()).toBeNull()
+
+    s = await start(h, alice)
+    await finish(h, alice, s)
+    expect(await openMistake()).not.toBeNull() // answered correctly: resolved
+  })
+
   it('never trusts client XP: implausibly fast answers earn nothing but still count', async () => {
     const alice = await h.guest()
     const s = await start(h, alice)
