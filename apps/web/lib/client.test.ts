@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  ApiClientError,
-  createApiClient,
-  queryKeys,
-  TEST_FLAGS_KEY,
-  TEST_NOW_KEY,
-} from './api-client'
+import { ApiClientError, createApiClient, queryKeys, TEST_FLAGS_KEY, TEST_NOW_KEY } from './api-client'
 import { createAuthClient, createLocalAuthClient, LOCAL_SESSION_KEY } from './auth-client'
 
 const USER = '11111111-2222-4333-8444-555555555555'

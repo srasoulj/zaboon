@@ -113,12 +113,7 @@ async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
  */
 export function isGoneUserViolation(err: unknown): boolean {
   for (let e: unknown = err, depth = 0; e && depth < 3; depth++) {
-    const pg = e as {
-      code?: unknown
-      constraint_name?: unknown
-      constraint?: unknown
-      cause?: unknown
-    }
+    const pg = e as { code?: unknown; constraint_name?: unknown; constraint?: unknown; cause?: unknown }
     const constraint = String(pg.constraint_name ?? pg.constraint ?? '')
     if (pg.code === '23503' && /user_id/.test(constraint)) return true
     e = pg.cause

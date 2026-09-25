@@ -10,12 +10,8 @@ describe('isGoneUserViolation (#27: a deleted or merged account token → 401, n
   })
 
   it('ignores every other error', () => {
-    expect(
-      isGoneUserViolation({ code: '23503', constraint_name: 'level_progress_level_fkey' }),
-    ).toBe(false)
-    expect(isGoneUserViolation({ code: '23505', constraint_name: 'profiles_user_id_key' })).toBe(
-      false,
-    )
+    expect(isGoneUserViolation({ code: '23503', constraint_name: 'level_progress_level_fkey' })).toBe(false)
+    expect(isGoneUserViolation({ code: '23505', constraint_name: 'profiles_user_id_key' })).toBe(false)
     expect(isGoneUserViolation(new Error('boom'))).toBe(false)
     expect(isGoneUserViolation(undefined)).toBe(false)
   })

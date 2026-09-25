@@ -91,21 +91,18 @@ export function createApiClient(deps: ApiClientDeps): ApiClient {
     const qs = search.toString()
     let res: Response
     try {
-      res = await doFetch(
-        `${deps.baseUrl ?? ''}${buildPath(def.path, opts.params)}${qs ? `?${qs}` : ''}`,
-        {
-          method: def.method,
-          headers: {
-            [APP_VERSION_HEADER]: APP_VERSION,
-            ...(def.request ? { 'content-type': 'application/json' } : {}),
-            ...(token ? { authorization: `Bearer ${token}` } : {}),
-            ...(now ? { [TEST_NOW_HEADER]: now } : {}),
-            ...(flags ? { [TEST_FLAGS_HEADER]: flags } : {}),
-          },
-          body: def.request && opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-          signal: opts.signal,
+      res = await doFetch(`${deps.baseUrl ?? ''}${buildPath(def.path, opts.params)}${qs ? `?${qs}` : ''}`, {
+        method: def.method,
+        headers: {
+          [APP_VERSION_HEADER]: APP_VERSION,
+          ...(def.request ? { 'content-type': 'application/json' } : {}),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...(now ? { [TEST_NOW_HEADER]: now } : {}),
+          ...(flags ? { [TEST_FLAGS_HEADER]: flags } : {}),
         },
-      )
+        body: def.request && opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+        signal: opts.signal,
+      })
     } catch (e) {
       throw new ApiClientError('network', 0, e instanceof Error ? e.message : 'network error')
     }
