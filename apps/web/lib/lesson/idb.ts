@@ -7,6 +7,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import {
   MemoryOutboxStore,
   MemorySnapshotStore,
+  staleSnapshot,
   type LessonSnapshot,
   type OutboxEntry,
   type OutboxStore,
@@ -57,6 +58,17 @@ export class IdbSnapshotStore implements SnapshotStore {
   }
   async remove(sessionId: string) {
     await (await this.db).delete('snapshots', sessionId)
+  }
+  async prune(savedBefore: number, now: number) {
+    const tx = (await this.db).transaction('snapshots', 'readwrite')
+    let n = 0
+    for (let cursor = await tx.store.openCursor(); cursor; cursor = await cursor.continue())
+      if (staleSnapshot(cursor.value, savedBefore, now)) {
+        await cursor.delete()
+        n++
+      }
+    await tx.done
+    return n
   }
 }
 
