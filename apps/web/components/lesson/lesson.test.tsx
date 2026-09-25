@@ -206,7 +206,8 @@ describe('complete screens', () => {
     expect(screen.getByText('Your progress is saved.')).toBeInTheDocument()
     // the count-up reaches the final value
     const shown = screen.getByTestId('complete-xp').querySelector('span[aria-hidden="true"]')
-    await waitFor(() => expect(shown).toHaveTextContent('15'))
+    // the count-up animates for ~900 ms
+    await waitFor(() => expect(shown).toHaveTextContent('15'), { timeout: 3000 })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     expect(onContinue).toHaveBeenCalled()
   })
@@ -449,15 +450,62 @@ describe('LessonPlayer', () => {
   })
 })
 
+/** The replayer needs the auth client (the outbox's sender reads { userId, token } from it). */
+const withAuth = (api: ApiClient, node: ReactNode, userId?: string) => (
+  <AppServicesProvider
+    api={api}
+    auth={
+      {
+        // Signed in as whoever the replayer sends for (or `userId` when given).
+        getSession: async () => {
+          const u = userId ?? outboxUser()
+          return u
+            ? { accessToken: 't', expiresAt: 0, userId: u, isAnonymous: true, email: null }
+            : null
+        },
+      } as unknown as AuthClient
+    }
+  >
+    {node}
+  </AppServicesProvider>
+)
+
+/**
+ * The shared outbox sends through a client bound to the session's own token (real fetch), so these
+ * tests stub `fetch` and look at the requests that go out.
+ */
+function stubFetch(respond: (url: string) => { status: number; body: unknown }) {
+  const requests: { url: string; authorization: string | null }[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const headers = new Headers(init?.headers)
+      requests.push({ url, authorization: headers.get('authorization') })
+      const r = respond(url)
+      return new Response(JSON.stringify(r.body), {
+        status: r.status,
+        headers: { 'content-type': 'application/json' },
+      })
+    }),
+  )
+  return requests
+}
+const serverError = { status: 500, body: { error: { code: 'internal', message: 'boom' } } }
+const eventOk = { status: 200, body: { lives: testSession().lives, duplicate: false } }
+/** A fresh api identity per test, so each test gets its own shared outbox. */
+const freshApi = () => (async () => undefined) as unknown as ApiClient
+
 describe('OutboxReplayer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('sends for the latest mounted user, resets on unmount, and shows a notice when a write gave up', async () => {
-    const api = (async (name: string) => {
-      if (name === 'sessionEvent') throw new Error('500')
-      throw new Error(`unexpected ${name}`)
-    }) as unknown as ApiClient
+    const requests = stubFetch(() => serverError)
+    const api = freshApi()
     expect(outboxUser()).toBeNull()
-    const a = render(<OutboxReplayer api={api} userId={USER_ID} />)
-    const b = render(<OutboxReplayer api={api} userId="guest-2" />)
+    const a = render(withAuth(api, <OutboxReplayer api={api} userId={USER_ID} />))
+    const b = render(withAuth(api, <OutboxReplayer api={api} userId="guest-2" />))
     expect(outboxUser()).toBe('guest-2')
     b.unmount()
     expect(outboxUser()).toBe(USER_ID)
@@ -469,6 +517,8 @@ describe('OutboxReplayer', () => {
       kind: 'wrong',
     })
     for (let i = 0; i < MAX_ATTEMPTS; i++) await act(() => outbox.flush())
+    expect(requests).toHaveLength(MAX_ATTEMPTS)
+    expect(requests[0]!.authorization).toBe('Bearer t')
     expect(await screen.findByTestId('outbox-notice')).toHaveTextContent("couldn't be saved")
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(screen.queryByTestId('outbox-notice')).toBeNull()
@@ -478,15 +528,9 @@ describe('OutboxReplayer', () => {
   })
 
   it('retagOutboxUser moves a merged guest’s writes to the account and sends them', async () => {
-    const sent: string[] = []
-    const api = (async (name: string, o: { params: { id: string } }) => {
-      if (name === 'sessionEvent') {
-        sent.push(o.params.id)
-        return { lives: testSession().lives, duplicate: false }
-      }
-      throw new Error(`unexpected ${name}`)
-    }) as unknown as ApiClient
-    const view = render(<OutboxReplayer api={api} userId="account-1" />)
+    const requests = stubFetch(() => eventOk)
+    const api = freshApi()
+    const view = render(withAuth(api, <OutboxReplayer api={api} userId="account-1" />))
     const { outbox } = await sharedLessonStores(api)
     await outbox.enqueueEvent('guest-1', 'guest-session', {
       attemptSeq: 0,
@@ -494,7 +538,55 @@ describe('OutboxReplayer', () => {
       kind: 'wrong',
     })
     expect(await retagOutboxUser(api, 'guest-1', 'account-1')).toBe(1)
-    await waitFor(() => expect(sent).toEqual(['guest-session']))
+    await waitFor(() =>
+      expect(requests.map((r) => r.url)).toEqual(['/api/sessions/guest-session/events']),
+    )
     view.unmount()
+  })
+})
+
+describe('OutboxReplayer notice is per user', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("a new user doesn't see the previous user's notice", async () => {
+    stubFetch(() => serverError)
+    const api = freshApi()
+    const { outbox } = await sharedLessonStores(api)
+    const view = render(withAuth(api, <OutboxReplayer api={api} userId="user-a" />))
+    await outbox.enqueueEvent('user-a', 'sess-a', { attemptSeq: 0, index: 0, kind: 'wrong' })
+    for (let i = 0; i < MAX_ATTEMPTS; i++) await act(() => outbox.flush())
+    expect(await screen.findByTestId('outbox-notice')).toBeInTheDocument()
+    view.rerender(withAuth(api, <OutboxReplayer api={api} userId="user-b" />))
+    expect(screen.queryByTestId('outbox-notice')).toBeNull()
+    view.unmount()
+  })
+})
+
+describe('Enter on an already-selected choice', () => {
+  it('means CHECK, not "select again"', async () => {
+    renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByTestId('test-answer-correct'))
+    const card = document.createElement('button')
+    card.setAttribute('aria-pressed', 'true')
+    screen.getByTestId('test-renderer').appendChild(card)
+    card.focus()
+    const notPrevented = fireEvent.keyDown(card, { key: 'Enter' })
+    expect(notPrevented).toBe(false) // the card's own activation is suppressed
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
+  })
+
+  it('a focused, not-selected choice keeps its own Enter', async () => {
+    renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByTestId('test-answer-correct'))
+    const card = document.createElement('button')
+    card.setAttribute('aria-pressed', 'false')
+    screen.getByTestId('test-renderer').appendChild(card)
+    card.focus()
+    expect(fireEvent.keyDown(card, { key: 'Enter' })).toBe(true)
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
   })
 })

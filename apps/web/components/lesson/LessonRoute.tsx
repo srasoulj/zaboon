@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { DEFAULT_SETTINGS } from '@zaboon/contracts'
 import { rendererFor } from '@/lib/challenge-registry'
-import { useApi, useEnsureGuest, useHome } from '@/lib/app-services'
+import { useApi, useAuth, useEnsureGuest, useHome } from '@/lib/app-services'
 import { createHowlerAudio } from '@/lib/lesson/audio'
 import { parseLessonRequest, requestKey } from '@/lib/lesson/request'
 import { LessonPlayer } from './LessonPlayer'
@@ -29,7 +29,8 @@ export function LessonRoute() {
   const session = useEnsureGuest()
   const userId = session?.userId ?? null
   const home = useHome(userId !== null)
-  useOutboxReplay(api, userId)
+  const auth = useAuth()
+  useOutboxReplay(api, userId, auth)
 
   const [services, setServices] = useState<LessonServices | null>(null)
   useEffect(() => {

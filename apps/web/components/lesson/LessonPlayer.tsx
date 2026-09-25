@@ -77,9 +77,14 @@ const creating = createInFlight<CreateSessionResponse>()
 const INTERACTIVE =
   'button, a[href], input, textarea, select, [role="button"], [contenteditable="true"]'
 
-/** True when Enter on this element should be left to the element itself. */
+/**
+ * True when Enter on this element should be left to the element itself. An already-selected
+ * choice (`aria-pressed="true"`, e.g. a card Chrome focused when it was clicked) is not: Enter on it
+ * means CHECK, not "select it again".
+ */
 export function isInteractive(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
+  if (target.closest('[aria-pressed="true"]')) return false
   return target.isContentEditable || target.closest(INTERACTIVE) !== null
 }
 

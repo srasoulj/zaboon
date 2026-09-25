@@ -21,7 +21,7 @@ import {
 import type { ResponseGrade } from '@zaboon/session-engine'
 import { assign, enqueueActions, fromPromise, setup } from 'xstate'
 import { gradeAttempt, sessionLexicon } from './grading'
-import type { CompleteOutcome } from './outbox'
+import { OutboxPermanentError, type CompleteOutcome } from './outbox'
 import {
   costsHeart,
   countsAsWrong,
@@ -74,6 +74,8 @@ export interface LessonError {
   code: string
   message: string
   during: 'load' | 'complete'
+  /** The outbox refused the write for good (OutboxPermanentError), not a local failure. */
+  permanent: boolean
 }
 
 export interface Feedback {
@@ -143,6 +145,7 @@ function toError(error: unknown, during: LessonError['during']): LessonError {
     code: codeOf(error),
     message: error instanceof Error ? error.message : 'Something went wrong',
     during,
+    permanent: error instanceof OutboxPermanentError,
   }
 }
 
@@ -551,10 +554,10 @@ export const lessonMachine = setup({
     },
 
     error: {
-      // Completion only fails here for good (the outbox keeps transient failures): don't resume
-      // into the same failure after a reload.
+      // A completion the server refused for good must not resume into the same failure after a
+      // reload; a local failure (e.g. IndexedDB) keeps the snapshot so nothing is lost.
       entry: enqueueActions(({ context, enqueue }) => {
-        if (context.error?.during === 'complete')
+        if (context.error?.during === 'complete' && context.error.permanent)
           enqueue({ type: 'discard', params: { sessionId: context.session?.sessionId ?? null } })
       }),
       on: {

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import {
   bySession,
   classify,
+  IdentityMismatchError,
   MAX_ATTEMPTS,
   Outbox,
   OutboxPermanentError,
@@ -10,6 +11,8 @@ import {
   type OutboxDelivery,
   type OutboxSender,
 } from './outbox'
+import type { ApiClient } from '../api-client'
+import { identitySender } from './sender'
 import { MemoryOutboxStore, type OutboxEntry } from './stores'
 import { lives, SESSION_ID, testResult, USER_ID } from './test-support'
 
@@ -62,6 +65,8 @@ function setup(opts: { online?: () => boolean; user?: string | null } = {}) {
     }),
   }
   const timers: { fn: () => void; ms: number }[] = []
+  /** Every delay ever scheduled, in order (timers only holds the pending one). */
+  const scheduled: number[] = []
   let clock = 1000
   const outbox = new Outbox({
     store,
@@ -71,6 +76,7 @@ function setup(opts: { online?: () => boolean; user?: string | null } = {}) {
     schedule: (fn, ms) => {
       const t = { fn, ms }
       timers.push(t)
+      scheduled.push(ms)
       return () => timers.splice(timers.indexOf(t), 1)
     },
   })
@@ -82,6 +88,7 @@ function setup(opts: { online?: () => boolean; user?: string | null } = {}) {
     log,
     outbox,
     timers,
+    scheduled,
     deliveries,
     setOnline: (f: () => boolean) => {
       online = f
@@ -154,11 +161,19 @@ describe('outbox: delivery and ordering', () => {
     expect(t.deliveries.map((d) => d.type)).toEqual(['event', 'complete'])
   })
 
-  it('caps the backoff delay', async () => {
+  it('backs off exponentially (1 s, 2 s, 4 s, …) up to 60 s, and resets after a success', async () => {
     const t = setup({ online: () => false })
     await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
-    for (let i = 0; i < 12; i++) await t.outbox.flush()
+    for (let i = 0; i < 9; i++) await t.outbox.flush()
+    expect(t.scheduled).toEqual([1000, 2000, 4000, 8000, 16000, 32000, 60000, 60000, 60000])
     expect(t.outbox.retryDelay()).toBe(60_000)
+    t.setOnline(() => true)
+    await t.outbox.flush()
+    expect(t.timers).toEqual([]) // the pending retry was cancelled
+    t.setOnline(() => false)
+    await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(1))
+    await t.outbox.flush()
+    expect(t.scheduled.at(-1)).toBe(1000)
   })
 
   it('a stuck session never blocks another session', async () => {
@@ -222,9 +237,13 @@ describe('outbox: delivery and ordering', () => {
     const gate = new Promise<void>((r) => (release = r))
     const original = t.send.event
     t.send.event = vi.fn(
-      async (sessionId: string, body: { attemptSeq: number; index: number; kind: 'wrong' }) => {
+      async (
+        sessionId: string,
+        body: { attemptSeq: number; index: number; kind: 'wrong' },
+        userId: string,
+      ) => {
         await gate
-        return original(sessionId, body)
+        return original(sessionId, body, userId)
       },
     )
     await t.outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
@@ -350,8 +369,12 @@ describe('outbox: identity', () => {
     const t = setup()
     const original = t.send.event
     t.send.event = vi.fn(
-      async (sessionId: string, body: { attemptSeq: number; index: number; kind: 'wrong' }) => {
-        const r = await original(sessionId, body)
+      async (
+        sessionId: string,
+        body: { attemptSeq: number; index: number; kind: 'wrong' },
+        userId: string,
+      ) => {
+        const r = await original(sessionId, body, userId)
         t.setUser(OTHER_USER) // signed out / switched after the first send
         return r
       },
@@ -409,5 +432,103 @@ describe('outbox: identity', () => {
     expect([...t.store.rows.keys()].sort()).toEqual(
       [`event:${OTHER_SESSION}:5`, `event:${SESSION_ID}:0`].sort(),
     )
+  })
+})
+
+describe('identitySender: token and user read together', () => {
+  const session = (userId: string) => ({
+    accessToken: `token-${userId}`,
+    expiresAt: 0,
+    userId,
+    isAnonymous: true,
+    email: null,
+  })
+
+  function harness(initialUser: string | null) {
+    let signedIn = initialUser
+    const auth = { getSession: vi.fn(async () => (signedIn ? session(signedIn) : null)) }
+    const tokens: string[] = []
+    const failWith = { code: null as string | null }
+    const clientFor = (token: string) =>
+      (async (name: string) => {
+        tokens.push(token)
+        if (failWith.code) throw new CodedError(failWith.code)
+        if (name === 'sessionEvent') return { lives: lives(4), duplicate: false }
+        return testResult()
+      }) as unknown as ApiClient
+    const fallback = vi.fn() as unknown as ApiClient
+    const sender = identitySender({ auth: () => auth, api: fallback, clientFor })
+    return {
+      sender,
+      tokens,
+      failWith,
+      auth,
+      signIn: (u: string | null) => {
+        signedIn = u
+      },
+    }
+  }
+
+  it("sends with the entry owner's own token", async () => {
+    const h = harness(USER_ID)
+    await h.sender.event(SESSION_ID, ev(0), USER_ID)
+    expect(h.tokens).toEqual([`token-${USER_ID}`])
+  })
+
+  it('refuses to send while another user is signed in (and never uses their token)', async () => {
+    const h = harness(OTHER_USER)
+    await expect(h.sender.complete(SESSION_ID, COMPLETE_BODY, USER_ID)).rejects.toBeInstanceOf(
+      IdentityMismatchError,
+    )
+    expect(h.tokens).toEqual([])
+  })
+
+  it('a 404/403 after the session switched mid-request is a mismatch, not permanent', async () => {
+    const h = harness(USER_ID)
+    h.failWith.code = 'not_found'
+    h.auth.getSession.mockImplementationOnce(async () => session(USER_ID))
+    h.signIn(OTHER_USER) // the second read (after the error) sees the new user
+    await expect(h.sender.complete(SESSION_ID, COMPLETE_BODY, USER_ID)).rejects.toBeInstanceOf(
+      IdentityMismatchError,
+    )
+    h.signIn(USER_ID)
+    await expect(h.sender.complete(SESSION_ID, COMPLETE_BODY, USER_ID)).rejects.toMatchObject({
+      code: 'not_found', // same user: a real 404
+    })
+  })
+
+  it('the race end to end: a new guest lands mid-flush; the first user’s write is kept, then sent', async () => {
+    const h = harness(USER_ID)
+    const store = new MemoryOutboxStore()
+    let reactUser: string | null = USER_ID // React hasn't re-rendered yet: still says USER_ID
+    const outbox = new Outbox({
+      store,
+      send: h.sender,
+      currentUserId: () => reactUser,
+      schedule: () => () => {},
+    })
+    await outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
+    await outbox.enqueueComplete(USER_ID, SESSION_ID, COMPLETE_BODY)
+    h.signIn(OTHER_USER) // sign-out + new guest, before React knows
+    const report = await outbox.flush()
+    expect(report).toMatchObject({ delivered: 0, dropped: 0, dead: 0, remaining: 2 })
+    expect(h.tokens).toEqual([])
+    expect([...store.rows.values()].map((e) => e.attempts)).toEqual([0, 0])
+
+    h.signIn(USER_ID)
+    reactUser = USER_ID
+    expect((await outbox.flush()).delivered).toBe(2)
+    expect(h.tokens).toEqual([`token-${USER_ID}`, `token-${USER_ID}`])
+  })
+
+  it('classifies a mismatch as blocked', () => {
+    expect(classify(new IdentityMismatchError())).toBe('blocked')
+  })
+
+  it('without an auth client it falls back to the app API client', async () => {
+    const api = vi.fn(async () => ({ lives: lives(4), duplicate: false })) as unknown as ApiClient
+    const sender = identitySender({ auth: () => null, api, clientFor: () => api })
+    await sender.event(SESSION_ID, ev(0), USER_ID)
+    expect(api).toHaveBeenCalledWith('sessionEvent', { params: { id: SESSION_ID }, body: ev(0) })
   })
 })

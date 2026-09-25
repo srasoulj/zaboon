@@ -74,20 +74,28 @@ export function createHowlerAudio(opts: HowlerAudioOptions = {}): LessonAudio {
     return disposed ? null : Howl
   }
 
-  async function ensureEffects(): Promise<HowlType | null> {
-    const H = await load()
-    if (!H) return null
-    effects ??= new H({ src: EFFECTS_SRC, sprite: EFFECT_SPRITE, preload: true, volume: 0.8 })
-    return effects
+  /** Unloads a player created after dispose() (never keep one alive past the player). */
+  function keep(h: HowlType): HowlType | null {
+    if (!disposed) return h
+    h.unload()
+    return null
   }
 
-  function clipFor(H: HowlCtor, url: string): HowlType {
+  async function ensureEffects(): Promise<HowlType | null> {
+    const H = await load()
+    if (!H || disposed) return null
+    effects ??= new H({ src: EFFECTS_SRC, sprite: EFFECT_SPRITE, preload: true, volume: 0.8 })
+    return keep(effects)
+  }
+
+  function clipFor(H: HowlCtor, url: string): HowlType | null {
+    if (disposed) return null
     let h = clips.get(url)
     if (!h) {
       h = new H({ src: [url], preload: true, html5: false })
       clips.set(url, h)
     }
-    return h
+    return keep(h)
   }
 
   const loaded = (h: HowlType) =>
@@ -107,7 +115,7 @@ export function createHowlerAudio(opts: HowlerAudioOptions = {}): LessonAudio {
       if (!enabled || disposed) return
       void ensureEffects()
         .then((fx) => {
-          if (fx && enabled && !disposed) fx.play(name)
+          if (fx && !disposed && enabled) fx.play(name)
         })
         .catch(() => {})
     },
@@ -124,7 +132,10 @@ export function createHowlerAudio(opts: HowlerAudioOptions = {}): LessonAudio {
         const H = await load()
         if (!H || !(await ensureEffects())) return
         await Promise.all([
-          ...audio.map((u) => (disposed ? Promise.resolve() : loaded(clipFor(H, u)))),
+          ...audio.map((u) => {
+            const clip = clipFor(H, u)
+            return clip ? loaded(clip) : Promise.resolve()
+          }),
           ...envUrls.map(async (u) => {
             try {
               const res = await doFetch(u)
@@ -153,9 +164,10 @@ export function createHowlerAudio(opts: HowlerAudioOptions = {}): LessonAudio {
       const src = slow ? media!.slow! : url
       void load()
         .then((H) => {
-          if (!H || !enabled) return
+          if (!H || disposed || !enabled) return
           playing?.howl.stop()
           const howl = clipFor(H, src)
+          if (!howl) return
           const envelope = media?.envelope ? (envelopes.get(media.envelope) ?? null) : null
           playing = { howl, envelope, rate: slow ? SLOW_RATE : 1 }
           howl.once('end', () => {

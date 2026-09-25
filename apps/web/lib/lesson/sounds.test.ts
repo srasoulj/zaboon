@@ -211,3 +211,74 @@ describe('Howler audio lifecycle', () => {
     expect(h.created).toEqual([])
   })
 })
+
+describe('Howler audio: nothing outlives dispose()', () => {
+  function fakeHowler() {
+    const created: { unloaded: boolean; played: unknown[] }[] = []
+    class FakeHowl {
+      played: unknown[] = []
+      unloaded = false
+      constructor() {
+        created.push(this)
+      }
+      state() {
+        return 'loaded'
+      }
+      once() {
+        return this
+      }
+      play(n?: unknown) {
+        this.played.push(n)
+        return 1
+      }
+      stop() {
+        return this
+      }
+      playing() {
+        return false
+      }
+      seek() {
+        return 0
+      }
+      unload() {
+        this.unloaded = true
+      }
+    }
+    return { created, Howl: FakeHowl }
+  }
+
+  it('an effect and a clip requested before dispose (while Howler loads) never play or survive', async () => {
+    const h = fakeHowler()
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const audio = createHowlerAudio({
+      loadHowl: async () => {
+        await gate
+        return h.Howl as never // the fake covers the Howl members the player uses
+      },
+    })
+    audio.effect('correct')
+    audio.play('/a/1.mp3')
+    audio.dispose()
+    release()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(h.created).toEqual([])
+    audio.effect('wrong')
+    audio.play('/a/1.mp3')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(h.created).toEqual([])
+  })
+
+  it('everything created before dispose is unloaded; nothing is re-created afterwards', async () => {
+    const h = fakeHowler()
+    const audio = createHowlerAudio({ loadHowl: async () => h.Howl as never })
+    audio.effect('correct')
+    await vi.waitFor(() => expect(h.created).toHaveLength(1))
+    audio.play('/a/1.mp3')
+    await vi.waitFor(() => expect(h.created).toHaveLength(2))
+    audio.dispose()
+    expect(h.created.every((x) => x.unloaded)).toBe(true)
+    await audio.preload(testChallenges())
+    expect(h.created).toHaveLength(2)
+  })
+})

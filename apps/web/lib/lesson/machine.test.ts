@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createActor, fromPromise, waitFor } from 'xstate'
-import type { SessionResult } from '@zaboon/contracts'
+import { MAX_ANSWERS, type SessionResult } from '@zaboon/contracts'
 import {
   currentChallenge,
   lessonMachine,
@@ -9,7 +9,7 @@ import {
   type SoundEffect,
   type StartOutput,
 } from './machine'
-import type { CompleteOutcome } from './outbox'
+import { OutboxPermanentError, type CompleteOutcome } from './outbox'
 import { initialProgress, maxAnswers, recordAttempt, recordMismatch } from './progress'
 import type { LessonSnapshot } from './stores'
 import { lives, testResult, testSession, USER_ID } from './test-support'
@@ -629,27 +629,46 @@ describe('lesson machine: the attempt cap of /complete', () => {
     expect(calls.completed[0]!.progress.answers).toHaveLength(cap)
   })
 
-  it('reads the cap from the contract', () => {
-    expect(maxAnswers()).toBeGreaterThanOrEqual(200)
+  it('uses the contract cap', () => {
+    expect(maxAnswers()).toBe(MAX_ANSWERS)
   })
 })
 
 describe('lesson machine: failed completion', () => {
-  it('discards the resume snapshot when completion fails for good', async () => {
+  it('discards the resume snapshot when the server refused the completion for good', async () => {
     const { actor, calls } = run({
       start: async () => ({
         session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
         resume: null,
       }),
       complete: async () => {
-        throw new CodedError('validation')
+        throw new OutboxPermanentError('validation', 'too many answers')
       },
     })
     await ready(actor)
     answerRight(actor)
     actor.send({ type: 'CONTINUE' })
     await waitFor(actor, (s) => s.matches('error'))
+    expect(actor.getSnapshot().context.error).toMatchObject({ code: 'validation', permanent: true })
     expect(calls.discarded).toEqual([actor.getSnapshot().context.session!.sessionId])
+  })
+
+  it('keeps the snapshot when completion failed locally (e.g. IndexedDB), so nothing is lost', async () => {
+    const { actor, calls } = run({
+      start: async () => ({
+        session: testSession({ challenges: testSession().challenges.slice(0, 1) }),
+        resume: null,
+      }),
+      complete: async () => {
+        throw new DOMException('quota exceeded', 'QuotaExceededError')
+      },
+    })
+    await ready(actor)
+    answerRight(actor)
+    actor.send({ type: 'CONTINUE' })
+    await waitFor(actor, (s) => s.matches('error'))
+    expect(actor.getSnapshot().context.error?.permanent).toBe(false)
+    expect(calls.discarded).toEqual([])
   })
 
   it('a completion stored without a readable answer shows the local summary', async () => {

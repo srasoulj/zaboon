@@ -4,9 +4,8 @@
  * Every attempt gets its own attemptSeq, so a re-queued retry is a new attempt (ARCHITECTURE §6).
  */
 import {
-  CompleteSessionRequest,
   MAX_ANSWER_MS,
-  MAX_CHALLENGES,
+  MAX_ANSWERS,
   PASSING_VERDICTS,
   type AnswerRecord,
   type ChallengeResponse,
@@ -34,21 +33,9 @@ export const passes = (v: Verdict): boolean => PASSING_VERDICTS.includes(v)
 /** A skip counts as a wrong attempt (Duolingo parity): it costs a heart and spoils a perfect lesson. */
 export const countsAsWrong = (v: Verdict): boolean => v === 'wrong' || v === 'skipped'
 
-/**
- * The most attempts one /complete may carry: the contract's `answers` max length, read from the
- * schema so a contract change needs no code change here (MAX_CHALLENGES if it can't be read).
- */
+/** The most attempts one /complete may carry (the contract's `answers` max length). */
 export function maxAnswers(): number {
-  const def = (
-    CompleteSessionRequest.shape.answers as unknown as {
-      _zod?: { def?: { checks?: { _zod?: { def?: { check?: string; maximum?: unknown } } }[] } }
-    }
-  )._zod?.def
-  for (const c of def?.checks ?? []) {
-    const d = c._zod?.def
-    if (d?.check === 'max_length' && typeof d.maximum === 'number') return d.maximum
-  }
-  return MAX_CHALLENGES
+  return MAX_ANSWERS
 }
 
 export function initialProgress(challenges: readonly { index: number }[]): Progress {
