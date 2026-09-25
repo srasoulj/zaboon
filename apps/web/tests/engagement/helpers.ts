@@ -46,6 +46,8 @@ export interface LessonOptions {
   /** Answer time per attempt (under 800 ms flags the session as implausible). */
   ms?: number
   kind?: 'lesson' | 'practice' | 'letters'
+  /** Practice hub mode (practice sessions only). */
+  mode?: 'mixed' | 'mistakes' | 'listening' | 'typing'
   levelId?: string
   completedAt?: string
 }
@@ -67,6 +69,7 @@ export async function startLesson(
       kind,
       ...(levelId ? { levelId } : {}),
       tz: o.tz ?? 'UTC',
+      ...(o.mode ? { mode: o.mode } : {}),
     },
   })
   expect(res.status, JSON.stringify(res.body)).toBe(200)

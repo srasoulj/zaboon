@@ -1,7 +1,8 @@
 /** With every engagement flag off the app behaves exactly as the MVP: no new fields, no P2 writes, 404s. */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createHarness, type Harness } from '../api/harness'
-import { ALL_ON, api, cronAuth, lesson, p2Rows, read, useCronSecret } from './helpers'
+import type { ALL_ON } from './helpers'
+import { api, cronAuth, lesson, p2Rows, read, useCronSecret } from './helpers'
 
 let h: Harness
 beforeAll(async () => {
