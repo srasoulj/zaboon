@@ -7,7 +7,7 @@
   tokens:
     - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hello" }
   en: "[Hello/Hi]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0001.mp3, signedOffBy: null, slow: audio/s_u01_0001.slow.mp3, envelope: audio/s_u01_0001.envelope.json }
   unit: u01-hello
   tags: [greeting]
   status: draft
@@ -25,7 +25,7 @@
     - "[Hi,/Hello,] [how are you?/how are you doing?/how's it going?/how is it going?]"
     - "[Hi,/Hello,] are you [well?/good?/okay?/OK?/all right?/fine?/doing well?]"
   faAccept: "سلام [خوبی/چطوری]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0002.mp3, signedOffBy: null, slow: audio/s_u01_0002.slow.mp3, envelope: audio/s_u01_0002.envelope.json }
   unit: u01-hello
   tags: [greeting, question]
   status: draft
@@ -40,7 +40,7 @@
     - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
   en: "[Thanks/Thank you]"
   faAccept: "[مرسی/ممنون/ممنونم]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0003.mp3, signedOffBy: null, slow: audio/s_u01_0003.slow.mp3, envelope: audio/s_u01_0003.envelope.json }
   unit: u01-hello
   tags: [politeness]
   status: draft
@@ -60,7 +60,7 @@
   faAccept:
     - "[مرسی/ممنون/ممنونم] [من/] خوبم"
     - "[من/] خوبم [مرسی/ممنون]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0004.mp3, signedOffBy: null, slow: audio/s_u01_0004.slow.mp3, envelope: audio/s_u01_0004.envelope.json }
   unit: u01-hello
   tags: [greeting]
   status: draft
@@ -72,7 +72,7 @@
   tokens:
     - { surface: خداحافظ, lexeme: lx_khodahafez, translit: khodāhāfez, gloss: "goodbye" }
   en: "[Goodbye/Bye/Bye-bye/Bye bye]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0005.mp3, signedOffBy: null, slow: audio/s_u01_0005.slow.mp3, envelope: audio/s_u01_0005.envelope.json }
   unit: u01-hello
   tags: [greeting]
   status: draft
@@ -88,7 +88,7 @@
     - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "I'm fine" }
   en: "Yes, I'm [fine/good/well/okay/OK/all right/doing well]"
   faAccept: "بله [من/] خوبم"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0006.mp3, signedOffBy: null, slow: audio/s_u01_0006.slow.mp3, envelope: audio/s_u01_0006.envelope.json }
   unit: u01-hello
   status: draft
   provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Assembly edit: restored the seed faAccept (an explicit من is not added automatically)." }
@@ -103,7 +103,7 @@
     - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
   en: "No, [thanks/thank you]"
   faAccept: "نه [مرسی/ممنون/ممنونم]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0007.mp3, signedOffBy: null, slow: audio/s_u01_0007.slow.mp3, envelope: audio/s_u01_0007.envelope.json }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
@@ -119,7 +119,7 @@
     - { surface: خداحافظ, lexeme: lx_khodahafez, translit: khodāhāfez, gloss: "goodbye" }
   en: "[Thanks,/Thank you,] [goodbye/bye]"
   faAccept: "[مرسی/ممنون] خداحافظ"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0008.mp3, signedOffBy: null, slow: audio/s_u01_0008.slow.mp3, envelope: audio/s_u01_0008.envelope.json }
   unit: u01-hello
   tags: [greeting]
   status: draft
@@ -136,7 +136,7 @@
     - "Thanks [a lot/so much/very much]"
     - "Many thanks"
   faAccept: "خیلی [ممنون/ممنونم/مرسی]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0009.mp3, signedOffBy: null, slow: audio/s_u01_0009.slow.mp3, envelope: audio/s_u01_0009.envelope.json }
   unit: u01-hello
   tags: [politeness]
   status: draft
@@ -149,7 +149,7 @@
     - { surface: ببخشید, lexeme: lx_bebakhshid, translit: bebakhshid, gloss: "excuse me; sorry" }
   en: "[Excuse me/Sorry/I'm sorry/Pardon me/Pardon]"
   faAccept: "[ببخشید/ببخشین]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0010.mp3, signedOffBy: null, slow: audio/s_u01_0010.slow.mp3, envelope: audio/s_u01_0010.envelope.json }
   unit: u01-hello
   tags: [politeness]
   status: draft
@@ -168,7 +168,7 @@
     - "[Hello,/Hi,] [how are you?/how are you doing?/how are you all?]"
     - "[Hello,/Hi,] are you [good?/well?/okay?/OK?/all right?/fine?/doing well?]"
   faAccept: "سلام [شما/] [خوبین/خوبید/چطورین/چطورید]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0011.mp3, signedOffBy: null, slow: audio/s_u01_0011.slow.mp3, envelope: audio/s_u01_0011.envelope.json }
   unit: u01-hello
   tags: [greeting, question, politeness]
   status: draft
@@ -186,7 +186,7 @@
     - { surface: چطوری, lexeme: lx_chetor, translit: chetori, gloss: "how are (you)?" }
   en: "I'm [good,/fine,/well,/okay,/OK,] [how are you?/how about you?/what about you?/and you?/and how are you?]"
   faAccept: "من خوبم تو [چطوری/خوبی]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0012.mp3, signedOffBy: null, slow: audio/s_u01_0012.slow.mp3, envelope: audio/s_u01_0012.envelope.json }
   unit: u01-hello
   tags: [greeting, question]
   status: draft
@@ -199,7 +199,7 @@
     - { surface: صبح, lexeme: lx_sobh, translit: sobh, gloss: "morning" }
     - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (lit. with goodness)" }
   en: "Good morning"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0013.mp3, signedOffBy: null, slow: audio/s_u01_0013.slow.mp3, envelope: audio/s_u01_0013.envelope.json }
   unit: u01-hello
   tags: [greeting]
   status: draft
@@ -214,7 +214,7 @@
   en:
     - "Good night"
     - "[Night/Goodnight]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0014.mp3, signedOffBy: null, slow: audio/s_u01_0014.slow.mp3, envelope: audio/s_u01_0014.envelope.json }
   unit: u01-hello
   tags: [greeting, parting]
   status: draft
@@ -229,7 +229,7 @@
     - { surface: مامان‌بزرگ, lexeme: lx_maman_bozorg, translit: māmānbozorg, gloss: "grandma" }
   en: "Good morning, [Grandma/Granny/Grandmother/Grandmom/Nana/Maman Bozorg]"
   faAccept: "صبح بخیر [مامان‌بزرگ/مادربزرگ]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0015.mp3, signedOffBy: null, slow: audio/s_u01_0015.slow.mp3, envelope: audio/s_u01_0015.envelope.json }
   unit: u01-hello
   tags: [greeting, family]
   status: draft
@@ -246,7 +246,7 @@
     - { surface: چطورین, lexeme: lx_chetor, translit: chetorin, gloss: "how are (you)?" }
   en: "[Thank you,/Thanks,] [how are you?/how about you?/what about you?/and you?/and how are you?]"
   faAccept: "[ممنونم/ممنون/مرسی] [شما/] [چطورین/چطورید/خوبین/خوبید]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0016.mp3, signedOffBy: null, slow: audio/s_u01_0016.slow.mp3, envelope: audio/s_u01_0016.envelope.json }
   unit: u01-hello
   tags: [politeness, question]
   status: draft
@@ -262,7 +262,7 @@
     - { surface: شیرینه, lexeme: lx_name_shirin, translit: shirine, gloss: "is Shirin" }
   en: "[My name is/My name's] Shirin"
   faAccept: "[اسمم/اسم من] شیرینه"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0017.mp3, signedOffBy: null, slow: audio/s_u01_0017.slow.mp3, envelope: audio/s_u01_0017.envelope.json }
   unit: u01-hello
   tags: [name]
   status: draft
@@ -278,7 +278,7 @@
     - { surface: چیه, lexeme: lx_chi, translit: chiye, gloss: "what is" }
   en: "[What's/What is] your name?"
   faAccept: "[اسمت/اسم تو] چیه"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0018.mp3, signedOffBy: null, slow: audio/s_u01_0018.slow.mp3, envelope: audio/s_u01_0018.envelope.json }
   unit: u01-hello
   tags: [name, question]
   status: draft
@@ -294,7 +294,7 @@
     - { surface: چیه, lexeme: lx_chi, translit: chiye, gloss: "what is" }
   en: "[What's/What is] your name?"
   faAccept: "[اسمتون/اسم شما] چیه"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0019.mp3, signedOffBy: null, slow: audio/s_u01_0019.slow.mp3, envelope: audio/s_u01_0019.envelope.json }
   unit: u01-hello
   tags: [name, question, politeness]
   status: draft
@@ -310,7 +310,7 @@
     - { surface: لیلاست, lexeme: lx_name_leila, translit: leylāst, gloss: "is Leila" }
   en: "[My name is/My name's] [Leila/Leyla/Layla]"
   faAccept: "[اسمم/اسم من] لیلاست"
-  audio: { speaker: leila }
+  audio: { speaker: leila, normal: audio/s_u01_0020.mp3, signedOffBy: null, slow: audio/s_u01_0020.slow.mp3, envelope: audio/s_u01_0020.envelope.json }
   unit: u01-hello
   tags: [name]
   status: draft
@@ -325,7 +325,7 @@
     - "[Please,/] [go ahead/come in/have a seat/sit down/help yourself]"
     - "[After you/Here you are/Here you go/Please]"
   faAccept: "[بفرمایید/بفرمایین/بفرما]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0021.mp3, signedOffBy: null, slow: audio/s_u01_0021.slow.mp3, envelope: audio/s_u01_0021.envelope.json }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
@@ -346,7 +346,7 @@
   faAccept:
     - "[بفرمایید/بفرمایین/بفرما] چایی"
     - "چایی [بفرمایید/بفرمایین/بفرما]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0022.mp3, signedOffBy: null, slow: audio/s_u01_0022.slow.mp3, envelope: audio/s_u01_0022.envelope.json }
   unit: u01-hello
   tags: [taarof]
   status: draft
@@ -361,7 +361,7 @@
   en:
     - "You're welcome"
     - "[Don't mention it/No problem/My pleasure/Not at all/Please]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0023.mp3, signedOffBy: null, slow: audio/s_u01_0023.slow.mp3, envelope: audio/s_u01_0023.envelope.json }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
@@ -379,7 +379,7 @@
     - "No need to be [polite/shy/formal]"
     - "[No/Don't do] [ta'ārof/ta'arof/taarof/tarof]"
   faAccept: "تعارف [نکن/نکنین/نکنید]"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0024.mp3, signedOffBy: null, slow: audio/s_u01_0024.slow.mp3, envelope: audio/s_u01_0024.envelope.json }
   unit: u01-hello
   tags: [taarof]
   status: draft
@@ -395,7 +395,7 @@
     - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
   en: "[Okay,/OK,/Alright,/All right,/Fine,] [thanks/thank you]"
   faAccept: "باشه [مرسی/ممنون]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0025.mp3, signedOffBy: null, slow: audio/s_u01_0025.slow.mp3, envelope: audio/s_u01_0025.envelope.json }
   unit: u01-hello
   tags: [taarof]
   status: draft
@@ -413,7 +413,7 @@
     - "How are you doing?"
     - "Are you [well?/okay?/OK?/all right?/good?/fine?]"
   faAccept: "[خوبی/چطوری]"
-  audio: { speaker: shirin }
+  audio: { speaker: shirin, normal: audio/s_u01_0026.mp3, signedOffBy: null, slow: audio/s_u01_0026.slow.mp3, envelope: audio/s_u01_0026.envelope.json }
   unit: u01-hello
   tags: [greeting, question]
   status: draft
@@ -433,7 +433,7 @@
   faAccept:
     - "[من/] خوبم [ممنون/ممنونم/مرسی]"
     - "[ممنون/ممنونم/مرسی] [من/] خوبم"
-  audio: { speaker: maman-bozorg }
+  audio: { speaker: maman-bozorg, normal: audio/s_u01_0027.mp3, signedOffBy: null, slow: audio/s_u01_0027.slow.mp3, envelope: audio/s_u01_0027.envelope.json }
   unit: u01-hello
   tags: [greeting, politeness]
   status: draft
@@ -450,7 +450,7 @@
   faAccept:
     - "شب بخیر [مامان‌بزرگ/مادربزرگ]"
     - "[مامان‌بزرگ/مادربزرگ] شب بخیر"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0028.mp3, signedOffBy: null, slow: audio/s_u01_0028.slow.mp3, envelope: audio/s_u01_0028.envelope.json }
   unit: u01-hello
   tags: [greeting, family, parting]
   status: draft
@@ -466,7 +466,7 @@
     - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thank you" }
   en: "Yes, [thank you/thanks]"
   faAccept: "بله [مرسی/ممنون/ممنونم]"
-  audio: { speaker: leila }
+  audio: { speaker: leila, normal: audio/s_u01_0029.mp3, signedOffBy: null, slow: audio/s_u01_0029.slow.mp3, envelope: audio/s_u01_0029.envelope.json }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft
@@ -485,7 +485,7 @@
     - "[Okay,/OK,/All right,/Alright,] thank you [very much/so much]"
     - "[Okay,/OK,/All right,/Alright,] thanks [a lot/so much/very much]"
   faAccept: "باشه خیلی [ممنون/ممنونم/مرسی]"
-  audio: { speaker: kian }
+  audio: { speaker: kian, normal: audio/s_u01_0030.mp3, signedOffBy: null, slow: audio/s_u01_0030.slow.mp3, envelope: audio/s_u01_0030.envelope.json }
   unit: u01-hello
   tags: [politeness, taarof]
   status: draft

@@ -6,10 +6,12 @@ import {
   AiClient,
   AiHttpError,
   AiTimeoutError,
+  assembleChatStream,
   FetchTransport,
   fetchKeyInfo,
   listModels,
   retryAfterMs,
+  type FetchLike,
 } from './index'
 import { replayFetch, type RecordedExchange } from './testing'
 
@@ -177,5 +179,86 @@ describe('FetchTransport retry policy', () => {
 
   it('requires a key', () => {
     expect(() => new FetchTransport({ apiKey: '' })).toThrow()
+  })
+})
+
+describe('FetchTransport streaming (audio output needs stream: true)', () => {
+  // The event shapes of a real gpt-audio pcm16 stream through OpenRouter, with tiny payloads.
+  const base = { id: 'gen-1', object: 'chat.completion.chunk', model: 'openai/gpt-audio' }
+  const delta = (d: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+    ...base,
+    choices: [{ index: 0, delta: { content: '', role: 'assistant', ...d }, finish_reason: null }],
+    ...extra,
+  })
+  // Chunk sizes that are not multiples of 3: joining their base64 strings would corrupt the audio.
+  const pcmA = Buffer.from([1, 2, 3, 4, 5])
+  const pcmB = Buffer.from([6, 7, 8])
+  const usage = { prompt_tokens: 73, completion_tokens: 30, total_tokens: 103, cost: 0.0015625 }
+  const sse = (events: unknown[]) =>
+    [': OPENROUTER PROCESSING', '', ...events.map((e) => `data: ${JSON.stringify(e)}\n`)]
+      .concat('data: [DONE]', '')
+      .join('\n')
+  const stream = [
+    delta({ audio: { id: 'audio_1', transcript: 'سَ' } }),
+    delta({ audio: { transcript: 'لام!' } }),
+    delta({ audio: { id: 'audio_1', data: pcmA.toString('base64') } }),
+    delta({ audio: { data: pcmB.toString('base64') } }),
+    delta({ audio: { expires_at: 1790354160 } }),
+    delta({}, { usage }),
+  ]
+  const sseFetch = (body: string, seen: unknown[] = []) =>
+    (async (_url: string, init?: RequestInit) => {
+      seen.push(JSON.parse(String(init?.body)))
+      return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
+    }) as FetchLike
+
+  it('assembles the events into one response: joined audio bytes, transcript and usage', async () => {
+    const seen: unknown[] = []
+    const t = new FetchTransport({ apiKey: KEY, fetch: sseFetch(sse(stream), seen) })
+    const res = await t.send({ model: 'openai/gpt-audio', messages: [], stream: true })
+    expect(seen[0]).toMatchObject({ stream: true })
+    expect(res.id).toBe('gen-1')
+    expect(res.model).toBe('openai/gpt-audio')
+    const message = res.choices[0]!.message
+    expect(message.content).toBeNull()
+    expect(Buffer.from(message.audio!.data, 'base64').equals(Buffer.concat([pcmA, pcmB]))).toBe(
+      true,
+    )
+    expect(message.audio!.transcript).toBe('سَلام!')
+    expect(res.usage).toEqual(usage)
+  })
+
+  it('throws on an error event in the stream', () => {
+    const failed = sse([
+      stream[0],
+      { ...base, error: { code: 502, message: 'provider disconnected' }, choices: [] },
+    ])
+    expect(() => assembleChatStream(failed)).toThrow(/provider disconnected/)
+    expect(() => assembleChatStream('data: {not json\n\n')).toThrow(AiHttpError)
+  })
+
+  it('reads a JSON body when a streamed request fails before streaming', async () => {
+    const t = new FetchTransport({
+      apiKey: KEY,
+      fetch: async () => new Response(JSON.stringify({ error: { code: 400, message: 'bad' } })),
+    })
+    await expect(t.send({ model: 'm', messages: [], stream: true })).rejects.toThrow(/bad/)
+  })
+
+  it('speech() end to end: streams pcm16, returns a WAV and records the reported cost', async () => {
+    const seen: unknown[] = []
+    const ai = new AiClient({ apiKey: KEY, fetch: sseFetch(sse(stream), seen) })
+    const r = await ai.speech('سَلام!', 'coral')
+    expect(seen[0]).toMatchObject({
+      model: 'openai/gpt-audio',
+      modalities: ['text', 'audio'],
+      audio: { voice: 'coral', format: 'pcm16' },
+      stream: true,
+      usage: { include: true },
+    })
+    expect(r.bytes.subarray(0, 4).toString('ascii')).toBe('RIFF')
+    expect(r.bytes.subarray(44).equals(Buffer.concat([pcmA, pcmB]))).toBe(true)
+    expect(r.transcript).toBe('سَلام!')
+    expect(r.costUsd).toBe(0.0015625)
   })
 })
