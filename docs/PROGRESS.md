@@ -25,13 +25,18 @@
 | ws-db | 1 | `supabase/migrations`, `packages/db` | ✅ merged | #6, #15 |
 | ws-ui | 1 | `packages/ui` | ✅ merged | #7, #16 |
 | ws-content-cli | 1 | `packages/ai`, `tools/content-cli` | ✅ merged | #14 |
-| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged; 🔧 review fixes in progress | #17, #23 |
-| ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ merged; 🔧 review fixes in progress | #21 |
-| ws-player | 2 | lesson player, offline outbox, resume | ✅ merged; 🔧 review fixes in progress | #22 |
-| ws-path-letters | 2 | path, guidebook, letters, practice | 🔄 working ([spec](../ops/prompts/ws-path-letters.md)) | |
-| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | 🔄 working ([spec](../ops/prompts/ws-pages.md)) | |
-| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; 🔄 Unit 1 media | |
-| ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | 🔄 working ([spec](../ops/prompts/ws-qa.md)) | |
+| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged | #17, #23, #26 |
+| ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ merged | #21, #31 |
+| ws-player | 2 | lesson player, offline outbox, resume | ✅ merged | #22, #30 |
+| ws-path-letters | 2 | path, guidebook, letters, practice | ✅ merged ([spec](../ops/prompts/ws-path-letters.md)) | #32 |
+| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged ([spec](../ops/prompts/ws-pages.md)) | #35 |
+| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media generated (integration pending) | #20, #24 |
+| ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
+
+**Deployment:** the user is deploying `main` to Vercel. Hotfix #34 (from the user's own session)
+made `next build` independent of runtime auth configuration; `pnpm verify` now runs a production
+build too, so a build break is caught before merge. The Vercel project still needs its environment
+variables (names in `.env.example`; list in #34).
 
 **Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
 the real renderers, the lesson player, the API and Postgres on desktop and mobile Chromium: all 13 MVP

@@ -529,7 +529,8 @@ export async function completeSession(
       xp: { base: xp.base, bonus: xp.bonus, total: xp.total },
       accuracy,
       perfect: earned.perfect,
-      durationMs: countedAt.getTime() - startedAt.getTime(),
+      // The clamp can land before startedAt when the server clock is behind the session start (#28).
+      durationMs: Math.max(0, countedAt.getTime() - startedAt.getTime()),
       streak: {
         ...streakView(streak.state, today),
         extendedToday: streak.extendedToday,

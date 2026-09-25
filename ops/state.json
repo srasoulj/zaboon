@@ -1,19 +1,19 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T16:00:00Z",
+  "updatedAt": "2026-09-25T17:10:00Z",
   "wave": 2,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
     "keyLimitUsd": 10,
-    "keyUsageUsd": 3.774,
-    "accountBalanceUsd": 6.53,
-    "note": "The internal cap ($9.50 of key usage) is the binding limit now; the account was topped up (other usage on the account is not this project's). Check GET /api/v1/key and /api/v1/credits before paid calls.",
+    "keyUsageUsd": 7.5636,
+    "accountBalanceUsd": 2.7449,
+    "note": "Internal cap $9.50; $1.94 left after Unit 1 media. Units 2–5 media need a larger budget (human backlog).",
     "spent": {
       "textPilot": 0.0018,
       "text": 2.76,
       "art": 1.0168,
-      "media": "Unit 1 audio/illustrations/portraits in progress"
+      "media": 3.7899
     }
   },
   "limits": {
@@ -62,35 +62,49 @@
       ]
     },
     "ws-api": {
-      "status": "fixing post-merge review findings (new PR)",
+      "status": "done",
       "prs": [
         17,
-        23
+        23,
+        26
       ]
     },
     "ws-renderers": {
-      "status": "fixing post-merge review findings (new PR)",
+      "status": "done",
       "prs": [
-        21
+        21,
+        31
       ]
     },
     "ws-player": {
-      "status": "fixing post-merge review findings (new PR)",
+      "status": "done",
       "prs": [
-        22
+        22,
+        30
       ]
     },
     "ws-path-letters": {
-      "status": "working",
-      "prs": []
+      "status": "done",
+      "prs": [
+        32
+      ]
     },
     "ws-pages": {
-      "status": "working",
-      "prs": []
+      "status": "done",
+      "prs": [
+        35
+      ]
     },
     "ws-qa-1": {
-      "status": "working",
-      "prs": []
+      "status": "done",
+      "prs": [
+        33
+      ],
+      "issues": [
+        27,
+        28,
+        29
+      ]
     }
   },
   "workstreams": {
@@ -120,7 +134,7 @@
     },
     "ws-pages": {
       "wave": 2,
-      "status": "working"
+      "status": "done"
     },
     "ws-player": {
       "wave": 2,
@@ -132,16 +146,16 @@
     },
     "ws-path-letters": {
       "wave": 2,
-      "status": "working"
+      "status": "done"
     },
     "ws-content-gen": {
       "wave": 2,
-      "status": "text drafts done (units 1–5); Unit 1 media in progress",
+      "status": "text drafts done (units 1–5); Unit 1 media generated (78 clips, 8 illustrations, 5 portraits), integration PR pending",
       "runsIn": "orchestrator"
     },
     "ws-qa": {
       "wave": 2,
-      "status": "ws-qa-1 working"
+      "status": "ws-qa-1 done (#33); bugs #27–#29 fixed by the orchestrator"
     }
   },
   "humanBacklog": [
@@ -176,7 +190,14 @@
     21,
     22,
     23,
-    24
+    24,
+    26,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -196,5 +217,8 @@
     "status": "pass",
     "checkedAt": "2026-09-25T15:55:00Z",
     "detail": "u01-s0/l1/l2 through the real renderers and player on desktop + mobile Chromium: all 13 MVP types correct, XP 15/15/15, no console or network errors (orchestrator scratch spec, used as an extra merge gate until committed as e2e/qa/golden.spec.ts)"
+  },
+  "external": {
+    "vercel": "The user deploys main to Vercel (hotfix #34 made next build independent of runtime auth configuration). The project still needs its environment variables (see #34)."
   }
 }

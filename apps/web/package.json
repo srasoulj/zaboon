@@ -26,6 +26,7 @@
     "@zaboon/srs": "workspace:*",
     "@zaboon/ui": "workspace:*",
     "clsx": "2.1.1",
+    "esbuild": "0.28.2",
     "howler": "2.2.4",
     "idb": "8.0.3",
     "jose": "6.2.12",

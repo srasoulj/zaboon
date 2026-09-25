@@ -50,14 +50,18 @@ export function strengthOf(card: FsrsCard, now: Date, config: AppConfig): 0 | 1 
   return strengthBars(retrievability(card, now), config.srs.strengthBars)
 }
 
-interface ReadCtx {
+export interface ReadCtx {
   db: Db
   userId: string
   courseId: string | null
 }
 
-/** Runs `fn` with the learner's course bundle, after bringing their enrollment to its version. */
-async function withCourse<T>(
+/**
+ * Runs `fn` with the learner's course bundle (`courseId`, or the active course), after bringing
+ * their enrollment to its version, all under the user lock. Shared by path, letters, words and the
+ * guidebook.
+ */
+export async function withCourse<T>(
   ctx: ReadCtx,
   fn: (tx: Tx, bundle: LoadedBundle) => Promise<T>,
 ): Promise<T> {

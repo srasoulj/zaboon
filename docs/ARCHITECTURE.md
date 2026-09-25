@@ -305,9 +305,12 @@ PostgREST ([ADR 0009](adr/0009-api-first-data-access.md)).
 | `POST /api/ai/explain` · `POST /api/ai/roleplay` | P3 | OpenRouter app key; per-user quotas |
 | `/api/dev/auth/*` | **Local only** | Sign-in for `AUTH_MODE=local` (§12). Its `*.dev.ts` route files are compiled only when a build-time flag enables them; a production build returns 404 |
 
-**Error conventions:** 401 (no or invalid JWT), 403 (anonymous user on a profile-only feature,
-missing admin claim), 409 (session expired or already completed with a different payload), 426
-(client below `minAppVersion`), 429 (rate limit).
+**Error conventions:** 401 (no or invalid JWT, or the token of an account that no longer exists),
+403 (anonymous user on a profile-only feature, missing admin claim), 404 (unknown or another
+user's resource), 409 (a write that conflicts with state, e.g. a taken username or an event for a
+completed session), 410 `gone` (the session expired), 426 (client below `minAppVersion`), 429 (rate
+limit). A `/complete` replay always returns the stored result with 200, whatever its payload: the
+first commit wins, which is what makes the offline outbox safe to retry.
 
 ---
 

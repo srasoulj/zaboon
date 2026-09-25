@@ -373,6 +373,8 @@ describe('LessonPlayer', () => {
     const complete = calls.find((c) => c.name === 'completeSession')!
     expect(complete.opts).toMatchObject({ params: { id: testSession().sessionId } })
     await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['home'] }))
+    // The Practice page's word list changes with every lesson too (#32).
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['words'] })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['path'] })
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))

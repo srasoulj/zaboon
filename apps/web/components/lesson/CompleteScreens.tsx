@@ -53,7 +53,8 @@ function StatCard({
     lajvard: 'border-lajvard-500',
   }[tone]
   const fill = {
-    zaferan: 'bg-zaferan-500 text-ink',
+    // The palette's fixed label ink: `text-ink` turns light in the dark theme (1.7:1 on saffron).
+    zaferan: 'bg-zaferan-500 text-zaferan-label',
     firouzeh: 'bg-firouzeh-600 text-white',
     lajvard: 'bg-lajvard-500 text-white',
   }[tone]
@@ -127,7 +128,8 @@ export function SummaryScreen({
       <ConfettiBurst fireKey={1} />
       <Character name="hodhod" mood="celebrate" size={140} decorative />
       <div>
-        <h1 className="text-[28px] font-extrabold text-zaferan-600">
+        {/* Saffron text is below 3:1 on white, so headings use ink; saffron stays in the art. */}
+        <h1 className="text-[28px] font-extrabold text-ink">
           {summary.perfect ? 'Perfect lesson!' : 'Lesson complete!'}
         </h1>
         <p className="text-stone" role="status">
@@ -166,7 +168,7 @@ export function StreakScreen({ days, onContinue }: { days: number; onContinue: (
       <ConfettiBurst fireKey={2} />
       <Icon name="flame" size={120} className="text-zaferan-500" />
       <div data-testid="streak-days" data-value={days}>
-        <p className="text-[64px] leading-none font-extrabold text-zaferan-600" aria-hidden="true">
+        <p className="text-[64px] leading-none font-extrabold text-ink" aria-hidden="true">
           {shown}
         </p>
         <h1 className="text-[24px] font-extrabold">day streak</h1>
