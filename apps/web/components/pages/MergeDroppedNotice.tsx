@@ -1,14 +1,40 @@
 'use client'
-/** Tells the learner when a parked guest merge had to be given up (identity.ts). */
-import { useState } from 'react'
-import { useHydrated } from '@/lib/app-services'
-import { dismissDroppedMerge, hasDroppedMerge } from './identity'
+/**
+ * Tells a member that the progress they made as a guest could not be merged into their account
+ * (identity.ts gives up only on a permanent refusal or an expired guest token). Self-contained, for
+ * the app shell: it reads storage, follows other tabs (`storage` event) and this tab
+ * (MERGE_DROPPED_EVENT), and shows only to the member the note is for.
+ */
+import { useSyncExternalStore } from 'react'
+import { useSession } from '@/lib/app-services'
+import {
+  MERGE_DROPPED_EVENT,
+  MERGE_DROPPED_KEY,
+  clearDroppedMerge,
+  droppedMergeFor,
+  readDroppedMerge,
+} from './identity'
+
+function subscribe(onChange: () => void): () => void {
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === null || e.key === MERGE_DROPPED_KEY) onChange()
+  }
+  window.addEventListener('storage', onStorage)
+  window.addEventListener(MERGE_DROPPED_EVENT, onChange)
+  return () => {
+    window.removeEventListener('storage', onStorage)
+    window.removeEventListener(MERGE_DROPPED_EVENT, onChange)
+  }
+}
+
+const serverSnapshot = () => null
 
 export function MergeDroppedNotice() {
-  const hydrated = useHydrated()
-  const [dismissed, setDismissed] = useState(false)
-  // localStorage is read after hydration only (the server can't see it).
-  if (!hydrated || dismissed || !hasDroppedMerge()) return null
+  const raw = useSyncExternalStore(subscribe, readDroppedMerge, serverSnapshot)
+  const session = useSession()
+  const member =
+    session.status === 'signed_in' && !session.session.isAnonymous ? session.session.userId : null
+  if (!member || droppedMergeFor(raw) !== member) return null
   return (
     <div
       role="alert"
@@ -19,14 +45,7 @@ export function MergeDroppedNotice() {
         We couldn&apos;t add the progress you made as a guest to this account: the guest session had
         expired or was refused. Your account itself is fine.
       </p>
-      <button
-        type="button"
-        onClick={() => {
-          dismissDroppedMerge()
-          setDismissed(true)
-        }}
-        className="shrink-0 underline"
-      >
+      <button type="button" onClick={clearDroppedMerge} className="shrink-0 underline">
         Dismiss
       </button>
     </div>

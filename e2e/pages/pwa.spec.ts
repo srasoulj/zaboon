@@ -26,7 +26,17 @@ test('the offline page is served', async ({ page }) => {
 
 test('the registered worker caches app assets and lesson media, never the API or pages', async ({
   page,
+  request,
 }) => {
+  // The fixture course's current published version, as the API reports it (never hard-coded).
+  const guest = await request.post('/api/dev/auth/anonymous')
+  const { accessToken } = (await guest.json()) as { accessToken: string }
+  const path = await request.get('/api/path?courseId=fixture', {
+    headers: { authorization: `Bearer ${accessToken}` },
+  })
+  expect(path.status()).toBe(200)
+  const { contentVersion } = (await path.json()) as { contentVersion: number }
+
   await page.goto('/alphabet')
   const scope = await page.evaluate(async () => {
     const reg = await navigator.serviceWorker.register('/serwist/sw.js', { scope: '/' })
@@ -40,9 +50,9 @@ test('the registered worker caches app assets and lesson media, never the API or
     .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
     .toBe(true)
   // A real lesson media URL, resolved like the server does (manifest.assetsBase relative to the
-  // bundle; the frozen fixture course is published at v1 by global-setup).
-  const mediaPath = await page.evaluate(async () => {
-    const base = new URL('/content/fixture/v1/manifest.json', location.origin)
+  // bundle of the current version).
+  const mediaPath = await page.evaluate(async (version) => {
+    const base = new URL(`/content/fixture/v${version}/manifest.json`, location.origin)
     const manifest = (await (await fetch(base)).json()) as {
       assetsBase: string
       units: Record<string, string>
@@ -55,7 +65,7 @@ test('the registered worker caches app assets and lesson media, never the API or
     await fetch('/api/meta')
     await fetch('/alphabet/be')
     return media.pathname
-  })
+  }, contentVersion)
   expect(mediaPath).toMatch(/^\/content\/fixture\/assets\/audio\/.+\.[0-9a-f]{10}\.mp3$/)
   await expect
     .poll(async () =>

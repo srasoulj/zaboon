@@ -11,7 +11,6 @@ import { Button3D } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
 import { useApi, useAuth, useSession } from '@/lib/app-services'
 import { errorMessage, useOutboxPort } from './hooks'
-import { MergeDroppedNotice } from './MergeDroppedNotice'
 import {
   MergeFailedError,
   OutboxBlockedError,
@@ -88,7 +87,6 @@ export function AccountScreen({
   return (
     <section className="flex flex-col gap-8" data-testid="account">
       <h1 className="text-2xl font-extrabold">Account</h1>
-      <MergeDroppedNotice />
       {notice?.tone === 'ok' && (
         <p
           role="status"

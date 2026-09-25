@@ -12,7 +12,6 @@ import { queryKeys } from '@/lib/api-client'
 import { useApi, useSession } from '@/lib/app-services'
 import { ButtonLink } from './ButtonLink'
 import { errorMessage } from './hooks'
-import { MergeDroppedNotice } from './MergeDroppedNotice'
 
 export const USERNAME_RULE = 'Use 3–20 lowercase letters, numbers or underscores.'
 
@@ -77,7 +76,6 @@ export function ProfileScreen() {
   const name = p.displayName ?? (p.isAnonymous ? 'Guest learner' : 'Learner')
   return (
     <section className="flex flex-col gap-8" data-testid="profile">
-      <MergeDroppedNotice />
       <header className="flex items-center gap-4">
         <div
           aria-hidden="true"
