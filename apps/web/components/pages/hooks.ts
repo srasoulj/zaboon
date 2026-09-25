@@ -5,8 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import type { MetaResponse } from '@zaboon/contracts'
 import { retagOutboxUser, sharedLessonStores } from '@/components/lesson/services'
 import { queryKeys } from '@/lib/api-client'
-import { openLessonStores } from '@/lib/lesson/idb'
 import { useApi } from '@/lib/app-services'
+import { forgetLessonData } from './device-data'
 import type { OutboxPort } from './identity'
 
 /** The page-wide lesson outbox (the one the app replays; see components/lesson/services). */
@@ -22,15 +22,9 @@ export function useOutboxPort(): OutboxPort {
       },
       retag: (from, to) => retagOutboxUser(api, from, to),
       forget: async (userId) => {
-        const { outbox, snapshots } = await sharedLessonStores(api)
-        const mine = (await outbox.pending()).filter((e) => e.userId === userId)
-        if (mine.length === 0) return
-        // The shared Outbox has no delete-by-user; its IndexedDB rows are removed directly.
-        const raw = await openLessonStores()
-        for (const e of mine) {
-          await raw.outbox.remove(e.id)
-          await snapshots.remove(e.sessionId)
-        }
+        // Awaiting the shared stores first guarantees the lesson database exists and is upgraded.
+        const { snapshots } = await sharedLessonStores(api)
+        await forgetLessonData(userId, snapshots)
       },
     }),
     [api],

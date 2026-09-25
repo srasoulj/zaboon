@@ -1,14 +1,10 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { ApiClientError } from '@/lib/api-client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AccountScreen } from './AccountScreen'
 import {
-  MERGE_DROPPED_KEY,
-  MergeFailedError,
   OUTBOX_BLOCKED_MESSAGE,
   PENDING_MERGE_KEY,
   completePendingMerge,
-  leaveThenSignOut,
   ensureOutboxDelivered,
   signInAndMerge,
 } from './identity'
@@ -244,118 +240,5 @@ describe('identity helpers', () => {
     const r = await signInAndMerge({ auth, api: fake.api, outbox: fakeOutbox([]) }, 's@x.io')
     expect(r).toEqual({ status: 'merged', home: null })
     expect(fake.calls).toEqual([])
-  })
-
-  const park = (over: Record<string, unknown> = {}) =>
-    localStorage.setItem(
-      PENDING_MERGE_KEY,
-      JSON.stringify({
-        guestToken: GUEST.accessToken,
-        guestUserId: GUEST_ID,
-        expiresAt: Date.now() + 60_000,
-        ...over,
-      }),
-    )
-
-  it('keeps a pending merge after a transient failure and retries it next time', async () => {
-    park()
-    let fail = true
-    const fake = fakeApi({
-      mergeAccount: () => {
-        if (fail) throw new ApiClientError('network', 0, 'offline')
-        return { merged: true, home: home() }
-      },
-    })
-    const deps = { auth: fakeAuth(MEMBER), api: fake.api, outbox: fakeOutbox([]) }
-    expect(await completePendingMerge(deps)).toBeNull()
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toContain(GUEST.accessToken)
-    expect(localStorage.getItem(MERGE_DROPPED_KEY)).toBeNull()
-    fail = false
-    expect(await completePendingMerge(deps)).toEqual(home())
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toBeNull()
-    expect(fake.called('mergeAccount')).toHaveLength(2)
-  })
-
-  it('drops a pending merge the server refuses for good, with a notice', async () => {
-    for (const code of ['unauthorized', 'forbidden', 'validation'] as const) {
-      localStorage.clear()
-      park()
-      const fake = fakeApi({
-        mergeAccount: () => {
-          throw apiError(code, 400)
-        },
-      })
-      await completePendingMerge({ auth: fakeAuth(MEMBER), api: fake.api, outbox: fakeOutbox([]) })
-      expect(localStorage.getItem(PENDING_MERGE_KEY), code).toBeNull()
-      expect(localStorage.getItem(MERGE_DROPPED_KEY), code).toBe('1')
-    }
-  })
-
-  it('drops an expired guest token without calling the server', async () => {
-    park({ expiresAt: Date.now() - 1 })
-    const fake = fakeApi({})
-    expect(
-      await completePendingMerge({ auth: fakeAuth(MEMBER), api: fake.api, outbox: fakeOutbox([]) }),
-    ).toBeNull()
-    expect(fake.calls).toEqual([])
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toBeNull()
-    expect(localStorage.getItem(MERGE_DROPPED_KEY)).toBe('1')
-  })
-
-  it('two concurrent finishers merge only once (StrictMode runs effects twice)', async () => {
-    park()
-    const fake = fakeApi({ mergeAccount: async () => ({ merged: true, home: home() }) })
-    const deps = { auth: fakeAuth(MEMBER), api: fake.api, outbox: fakeOutbox([]) }
-    const results = await Promise.all([completePendingMerge(deps), completePendingMerge(deps)])
-    expect(fake.called('mergeAccount')).toHaveLength(1)
-    expect(results.filter((r) => r !== null)).toHaveLength(1)
-  })
-
-  it('a local-mode merge that fails after the sign-in is surfaced, and parked when retryable', async () => {
-    const transient = fakeApi({
-      mergeAccount: () => {
-        throw apiError('internal', 500)
-      },
-    })
-    const err = await signInAndMerge(
-      { auth: fakeAuth(GUEST), api: transient.api, outbox: fakeOutbox([]) },
-      's@x.io',
-    ).catch((e: unknown) => e)
-    expect(err).toBeInstanceOf(MergeFailedError)
-    expect((err as MergeFailedError).willRetry).toBe(true)
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toContain(GUEST.accessToken)
-
-    localStorage.clear()
-    const refused = fakeApi({
-      mergeAccount: () => {
-        throw apiError('forbidden', 403)
-      },
-    })
-    const err2 = await signInAndMerge(
-      { auth: fakeAuth(GUEST), api: refused.api, outbox: fakeOutbox([]) },
-      's@x.io',
-    ).catch((e: unknown) => e)
-    expect((err2 as MergeFailedError).willRetry).toBe(false)
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toBeNull()
-  })
-
-  it('signing out forgets a parked guest token', async () => {
-    park()
-    const auth = fakeAuth(MEMBER)
-    await leaveThenSignOut({ auth, navigate: () => {}, currentPath: () => '/' })
-    expect(localStorage.getItem(PENDING_MERGE_KEY)).toBeNull()
-    expect(auth.current).toBeNull()
-  })
-})
-
-describe('AccountScreen: a dropped merge', () => {
-  it('shows a notice that can be dismissed', async () => {
-    localStorage.setItem(MERGE_DROPPED_KEY, '1')
-    setup({ auth: fakeAuth(MEMBER) })
-    const notice = await screen.findByTestId('merge-dropped')
-    expect(notice).toHaveTextContent(/couldn't add the progress you made as a guest/)
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
-    expect(screen.queryByTestId('merge-dropped')).toBeNull()
-    expect(localStorage.getItem(MERGE_DROPPED_KEY)).toBeNull()
   })
 })

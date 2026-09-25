@@ -76,12 +76,18 @@ interface Deps {
  * providers' PendingMergeFinisher on every app load while a member is signed in). A local-mode
  * merge that fails for a transient reason is parked here too, so it is retried.
  *
- * The entry expires with the guest's token, is kept across transient failures (offline, 5xx, 429)
- * and is dropped, with a notice, only when the server refuses it for good.
+ * Lifecycle: the entry is read, never taken, while its request runs, and is removed only when the
+ * merge succeeded, was refused for good (with a notice) or expired with the guest's token. A tab
+ * that dies mid-request therefore loses nothing. Runs are serialized per device with the Web Locks
+ * API (a single-flight promise where it is missing; the server merge is idempotent anyway). The
+ * entry carries a nonce: after a request, storage is only touched if the same entry is still there,
+ * so a sign-out, an account deletion or a newer save during the request always wins.
  */
 export const PENDING_MERGE_KEY = 'zaboon.pendingMerge'
-/** Set when a pending merge had to be given up; the account screens show a notice. */
+/** `{ userId }` of the member whose pending merge had to be given up (MergeDroppedNotice). */
 export const MERGE_DROPPED_KEY = 'zaboon.mergeDropped'
+/** Dispatched on window whenever MERGE_DROPPED_KEY changes in this tab. */
+export const MERGE_DROPPED_EVENT = 'zaboon:merge-dropped'
 
 /** Errors after which retrying a merge can never succeed. */
 const PERMANENT_MERGE_ERRORS: ReadonlySet<string> = new Set([
@@ -100,6 +106,8 @@ interface PendingMerge {
   guestUserId: string
   /** Epoch ms: the guest token's expiry; the entry is useless after it. */
   expiresAt: number
+  /** Identifies this entry: a request only settles the entry it started with. */
+  nonce: string
 }
 
 function storage(): Storage | null {
@@ -110,39 +118,44 @@ function storage(): Storage | null {
   }
 }
 
-function savePendingMerge(p: PendingMerge): void {
+function newNonce(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function savePendingMerge(p: Omit<PendingMerge, 'nonce'>): void {
   try {
-    storage()?.setItem(PENDING_MERGE_KEY, JSON.stringify(p))
+    storage()?.setItem(PENDING_MERGE_KEY, JSON.stringify({ ...p, nonce: newNonce() }))
   } catch {
     // Storage unavailable: the guest's progress stays with the guest.
   }
 }
 
-/**
- * Reads AND removes the entry in one synchronous step, so two concurrent callers (React StrictMode
- * runs effects twice) can never both merge it.
- */
-function takePendingMerge(): PendingMerge | null {
+function readPendingMerge(): PendingMerge | null {
   try {
-    const store = storage()
-    const raw = store?.getItem(PENDING_MERGE_KEY)
-    if (!store || !raw) return null
-    store.removeItem(PENDING_MERGE_KEY)
+    const raw = storage()?.getItem(PENDING_MERGE_KEY)
+    if (!raw) return null
     const p = JSON.parse(raw) as Partial<PendingMerge>
     return typeof p.guestToken === 'string' &&
       typeof p.guestUserId === 'string' &&
-      typeof p.expiresAt === 'number'
-      ? { guestToken: p.guestToken, guestUserId: p.guestUserId, expiresAt: p.expiresAt }
+      typeof p.expiresAt === 'number' &&
+      typeof p.nonce === 'string'
+      ? {
+          guestToken: p.guestToken,
+          guestUserId: p.guestUserId,
+          expiresAt: p.expiresAt,
+          nonce: p.nonce,
+        }
       : null
   } catch {
     return null
   }
 }
 
-/** Puts a taken entry back for a later retry, unless a newer one was saved meanwhile. */
-function restorePendingMerge(p: PendingMerge): void {
-  if (storage()?.getItem(PENDING_MERGE_KEY)) return
-  savePendingMerge(p)
+/** Removes the entry if it is still the one with `nonce`; true when it was. */
+function settlePendingMerge(nonce: string): boolean {
+  if (readPendingMerge()?.nonce !== nonce) return false
+  clearPendingMerge()
+  return true
 }
 
 /** Forgets any pending merge (sign-out, account deletion). */
@@ -154,33 +167,78 @@ export function clearPendingMerge(): void {
   }
 }
 
-function noteDroppedMerge(): void {
+function setDropped(value: string | null): void {
   try {
-    storage()?.setItem(MERGE_DROPPED_KEY, '1')
+    if (value === null) storage()?.removeItem(MERGE_DROPPED_KEY)
+    else storage()?.setItem(MERGE_DROPPED_KEY, value)
   } catch {
     // ignore
   }
+  // The `storage` event only reaches other tabs; this tab listens for this one.
+  globalThis.dispatchEvent?.(new Event(MERGE_DROPPED_EVENT))
 }
 
-export function hasDroppedMerge(): boolean {
+function noteDroppedMerge(userId: string): void {
+  setDropped(JSON.stringify({ userId }))
+}
+
+/** The member a dropped merge concerns, if any. */
+export function droppedMergeFor(raw: string | null | undefined): string | null {
+  if (!raw) return null
   try {
-    return storage()?.getItem(MERGE_DROPPED_KEY) === '1'
+    const v = JSON.parse(raw) as { userId?: unknown }
+    return typeof v.userId === 'string' ? v.userId : null
   } catch {
-    return false
+    return null
   }
 }
 
-export function dismissDroppedMerge(): void {
+export function readDroppedMerge(): string | null {
   try {
-    storage()?.removeItem(MERGE_DROPPED_KEY)
+    return storage()?.getItem(MERGE_DROPPED_KEY) ?? null
   } catch {
-    // ignore
+    return null
   }
+}
+
+/** Hides the notice (dismissed, signed out or deleted). */
+export function clearDroppedMerge(): void {
+  setDropped(null)
+}
+
+// Serialization of merge runs on this device.
+interface LockManagerLike {
+  request<T>(
+    name: string,
+    options: { ifAvailable: true },
+    callback: (lock: unknown) => Promise<T>,
+  ): Promise<T>
+}
+let singleFlight: Promise<HomeResponse | null> | null = null
+
+function lockManager(): LockManagerLike | null {
+  const locks = (globalThis.navigator as { locks?: LockManagerLike } | undefined)?.locks
+  return locks && typeof locks.request === 'function' ? locks : null
+}
+
+/** Runs `fn` unless another merge run holds the lock (then does nothing and resolves null). */
+async function exclusively(fn: () => Promise<HomeResponse | null>): Promise<HomeResponse | null> {
+  const locks = lockManager()
+  if (locks)
+    return locks.request(PENDING_MERGE_KEY, { ifAvailable: true }, async (lock) =>
+      lock ? fn() : null,
+    )
+  if (singleFlight) return null
+  singleFlight = fn().finally(() => {
+    singleFlight = null
+  })
+  return singleFlight
 }
 
 /**
  * Finishes a parked merge once a member session exists. Returns the merged home, or null when
- * there was nothing to do (or it failed: kept for a retry when the failure was transient).
+ * there was nothing to do, another run was in progress, or it failed (kept for the next load when
+ * the failure was transient).
  */
 export async function completePendingMerge(
   { auth, api, outbox }: Deps,
@@ -188,23 +246,32 @@ export async function completePendingMerge(
 ): Promise<HomeResponse | null> {
   const session = await auth.getSession()
   if (!session || session.isAnonymous) return null
-  const pending = takePendingMerge()
-  if (!pending) return null
-  // The guest itself became this member (an email link): there is nothing to merge.
-  if (session.userId === pending.guestUserId) return null
-  if (pending.expiresAt <= now()) {
-    noteDroppedMerge()
-    return null
-  }
-  try {
-    const res = await api('mergeAccount', { body: { guestToken: pending.guestToken } })
-    await retagAfterMerge(outbox, pending.guestUserId, session.userId)
-    return res.home
-  } catch (error) {
-    if (isPermanentMergeError(error)) noteDroppedMerge()
-    else restorePendingMerge(pending)
-    return null
-  }
+  const member = session.userId
+  return exclusively(async () => {
+    const pending = readPendingMerge()
+    if (!pending) return null
+    // The guest itself became this member (an email link): there is nothing to merge.
+    if (member === pending.guestUserId) {
+      settlePendingMerge(pending.nonce)
+      return null
+    }
+    if (pending.expiresAt <= now()) {
+      if (settlePendingMerge(pending.nonce)) noteDroppedMerge(member)
+      return null
+    }
+    try {
+      const res = await api('mergeAccount', { body: { guestToken: pending.guestToken } })
+      settlePendingMerge(pending.nonce)
+      await retagAfterMerge(outbox, pending.guestUserId, member)
+      return res.home
+    } catch (error) {
+      // Transient: the entry was never removed, so the next app load retries it. Nothing is ever
+      // written back, so a sign-out during the request stays a sign-out.
+      if (isPermanentMergeError(error) && settlePendingMerge(pending.nonce))
+        noteDroppedMerge(member)
+      return null
+    }
+  })
 }
 
 /** A sign-in that worked, followed by a merge that didn't. */
@@ -289,8 +356,9 @@ export async function leaveThenSignOut(
   const deadline = Date.now() + timeoutMs
   while (deps.currentPath() !== href && Date.now() < deadline)
     await new Promise((resolve) => setTimeout(resolve, 25))
-  // A parked guest token must not outlive the session that parked it.
+  // A parked guest token, and a notice meant for this member, must not outlive the session.
   clearPendingMerge()
+  clearDroppedMerge()
   await deps.auth.signOut()
 }
 
