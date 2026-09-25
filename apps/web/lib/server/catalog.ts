@@ -15,7 +15,13 @@ import { repos, withUserLock, type Db, type Tx } from '@zaboon/db'
 import { retrievability, strengthBars } from '@zaboon/srs'
 import { allLexemes, loadBundle, requireCurrentVersion, type LoadedBundle } from './content'
 import { ApiError } from './errors'
-import { letterLessonStates, migrateEnrollment, pathResponse, pathStates, progressMap } from './path'
+import {
+  letterLessonStates,
+  migrateEnrollment,
+  pathResponse,
+  pathStates,
+  progressMap,
+} from './path'
 
 const COURSE_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/
 
@@ -71,7 +77,9 @@ export function buildLetters(
     const cards = new Map(
       (await repos.memory.getLetterCards(tx, ctx.userId)).map((e) => [e.id, e.card]),
     )
-    const progress = progressMap(await repos.learning.listLevelProgress(tx, ctx.userId, bundle.courseId))
+    const progress = progressMap(
+      await repos.learning.listLevelProgress(tx, ctx.userId, bundle.courseId),
+    )
     const states = letterLessonStates(bundle, progress)
     return {
       letters: [...bundle.letters.track.letters]
@@ -97,7 +105,9 @@ export function buildLetters(
   })
 }
 
-export function buildWords(ctx: ReadCtx & { now: Date; config: AppConfig }): Promise<WordsResponse> {
+export function buildWords(
+  ctx: ReadCtx & { now: Date; config: AppConfig },
+): Promise<WordsResponse> {
   return withCourse(ctx, async (tx, bundle) => {
     const lexemes = allLexemes(bundle)
     const words = (await repos.memory.getLexemeCards(tx, ctx.userId))

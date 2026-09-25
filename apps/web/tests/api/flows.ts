@@ -75,7 +75,11 @@ export function startRaw(h: Harness, user: TestUser, o: StartOptions = {}) {
   })
 }
 
-export async function start(h: Harness, user: TestUser, o: StartOptions = {}): Promise<StartedSession> {
+export async function start(
+  h: Harness,
+  user: TestUser,
+  o: StartOptions = {},
+): Promise<StartedSession> {
   const res = await startRaw(h, user, o)
   expect(res.status, JSON.stringify(res.body)).toBe(200)
   return res.body as StartedSession
@@ -90,28 +94,43 @@ export interface FinishOptions {
 }
 
 export function finishRaw(h: Harness, user: TestUser, s: StartedSession, o: FinishOptions = {}) {
-  const now = o.now === undefined ? undefined : typeof o.now === 'string' ? o.now : o.now.toISOString()
+  const now =
+    o.now === undefined ? undefined : typeof o.now === 'string' ? o.now : o.now.toISOString()
   return h.call(api.complete, {
     path: `/api/sessions/${s.sessionId}/complete`,
     params: { id: s.sessionId },
     user,
     ...(now === undefined ? {} : { now }),
     body: {
-      answers: o.answers ?? answersFor(s.challenges, { ...(o.wrong ? { wrong: o.wrong } : {}), ...(o.ms ? { ms: o.ms } : {}) }),
+      answers:
+        o.answers ??
+        answersFor(s.challenges, {
+          ...(o.wrong ? { wrong: o.wrong } : {}),
+          ...(o.ms ? { ms: o.ms } : {}),
+        }),
       completedAt: o.completedAt ?? now ?? new Date().toISOString(),
       graderVersion: s.graderVersion,
     },
   })
 }
 
-export async function finish(h: Harness, user: TestUser, s: StartedSession, o: FinishOptions = {}): Promise<Json> {
+export async function finish(
+  h: Harness,
+  user: TestUser,
+  s: StartedSession,
+  o: FinishOptions = {},
+): Promise<Json> {
   const res = await finishRaw(h, user, s, o)
   expect(res.status, JSON.stringify(res.body)).toBe(200)
   return res.body
 }
 
 /** Starts and completes a session perfectly. */
-export async function play(h: Harness, user: TestUser, o: StartOptions & FinishOptions = {}): Promise<Json> {
+export async function play(
+  h: Harness,
+  user: TestUser,
+  o: StartOptions & FinishOptions = {},
+): Promise<Json> {
   const s = await start(h, user, o)
   return finish(h, user, s, o)
 }
@@ -132,5 +151,10 @@ export function wrongEvent(
   })
 }
 
-export const get = (h: Harness, handler: (typeof api)[keyof typeof api], path: string, user: TestUser, now?: Date | string) =>
-  h.call(handler, { path, user, ...(now === undefined ? {} : { now }) })
+export const get = (
+  h: Harness,
+  handler: (typeof api)[keyof typeof api],
+  path: string,
+  user: TestUser,
+  now?: Date | string,
+) => h.call(handler, { path, user, ...(now === undefined ? {} : { now }) })

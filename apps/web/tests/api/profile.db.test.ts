@@ -31,7 +31,8 @@ describe('POST /api/onboarding', () => {
     const goal = await onboard(alice, { ...onboarding, dailyGoalXp: 15 })
     expect(goal.status).toBe(400)
     expect(goal.body.error.code).toBe('validation')
-    const [p] = await h.sql`SELECT onboarded, age_confirmed FROM profiles WHERE user_id = ${alice.id}`
+    const [p] =
+      await h.sql`SELECT onboarded, age_confirmed FROM profiles WHERE user_id = ${alice.id}`
     expect(p).toMatchObject({ onboarded: false, age_confirmed: false })
   })
 
@@ -93,7 +94,12 @@ describe('GET/PATCH /api/profile', () => {
     })
     await play(h, alice)
     const after = await get(h, api.profile, '/api/profile', alice)
-    expect(after.body.stats).toEqual({ xpTotal: 15, streakCurrent: 1, streakLongest: 1, lessonsCompleted: 1 })
+    expect(after.body.stats).toEqual({
+      xpTotal: 15,
+      streakCurrent: 1,
+      streakLongest: 1,
+      lessonsCompleted: 1,
+    })
   })
 
   it('updates display name and avatar; usernames need a linked account and are unique', async () => {

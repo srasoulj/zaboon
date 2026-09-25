@@ -26,8 +26,7 @@ export function srsItems(
 ): { lexemes: string[]; letters: string[] } {
   const sentenceLexemes = (id: string): string[] => {
     const s =
-      view.knownSentences.find((x) => x.id === id) ??
-      view.unit?.sentences.find((x) => x.id === id)
+      view.knownSentences.find((x) => x.id === id) ?? view.unit?.sentences.find((x) => x.id === id)
     return s ? s.tokens.flatMap((t) => (t.lexeme ? [t.lexeme] : [])) : []
   }
   const lexemes = new Set<string>()

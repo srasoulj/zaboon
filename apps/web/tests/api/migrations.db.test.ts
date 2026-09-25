@@ -44,14 +44,17 @@ afterAll(async () => {
 })
 
 const states = (body: { sections: { units: { levels: { id: string; state: string }[] }[] }[] }) =>
-  Object.fromEntries(body.sections.flatMap((s) => s.units.flatMap((u) => u.levels)).map((l) => [l.id, l.state]))
+  Object.fromEntries(
+    body.sections.flatMap((s) => s.units.flatMap((u) => u.levels)).map((l) => [l.id, l.state]),
+  )
 
 describe('lazy path migrations', () => {
   it('moves progress to the renamed levels when the learner opens the path', async () => {
     const res = await get(h, api.path, '/api/path', alice)
     expect(res.body.contentVersion).toBe(2)
     expect(states(res.body)).toMatchObject({ 'u01-s0b': 'completed', 'u01-l1b': 'current' })
-    const [e] = await h.sql`SELECT content_version, current_level_id FROM enrollments WHERE user_id = ${alice.id}`
+    const [e] =
+      await h.sql`SELECT content_version, current_level_id FROM enrollments WHERE user_id = ${alice.id}`
     expect(e).toMatchObject({ content_version: 2, current_level_id: 'u01-l1b' })
     // Idempotent: opening the path again changes nothing.
     expect(states((await get(h, api.path, '/api/path', alice)).body)['u01-s0b']).toBe('completed')
@@ -59,7 +62,10 @@ describe('lazy path migrations', () => {
 
   it('counts a session started at v1 for the renamed level', async () => {
     const result = await finish(h, alice, pending)
-    expect(result).toMatchObject({ contentVersion: 1, level: { levelId: 'u01-l1b', completed: true } })
+    expect(result).toMatchObject({
+      contentVersion: 1,
+      level: { levelId: 'u01-l1b', completed: true },
+    })
     expect(states((await get(h, api.path, '/api/path', alice)).body)).toMatchObject({
       'u01-l1b': 'completed',
       'u01-l2': 'current',

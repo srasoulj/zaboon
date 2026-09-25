@@ -47,7 +47,11 @@ describe('POST /api/reports', () => {
     const bob = await h.guest()
     const s = await start(h, alice)
     expect((await report(bob, { itemRef: 'nonsense', kind: 'other' })).status).toBe(400)
-    const idor = await report(bob, { itemRef: 'lexeme:lx_ab', kind: 'other', sessionId: s.sessionId })
+    const idor = await report(bob, {
+      itemRef: 'lexeme:lx_ab',
+      kind: 'other',
+      sessionId: s.sessionId,
+    })
     expect(idor.status).toBe(404)
     const [n] = await h.sql`SELECT count(*)::int AS n FROM reports WHERE user_id = ${bob.id}`
     expect(n!.n).toBe(0)
@@ -58,16 +62,27 @@ describe('admin reports', () => {
   it('lists, filters and triages reports for admins only', async () => {
     const alice = await h.guest()
     const admin = await h.admin()
-    const { body: a } = await report(alice, { itemRef: 'lexeme:lx_ab', kind: 'audio_problem', text: 'quiet' })
+    const { body: a } = await report(alice, {
+      itemRef: 'lexeme:lx_ab',
+      kind: 'audio_problem',
+      text: 'quiet',
+    })
     const { body: b } = await report(alice, { itemRef: 'lexeme:lx_nun', kind: 'content_error' })
 
     const all = await list(admin)
     expect(all.status).toBe(200)
-    expect(all.body.reports.map((r: { id: string }) => r.id)).toEqual(expect.arrayContaining([a.id, b.id]))
+    expect(all.body.reports.map((r: { id: string }) => r.id)).toEqual(
+      expect.arrayContaining([a.id, b.id]),
+    )
 
     const accepted = await triage(admin, a.id, 'accepted')
     expect(accepted.status).toBe(200)
-    expect(accepted.body).toMatchObject({ id: a.id, status: 'accepted', itemRef: 'lexeme:lx_ab', text: 'quiet' })
+    expect(accepted.body).toMatchObject({
+      id: a.id,
+      status: 'accepted',
+      itemRef: 'lexeme:lx_ab',
+      text: 'quiet',
+    })
     expect((await triage(admin, a.id, 'accepted')).body.status).toBe('accepted') // idempotent
 
     const onlyNew = await list(admin, '?status=new')
@@ -92,7 +107,9 @@ describe('admin reports', () => {
     expect(own.status).toBe(403)
     const [row] = await h.sql`SELECT status FROM reports WHERE id = ${body.id}`
     expect(row!.status).toBe('new')
-    expect((await triage(admin, '00000000-0000-4000-8000-000000000000', 'rejected')).status).toBe(404)
+    expect((await triage(admin, '00000000-0000-4000-8000-000000000000', 'rejected')).status).toBe(
+      404,
+    )
     expect((await triage(admin, 'not-a-uuid', 'rejected')).status).toBe(404)
     expect((await triage(admin, body.id, 'maybe')).status).toBe(400)
   })

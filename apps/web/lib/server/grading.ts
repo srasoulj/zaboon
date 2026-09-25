@@ -7,9 +7,7 @@ import { gradeResponse, type ContentView } from '@zaboon/session-engine'
 
 /** The course words a typed Persian answer may not be "corrected" into (spelling/typo rule). */
 export function gradingLexicon(view: ContentView): string[] {
-  return [
-    ...new Set(view.knownLexemes.flatMap((l) => (l.faFormal ? [l.fa, l.faFormal] : [l.fa]))),
-  ]
+  return [...new Set(view.knownLexemes.flatMap((l) => (l.faFormal ? [l.fa, l.faFormal] : [l.fa])))]
 }
 
 export function serverVerdict(

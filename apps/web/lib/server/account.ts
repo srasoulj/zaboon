@@ -19,7 +19,9 @@ interface Ctx {
 
 /** Brings every enrollment of the user to its course's current content version. */
 async function migrateAllEnrollments(db: Db, userId: string): Promise<void> {
-  const enrollments = await withUser(db, userId, (tx) => repos.enrollments.listEnrollments(tx, userId))
+  const enrollments = await withUser(db, userId, (tx) =>
+    repos.enrollments.listEnrollments(tx, userId),
+  )
   for (const e of enrollments) {
     const cv = await currentVersion(db, e.courseId)
     if (!cv || e.contentVersion >= cv.version) continue
@@ -38,7 +40,8 @@ async function migrateAllEnrollments(db: Db, userId: string): Promise<void> {
 export async function mergeAccounts(ctx: Ctx, guestToken: string): Promise<{ merged: boolean }> {
   const guest = await verifyAccessToken(guestToken)
   if (!guest.isAnonymous) throw new ApiError('forbidden', 'only a guest account can be merged')
-  if (guest.id === ctx.user.id) throw new ApiError('validation', 'cannot merge an account into itself')
+  if (guest.id === ctx.user.id)
+    throw new ApiError('validation', 'cannot merge an account into itself')
 
   await migrateAllEnrollments(ctx.db, guest.id)
   await migrateAllEnrollments(ctx.db, ctx.user.id)

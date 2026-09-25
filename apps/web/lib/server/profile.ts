@@ -29,7 +29,10 @@ interface Ctx {
 
 function assertDailyGoal(goal: number | undefined, config: AppConfig): void {
   if (goal !== undefined && !config.dailyGoal.options.includes(goal))
-    throw new ApiError('validation', `dailyGoalXp must be one of ${config.dailyGoal.options.join(', ')}`)
+    throw new ApiError(
+      'validation',
+      `dailyGoalXp must be one of ${config.dailyGoal.options.join(', ')}`,
+    )
 }
 
 /** True for a Postgres unique violation (a race the repository's pre-check can't see). */
@@ -41,7 +44,12 @@ function isUniqueViolation(err: unknown): boolean {
   return false
 }
 
-async function readProfile(tx: Tx, user: AuthUser, now: Date, config: AppConfig): Promise<ProfileResponse> {
+async function readProfile(
+  tx: Tx,
+  user: AuthUser,
+  now: Date,
+  config: AppConfig,
+): Promise<ProfileResponse> {
   await repos.profiles.ensureProfile(tx, user.id)
   const profile = await repos.profiles.getProfile(tx, user.id)
   const pub = await repos.profiles.getPublicProfile(tx, user.id)

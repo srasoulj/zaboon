@@ -14,10 +14,14 @@ afterAll(async () => {
 type PathBody = {
   courseId: string
   contentVersion: number
-  sections: { units: { levels: { id: string; state: string; lessonsDone: number; lessonsTotal: number }[] }[] }[]
+  sections: {
+    units: { levels: { id: string; state: string; lessonsDone: number; lessonsTotal: number }[] }[]
+  }[]
 }
 const levelsOf = (body: PathBody) =>
-  Object.fromEntries(body.sections.flatMap((s) => s.units.flatMap((u) => u.levels)).map((l) => [l.id, l.state]))
+  Object.fromEntries(
+    body.sections.flatMap((s) => s.units.flatMap((u) => u.levels)).map((l) => [l.id, l.state]),
+  )
 
 describe('GET /api/path', () => {
   it('shows the first level current and everything after it locked for a new learner', async () => {
@@ -90,8 +94,15 @@ describe('GET /api/letters', () => {
     const before = await get(h, api.letters, '/api/letters?courseId=fixture', alice)
     expect(before.status).toBe(200)
     expect(before.body.letters).toHaveLength(10)
-    expect(before.body.letters.every((l: { strength: number; introduced: boolean }) => l.strength === 0 && !l.introduced)).toBe(true)
-    expect(before.body.lessons.map((l: { state: string }) => l.state)).toEqual(['current', 'locked'])
+    expect(
+      before.body.letters.every(
+        (l: { strength: number; introduced: boolean }) => l.strength === 0 && !l.introduced,
+      ),
+    ).toBe(true)
+    expect(before.body.lessons.map((l: { state: string }) => l.state)).toEqual([
+      'current',
+      'locked',
+    ])
 
     await play(h, alice, { kind: 'letters' })
     const after = await get(h, api.letters, '/api/letters', alice)
@@ -103,7 +114,13 @@ describe('GET /api/letters', () => {
       expect.objectContaining({ id: 'u01-letters-2', state: 'current' }),
     ])
     // Strength fades as retrievability drops.
-    const later = await get(h, api.letters, '/api/letters', alice, new Date(Date.now() + 400 * 86_400_000))
+    const later = await get(
+      h,
+      api.letters,
+      '/api/letters',
+      alice,
+      new Date(Date.now() + 400 * 86_400_000),
+    )
     const faded = later.body.letters.filter((l: { introduced: boolean }) => l.introduced)
     expect(faded.every((l: { strength: number }) => l.strength >= 1 && l.strength < 4)).toBe(true)
   })
@@ -113,14 +130,18 @@ describe('GET /api/words', () => {
   it("lists the learner's words with strength and due date, and nobody else's", async () => {
     const alice = await h.guest()
     const bob = await h.guest()
-    expect((await get(h, api.words, '/api/words?courseId=fixture', alice)).body).toEqual({ words: [] })
+    expect((await get(h, api.words, '/api/words?courseId=fixture', alice)).body).toEqual({
+      words: [],
+    })
     await play(h, alice)
     const res = await get(h, api.words, '/api/words', alice)
     const salam = res.body.words.find((w: { lexemeId: string }) => w.lexemeId === 'lx_salam')
     expect(salam).toMatchObject({ fa: 'سلام', strength: 4 })
     expect(typeof salam.dueAt).toBe('string')
     expect(salam.gloss.length).toBeGreaterThan(0)
-    expect((await get(h, api.words, '/api/words?courseId=fixture', bob)).body).toEqual({ words: [] })
+    expect((await get(h, api.words, '/api/words?courseId=fixture', bob)).body).toEqual({
+      words: [],
+    })
   })
 })
 
@@ -129,6 +150,10 @@ describe('GET /api/home', () => {
     const alice = await h.guest()
     await play(h, alice)
     const home = await get(h, api.home, '/api/home', alice)
-    expect(home.body.course).toMatchObject({ id: 'fixture', contentVersion: 1, currentLevelId: 'u01-l1' })
+    expect(home.body.course).toMatchObject({
+      id: 'fixture',
+      contentVersion: 1,
+      currentLevelId: 'u01-l1',
+    })
   })
 })

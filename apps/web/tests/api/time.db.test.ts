@@ -36,9 +36,9 @@ describe('streaks (UTC learner)', () => {
     expect(frozen!.freeze_used).toBe(true)
 
     // At risk the day after, broken once two days are missed without freezes.
-    expect(
-      (await get(h, api.home, '/api/home', alice, at('2031-03-05'))).body.streak.status,
-    ).toBe('at_risk')
+    expect((await get(h, api.home, '/api/home', alice, at('2031-03-05'))).body.streak.status).toBe(
+      'at_risk',
+    )
     const broken = await get(h, api.home, '/api/home', alice, at('2031-03-07'))
     expect(broken.body.streak).toMatchObject({ current: 0, status: 'broken' })
     const d7 = await play(h, alice, { now: at('2031-03-07') })

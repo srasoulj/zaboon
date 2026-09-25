@@ -57,9 +57,11 @@ describe('POST /api/account/merge', () => {
     expect(card!.reps).toBe(2)
     const [streak] = await h.sql`SELECT current, longest FROM streaks WHERE user_id = ${member.id}`
     expect(streak).toMatchObject({ current: 3, longest: 3 })
-    const [pub] = await h.sql`SELECT xp_total, streak_current FROM public_profiles WHERE user_id = ${member.id}`
+    const [pub] =
+      await h.sql`SELECT xp_total, streak_current FROM public_profiles WHERE user_id = ${member.id}`
     expect(pub).toMatchObject({ xp_total: 45, streak_current: 3 })
-    const sessions = await h.sql`SELECT count(*)::int AS n FROM sessions WHERE user_id = ${member.id}`
+    const sessions =
+      await h.sql`SELECT count(*)::int AS n FROM sessions WHERE user_id = ${member.id}`
     expect(sessions[0]!.n).toBe(3)
 
     // The guest is gone entirely, and nobody else was touched.
@@ -95,7 +97,10 @@ describe('POST /api/account/merge', () => {
     const linked = await h.link(await h.guest(), `linked-${Date.now()}@zaboon.test`)
     expect(linked.isAnonymous).toBe(false)
     const res = await merge(linked, guest.token)
-    expect(res.body).toMatchObject({ merged: true, home: { xpTotal: 15, user: { isAnonymous: false } } })
+    expect(res.body).toMatchObject({
+      merged: true,
+      home: { xpTotal: 15, user: { isAnonymous: false } },
+    })
   })
 })
 
@@ -118,9 +123,19 @@ describe('GET /api/account/export', () => {
     expect(Object.keys(tables).sort()).toEqual(Object.keys(counts).sort())
     for (const [t, rows] of Object.entries(tables)) {
       expect(rows.length, t).toBe(counts[t])
-      expect(rows.every((r) => r.user_id === alice.id), t).toBe(true)
+      expect(
+        rows.every((r) => r.user_id === alice.id),
+        t,
+      ).toBe(true)
     }
-    for (const t of ['profiles', 'sessions', 'xp_ledger', 'lexeme_memory', 'reports', 'session_answers'])
+    for (const t of [
+      'profiles',
+      'sessions',
+      'xp_ledger',
+      'lexeme_memory',
+      'reports',
+      'session_answers',
+    ])
       expect(tables[t]!.length, t).toBeGreaterThan(0)
   })
 })
@@ -132,7 +147,8 @@ describe('DELETE /api/account', () => {
     await play(h, alice)
     await play(h, bob)
     const bobBefore = await rowCounts(bob.id)
-    const del = () => h.call(api.deleteAccount, { method: 'DELETE', path: '/api/account', user: alice })
+    const del = () =>
+      h.call(api.deleteAccount, { method: 'DELETE', path: '/api/account', user: alice })
     const res = await del()
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ deleted: true })

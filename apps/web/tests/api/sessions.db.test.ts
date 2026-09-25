@@ -52,7 +52,9 @@ describe('POST /api/sessions', () => {
     expect((await startRaw(h, alice, { kind: 'unit_review', levelId: 'u01-s0' })).status).toBe(400)
     expect((await startRaw(h, alice, { levelId: 'u99-nope' })).status).toBe(404)
     expect((await startRaw(h, alice, { courseId: 'no-such-course' })).status).toBe(404)
-    expect((await startRaw(h, alice, { kind: 'letters', levelId: 'u01-letters-2' })).status).toBe(403)
+    expect((await startRaw(h, alice, { kind: 'letters', levelId: 'u01-letters-2' })).status).toBe(
+      403,
+    )
   })
 
   it('generates practice, letters and unit review sessions', async () => {
@@ -82,6 +84,18 @@ describe('POST /api/sessions', () => {
     expect(r.level).toMatchObject({ levelId: 'u01-r1', completed: true })
   })
 
+  it('treats a repeated create (double tap) as two independent sessions that cost nothing', async () => {
+    const alice = await h.guest()
+    const [a, b] = await Promise.all([start(h, alice), start(h, alice)])
+    expect(a.sessionId).not.toBe(b.sessionId)
+    expect(b.challenges.map((c) => c.type)).toEqual(a.challenges.map((c) => c.type))
+    await finish(h, alice, b)
+    const home = await get(h, api.home, '/api/home', alice)
+    expect(home.body).toMatchObject({ xpTotal: 15, lives: { count: 5 } })
+    const [row] = await h.sql`SELECT status FROM sessions WHERE id = ${a.sessionId}`
+    expect(row!.status).toBe('started')
+  })
+
   it('stops lessons at zero hearts, but not practice', async () => {
     const alice = await h.guest()
     const s = await start(h, alice)
@@ -107,6 +121,16 @@ describe('POST /api/sessions/:id/events', () => {
     expect(replay.body).toMatchObject({ duplicate: true, lives: { count: 4 } })
     const retry = await wrongEvent(h, alice, s.sessionId, 8)
     expect(retry.body).toMatchObject({ duplicate: false, lives: { count: 3 } })
+  })
+
+  it('charges a heart once when the same event arrives concurrently (outbox retries)', async () => {
+    const alice = await h.guest()
+    const s = await start(h, alice)
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () => wrongEvent(h, alice, s.sessionId, 3)),
+    )
+    expect(results.filter((r) => r.body.duplicate === false)).toHaveLength(1)
+    expect((await get(h, api.home, '/api/home', alice)).body.lives.count).toBe(4)
   })
 
   it('never costs hearts in practice', async () => {
@@ -173,9 +197,11 @@ describe('POST /api/sessions/:id/complete', () => {
     const results = await Promise.all(Array.from({ length: 5 }, () => finishRaw(h, alice, s)))
     expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200])
     for (const r of results) expect(r.body).toEqual(results[0]!.body)
-    const [xp] = await h.sql`SELECT sum(amount)::int AS n FROM xp_ledger WHERE user_id = ${alice.id}`
+    const [xp] =
+      await h.sql`SELECT sum(amount)::int AS n FROM xp_ledger WHERE user_id = ${alice.id}`
     expect(xp!.n).toBe(15)
-    const [days] = await h.sql`SELECT sum(sessions)::int AS n FROM daily_activity WHERE user_id = ${alice.id}`
+    const [days] =
+      await h.sql`SELECT sum(sessions)::int AS n FROM daily_activity WHERE user_id = ${alice.id}`
     expect(days!.n).toBe(1)
   })
 
@@ -193,7 +219,11 @@ describe('POST /api/sessions/:id/complete', () => {
     const s = await start(h, alice)
     await wrongEvent(h, alice, s.sessionId, 0) // one of the two wrong attempts was reported
     const r = await finish(h, alice, s, { wrong: [0, 1] })
-    expect(r).toMatchObject({ perfect: false, xp: { base: 10, bonus: 0, total: 10 }, lives: { count: 3 } })
+    expect(r).toMatchObject({
+      perfect: false,
+      xp: { base: 10, bonus: 0, total: 10 },
+      lives: { count: 3 },
+    })
     expect(r.mistakes.length).toBeGreaterThan(0)
   })
 
@@ -232,13 +262,16 @@ describe('POST /api/sessions/:id/complete', () => {
     const answers = answersFor(s.challenges, { wrong: [3] }) // match_pairs wrong first
     const skipIdx = s.challenges.findIndex((c) => c.type === 'translate_type')
     const withSkip = answers.map((a) =>
-      a.index === skipIdx ? { ...a, response: { kind: 'skip' as const }, verdict: 'skipped' as const } : a,
+      a.index === skipIdx
+        ? { ...a, response: { kind: 'skip' as const }, verdict: 'skipped' as const }
+        : a,
     )
     await finish(h, alice, s, { answers: withSkip })
     const rows = await h.sql<{ lexeme_id: string; lapses: number; state: number }[]>`
       SELECT lexeme_id, lapses, state FROM lexeme_memory WHERE user_id = ${alice.id} AND lexeme_id = 'lx_baba'`
     expect(rows).toHaveLength(1)
-    const answersRows = await h.sql`SELECT verdict FROM session_answers WHERE session_id = ${s.sessionId} ORDER BY attempt_seq`
+    const answersRows =
+      await h.sql`SELECT verdict FROM session_answers WHERE session_id = ${s.sessionId} ORDER BY attempt_seq`
     expect(answersRows.map((r) => r.verdict)).toContain('skipped')
   })
 
@@ -277,7 +310,11 @@ describe('POST /api/sessions/:id/complete', () => {
       path: `/api/sessions/${s2.sessionId}/complete`,
       params: { id: s2.sessionId },
       user: alice,
-      body: { answers: a2, completedAt: new Date().toISOString(), graderVersion: s2.graderVersion + 50 },
+      body: {
+        answers: a2,
+        completedAt: new Date().toISOString(),
+        graderVersion: s2.graderVersion + 50,
+      },
     })
     expect(old.status).toBe(200)
     expect(old.body).toMatchObject({ graderMismatches: 1, perfect: false })
@@ -292,7 +329,14 @@ describe('POST /api/sessions/:id/complete', () => {
     expect((await finishRaw(h, alice, s, { answers: dup })).status).toBe(400)
     const unknown = [
       ...answersFor(s.challenges),
-      { index: 42, attemptSeq: 99, response: correctResponse(s.challenges[0]!), verdict: 'correct', ms: 2000, hinted: false },
+      {
+        index: 42,
+        attemptSeq: 99,
+        response: correctResponse(s.challenges[0]!),
+        verdict: 'correct',
+        ms: 2000,
+        hinted: false,
+      },
     ]
     expect((await finishRaw(h, alice, s, { answers: unknown })).status).toBe(400)
   })

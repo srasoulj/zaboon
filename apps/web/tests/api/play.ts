@@ -72,8 +72,22 @@ export function answersFor(
   const ms = opts.ms ?? 2000
   for (const c of challenges) {
     if (opts.wrong?.includes(c.index))
-      out.push({ index: c.index, attemptSeq: seq++, response: wrongResponse(c), verdict: 'wrong', ms, hinted: false })
-    out.push({ index: c.index, attemptSeq: seq++, response: correctResponse(c), verdict: 'correct', ms, hinted: false })
+      out.push({
+        index: c.index,
+        attemptSeq: seq++,
+        response: wrongResponse(c),
+        verdict: 'wrong',
+        ms,
+        hinted: false,
+      })
+    out.push({
+      index: c.index,
+      attemptSeq: seq++,
+      response: correctResponse(c),
+      verdict: 'correct',
+      ms,
+      hinted: false,
+    })
   }
   return out
 }

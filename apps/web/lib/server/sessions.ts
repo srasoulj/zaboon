@@ -70,7 +70,12 @@ export interface Ctx {
 }
 
 /** Session kinds this server can generate. legendary and jump_test are P2. */
-const MVP_KINDS: ReadonlySet<SessionKind> = new Set(['lesson', 'practice', 'letters', 'unit_review'])
+const MVP_KINDS: ReadonlySet<SessionKind> = new Set([
+  'lesson',
+  'practice',
+  'letters',
+  'unit_review',
+])
 
 async function livesState(
   tx: Tx,
@@ -97,7 +102,9 @@ export async function enrollAtCurrent(tx: Tx, userId: string, bundle: LoadedBund
   const path = await pathStates(tx, userId, bundle)
   const current = currentOf(path.states)
   if (enrollment && enrollment.currentLevelId === null && current !== null)
-    await repos.enrollments.updateEnrollment(tx, userId, bundle.courseId, { currentLevelId: current })
+    await repos.enrollments.updateEnrollment(tx, userId, bundle.courseId, {
+      currentLevelId: current,
+    })
   return path
 }
 
@@ -121,13 +128,16 @@ async function resolveTarget(
   const { levels, states } = await pathStates(tx, userId, bundle)
 
   if (kind === 'letters') {
-    const progress = progressMap(await repos.learning.listLevelProgress(tx, userId, bundle.courseId))
+    const progress = progressMap(
+      await repos.learning.listLevelProgress(tx, userId, bundle.courseId),
+    )
     const letterStates = letterLessonStates(bundle, progress)
     const levelId = requested ?? currentOf(letterStates)
     if (levelId !== null) {
       const st = letterStates.get(levelId)
       if (!st) throw new ApiError('not_found', `unknown letters lesson ${levelId}`)
-      if (st.state === 'locked') throw new ApiError('forbidden', `letters lesson ${levelId} is locked`)
+      if (st.state === 'locked')
+        throw new ApiError('forbidden', `letters lesson ${levelId} is locked`)
     }
     return { levelId, engineLevelId: levelId, unitIndex: null, lessonIndex: 0 }
   }
@@ -250,7 +260,8 @@ export async function recordWrongAttempt(
   const userId = ctx.user.id
   const out = await withUserLock(ctx.db, userId, async (tx) => {
     const { session, expired } = await openSession(tx, userId, sessionId, now)
-    if (session.status === 'completed') throw new ApiError('conflict', 'session is already completed')
+    if (session.status === 'completed')
+      throw new ApiError('conflict', 'session is already completed')
     if (expired) {
       await repos.sessions.expireSession(tx, userId, sessionId)
       return EXPIRED // commit the expiry, then answer 410
@@ -404,7 +415,10 @@ export async function completeSession(
 
     // The session counts at the client's completedAt clamped to [startedAt, now] (§6).
     const startedAt = new Date(session.startedAt)
-    const countedAt = clampActivityTime({ completedAt: new Date(input.completedAt), startedAt }, now)
+    const countedAt = clampActivityTime(
+      { completedAt: new Date(input.completedAt), startedAt },
+      now,
+    )
     const localDate = dateInZone(countedAt, session.tz)
     const today = dateInZone(now, session.tz)
     const at = now.toISOString()
@@ -492,7 +506,8 @@ export async function completeSession(
     )
 
     // --- enrollment and public stats ---------------------------------------------------------
-    if (xp.total > 0) await repos.enrollments.addEnrollmentXp(tx, userId, session.courseId, xp.total)
+    if (xp.total > 0)
+      await repos.enrollments.addEnrollmentXp(tx, userId, session.courseId, xp.total)
     const { states } = await pathStates(tx, userId, current)
     await repos.enrollments.updateEnrollment(tx, userId, session.courseId, {
       currentLevelId: currentOf(states),
