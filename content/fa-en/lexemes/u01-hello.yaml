@@ -273,6 +273,7 @@
   status: draft
   provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. Tehrani speech says چایی; the written word is چای. }
   audio: audio/lx_chay.mp3
+  image: img/lx_chay.png
 
 - id: lx_taarof_nakon
   fa: تعارف نکن

@@ -1,0 +1,8 @@
+# Provenance of assets/img/lx_sib.png (content-cli). Set status: approved and approvedBy after review.
+asset: img/lx_sib.png
+model: openai/gpt-5.4-image-2
+prompt: art-item@1
+references:
+  - style-bible/shape-language.png
+generatedAt: 2026-09-25T16:13:18.229Z
+status: draft

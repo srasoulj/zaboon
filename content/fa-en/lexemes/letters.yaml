@@ -13,6 +13,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_dar.mp3
+  image: img/lx_dar.png
 
 - id: lx_rud
   fa: رود
@@ -24,6 +25,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_rud.mp3
+  image: img/lx_rud.png
 
 - id: lx_ruz
   fa: روز
@@ -80,6 +82,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_ab.mp3
+  image: img/lx_ab.png
 
 - id: lx_baba
   fa: بابا
@@ -139,6 +142,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_nun.mp3
+  image: img/lx_nun.png
 
 # --- letters-3: + ی ت س --------------------------------------------------------------------------
 - id: lx_sib
@@ -151,6 +155,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_sib.mp3
+  image: img/lx_sib.png
 
 - id: lx_sard
   fa: سرد
@@ -184,6 +189,7 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_tut.mp3
+  image: img/lx_tut.png
 
 - id: lx_bastani
   fa: بستنی
@@ -195,3 +201,4 @@
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
   audio: audio/lx_bastani.mp3
+  image: img/lx_bastani.png
