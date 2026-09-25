@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_APP_CONFIG as cfg, FsrsCard, SrsRating } from '@zaboon/contracts'
-import type { Verdict } from '@zaboon/contracts'
+import { DEFAULT_APP_CONFIG as cfg, FsrsCard } from '@zaboon/contracts'
+import type { Verdict, SrsRating } from '@zaboon/contracts'
 import {
   IMPLEMENTATION,
   isDue,
@@ -25,7 +25,9 @@ interface RatingCase {
   input: { attempts: ItemAttempt[] }
   expected: { ratings: Record<string, SrsRating | null> }
 }
-const cases = parse(readFileSync(new URL('../oracles/ratings.yaml', import.meta.url), 'utf8')) as RatingCase[]
+const cases = parse(
+  readFileSync(new URL('../oracles/ratings.yaml', import.meta.url), 'utf8'),
+) as RatingCase[]
 
 describe('srs', () => {
   it('is the real implementation', () => {
@@ -34,7 +36,9 @@ describe('srs', () => {
 
   describe('ratingsByItem reproduces oracles/ratings.yaml without caller glue', () => {
     it.each(cases)('$id', (c) => {
-      expect(Object.fromEntries(ratingsByItem(c.input.attempts, cfg.srs.slowMs))).toEqual(c.expected.ratings)
+      expect(Object.fromEntries(ratingsByItem(c.input.attempts, cfg.srs.slowMs))).toEqual(
+        c.expected.ratings,
+      )
     })
   })
 
@@ -62,7 +66,12 @@ describe('srs', () => {
     })
     fc.assert(
       fc.property(fc.array(attempt, { minLength: 1 }), fc.nat(10), (attempts, at) => {
-        const skip: ItemAttempt = { item: attempts[0]!.item, verdict: 'skipped', ms: 99_999, hinted: true }
+        const skip: ItemAttempt = {
+          item: attempts[0]!.item,
+          verdict: 'skipped',
+          ms: 99_999,
+          hinted: true,
+        }
         const withSkip = [...attempts.slice(0, at), skip, ...attempts.slice(at)]
         expect(outcomesByItem(withSkip)).toEqual(outcomesByItem(attempts))
       }),
@@ -127,27 +136,32 @@ describe('srs', () => {
   it('review is deterministic and always schema-valid (property)', () => {
     const rating = fc.constantFrom<SrsRating>('again', 'hard', 'good', 'easy')
     fc.assert(
-      fc.property(fc.array(fc.tuple(rating, fc.integer({ min: 0, max: 60 * 24 * 90 })), { maxLength: 12 }), (steps) => {
-        let a = newCard(now)
-        let b = newCard(now)
-        let t = now.getTime()
-        for (const [r, minutes] of steps) {
-          t += minutes * 60_000
-          a = review(a, r, new Date(t))
-          b = review(b, r, new Date(t))
-          expect(() => FsrsCard.parse(a)).not.toThrow()
-          const ret = retrievability(a, new Date(t))
-          expect(ret).toBeGreaterThanOrEqual(0)
-          expect(ret).toBeLessThanOrEqual(1)
-        }
-        expect(a).toEqual(b)
-        expect(a.reps).toBe(steps.length)
-      }),
+      fc.property(
+        fc.array(fc.tuple(rating, fc.integer({ min: 0, max: 60 * 24 * 90 })), { maxLength: 12 }),
+        (steps) => {
+          let a = newCard(now)
+          let b = newCard(now)
+          let t = now.getTime()
+          for (const [r, minutes] of steps) {
+            t += minutes * 60_000
+            a = review(a, r, new Date(t))
+            b = review(b, r, new Date(t))
+            expect(() => FsrsCard.parse(a)).not.toThrow()
+            const ret = retrievability(a, new Date(t))
+            expect(ret).toBeGreaterThanOrEqual(0)
+            expect(ret).toBeLessThanOrEqual(1)
+          }
+          expect(a).toEqual(b)
+          expect(a.reps).toBe(steps.length)
+        },
+      ),
     )
   })
 
   it('ratingFor and strengthBars keep their final behavior', () => {
-    expect(ratingFor({ wrongAttempts: 0, maxMs: cfg.srs.slowMs, hinted: false }, cfg.srs.slowMs)).toBe('good')
+    expect(
+      ratingFor({ wrongAttempts: 0, maxMs: cfg.srs.slowMs, hinted: false }, cfg.srs.slowMs),
+    ).toBe('good')
     expect(strengthBars(0.9, cfg.srs.strengthBars)).toBe(4)
     expect(strengthBars(0.74, cfg.srs.strengthBars)).toBe(2)
   })

@@ -67,9 +67,13 @@ export function outcomesByItem(attempts: readonly ItemAttempt[]): Map<string, It
 }
 
 /** outcomesByItem + ratingFor: the rating to apply per item, or null for "no update". */
-export function ratingsByItem(attempts: readonly ItemAttempt[], slowMs: number): Map<string, SrsRating | null> {
+export function ratingsByItem(
+  attempts: readonly ItemAttempt[],
+  slowMs: number,
+): Map<string, SrsRating | null> {
   const out = new Map<string, SrsRating | null>()
-  for (const [item, outcome] of outcomesByItem(attempts)) out.set(item, outcome === null ? null : ratingFor(outcome, slowMs))
+  for (const [item, outcome] of outcomesByItem(attempts))
+    out.set(item, outcome === null ? null : ratingFor(outcome, slowMs))
   return out
 }
 

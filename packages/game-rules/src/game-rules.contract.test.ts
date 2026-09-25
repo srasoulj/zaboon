@@ -46,8 +46,23 @@ describe('@zaboon/game-rules contract', () => {
   })
   it('leagues: placement and rollover shapes', () => {
     expect(placeInCohort([], cfg)).toBeNull()
-    expect(placeInCohort([{ id: 'a', size: 3, createdOrder: 1 }, { id: 'b', size: 9, createdOrder: 2 }], cfg)).toBe('b')
-    const out = rolloverCohort([{ userId: 'u1', weeklyXp: 10 }, { userId: 'u2', weeklyXp: 50 }], 'tala', cfg)
+    expect(
+      placeInCohort(
+        [
+          { id: 'a', size: 3, createdOrder: 1 },
+          { id: 'b', size: 9, createdOrder: 2 },
+        ],
+        cfg,
+      ),
+    ).toBe('b')
+    const out = rolloverCohort(
+      [
+        { userId: 'u1', weeklyXp: 10 },
+        { userId: 'u2', weeklyXp: 50 },
+      ],
+      'tala',
+      cfg,
+    )
     expect(out[0]!.userId).toBe('u2')
     expect(out[0]!.rank).toBe(1)
   })
