@@ -1,7 +1,7 @@
 /**
- * Course validation (docs/LEARNING-ENGINE.md §4.3). Wave 0 covers structure, references,
- * statuses, media presence and answer patterns; ws-content-cli extends it (distractor safety,
- * media sign-off, normalization lint).
+ * Course validation (docs/LEARNING-ENGINE.md §4.3): structure, references, statuses, media
+ * presence and sign-off, answer patterns, distractor safety, the normalization lint, letter
+ * examples, path migrations, and warnings for items no level uses.
  */
 import { accepts, canonical, compile, type Lang } from '@zaboon/grader'
 import { normalize } from '@zaboon/farsi'
@@ -11,6 +11,8 @@ import {
   type ChallengeType,
   type Sentence,
 } from '@zaboon/content-schema'
+import { bankPool, lexemeConflict, sentenceConflict, unsafeBankTiles } from './distractors'
+import { lintPersian, persianFields } from './lint'
 import type { ContentIssue, LoadedCourse } from './load'
 
 export type ItemKind = 'lexeme' | 'sentence' | 'letter' | 'chat'
@@ -99,6 +101,28 @@ export function mediaRefs(
 export interface ValidateOptions {
   /** Allow `status: draft` items (dev/staging builds only). */
   allowDrafts: boolean
+  /**
+   * Approved sentence audio must carry `audio.signedOffBy` (native sign-off, §4.1). Default: on,
+   * except for the fixture course, whose audio is placeholder tones.
+   */
+  requireMediaSignOff?: boolean
+  /**
+   * Warn about lexemes, sentences, chats and letters no level uses. Default: on, except for the
+   * fixture course, which keeps spare items for engine tests.
+   */
+  warnUnused?: boolean
+}
+
+/** content/fixtures (course id `fixture`): frozen e2e data with placeholder media. */
+export function isFixtureCourse(course: LoadedCourse): boolean {
+  return course.course?.id === 'fixture'
+}
+
+/** Persian letter containment, where alef also matches alef-madda (آ = ا + madda). */
+export function containsLetter(word: string, letter: string): boolean {
+  const w = word.normalize('NFC')
+  const l = letter.normalize('NFC')
+  return w.includes(l) || (l === 'ا' && w.includes('آ'))
 }
 
 export function validateCourse(course: LoadedCourse, opts: ValidateOptions): ContentIssue[] {
@@ -214,6 +238,7 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
   }
 
   // --- sentences: tokens, units, answer patterns ------------------------------------------------
+  const compiled = new Map<string, { s: Sentence; en: AnswerGraph; fa: AnswerGraph }>()
   for (const s of course.sentences) {
     const file = src('sentence', s.id)
     const where = `sentence ${s.id}`
@@ -239,6 +264,7 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
     let graphs: { en: AnswerGraph; fa: AnswerGraph }
     try {
       graphs = compileSentence(s, course.variants)
+      compiled.set(s.id, { s, ...graphs })
     } catch (e) {
       err(file, `${where}: pattern does not compile: ${(e as Error).message}`)
       continue
@@ -283,7 +309,102 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
     }
   }
 
+  // --- distractors: pinned distractors and word-bank tiles (§3.3) ------------------------------
+  for (const u of course.units) {
+    const file = src('unit', u.id)
+    const unitOrder = order.get(u.id)
+    const known = course.lexemes.filter((l) => {
+      const at = order.get(l.introducedIn)
+      return at === undefined || unitOrder === undefined || at <= unitOrder
+    })
+    for (const level of u.levels) {
+      level.spec?.pinned.forEach((p, i) => {
+        const at = `level ${level.id} pinned[${i}] (${p.type})`
+        const target = p.items[0]
+        for (const d of p.distractors ?? []) {
+          let why: string | null = null
+          if (target && lexemes.has(target) && lexemes.has(d))
+            why = lexemeConflict(lexemes.get(target)!, lexemes.get(d)!, {
+              image: p.type === 'select_image',
+            })
+          else if (target && compiled.has(target) && compiled.has(d))
+            why = sentenceConflict(compiled.get(target)!, compiled.get(d)!)
+          else if (target && letters.has(target) && letters.has(d)) {
+            const a = letters.get(target)!
+            const b = letters.get(d)!
+            if (a.id === b.id || a.letter === b.letter) why = 'same letter'
+            else if (a.translit === b.translit) why = `same sound "${a.translit}"`
+          }
+          if (why) err(file, `${at}: distractor ${d} could also be a correct answer (${why})`)
+        }
+        if ((p.type === 'translate_bank' || p.type === 'listen_tap') && target) {
+          const c = compiled.get(target)
+          if (!c) return
+          const lang: Lang = p.type === 'listen_tap' || p.direction === 'en_fa' ? 'fa' : 'en'
+          const unsafe = unsafeBankTiles(c[lang], lang, bankPool(known, lang))
+          if (unsafe.length > 0)
+            err(
+              file,
+              `${at}: word-bank distractor(s) ${unsafe.map((w) => `"${w}"`).join(', ')} can form an accepted answer for ${target}`,
+            )
+        }
+      })
+    }
+  }
+  for (const c of course.chats) {
+    const answer = compiled.get(c.options[c.answer] ?? '')
+    if (!answer) continue
+    c.options.forEach((id, i) => {
+      const other = compiled.get(id)
+      if (i === c.answer || !other) return
+      const why = sentenceConflict(answer, other)
+      if (why)
+        err(src('chat', c.id), `chat ${c.id}: option ${id} could also be the right reply (${why})`)
+    })
+  }
+
+  // --- normalization lint (§1.5) ---------------------------------------------------------------
+  for (const f of persianFields(course)) {
+    for (const rule of lintPersian(f.text)) err(f.file, `${f.where}: ${rule.message}`)
+  }
+
+  // --- letter examples ------------------------------------------------------------------------
+  for (const l of course.letters?.letters ?? []) {
+    if (l.examples.length === 0) err('letters.yaml', `letter ${l.id}: no example words`)
+    for (const ex of l.examples) {
+      const lx = lexemes.get(ex)
+      if (lx && !containsLetter(lx.fa, l.letter) && !containsLetter(lx.faFormal ?? '', l.letter))
+        err('letters.yaml', `letter ${l.id}: example ${ex} (${lx.fa}) does not contain ${l.letter}`)
+    }
+  }
+
+  // --- path migrations ------------------------------------------------------------------------
+  const allLevels = new Set([
+    ...levelIds.keys(),
+    ...(course.letters?.lessons ?? []).map((l) => l.id),
+  ])
+  course.pathMigrations.forEach((m, i) => {
+    const where = `migration ${i + 1} (v${m.from} → v${m.to})`
+    if (m.to <= m.from) err('path-migrations.yaml', `${where}: "to" must be after "from"`)
+    for (const [from, to] of Object.entries(m.levels)) {
+      if (to !== null && !allLevels.has(to))
+        err('path-migrations.yaml', `${where}: ${from} → unknown level ${to}`)
+    }
+  })
+
   // --- media ----------------------------------------------------------------------------------
+  const requireSignOff = opts.requireMediaSignOff ?? !isFixtureCourse(course)
+  if (requireSignOff) {
+    for (const s of course.sentences) {
+      const a = s.audio
+      if (s.status !== 'approved' || !a || !(a.normal ?? a.slow ?? a.formal)) continue
+      if (!a.signedOffBy)
+        err(
+          src('sentence', s.id),
+          `sentence ${s.id}: approved audio needs native sign-off (audio.signedOffBy)`,
+        )
+    }
+  }
   for (const m of mediaRefs(course)) {
     if (course.assets.has(m.ref)) continue
     const message = `${m.owner}: media not found: assets/${m.ref}`
@@ -303,6 +424,36 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
   collect('chat', course.chats)
   collect('letter', course.letters?.letters ?? [])
   collect('character', course.characters)
+  // --- unused items (warnings) -----------------------------------------------------------------
+  const used = new Set<string>()
+  for (const u of course.units)
+    for (const level of u.levels) {
+      if (!level.spec) continue
+      const { focus, pinned } = level.spec
+      for (const id of [...focus.lexemes, ...focus.sentences, ...focus.letters, ...focus.chats])
+        used.add(id)
+      for (const p of pinned) for (const id of [...p.items, ...(p.distractors ?? [])]) used.add(id)
+    }
+  for (const lesson of course.letters?.lessons ?? []) for (const id of lesson.letters) used.add(id)
+  for (const l of course.letters?.letters ?? [])
+    if (used.has(l.id)) l.examples.forEach((e) => used.add(e))
+  for (const c of course.chats)
+    if (used.has(c.id)) [c.prompt, ...c.options].forEach((id) => used.add(id))
+  for (const s of course.sentences)
+    if (used.has(s.id)) for (const t of s.tokens) if (t.lexeme) used.add(t.lexeme)
+  const warnUnused = opts.warnUnused ?? !isFixtureCourse(course)
+  const unused = (kind: string, items: readonly { id: string }[]) => {
+    if (!warnUnused) return
+    for (const it of items)
+      if (!used.has(it.id)) warn(src(kind, it.id), `${kind} ${it.id} is not used by any level`)
+  }
+  unused('lexeme', course.lexemes)
+  unused('sentence', course.sentences)
+  unused('chat', course.chats)
+  for (const l of course.letters?.letters ?? [])
+    if (warnUnused && !used.has(l.id))
+      warn('letters.yaml', `letter ${l.id} is not in any letters lesson`)
+
   if (drafts.length > 0 && !opts.allowDrafts) {
     for (const d of drafts) {
       const [kind, id] = d.split(':') as [string, string]

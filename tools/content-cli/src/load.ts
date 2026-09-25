@@ -4,6 +4,7 @@
  * Layout (docs/LEARNING-ENGINE.md §2):
  *   course.yaml · units/*.yaml · lexemes/*.yaml · sentences/*.yaml · chats/*.yaml
  *   letters.yaml · characters.yaml · orthography-variants.yaml · guidebooks/*.md · assets/**
+ *   path-migrations.yaml (optional: level-id moves between published versions, §2.3)
  *
  * Loading never throws on bad content: every problem becomes a ContentIssue so `validate` can
  * report all of them at once.
@@ -11,7 +12,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { parse as parseYaml } from 'yaml'
-import type { z } from 'zod'
+import { z } from 'zod'
 import {
   Character,
   Chat,
@@ -19,6 +20,7 @@ import {
   LettersTrack,
   Lexeme,
   OrthographyVariants,
+  PathMigration,
   Sentence,
   Unit,
 } from '@zaboon/content-schema'
@@ -41,6 +43,8 @@ export interface LoadedCourse {
   letters: LettersTrack | null
   characters: Character[]
   variants: OrthographyVariants
+  /** path-migrations.yaml: passed through to the manifest's `pathMigrations`. */
+  pathMigrations: PathMigration[]
   /** guidebook path relative to the course dir (e.g. "guidebooks/u01-food.md") → markdown. */
   guidebooks: Map<string, string>
   /** media ref relative to assets/ (e.g. "audio/lx_ab.mp3") → absolute file path. */
@@ -84,6 +88,7 @@ export function loadCourse(dir: string): LoadedCourse {
     letters: null,
     characters: [],
     variants: [],
+    pathMigrations: [],
     guidebooks: new Map(),
     assets: new Map(),
     sources: new Map(),
@@ -198,6 +203,15 @@ export function loadCourse(dir: string): LoadedCourse {
       raw == null
         ? []
         : (parseOne(variantsFile, OrthographyVariants, raw, 'orthography variants') ?? [])
+  }
+
+  const migrationsFile = join(dir, 'path-migrations.yaml')
+  if (existsSync(migrationsFile)) {
+    const raw = readYaml(migrationsFile)
+    loaded.pathMigrations =
+      raw == null
+        ? []
+        : (parseOne(migrationsFile, z.array(PathMigration), raw, 'path migrations') ?? [])
   }
 
   for (const file of listFiles(join(dir, 'guidebooks'), '.md'))
