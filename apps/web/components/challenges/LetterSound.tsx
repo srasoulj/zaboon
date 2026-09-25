@@ -6,6 +6,7 @@ import { ChoiceList } from './ChoiceList'
 import {
   AudioButton,
   ChallengeFrame,
+  Labelled,
   ListenButtons,
   styles,
   useAutoplay,
@@ -33,8 +34,13 @@ export function LetterSound(props: Props) {
     >
       {toSound ? (
         <div className={styles.readWord}>
-          <FaText as="p" text={letter.letter} className={styles.bigLetter} aria-label="Letter" />
-          {media && <AudioButton onPlay={() => audio.play(media.normal)} label="Play the letter" />}
+          <Labelled label="Letter">
+            <FaText as="p" text={letter.letter} className={styles.bigLetter} />
+          </Labelled>
+          {/* Hearing the letter is the answer, so its audio is offered after CHECK only. */}
+          {media && phase === 'feedback' && (
+            <AudioButton onPlay={() => audio.play(media.normal)} label="Play the letter" />
+          )}
         </div>
       ) : (
         <ListenButtons audio={audio} media={media} />

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Challenge } from '@zaboon/contracts'
-import { createSilentAudio } from './audio'
+import { createHowlerAudio, createSilentAudio } from './audio'
 import {
   EFFECT_SPRITE,
   envelopeAt,
@@ -116,5 +116,98 @@ describe('synthesized effects', () => {
     expect(v.getUint32(40, true)).toBe(6)
     expect(v.getInt16(46, true)).toBe(32767)
     expect(v.getInt16(48, true)).toBe(-32768)
+  })
+})
+
+describe('Howler audio lifecycle', () => {
+  /** A stand-in for Howler's Howl: records creations, plays and unloads. */
+  function fakeHowler() {
+    const created: FakeHowl[] = []
+    class FakeHowl {
+      played: unknown[] = []
+      unloaded = false
+      constructor(readonly opts: { src: string[] }) {
+        created.push(this)
+      }
+      state() {
+        return 'loaded'
+      }
+      once() {
+        return this
+      }
+      play(name?: unknown) {
+        this.played.push(name)
+        return 1
+      }
+      stop() {
+        return this
+      }
+      playing() {
+        return false
+      }
+      seek() {
+        return 0
+      }
+      unload() {
+        this.unloaded = true
+      }
+    }
+    return { created, Howl: FakeHowl }
+  }
+
+  const clipChallenge = [
+    {
+      ...testChallenges()[0]!,
+      prompt: {
+        lang: 'fa',
+        text: 'سلام',
+        fa: { fa: 'سلام', translit: 'salām', audio: { normal: '/a/1.mp3' } },
+      },
+    },
+  ] as Challenge[]
+
+  it('preloads effects and clips, and unloads them on dispose', async () => {
+    const h = fakeHowler()
+    const audio = createHowlerAudio({
+      loadHowl: async () => h.Howl as never,
+      fetch: async () => new Response('[]'),
+    })
+    await audio.preload(clipChallenge)
+    expect(h.created.map((x) => x.opts.src[0])).toEqual(['/sounds/effects.webm', '/a/1.mp3'])
+    audio.effect('correct')
+    await vi.waitFor(() => expect(h.created[0]!.played).toEqual(['correct']))
+    audio.dispose()
+    expect(h.created.every((x) => x.unloaded)).toBe(true)
+  })
+
+  it('a preload still loading when disposed creates nothing afterwards; play/effect become no-ops', async () => {
+    const h = fakeHowler()
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const audio = createHowlerAudio({
+      loadHowl: async () => {
+        await gate
+        return h.Howl as never
+      },
+      fetch: async () => new Response('[]'),
+    })
+    const preloading = audio.preload(clipChallenge)
+    audio.dispose()
+    release()
+    await preloading
+    audio.effect('wrong')
+    audio.play('/a/1.mp3')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(h.created).toEqual([])
+  })
+
+  it('respects the sound setting', async () => {
+    const h = fakeHowler()
+    const audio = createHowlerAudio({ loadHowl: async () => h.Howl as never })
+    audio.setEnabled(false)
+    audio.effect('correct')
+    audio.play('/a/1.mp3')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(h.created).toEqual([])
   })
 })

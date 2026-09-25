@@ -1,9 +1,8 @@
-// Placeholder (owned by ws-path-letters, who replaces it).
+import type { Metadata } from 'next'
+import { LettersTab } from '@/components/letters/LettersTab'
+
+export const metadata: Metadata = { title: 'Letters' }
+
 export default function LettersPage() {
-  return (
-    <section>
-      <h1 className="text-2xl font-extrabold">Letters</h1>
-      <p className="text-stone">Coming soon.</p>
-    </section>
-  )
+  return <LettersTab />
 }

@@ -1,6 +1,6 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T15:40:00Z",
+  "updatedAt": "2026-09-25T16:00:00Z",
   "wave": 2,
   "integrationPr": 2,
   "aiBudget": {
@@ -62,34 +62,34 @@
       ]
     },
     "ws-api": {
-      "status": "done",
+      "status": "fixing post-merge review findings (new PR)",
       "prs": [
         17,
         23
       ]
     },
     "ws-renderers": {
-      "status": "done",
+      "status": "fixing post-merge review findings (new PR)",
       "prs": [
         21
       ]
     },
     "ws-player": {
-      "status": "done",
+      "status": "fixing post-merge review findings (new PR)",
       "prs": [
         22
       ]
     },
     "ws-path-letters": {
-      "status": "spawning",
+      "status": "working",
       "prs": []
     },
     "ws-pages": {
-      "status": "spawning",
+      "status": "working",
       "prs": []
     },
     "ws-qa-1": {
-      "status": "spawning",
+      "status": "working",
       "prs": []
     }
   },
@@ -120,7 +120,7 @@
     },
     "ws-pages": {
       "wave": 2,
-      "status": "spawning"
+      "status": "working"
     },
     "ws-player": {
       "wave": 2,
@@ -132,7 +132,7 @@
     },
     "ws-path-letters": {
       "wave": 2,
-      "status": "spawning"
+      "status": "working"
     },
     "ws-content-gen": {
       "wave": 2,
@@ -141,7 +141,7 @@
     },
     "ws-qa": {
       "wave": 2,
-      "status": "ws-qa-1 spawning"
+      "status": "ws-qa-1 working"
     }
   },
   "humanBacklog": [
@@ -175,7 +175,8 @@
     20,
     21,
     22,
-    23
+    23,
+    24
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -189,5 +190,11 @@
     "The user merges worker PRs quickly; always run a post-merge verify on main and a reviewer subagent on merged code.",
     "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active.",
     "Worker specs live in ops/prompts/<ws>.md (prepended with _preamble.md); session ids only in /root/.config/zaboon/orchestrator.json."
-  ]
+  ],
+  "sessionsSpawned": 12,
+  "goldenPath": {
+    "status": "pass",
+    "checkedAt": "2026-09-25T15:55:00Z",
+    "detail": "u01-s0/l1/l2 through the real renderers and player on desktop + mobile Chromium: all 13 MVP types correct, XP 15/15/15, no console or network errors (orchestrator scratch spec, used as an extra merge gate until committed as e2e/qa/golden.spec.ts)"
+  }
 }

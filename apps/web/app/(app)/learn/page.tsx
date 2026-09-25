@@ -1,9 +1,8 @@
-// Placeholder (owned by ws-path-letters, who replaces it).
+import type { Metadata } from 'next'
+import { LearnPath } from '@/components/path/LearnPath'
+
+export const metadata: Metadata = { title: 'Learn' }
+
 export default function LearnPage() {
-  return (
-    <section>
-      <h1 className="text-2xl font-extrabold">Learn</h1>
-      <p className="text-stone">Coming soon.</p>
-    </section>
-  )
+  return <LearnPath />
 }

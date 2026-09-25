@@ -33,7 +33,12 @@ export interface SnapshotStore {
   /** The most recently saved snapshot for this user and lesson, if any. */
   find(userId: string, key: string): Promise<LessonSnapshot | null>
   remove(sessionId: string): Promise<void>
+  /** Removes snapshots saved before `savedBefore` or whose session expired before `now`. */
+  prune(savedBefore: number, now: number): Promise<number>
 }
+
+export const staleSnapshot = (s: LessonSnapshot, savedBefore: number, now: number) =>
+  s.savedAt < savedBefore || !(Date.parse(s.session.expiresAt) > now)
 
 export class MemorySnapshotStore implements SnapshotStore {
   readonly rows = new Map<string, LessonSnapshot>()
@@ -48,6 +53,15 @@ export class MemorySnapshotStore implements SnapshotStore {
   }
   async remove(sessionId: string) {
     this.rows.delete(sessionId)
+  }
+  async prune(savedBefore: number, now: number) {
+    let n = 0
+    for (const [id, s] of this.rows)
+      if (staleSnapshot(s, savedBefore, now)) {
+        this.rows.delete(id)
+        n++
+      }
+    return n
   }
 }
 
@@ -64,7 +78,13 @@ interface EntryBase {
   userId: string
   sessionId: string
   createdAt: number
+  /**
+   * Failed deliveries that count toward the dead-letter cap (Outbox MAX_ATTEMPTS). Network
+   * failures don't count: an offline learner's writes wait as long as it takes.
+   */
   attempts: number
+  /** Set when the entry gave up after too many failures: kept for support, never sent again. */
+  dead?: { code: string; message: string; at: number } | undefined
 }
 
 export type OutboxEntry =

@@ -16,7 +16,15 @@ import { LessonFeedback, praiseFor } from './LessonFeedback'
 import { LessonFooter } from './LessonFooter'
 import { LessonPlayer } from './LessonPlayer'
 import { answerText, ReportSheet, reportItemRef } from './ReportSheet'
-import { apiSender, LessonServicesProvider } from './services'
+import { MAX_ATTEMPTS } from '../../lib/lesson/outbox'
+import {
+  apiSender,
+  LessonServicesProvider,
+  OutboxReplayer,
+  outboxUser,
+  retagOutboxUser,
+  sharedLessonStores,
+} from './services'
 import { correctResponse, resolveTestRenderer, wrongResponse } from './test-renderers'
 
 afterEach(() => {
@@ -290,6 +298,55 @@ function renderPlayer(opts: { api?: Partial<Record<string, (o: unknown) => unkno
 }
 
 describe('LessonPlayer', () => {
+  it('Enter on a focused challenge button is left to the button; unfocused Enter checks', async () => {
+    renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByTestId('test-answer-correct'))
+    const choice = screen.getByTestId('test-answer-wrong')
+    choice.focus()
+    const enter = fireEvent.keyDown(choice, { key: 'Enter' })
+    expect(enter).toBe(true) // not preventDefault-ed: the button's own activation runs
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    const roleButton = document.createElement('div')
+    roleButton.setAttribute('role', 'button')
+    roleButton.tabIndex = 0
+    screen.getByTestId('test-renderer').appendChild(roleButton)
+    fireEvent.keyDown(roleButton, { key: 'Enter' })
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
+  })
+
+  it('SKIP costs a heart and sends a wrong event', async () => {
+    const { calls } = renderPlayer()
+    await screen.findByTestId('test-renderer')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'skipped')
+    expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
+    await waitFor(() => expect(calls.some((c) => c.name === 'sessionEvent')).toBe(true))
+  })
+
+  it('a remount while creating the session reuses the same createSession request', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    const first = renderPlayer({
+      api: {
+        createSession: async () => {
+          await gate
+          return testSession()
+        },
+      },
+    })
+    await waitFor(() =>
+      expect(first.calls.filter((c) => c.name === 'createSession')).toHaveLength(1),
+    )
+    first.unmount()
+    const second = renderPlayer({ api: { createSession: async () => testSession() } })
+    release()
+    await screen.findByTestId('test-renderer')
+    expect(second.calls.filter((c) => c.name === 'createSession')).toHaveLength(0)
+  })
+
   it('plays a lesson with the keyboard: Enter checks and continues', async () => {
     const { calls, onExit, queryClient } = renderPlayer()
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -387,5 +444,55 @@ describe('LessonPlayer', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
     })
     await screen.findByTestId('test-renderer')
+  })
+})
+
+describe('OutboxReplayer', () => {
+  it('sends for the latest mounted user, resets on unmount, and shows a notice when a write gave up', async () => {
+    const api = (async (name: string) => {
+      if (name === 'sessionEvent') throw new Error('500')
+      throw new Error(`unexpected ${name}`)
+    }) as unknown as ApiClient
+    expect(outboxUser()).toBeNull()
+    const a = render(<OutboxReplayer api={api} userId={USER_ID} />)
+    const b = render(<OutboxReplayer api={api} userId="guest-2" />)
+    expect(outboxUser()).toBe('guest-2')
+    b.unmount()
+    expect(outboxUser()).toBe(USER_ID)
+
+    const { outbox } = await sharedLessonStores(api)
+    await outbox.enqueueEvent(USER_ID, testSession().sessionId, {
+      attemptSeq: 0,
+      index: 0,
+      kind: 'wrong',
+    })
+    for (let i = 0; i < MAX_ATTEMPTS; i++) await act(() => outbox.flush())
+    expect(await screen.findByTestId('outbox-notice')).toHaveTextContent("couldn't be saved")
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByTestId('outbox-notice')).toBeNull()
+
+    a.unmount()
+    expect(outboxUser()).toBeNull()
+  })
+
+  it('retagOutboxUser moves a merged guest’s writes to the account and sends them', async () => {
+    const sent: string[] = []
+    const api = (async (name: string, o: { params: { id: string } }) => {
+      if (name === 'sessionEvent') {
+        sent.push(o.params.id)
+        return { lives: testSession().lives, duplicate: false }
+      }
+      throw new Error(`unexpected ${name}`)
+    }) as unknown as ApiClient
+    const view = render(<OutboxReplayer api={api} userId="account-1" />)
+    const { outbox } = await sharedLessonStores(api)
+    await outbox.enqueueEvent('guest-1', 'guest-session', {
+      attemptSeq: 0,
+      index: 0,
+      kind: 'wrong',
+    })
+    expect(await retagOutboxUser(api, 'guest-1', 'account-1')).toBe(1)
+    await waitFor(() => expect(sent).toEqual(['guest-session']))
+    view.unmount()
   })
 })

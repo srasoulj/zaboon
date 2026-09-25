@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('select_image')
 const correct = c.choices[c.answer]!.label
@@ -10,9 +10,7 @@ describe('select_image', () => {
   it('shows the heading, the Persian word and a 2×2 grid of picture cards', () => {
     renderChallenge(c)
     expect(screen.getByRole('heading', { name: 'Select the correct image' })).toBeInTheDocument()
-    const word = screen.getByRole('group', { name: 'Word' })
-    expect(word).toHaveAttribute('lang', 'fa')
-    expect(word).toHaveAttribute('dir', 'rtl')
+    const word = persianOf(screen.getByRole('group', { name: 'Word' }))
     expect(word).toHaveTextContent(c.prompt.fa)
     const cards = within(screen.getByRole('group', { name: 'Choices' })).getAllByRole('button')
     expect(cards).toHaveLength(4)

@@ -3,7 +3,7 @@ import type { ChallengeOf } from '@zaboon/contracts'
 import { FaText } from '@zaboon/ui'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
 import { ChoiceList } from './ChoiceList'
-import { AudioButton, ChallengeFrame, playMedia, styles, useChoice } from './shared'
+import { AudioButton, ChallengeFrame, Labelled, playMedia, styles, useChoice } from './shared'
 
 type Props = ChallengeRendererProps<ChallengeOf<'read_word'>>
 
@@ -24,13 +24,9 @@ export function ReadWord(props: Props) {
       heading={translit ? 'How do you read this word?' : 'What does this word mean?'}
     >
       <div className={styles.readWord}>
-        <FaText
-          as="p"
-          text={shown}
-          vowels={display.vowelMarks}
-          className={styles.bigLetter}
-          aria-label="Word"
-        />
+        <Labelled label="Word">
+          <FaText as="p" text={shown} vowels={display.vowelMarks} className={styles.bigLetter} />
+        </Labelled>
         {/* Hearing the word gives away its reading, so the speaker is offered after CHECK only. */}
         {props.phase === 'feedback' && word.audio?.normal !== undefined && (
           <AudioButton onPlay={() => playMedia(audio, word.audio)} />

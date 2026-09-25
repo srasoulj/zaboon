@@ -19,7 +19,7 @@ type Props = ChallengeRendererProps<ChallengeOf<'build_word'>>
 /**
  * Assemble letter tiles into a word and watch them join: the placed letters are rendered as ONE
  * text run (never one element per letter), so the browser shapes them into the connected word.
- * Tapping a placed tile in the bank takes it back out; Backspace or "Remove last letter" undoes.
+ * Tapping a placed tile in the bank takes it back out; Backspace or Undo removes the last letter.
  */
 export function BuildWord(props: Props) {
   const { challenge, display, audio, phase, response, onResponse } = props
@@ -92,11 +92,7 @@ export function BuildWord(props: Props) {
         </div>
       </div>
       <div className={styles.buildActions}>
-        <Button3D
-          variant={placed.length > 0 && !locked ? 'ghost' : 'locked'}
-          onClick={undo}
-          aria-label="Remove last letter"
-        >
+        <Button3D variant={placed.length > 0 && !locked ? 'ghost' : 'locked'} onClick={undo}>
           Undo
         </Button3D>
       </div>

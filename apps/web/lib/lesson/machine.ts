@@ -24,7 +24,11 @@ import { gradeAttempt, sessionLexicon } from './grading'
 import type { CompleteOutcome } from './outbox'
 import {
   costsHeart,
+  countsAsWrong,
   currentIndex,
+  finishEarly,
+  maxAnswers,
+  mustFinish,
   initialProgress,
   isFinished,
   loseHeart,
@@ -210,10 +214,17 @@ export const lessonMachine = setup({
     discard: (_, _params: { sessionId: string | null }) => {},
     sound: (_, _params: { effect: SoundEffect }) => {},
     markShown: assign({ shownAt: ({ context }) => context.now(), draft: null }),
+    finishEarly: assign({
+      progress: ({ context }) => finishEarly(context.progress!),
+      feedback: null,
+    }),
   },
   guards: {
     hasDraft: ({ context }) => context.draft !== null,
     finished: ({ context }) => context.progress !== null && isFinished(context.progress),
+    /** The attempt cap of /complete is reached: end the lesson now (never a 400 at the end). */
+    atAttemptCap: ({ context }) =>
+      context.progress !== null && mustFinish(context.progress, maxAnswers()),
     noHearts: ({ context }) =>
       context.hearts !== null &&
       context.session !== null &&
@@ -281,6 +292,7 @@ export const lessonMachine = setup({
       always: [
         { guard: 'finished', target: 'completing' },
         { guard: 'noHearts', target: 'outOfHearts' },
+        { guard: 'atAttemptCap', target: 'completing', actions: 'finishEarly' },
         { target: 'playing', actions: 'markShown' },
       ],
     },
@@ -333,7 +345,11 @@ export const lessonMachine = setup({
             enqueue({ type: 'persist', params: { snapshot: snapshotOf({ ...context, ...next }) } })
             enqueue({ type: 'sound', params: { effect: 'wrong' } })
           }),
-          always: [{ guard: 'noHearts', target: '#lesson.outOfHearts' }, { target: 'answering' }],
+          always: [
+            { guard: 'noHearts', target: '#lesson.outOfHearts' },
+            { guard: 'atAttemptCap', target: '#lesson.completing', actions: 'finishEarly' },
+            { target: 'answering' },
+          ],
         },
         checking: {
           entry: [
@@ -351,12 +367,13 @@ export const lessonMachine = setup({
                 ms: context.now() - context.shownAt,
               })
               const heartLost =
-                grade.verdict === 'wrong' && costsHeart(session.kind, context.hearts!)
+                countsAsWrong(grade.verdict) && costsHeart(session.kind, context.hearts!)
               return {
                 progress: recorded.progress,
                 hearts: heartLost ? loseHeart(context.hearts!) : context.hearts,
-                lastWrongSeq:
-                  grade.verdict === 'wrong' ? recorded.answer.attemptSeq : context.lastWrongSeq,
+                lastWrongSeq: countsAsWrong(grade.verdict)
+                  ? recorded.answer.attemptSeq
+                  : context.lastWrongSeq,
                 feedback: {
                   index,
                   attemptSeq: recorded.answer.attemptSeq,
@@ -369,7 +386,7 @@ export const lessonMachine = setup({
             }),
             enqueueActions(({ context, enqueue }) => {
               const f = context.feedback!
-              if (f.verdict === 'wrong' && context.session!.kind !== 'practice')
+              if (countsAsWrong(f.verdict) && context.session!.kind !== 'practice')
                 enqueue({
                   type: 'recordWrong',
                   params: {
@@ -402,6 +419,7 @@ export const lessonMachine = setup({
                 target: '#lesson.completing',
                 actions: assign({ feedback: null }),
               },
+              { guard: 'atAttemptCap', target: '#lesson.completing', actions: 'finishEarly' },
               { target: 'answering', actions: [assign({ feedback: null }), 'markShown'] },
             ],
           },
@@ -533,6 +551,12 @@ export const lessonMachine = setup({
     },
 
     error: {
+      // Completion only fails here for good (the outbox keeps transient failures): don't resume
+      // into the same failure after a reload.
+      entry: enqueueActions(({ context, enqueue }) => {
+        if (context.error?.during === 'complete')
+          enqueue({ type: 'discard', params: { sessionId: context.session?.sessionId ?? null } })
+      }),
       on: {
         RETRY: [
           { guard: ({ context }) => context.error?.during === 'complete', target: 'completing' },
