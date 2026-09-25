@@ -25,6 +25,7 @@ import { repoRoot } from './paths'
 import { suggestVariants, type SuggestOutput } from './suggest'
 import { validateCourse } from './validate'
 import { setItemFields } from './yaml-out'
+import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
 function seedCopy(): string {
@@ -49,7 +50,7 @@ const WEBP = Buffer.concat([
 const MP3 = Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64, 1)])
 const ai = (respond: (req: ChatRequest) => ReturnType<typeof chatResponse>) => {
   const transport = new MockTransport(respond)
-  return { transport, ai: new AiClient({ apiKey: 'test', transport }) }
+  return { transport, ai: new AiClient({ apiKey: TEST_KEY, transport }) }
 }
 const errorsOf = (dir: string) =>
   validateCourse(loadCourse(dir), { allowDrafts: true })

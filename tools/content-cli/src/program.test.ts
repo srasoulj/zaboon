@@ -7,6 +7,7 @@ import { goodDraft } from './fixtures/draft-u02'
 import { repoRoot } from './paths'
 import { createProgram, type ProgramIO } from './program'
 import { MemoryUploader } from './storage'
+import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
 const temp = () => {
@@ -99,7 +100,7 @@ describe('CLI: AI commands', () => {
     const transport = new MockTransport(() =>
       chatResponse(JSON.stringify(goodDraft()), { cost: 0.02 }),
     )
-    const env = { OPENROUTER_API_KEY_BUILD: 'test' }
+    const env = { OPENROUTER_API_KEY_BUILD: TEST_KEY }
     const r = await run(['draft', '--course', dir, '--brief', briefFile()], { env, transport })
     expect(r.code).toBe(0)
     expect(r.out).toContain('+ sentences/u02-about-me.yaml')

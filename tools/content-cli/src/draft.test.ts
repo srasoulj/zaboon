@@ -15,6 +15,7 @@ import { goodDraft } from './fixtures/draft-u02'
 import { loadCourse } from './load'
 import { repoRoot } from './paths'
 import { validateCourse } from './validate'
+import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
 const temp = () => {
@@ -50,7 +51,7 @@ describe('draft', () => {
   it('writes status: draft YAML in the house layout that passes validate --allow-drafts', async () => {
     const dir = seedCopy()
     const transport = respondWith(goodDraft())
-    const ai = new AiClient({ apiKey: 'test', transport, budget: new MemoryBudgetLedger(10) })
+    const ai = new AiClient({ apiKey: TEST_KEY, transport, budget: new MemoryBudgetLedger(10) })
     const now = new Date('2026-09-25T12:00:00Z')
     const result = await draftUnit({ course: loadCourse(dir), brief, ai, now })
     expect(result.errors).toEqual([])
@@ -106,7 +107,7 @@ describe('draft', () => {
     await draftUnit({
       course: loadCourse(dir),
       brief,
-      ai: new AiClient({ apiKey: 'test', transport }),
+      ai: new AiClient({ apiKey: TEST_KEY, transport }),
     })
     const req: ChatRequest = transport.calls[0]!
     expect(req.model).toBe('openai/gpt-6-astra')
@@ -130,7 +131,7 @@ describe('draft', () => {
     const r = await draftUnit({
       course: loadCourse(dir),
       brief,
-      ai: new AiClient({ apiKey: 'test', transport }),
+      ai: new AiClient({ apiKey: TEST_KEY, transport }),
     })
     expect(r).toMatchObject({ repaired: true, errors: [] })
     expect(transport.calls).toHaveLength(2)
@@ -146,7 +147,7 @@ describe('draft', () => {
     const r = await draftUnit({
       course: loadCourse(dir),
       brief,
-      ai: new AiClient({ apiKey: 'test', transport: respondWith(bad) }),
+      ai: new AiClient({ apiKey: TEST_KEY, transport: respondWith(bad) }),
     })
     expect(r.written).toEqual([])
     expect(r.errors.join('\n')).toContain('pattern does not compile')
@@ -156,7 +157,7 @@ describe('draft', () => {
   it('refuses to overwrite a draft without --force, and never redrafts an approved unit', async () => {
     const dir = seedCopy()
     writeFileSync(join(dir, 'lexemes/u02-about-me.yaml'), '[]\n')
-    const ai = new AiClient({ apiKey: 'test', transport: respondWith(goodDraft()) })
+    const ai = new AiClient({ apiKey: TEST_KEY, transport: respondWith(goodDraft()) })
     await expect(draftUnit({ course: loadCourse(dir), brief, ai })).rejects.toThrow(/--force/)
     await expect(
       draftUnit({ course: loadCourse(dir), brief, ai, force: true }),
@@ -180,7 +181,7 @@ describe('draft', () => {
     const root = temp()
     const dir = seedCopy()
     const transport = respondWith(goodDraft())
-    const env = { OPENROUTER_API_KEY_BUILD: 'test' }
+    const env = { OPENROUTER_API_KEY_BUILD: TEST_KEY }
     const ctx = createAiContext({ env, root, transport, budgetUsd: 5 })
     await draftUnit({ course: loadCourse(dir), brief, ai: ctx.ai })
     const again = createAiContext({ env, root, transport, budgetUsd: 5 })
