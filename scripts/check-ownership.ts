@@ -3,6 +3,7 @@
  *   pnpm ownership --base origin/main --branch claude/zaboon-ws-db
  * Workstream is taken from the branch name `claude/zaboon-<ws>[-suffix]`; orchestrator branches may
  * touch anything. Fails if a changed file is protected or outside the workstream's paths.
+ * A workstream path starting with `!` excludes what it matches (e.g. a file handed to a later wave).
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -34,6 +35,13 @@ export function matchesAny(file: string, globs: readonly string[]): boolean {
   return globs.some((g) => globToRegExp(g).test(file))
 }
 
+/** True when a workstream owns `file`: some path matches and no `!` exclusion does. */
+export function owns(file: string, paths: readonly string[]): boolean {
+  const include = paths.filter((p) => !p.startsWith('!'))
+  const exclude = paths.filter((p) => p.startsWith('!')).map((p) => p.slice(1))
+  return matchesAny(file, include) && !matchesAny(file, exclude)
+}
+
 export function workstreamFor(branch: string, own: Ownership): string | null {
   const m = /^claude\/zaboon-(ws-[a-z0-9-]+?)(?:-\d+)?$/.exec(branch)
   if (!m) return null
@@ -53,7 +61,7 @@ export function check(files: readonly string[], branch: string, own: Ownership):
   for (const f of files) {
     if (matchesAny(f, own.alwaysAllowed)) continue
     if (matchesAny(f, own.protected)) problems.push(`${f}: protected (orchestrator-owned)`)
-    else if (!matchesAny(f, allowed)) problems.push(`${f}: outside ${ws} paths`)
+    else if (!owns(f, allowed)) problems.push(`${f}: outside ${ws} paths`)
   }
   return problems
 }
