@@ -622,3 +622,8 @@ export function questIncrement(
       return session.kind === 'letters' ? 1 : 0
   }
 }
+
+// ---------------------------------------------------------------------------- engagement (P2)
+// League weeks and XP, rollover plan, coin grants, quest progress and the shop: stubs until
+// ws-engagement implements them (ENGAGEMENT_IMPLEMENTATION, oracles/engagement.yaml).
+export * from './engagement'

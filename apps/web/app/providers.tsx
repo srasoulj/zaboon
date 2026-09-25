@@ -2,13 +2,14 @@
 /** Client providers for the whole app (orchestrator-owned). */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
+import type { HomeResponse } from '@zaboon/contracts'
 import { MotionPreferenceProvider } from '@zaboon/ui'
 import { OutboxReplayer } from '@/components/lesson/services'
 import { useOutboxPort } from '@/components/pages/hooks'
 import { completePendingMerge } from '@/components/pages/identity'
 import { PwaProvider } from '@/components/pages/PwaProvider'
 import { createApiClient, queryKeys } from '@/lib/api-client'
-import { createAuthClient } from '@/lib/auth-client'
+import { createAuthClient, type AuthClient } from '@/lib/auth-client'
 import { AppServicesProvider, useApi, useAuth, useHome, useSession } from '@/lib/app-services'
 
 /**
@@ -62,17 +63,28 @@ function PendingMergeFinisher() {
     session.status === 'signed_in' && !session.session.isAnonymous ? session.session.userId : null
   useEffect(() => {
     if (!memberId) return
-    let alive = true
-    void completePendingMerge({ auth, api, outbox }).then((home) => {
-      if (!alive || !home) return
-      queryClient.setQueryData(queryKeys.home, home)
-      void queryClient.invalidateQueries()
-    })
-    return () => {
-      alive = false
-    }
+    // Not tied to this effect run: in dev StrictMode the first run does the merge and the second
+    // finds nothing pending, so the merged home must survive the first run's cleanup.
+    completePendingMerge({ auth, api, outbox })
+      .then((home) => home && applyMergedHome(auth, queryClient, memberId, home))
+      // A failed session read: nothing to show; a kept pending entry is retried on the next load.
+      .catch(() => {})
   }, [auth, api, outbox, memberId, queryClient])
   return null
+}
+
+/** Puts a finished merge's home in the cache, unless that member signed out in the meantime. */
+export async function applyMergedHome(
+  auth: Pick<AuthClient, 'getSession'>,
+  queryClient: QueryClient,
+  memberId: string,
+  home: HomeResponse,
+): Promise<boolean> {
+  const current = await auth.getSession()
+  if (current?.userId !== memberId) return false
+  queryClient.setQueryData(queryKeys.home, home)
+  void queryClient.invalidateQueries()
+  return true
 }
 
 /** Applies the learner's in-app motion setting once their settings are known. */

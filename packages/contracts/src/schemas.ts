@@ -26,6 +26,12 @@ export { ChallengeType, Direction, ItemRef, AnswerGraph, MVP_CHALLENGE_TYPES } f
 // ---------------------------------------------------------------------------------------------
 /** Header honored ONLY in AUTH_MODE=local to time-travel in tests (docs/adr/0009). */
 export const TEST_NOW_HEADER = 'x-test-now'
+/**
+ * Header honored ONLY in AUTH_MODE=local: a JSON object of feature-flag overrides (known flag
+ * names → booleans) merged over the configured flags for that request, so tests can switch a
+ * Wave 3 feature on without touching app_config. Production ignores it.
+ */
+export const TEST_FLAGS_HEADER = 'x-test-flags'
 /** Client app version header; the API answers 426 below AppConfig.minAppVersion. */
 export const APP_VERSION_HEADER = 'x-zaboon-app-version'
 export const DEFAULT_COURSE_ID = 'fa-en'
@@ -56,6 +62,13 @@ export const LEAGUE_TIERS = [
 export const LeagueTier = z.enum(LEAGUE_TIERS)
 export type LeagueTier = z.infer<typeof LeagueTier>
 
+/** Most members a league cohort can hold (the league_cohorts.size CHECK). */
+export const MAX_COHORT_SIZE = 30
+
+/** What the shop sells for coins (P2). A heart refill is `POST /api/lives/refill`. */
+export const ShopItemId = z.enum(['streak_freeze', 'heart_refill'])
+export type ShopItemId = z.infer<typeof ShopItemId>
+
 export const AppConfig = z.object({
   minAppVersion: z.string(),
   graderWindow: z.number().int().min(1),
@@ -81,6 +94,12 @@ export const AppConfig = z.object({
     reviewShare: z.number().min(0).max(1),
     newWordsPerLesson: z.number().int().positive(),
   }),
+  /**
+   * Challenge mix per profile: category → weight. The Wave 3 categories `typing` (typed Persian:
+   * translate_type en→fa, listen_type, cloze_type) and `letterTrace` (letter_trace) are dropped
+   * by the session engine unless `GenerateInput.features` enables them, so sessions with the
+   * features off are exactly the MVP's (packages/session-engine/oracles).
+   */
   mixProfiles: z.record(z.string(), z.record(z.string(), z.number().min(0))),
   antiCheat: z.object({
     minMsPerChallenge: z.number().int().nonnegative(),
@@ -89,8 +108,20 @@ export const AppConfig = z.object({
   }),
   srs: z.object({ slowMs: z.number().int().positive(), strengthBars: z.array(z.number().min(0).max(1)) }),
   translit: z.object({ newWordExposures: z.number().int().nonnegative(), letterRetrievability: z.number().min(0).max(1) }),
-  leagues: z.object({ cohortSize: z.number().int().positive(), promote: z.number().int(), demote: z.number().int() }),
-  quests: z.object({ perDay: z.number().int().positive() }),
+  leagues: z.object({
+    cohortSize: z.number().int().positive().max(MAX_COHORT_SIZE),
+    promote: z.number().int(),
+    demote: z.number().int(),
+    /** Coins granted at rollover by final rank: index 0 = rank 1 (ranks past the list get none). */
+    rewardCoins: z.array(z.number().int().nonnegative()),
+  }),
+  quests: z.object({
+    perDay: z.number().int().positive(),
+    /** Coins per completed quest, granted (auto-claimed) in the commit that completes it. */
+    rewardCoins: z.number().int().nonnegative(),
+  }),
+  /** P2 shop: coin prices (every item priced). */
+  shop: z.object({ prices: z.record(ShopItemId, z.number().int().positive()) }),
   rateLimits: z.record(z.string(), z.object({ perMinute: z.number().int().positive() })),
 })
 export type AppConfig = z.infer<typeof AppConfig>
@@ -112,18 +143,27 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     reviewShare: 0.3,
     newWordsPerLesson: 3,
   },
+  // `typing` and `letterTrace` count only while their Wave 3 feature is on (see AppConfig).
   mixProfiles: {
     intro: { newWord: 0.25, recognition: 0.3, productionBank: 0.2, listening: 0.15, matching: 0.1 },
-    standard: { recognition: 0.25, productionBank: 0.35, listening: 0.25, matching: 0.15 },
-    legendary: { productionBank: 0.45, listening: 0.35, recognition: 0.2 },
-    letters: { letterIntro: 0.2, letterSound: 0.3, letterForms: 0.2, readWord: 0.15, buildWord: 0.15 },
-    practice: { recognition: 0.3, productionBank: 0.3, listening: 0.25, matching: 0.15 },
+    standard: { recognition: 0.25, productionBank: 0.35, listening: 0.25, matching: 0.15, typing: 0.15 },
+    legendary: { productionBank: 0.45, listening: 0.35, recognition: 0.2, typing: 0.2 },
+    letters: {
+      letterIntro: 0.2,
+      letterSound: 0.3,
+      letterForms: 0.2,
+      readWord: 0.15,
+      buildWord: 0.15,
+      letterTrace: 0.15,
+    },
+    practice: { recognition: 0.3, productionBank: 0.3, listening: 0.25, matching: 0.15, typing: 0.15 },
   },
   antiCheat: { minMsPerChallenge: 800, maxSessionsPerHour: 30, maxXpPerHour: 600 },
   srs: { slowMs: 12000, strengthBars: [0.5, 0.75, 0.9] },
   translit: { newWordExposures: 3, letterRetrievability: 0.8 },
-  leagues: { cohortSize: 30, promote: 7, demote: 5 },
-  quests: { perDay: 3 },
+  leagues: { cohortSize: MAX_COHORT_SIZE, promote: 7, demote: 5, rewardCoins: [30, 20, 10] },
+  quests: { perDay: 3, rewardCoins: 10 },
+  shop: { prices: { streak_freeze: 100, heart_refill: 150 } },
   rateLimits: {
     default: { perMinute: 120 },
     sessions: { perMinute: 20 },
@@ -131,6 +171,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     complete: { perMinute: 30 },
     reports: { perMinute: 10 },
     auth: { perMinute: 10 },
+    shop: { perMinute: 20 },
+    cron: { perMinute: 10 },
   },
 }
 
@@ -305,7 +347,8 @@ export const ClozeChoiceChallenge = z.object({
 export const CompleteChatChallenge = z.object({
   ...base,
   type: z.literal('complete_chat'),
-  speaker: z.object({ id: z.string(), name: z.string() }),
+  /** `image`: the character's portrait (a media URL) when the course has one; else draw the placeholder. */
+  speaker: z.object({ id: z.string(), name: z.string(), image: z.string().optional() }),
   prompt: FaTextDto.extend({ en: z.string() }),
   choices: z.array(FaTextDto.extend({ en: z.string() })).min(2).max(4),
   answer: z.number().int().nonnegative(),
@@ -428,6 +471,18 @@ export const ChallengeResponse = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('none') }),
   z.object({ kind: z.literal('audio'), transcript: z.string().max(500) }),
   z.object({ kind: z.literal('skip') }),
+  /**
+   * letter_trace (P2): the stroke is scored on the client; the response carries the scores.
+   * `coverage` = share of the letter's guide path the strokes covered, `precision` = share of the
+   * strokes that stayed on the guide (both 0..1). `gradeResponse` owns the pass thresholds.
+   * `declined` = "Can't trace now" (send 0 for both scores): it must cost no heart.
+   */
+  z.object({
+    kind: z.literal('trace'),
+    coverage: z.number().min(0).max(1),
+    precision: z.number().min(0).max(1),
+    declined: z.literal(true).optional(),
+  }),
 ])
 export type ChallengeResponse = z.infer<typeof ChallengeResponse>
 
@@ -450,6 +505,191 @@ export const AnswerRecord = z.object({
   hinted: z.boolean().default(false),
 })
 export type AnswerRecord = z.infer<typeof AnswerRecord>
+
+// ---------------------------------------------------------------------------------------------
+// Engagement (P2): leagues, quests, coins and the shop, the practice hub. Every route and field
+// here is behind a feature flag (leagues, quests, shop, practiceHub) and absent while it is off.
+// ---------------------------------------------------------------------------------------------
+/** A league outcome at rollover, and the zone a leaderboard row is in right now. */
+export const LeagueOutcome = z.enum(['promote', 'stay', 'demote'])
+export type LeagueOutcome = z.infer<typeof LeagueOutcome>
+
+/** A league week: UTC Monday 00:00 to the next Monday 00:00. */
+export const LeagueWeek = z.object({ startsAt: IsoDateTime, endsAt: IsoDateTime })
+export type LeagueWeek = z.infer<typeof LeagueWeek>
+
+/**
+ * One row of the learner's own cohort. Other learners appear only through their public profile
+ * fields: never a user id (unknown keys are stripped when the response is validated).
+ */
+export const LeaderboardEntry = z.object({
+  rank: z.number().int().positive(),
+  displayName: z.string().nullable(),
+  username: z.string().nullable(),
+  avatar: z.record(z.string(), z.unknown()).nullable(),
+  weeklyXp: z.number().int().nonnegative(),
+  isMe: z.boolean(),
+  zone: LeagueOutcome,
+})
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntry>
+
+/** How the learner's previous league week ended (the "you moved up" banner). */
+export const LeagueResult = z.object({
+  week: LeagueWeek,
+  /** The tier the learner played that week. */
+  tier: LeagueTier,
+  rank: z.number().int().positive(),
+  outcome: LeagueOutcome,
+  newTier: LeagueTier,
+  /** Coins won for the final rank (AppConfig.leagues.rewardCoins). */
+  coins: z.number().int().nonnegative(),
+})
+export type LeagueResult = z.infer<typeof LeagueResult>
+
+/** GET /api/leaderboard (linked accounts only): the learner's cohort this week. */
+export const LeaderboardResponse = z.object({
+  tier: LeagueTier,
+  week: LeagueWeek,
+  /** False until the learner's first XP of the week places them in a cohort. */
+  joined: z.boolean(),
+  /** Rank order; empty until joined. */
+  members: z.array(LeaderboardEntry).max(MAX_COHORT_SIZE),
+  /** How many top ranks move up / bottom ranks move down at rollover (0 at the top/bottom tier). */
+  promoteCount: z.number().int().nonnegative(),
+  demoteCount: z.number().int().nonnegative(),
+  lastResult: LeagueResult.nullable(),
+})
+export type LeaderboardResponse = z.infer<typeof LeaderboardResponse>
+
+/** The home/right-rail league card. */
+export const LeagueSummary = z.object({
+  tier: LeagueTier,
+  joined: z.boolean(),
+  rank: z.number().int().positive().nullable(),
+  weeklyXp: z.number().int().nonnegative(),
+  zone: LeagueOutcome.nullable(),
+  endsAt: IsoDateTime,
+})
+export type LeagueSummary = z.infer<typeof LeagueSummary>
+
+/** What a quest counts; each committed session adds game-rules `questIncrement(metric, …)`. */
+export const QuestMetric = z.enum([
+  'xp',
+  'lessons',
+  'perfect_sessions',
+  'practice_sessions',
+  'letters_sessions',
+])
+export type QuestMetric = z.infer<typeof QuestMetric>
+
+/** A quest definition id (quest_defs.id): lowercase letters, digits and underscores. */
+export const QuestId = z.string().regex(/^[a-z0-9_]{1,40}$/, 'quest id like xp_20')
+
+export const QuestDto = z.object({
+  id: QuestId,
+  metric: QuestMetric,
+  title: z.string(),
+  target: z.number().int().positive(),
+  /** 0..target (progress stops at the target). */
+  progress: z.number().int().nonnegative(),
+  completed: z.boolean(),
+  /** Coins the quest pays, granted automatically in the commit that completes it. */
+  reward: z.number().int().nonnegative(),
+})
+export type QuestDto = z.infer<typeof QuestDto>
+
+/** GET /api/quests: today's quests in the learner's timezone. */
+export const QuestsResponse = z.object({
+  date: IsoDate,
+  /** The next local midnight, when a new set of quests starts. */
+  resetsAt: IsoDateTime,
+  quests: z.array(QuestDto).max(10),
+})
+export type QuestsResponse = z.infer<typeof QuestsResponse>
+
+export const ShopUnavailable = z.enum([
+  'insufficient_coins',
+  /** Streak freezes: already holding AppConfig.streak.maxFreezes. */
+  'max_owned',
+  /** Heart refill: hearts are already full. */
+  'lives_full',
+  /** Heart refill: the learner's lives policy is unlimited. */
+  'unlimited_lives',
+])
+export type ShopUnavailable = z.infer<typeof ShopUnavailable>
+
+export const ShopItem = z.object({
+  id: ShopItemId,
+  price: z.number().int().positive(),
+  /** How many the learner holds (streak freezes); null for items used on purchase (heart refill). */
+  owned: z.number().int().nonnegative().nullable(),
+  /** The most the learner may hold (streak freezes: AppConfig.streak.maxFreezes); null if uncapped. */
+  max: z.number().int().positive().nullable(),
+  /** Why the item can't be bought right now; null when it can. */
+  unavailable: ShopUnavailable.nullable(),
+})
+export type ShopItem = z.infer<typeof ShopItem>
+
+/** GET /api/shop. */
+export const ShopResponse = z.object({
+  coins: z.number().int().nonnegative(),
+  items: z.array(ShopItem),
+})
+export type ShopResponse = z.infer<typeof ShopResponse>
+
+/**
+ * POST /api/shop/purchase. `purchaseId` is a client-generated UUID that makes the purchase
+ * idempotent: a retry with the same id changes nothing and answers `replayed: true`.
+ */
+export const PurchaseRequest = z.object({ item: ShopItemId, purchaseId: Uuid })
+/** POST /api/lives/refill: buys `heart_refill` (same idempotency rule). */
+export const RefillLivesRequest = z.object({ purchaseId: Uuid })
+export const PurchaseResponse = z.object({
+  purchaseId: Uuid,
+  item: ShopItemId,
+  /** True when this purchaseId had already been applied (nothing was charged again). */
+  replayed: z.boolean(),
+  /** The balance after the purchase. */
+  coins: z.number().int().nonnegative(),
+  streak: StreakView,
+  lives: LivesView,
+})
+export type PurchaseResponse = z.infer<typeof PurchaseResponse>
+
+/** Practice hub modes (P2, flags.practiceHub); a practice session may carry one. */
+export const PracticeMode = z.enum(['mixed', 'mistakes', 'listening', 'typing'])
+export type PracticeMode = z.infer<typeof PracticeMode>
+
+/** GET /api/practice: which practice modes the learner can start. */
+export const PracticeResponse = z.object({
+  courseId: z.string(),
+  modes: z.array(
+    z.object({
+      mode: PracticeMode,
+      available: z.boolean(),
+      /** What the mode would practise (open mistakes, due words, …), when it has a count. */
+      count: z.number().int().nonnegative().nullable(),
+    }),
+  ),
+})
+export type PracticeResponse = z.infer<typeof PracticeResponse>
+
+/** GET /api/cron/league-rollover (Vercel Cron): closes every ended week, idempotently. */
+export const LeagueRolloverResponse = z.object({
+  /** Weeks this run closed, oldest first; empty when there was nothing to do. */
+  closed: z.array(
+    z.object({
+      week: LeagueWeek,
+      cohorts: z.number().int().nonnegative(),
+      members: z.number().int().nonnegative(),
+      promoted: z.number().int().nonnegative(),
+      demoted: z.number().int().nonnegative(),
+    }),
+  ),
+  /** The open week after the run. */
+  current: LeagueWeek,
+})
+export type LeagueRolloverResponse = z.infer<typeof LeagueRolloverResponse>
 
 // ---------------------------------------------------------------------------------------------
 // Session result (returned by /complete; stored verbatim in sessions.result)
@@ -480,6 +720,25 @@ export const SessionResult = z.object({
     .nullable(),
   mistakes: z.array(ItemRef),
   graderMismatches: z.number().int().nonnegative(),
+  // P2 (optional: results stored before these existed, or with the features off, lack them).
+  /** flags.shop/quests: coins this commit granted (quest rewards) and the balance after it. */
+  coins: z
+    .object({ earned: z.number().int().nonnegative(), total: z.number().int().nonnegative() })
+    .optional(),
+  /** flags.leagues: the learner's league standing after this commit (linked accounts only). */
+  league: z
+    .object({
+      tier: LeagueTier,
+      weeklyXp: z.number().int().nonnegative(),
+      rank: z.number().int().positive().nullable(),
+      /** The rank before this commit (null when not yet in a cohort). */
+      previousRank: z.number().int().positive().nullable(),
+      /** True when this commit's XP placed the learner in this week's cohort. */
+      joinedNow: z.boolean(),
+    })
+    .optional(),
+  /** flags.quests: today's quests after this commit; `justCompleted` marks the ones it finished. */
+  quests: z.array(QuestDto.extend({ justCompleted: z.boolean() })).optional(),
 })
 export type SessionResult = z.infer<typeof SessionResult>
 
@@ -531,6 +790,13 @@ export const HomeResponse = z.object({
   xpTotal: z.number().int(),
   settings: Settings,
   flags: Flags,
+  // P2 (each present only while its feature flag is on).
+  /** flags.shop or flags.quests: the coin balance (the shell shows a coins pill when present). */
+  coins: z.number().int().nonnegative().optional(),
+  /** flags.leagues: the league card (linked accounts; guests see a "create a profile" card). */
+  league: LeagueSummary.optional(),
+  /** flags.quests: today's quests (the daily-quests card). */
+  quests: z.array(QuestDto).max(10).optional(),
 })
 export type HomeResponse = z.infer<typeof HomeResponse>
 
@@ -655,13 +921,20 @@ export const OnboardingRequest = z.object({
 // ---------------------------------------------------------------------------------------------
 // Sessions
 // ---------------------------------------------------------------------------------------------
-export const CreateSessionRequest = z.object({
-  courseId: z.string().default(DEFAULT_COURSE_ID),
-  kind: SessionKind,
-  levelId: LevelId.optional(),
-  /** The browser's IANA timezone; accepted at most once per AppConfig.tz.minChangeIntervalHours. */
-  tz: z.string().min(1),
-})
+export const CreateSessionRequest = z
+  .object({
+    courseId: z.string().default(DEFAULT_COURSE_ID),
+    kind: SessionKind,
+    levelId: LevelId.optional(),
+    /** The browser's IANA timezone; accepted at most once per AppConfig.tz.minChangeIntervalHours. */
+    tz: z.string().min(1),
+    /** P2 practice hub (flags.practiceHub): which practice to build. Practice sessions only. */
+    mode: PracticeMode.optional(),
+  })
+  .refine((r) => r.mode === undefined || r.kind === 'practice', {
+    message: 'mode is only allowed for practice sessions',
+    path: ['mode'],
+  })
 export const CreateSessionResponse = z.object({
   sessionId: Uuid,
   contentVersion: z.number().int().positive(),
@@ -748,6 +1021,8 @@ export const ErrorCode = z.enum([
   'rate_limited',
   'validation',
   'out_of_lives',
+  /** P2 shop: the balance can't pay for the item (409, like out_of_lives). */
+  'insufficient_coins',
   'internal',
 ])
 export type ErrorCode = z.infer<typeof ErrorCode>
@@ -767,5 +1042,6 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   rate_limited: 429,
   validation: 400,
   out_of_lives: 409,
+  insufficient_coins: 409,
   internal: 500,
 }

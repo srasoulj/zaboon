@@ -75,6 +75,7 @@ export function LessonRoute() {
         request={parsed.request}
         userId={userId}
         settings={data?.settings ?? DEFAULT_SETTINGS}
+        flags={data?.flags}
         home={data ? { streak: data.streak, dailyGoal: data.dailyGoal } : null}
         onExit={onExit}
       />

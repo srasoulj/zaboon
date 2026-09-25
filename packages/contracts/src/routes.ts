@@ -225,6 +225,75 @@ export const routes = {
     response: c.ReportDto,
   }),
 
+  // --- P2 engagement (Wave 3). The learner routes answer 404 `not_found` while their feature
+  // flag is off (leaderboard: leagues; quests: quests; shop, purchase, refillLives: shop;
+  // practice: practiceHub). The rollover cron runs regardless: it is idempotent and has nothing
+  // to close while nobody has joined a league.
+  leaderboard: route({
+    method: 'GET',
+    path: '/api/leaderboard',
+    auth: 'member',
+    phase: 'p2',
+    bucket: 'default',
+    request: undefined,
+    response: c.LeaderboardResponse,
+  }),
+  quests: route({
+    method: 'GET',
+    path: '/api/quests',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'default',
+    request: undefined,
+    response: c.QuestsResponse,
+  }),
+  shop: route({
+    method: 'GET',
+    path: '/api/shop',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'default',
+    request: undefined,
+    response: c.ShopResponse,
+  }),
+  purchase: route({
+    method: 'POST',
+    path: '/api/shop/purchase',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'shop',
+    request: c.PurchaseRequest,
+    response: c.PurchaseResponse,
+  }),
+  refillLives: route({
+    method: 'POST',
+    path: '/api/lives/refill',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'shop',
+    request: c.RefillLivesRequest,
+    response: c.PurchaseResponse,
+  }),
+  practice: route({
+    method: 'GET',
+    path: '/api/practice',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'default',
+    request: undefined,
+    response: c.PracticeResponse,
+  }),
+  /** Vercel Cron sends GET with `Authorization: Bearer $CRON_SECRET` (apps/web/vercel.json). */
+  leagueRollover: route({
+    method: 'GET',
+    path: '/api/cron/league-rollover',
+    auth: 'cron',
+    phase: 'p2',
+    bucket: 'cron',
+    request: undefined,
+    response: c.LeagueRolloverResponse,
+  }),
+
   devAnonymous: route({
     method: 'POST',
     path: '/api/dev/auth/anonymous',

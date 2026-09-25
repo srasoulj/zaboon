@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
+import type { Settings } from '@zaboon/contracts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ApiClient } from '../../lib/api-client'
 import { AppServicesProvider } from '../../lib/app-services'
@@ -261,6 +262,8 @@ function renderPlayer(
     api?: Partial<Record<string, (o: unknown) => unknown>>
     session?: ReturnType<typeof testSession>
     resolve?: RendererResolver
+    settings?: Partial<Pick<Settings, 'keyboardLayout'>>
+    flags?: Record<string, boolean>
   } = {},
 ) {
   const calls: { name: string; opts: unknown }[] = []
@@ -304,7 +307,8 @@ function renderPlayer(
       <LessonPlayer
         request={{ courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0' }}
         userId={USER_ID}
-        settings={{ sound: false, transliteration: 'auto', vowelMarks: 'auto' }}
+        settings={{ sound: false, transliteration: 'auto', vowelMarks: 'auto', ...opts.settings }}
+        {...(opts.flags ? { flags: opts.flags } : {})}
         home={null}
         onExit={onExit}
       />,
@@ -314,6 +318,18 @@ function renderPlayer(
 }
 
 describe('LessonPlayer', () => {
+  it('renderers get the keyboard layout and the persianKeyboard flag (off by default)', async () => {
+    const first = renderPlayer()
+    const plain = await screen.findByTestId('test-renderer')
+    expect(plain).toHaveAttribute('data-keyboard-layout', 'standard')
+    expect(plain).toHaveAttribute('data-persian-keyboard', 'false')
+    first.unmount()
+    renderPlayer({ settings: { keyboardLayout: 'phonetic' }, flags: { persianKeyboard: true } })
+    const typed = await screen.findByTestId('test-renderer')
+    expect(typed).toHaveAttribute('data-keyboard-layout', 'phonetic')
+    expect(typed).toHaveAttribute('data-persian-keyboard', 'true')
+  })
+
   it('Enter on a focused challenge button is left to the button; unfocused Enter checks', async () => {
     renderPlayer()
     await screen.findByTestId('test-renderer')

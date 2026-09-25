@@ -44,6 +44,8 @@ export interface ContentIndex {
   sentenceList: readonly CompiledSentence[]
   letterList: readonly Letter[]
   characterName(id: string): string
+  /** The character's portrait as a media URL, when the course has one. */
+  characterImage(id: string): string | undefined
   lexeme(id: string): Lexeme
   sentence(id: string): CompiledSentence
   chat(id: string): Chat
@@ -68,6 +70,9 @@ export function indexContent(view: ContentView): ContentIndex {
   const ch = byId<Chat>([view.unit?.chats ?? []])
   const le = byId<Letter>([[...view.letters.track.letters].sort((a, b) => a.order - b.order)])
   const names = new Map(view.characters.characters.map((c) => [c.id, c.name]))
+  const images = new Map(
+    view.characters.characters.flatMap((c) => (c.image ? [[c.id, c.image] as const] : [])),
+  )
   const need =
     <T>(map: Map<string, T>, kind: string) =>
     (id: string): T => {
@@ -85,6 +90,10 @@ export function indexContent(view: ContentView): ContentIndex {
     sentenceList: st.list,
     letterList: le.list,
     characterName: (id) => names.get(id) ?? id,
+    characterImage: (id) => {
+      const ref = images.get(id)
+      return ref === undefined ? undefined : view.mediaUrl(ref)
+    },
     lexeme: need(lx.map, 'lexeme'),
     sentence: need(st.map, 'sentence'),
     chat: need(ch.map, 'chat'),

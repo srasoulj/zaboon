@@ -4,6 +4,7 @@ import type { RouteDef } from '@zaboon/contracts'
 import { NotFoundError, createDb, repos, withSystem } from '@zaboon/db'
 import { createTestDatabase, type TestDatabase } from '@zaboon/db/testing'
 import { signLocalToken } from './auth/local'
+import { resetRuntimeConfig } from './config'
 import { resetServerEnv } from './env'
 import { withRoute } from './with-route'
 
@@ -150,5 +151,79 @@ describe('withRoute', () => {
     const limited = await call(tiny, { headers: auth })
     expect(limited.status).toBe(429)
     expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0)
+  })
+
+  it('authenticates cron routes with the secret and fails closed without one', async () => {
+    const cron = withRoute(
+      {
+        method: 'GET',
+        path: '/api/cron/test',
+        auth: 'cron',
+        phase: 'p2',
+        bucket: 'cron',
+        request: undefined,
+        response: Ok,
+      } as const,
+      async ({ user }) => ({ ok: true as const, user: user?.id ?? null, now: '' }),
+    )
+    const get = (authorization?: string) =>
+      call(cron, {
+        method: 'GET',
+        body: undefined,
+        headers: authorization === undefined ? {} : { authorization },
+      })
+    const secret = 'with-route-cron-secret' // pragma: allowlist secret
+    try {
+      delete process.env.CRON_SECRET
+      resetServerEnv()
+      expect((await get('Bearer ')).status).toBe(401) // no secret configured: fail closed
+      expect((await get()).status).toBe(401)
+      process.env.CRON_SECRET = secret
+      resetServerEnv()
+      expect((await get()).status).toBe(401)
+      expect((await get(`Bearer ${secret}-`)).status).toBe(401)
+      expect((await get(await bearer({ anonymous: false }))).status).toBe(401) // a user token
+      const ok = await get(`Bearer ${secret}`)
+      expect(ok.status).toBe(200)
+      expect(await ok.json()).toEqual({ ok: true, user: null, now: '' })
+    } finally {
+      delete process.env.CRON_SECRET
+      resetServerEnv()
+    }
+  })
+
+  it('exposes the flags: configured, then x-test-flags on top (local mode)', async () => {
+    const Flagged = z.object({ quests: z.boolean(), shop: z.boolean() })
+    const flagged = withRoute(
+      { ...def('user'), response: Flagged } as const,
+      async ({ flags }) => ({ quests: flags.quests === true, shop: flags.shop === true }),
+    )
+    const auth = { authorization: await bearer() }
+    const read = async (extra: Record<string, string> = {}) => {
+      const res = await call(flagged, { headers: { ...auth, ...extra } })
+      expect(res.status).toBe(200)
+      return res.json()
+    }
+    expect(await read()).toEqual({ quests: false, shop: false })
+    expect(await read({ 'x-test-flags': '{"shop":true}' })).toEqual({ quests: false, shop: true })
+    const bad = await call(flagged, { headers: { ...auth, 'x-test-flags': '{"shop":"yes"}' } })
+    expect(bad.status).toBe(400)
+    expect(await bad.json()).toMatchObject({ error: { code: 'validation' } })
+
+    const h = createDb(tdb.appUrl, { max: 1 })
+    try {
+      await withSystem(h.db, (tx) => repos.content.setAppConfig(tx, 'flags', { quests: true }))
+      expect(await read()).toEqual({ quests: false, shop: false }) // cached for 30 s
+      resetRuntimeConfig()
+      expect(await read()).toEqual({ quests: true, shop: false })
+      expect(await read({ 'x-test-flags': '{"quests":false}' })).toEqual({
+        quests: false,
+        shop: false,
+      })
+    } finally {
+      await withSystem(h.db, (tx) => repos.content.setAppConfig(tx, 'flags', {}))
+      await h.close()
+      resetRuntimeConfig()
+    }
   })
 })

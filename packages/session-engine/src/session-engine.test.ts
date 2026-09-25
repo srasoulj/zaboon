@@ -13,6 +13,7 @@ import { newCard, review } from '@zaboon/srs'
 import {
   ContentError,
   IMPLEMENTATION,
+  NotImplementedError,
   allocate,
   buildChallenge,
   decodeVariant,
@@ -113,6 +114,34 @@ describe('session-engine', () => {
         'match_pairs',
       ])
       expect(s.challenges.every((c) => !c.isNew)).toBe(true)
+    })
+
+    it('u01-t1 pins the Wave 3 types (typed Persian, tracing) after every MVP level', () => {
+      const levels = fixture.units[0]!.levels
+      expect(levels.at(-1)!.id).toBe('u01-t1')
+      const spec = levels.at(-1)!.spec!
+      expect(spec.pinnedOnly).toBe(true)
+      expect(spec.pinned.map(refLine)).toEqual([
+        { type: 'translate_type', items: ['s_u01_0003'], direction: 'en_fa' },
+        { type: 'listen_type', items: ['s_u01_0005'], direction: undefined },
+        { type: 'cloze_type', items: ['s_u01_0007'], direction: undefined },
+        { type: 'letter_trace', items: ['l_be'], direction: undefined },
+      ])
+      // Until the P2 builders land (ws-typing) the session can't be built: NotImplementedError,
+      // never a ContentError. Once they land, it builds exactly the four pins.
+      let built: Challenge[] | null = null
+      try {
+        built = gen(fx, { levelId: 'u01-t1' }).challenges
+      } catch (e) {
+        expect(e).toBeInstanceOf(NotImplementedError)
+      }
+      if (built)
+        expect(built.map((c) => c.type)).toEqual([
+          'translate_type',
+          'listen_type',
+          'cloze_type',
+          'letter_trace',
+        ])
     })
 
     it('u01-l1 and u01-l2 together build all 13 MVP types in the pinned order', () => {
@@ -742,6 +771,44 @@ function checkScenario(scenarios: Scenario[], runs: number) {
   )
 }
 
+describe('Wave 3 seams (features, practiceMode)', () => {
+  const on = { persianTyping: true, letterTrace: true }
+  const learner = { ...fresh, lexemeCards: cards(indexContent(fx).lexemeList.map((l) => l.id)) }
+  const sessions = [
+    { content: withSpec(fx, { mix: 'standard' }), kind: 'lesson' as const, levelId: 'u01-gen', learner },
+    { content: fx, kind: 'practice' as const, levelId: null, learner },
+    { content: fx, kind: 'letters' as const, levelId: 'u01-letters-2', learner: fresh },
+  ]
+
+  it('with the features on, sessions stay valid MVP sessions until the P2 builders exist', () => {
+    for (const s of sessions)
+      for (const seed of ['w3-a', 'w3-b', 'w3-c']) {
+        const out = gen(s.content, { ...s, seed, features: on })
+        expect(out.challenges.length).toBeGreaterThan(0)
+        for (const c of out.challenges) {
+          expect(Challenge.safeParse(c).success).toBe(true)
+          expect(MVP_CHALLENGE_TYPES).toContain(c.type)
+        }
+        expect(out.refs.length).toBeLessThanOrEqual(cfg.session.lengths[s.kind]!)
+        expect(rebuildChallenges(out.refs, s.content)).toEqual(out.challenges)
+      }
+  })
+
+  it('features absent and features off build the same session', () => {
+    for (const s of sessions) {
+      const off = gen(s.content, { ...s, features: { persianTyping: false, letterTrace: false } })
+      expect(gen(s.content, s)).toEqual(off)
+    }
+  })
+
+  it('accepts a practice mode and ignores it for now', () => {
+    const practice = sessions[1]!
+    expect(gen(practice.content, { ...practice, practiceMode: 'mistakes' })).toEqual(
+      gen(practice.content, practice),
+    )
+  })
+})
+
 // Each property run generates, regenerates and rebuilds a whole session with the real grader
 // (tens of ms), so 150 runs need more than Vitest's 5 s default.
 const PROPERTY_TIMEOUT_MS = 60_000
@@ -772,5 +839,27 @@ describe('properties', () => {
       ),
     )
     expect(sessions.size).toBeGreaterThan(5)
+  })
+})
+
+describe('complete_chat speakers', () => {
+  const chatOnly = (view: ContentView) =>
+    gen(withSpec(view, { pinned: [{ type: 'complete_chat', items: ['c_u01_001'] }], pinnedOnly: true }), {
+      levelId: 'u01-gen',
+    }).challenges[0]!
+
+  it('carry the character portrait as a media URL when the course has one', () => {
+    const view = faEn.view('u01-hello')
+    const portrait = '/media/fa-en/characters/shirin/portrait.webp'
+    expect(indexContent(view).characterImage('shirin')).toBe(portrait)
+    expect(indexContent(view).characterImage('nobody')).toBeUndefined()
+    const cc = of(chatOnly(view), 'complete_chat')
+    expect(cc.speaker).toStrictEqual({ id: 'shirin', name: 'Shirin', image: portrait })
+    expect(Challenge.parse(cc)).toStrictEqual(cc)
+  })
+
+  it('leave the portrait out when the character has none (the placeholder is drawn)', () => {
+    const cc = of(chatOnly(fx), 'complete_chat')
+    expect(cc.speaker).toStrictEqual({ id: 'leila', name: 'Leila' })
   })
 })

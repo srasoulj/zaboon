@@ -1,5 +1,5 @@
 {
-  "$comment": "Path ownership for parallel workstreams (CLAUDE.md). Checked in CI by scripts/check-ownership.ts. Orchestrator-owned.",
+  "$comment": "Path ownership for parallel workstreams (CLAUDE.md). Checked in CI by scripts/check-ownership.ts. Orchestrator-owned. A path starting with '!' excludes what it matches (Wave 3 took those paths over from finished Wave 1-2 owners; ws-renderers handed all of its paths to ws-typing).",
   "orchestratorBranches": [
     "claude/affectionate-ptolemy-b4ypuw",
     "claude/zaboon-orchestrator"
@@ -57,13 +57,21 @@
     "e2e/shell.spec.ts",
     "e2e/smoke.spec.ts",
     "e2e/qa/golden.spec.ts",
-    "e2e/qa/golden-answers.ts"
+    "e2e/qa/golden-answers.ts",
+    "apps/web/lib/server/flags.ts",
+    "apps/web/lib/challenge-registry.test.tsx",
+    "apps/web/vercel.json",
+    "apps/web/vercel.test.ts",
+    "apps/web/tests/api/harness.ts"
   ],
   "workstreams": {
     "ws-farsi-grader": {
       "wave": 1,
       "paths": [
         "packages/farsi/**",
+        "!packages/farsi/src/keyboard.ts",
+        "!packages/farsi/src/keyboard.test.ts",
+        "!packages/farsi/src/index.ts",
         "packages/grader/**"
       ]
     },
@@ -71,24 +79,38 @@
       "wave": 1,
       "paths": [
         "packages/session-engine/**",
+        "!packages/session-engine/src/**",
         "packages/srs/**",
-        "packages/game-rules/**"
+        "packages/game-rules/**",
+        "!packages/game-rules/src/**"
       ]
     },
     "ws-db": {
       "wave": 1,
       "paths": [
         "supabase/migrations/**",
+        "!supabase/migrations/20260926000000_engagement.sql",
         "supabase/tests/**",
-        "packages/db/**"
+        "!supabase/tests/005_engagement.sql",
+        "packages/db/**",
+        "!packages/db/src/schema.ts",
+        "!packages/db/src/repos/index.ts",
+        "!packages/db/src/repos/leagues.ts",
+        "!packages/db/src/repos/leagues.db.test.ts",
+        "!packages/db/src/repos/quests.ts",
+        "!packages/db/src/repos/quests.db.test.ts",
+        "!packages/db/src/repos/wallet.ts",
+        "!packages/db/src/repos/wallet.db.test.ts"
       ]
     },
     "ws-ui": {
       "wave": 1,
       "paths": [
         "packages/ui/**",
+        "!packages/ui/src/**",
         "apps/web/app/(dev)/**",
-        "e2e/ui/**"
+        "!apps/web/app/(dev)/gallery/**",
+        "!apps/web/app/(dev)/challenges/**"
       ]
     },
     "ws-content-cli": {
@@ -102,8 +124,22 @@
       "wave": 2,
       "paths": [
         "apps/web/app/api/**",
+        "!apps/web/app/api/sessions/**",
+        "!apps/web/app/api/leaderboard/**",
+        "!apps/web/app/api/quests/**",
+        "!apps/web/app/api/shop/**",
+        "!apps/web/app/api/lives/**",
+        "!apps/web/app/api/practice/**",
+        "!apps/web/app/api/cron/**",
+        "!apps/web/app/api/guidebooks/**",
         "apps/web/lib/server/**",
-        "apps/web/tests/api/**"
+        "!apps/web/lib/server/home.ts",
+        "!apps/web/lib/server/sessions.ts",
+        "!apps/web/lib/server/engagement/**",
+        "!apps/web/lib/server/guidebook.ts",
+        "!apps/web/lib/server/guidebook.test.ts",
+        "apps/web/tests/api/**",
+        "!apps/web/tests/api/guidebook.db.test.ts"
       ]
     },
     "ws-pages": {
@@ -133,29 +169,29 @@
       "wave": 2,
       "paths": [
         "apps/web/lib/lesson/**",
+        "!apps/web/lib/lesson/machine.ts",
+        "!apps/web/lib/lesson/machine.test.ts",
+        "!apps/web/lib/lesson/summary.ts",
+        "!apps/web/lib/lesson/request.ts",
+        "!apps/web/lib/lesson/pure.test.ts",
+        "!apps/web/lib/lesson/grading.ts",
+        "!apps/web/lib/lesson/grading.test.ts",
         "apps/web/app/lesson/**",
-        "apps/web/components/lesson/**",
         "apps/web/public/sounds/**",
         "e2e/lesson/**"
       ]
     },
     "ws-renderers": {
       "wave": 2,
-      "paths": [
-        "apps/web/components/challenges/**",
-        "apps/web/app/(dev)/challenges/**",
-        "e2e/renderers/**"
-      ]
+      "paths": []
     },
     "ws-path-letters": {
       "wave": 2,
       "paths": [
         "apps/web/app/(app)/learn/**",
         "apps/web/app/(app)/letters/**",
-        "apps/web/app/(app)/practice/**",
         "apps/web/components/path/**",
         "apps/web/components/letters/**",
-        "apps/web/components/practice/**",
         "apps/web/app/api/guidebooks/**",
         "apps/web/lib/server/guidebook.ts",
         "apps/web/lib/server/guidebook.test.ts",
@@ -166,8 +202,68 @@
     "ws-qa": {
       "wave": 2,
       "paths": [
-        "e2e/**",
-        "apps/web/tests/**"
+        "e2e/qa/**",
+        "apps/web/tests/qa/**"
+      ]
+    },
+    "ws-engagement": {
+      "wave": 3,
+      "paths": [
+        "apps/web/app/(app)/leaderboard/**",
+        "apps/web/app/(app)/quests/**",
+        "apps/web/app/(app)/shop/**",
+        "apps/web/app/(app)/practice/**",
+        "apps/web/components/engagement/**",
+        "apps/web/components/practice/**",
+        "apps/web/app/api/leaderboard/**",
+        "apps/web/app/api/quests/**",
+        "apps/web/app/api/shop/**",
+        "apps/web/app/api/lives/**",
+        "apps/web/app/api/practice/**",
+        "apps/web/app/api/cron/**",
+        "apps/web/app/api/sessions/**",
+        "apps/web/lib/server/engagement/**",
+        "apps/web/lib/server/home.ts",
+        "apps/web/lib/server/sessions.ts",
+        "apps/web/components/lesson/**",
+        "apps/web/lib/lesson/machine.ts",
+        "apps/web/lib/lesson/machine.test.ts",
+        "apps/web/lib/lesson/summary.ts",
+        "apps/web/lib/lesson/request.ts",
+        "apps/web/lib/lesson/pure.test.ts",
+        "packages/game-rules/src/**",
+        "packages/db/src/repos/leagues.ts",
+        "packages/db/src/repos/leagues.db.test.ts",
+        "packages/db/src/repos/quests.ts",
+        "packages/db/src/repos/quests.db.test.ts",
+        "packages/db/src/repos/wallet.ts",
+        "packages/db/src/repos/wallet.db.test.ts",
+        "packages/db/src/repos/index.ts",
+        "packages/db/src/schema.ts",
+        "supabase/migrations/20260926000000_engagement.sql",
+        "supabase/tests/005_engagement.sql",
+        "apps/web/tests/engagement/**",
+        "e2e/engagement/**"
+      ]
+    },
+    "ws-typing": {
+      "wave": 3,
+      "paths": [
+        "packages/farsi/src/keyboard.ts",
+        "packages/farsi/src/keyboard.test.ts",
+        "packages/farsi/src/index.ts",
+        "packages/ui/src/**",
+        "apps/web/app/(dev)/gallery/**",
+        "e2e/ui/**",
+        "packages/session-engine/src/**",
+        "apps/web/components/challenges/**",
+        "apps/web/app/(dev)/challenges/**",
+        "e2e/renderers/**",
+        "apps/web/lib/lesson/grading.ts",
+        "apps/web/lib/lesson/grading.test.ts",
+        "apps/web/lib/typing/**",
+        "apps/web/tests/typing/**",
+        "e2e/typing/**"
       ]
     }
   }

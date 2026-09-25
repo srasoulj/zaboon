@@ -64,7 +64,11 @@ function ChallengeSlot({
 export interface LessonPlayerProps {
   request: LessonRequest
   userId: string
-  settings: Pick<Settings, 'sound' | 'transliteration' | 'vowelMarks'>
+  /** Display settings; `keyboardLayout` (P2) is for typed Persian (default 'standard'). */
+  settings: Pick<Settings, 'sound' | 'transliteration' | 'vowelMarks'> &
+    Partial<Pick<Settings, 'keyboardLayout'>>
+  /** The learner's feature flags (HomeResponse.flags); absent = every Wave 3 feature off. */
+  flags?: Readonly<Record<string, boolean>>
   /** Streak and daily goal before the lesson (for the offline summary); null while unknown. */
   home: HomeBefore | null
   onExit: (href: string) => void
@@ -121,6 +125,7 @@ export function LessonPlayer({
   request,
   userId,
   settings,
+  flags,
   home,
   onExit,
   now = Date.now,
@@ -290,14 +295,24 @@ export function LessonPlayer({
   }, [actor])
 
   // --- renderer plumbing
+  const persianKeyboard = flags?.persianKeyboard === true
   const display: ChallengeDisplay = useMemo(
     () => ({
       transliteration: settings.transliteration !== 'off',
       vowelMarks: settings.vowelMarks !== 'off',
       sound: settings.sound,
       reducedMotion,
+      keyboardLayout: settings.keyboardLayout ?? 'standard',
+      persianKeyboard,
     }),
-    [settings.transliteration, settings.vowelMarks, settings.sound, reducedMotion],
+    [
+      settings.transliteration,
+      settings.vowelMarks,
+      settings.sound,
+      settings.keyboardLayout,
+      reducedMotion,
+      persianKeyboard,
+    ],
   )
   const challengeAudio: ChallengeAudio = useMemo(
     () => ({

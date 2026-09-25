@@ -3,28 +3,55 @@
  * The app chrome around every signed-in screen (orchestrator-owned; DESIGN-SYSTEM §2.1):
  * desktop = sidebar + center + right rail with the stats row; tablet = icon sidebar;
  * mobile = stats bar on top + tab bar at the bottom. Onboarding renders without chrome.
+ *
+ * Wave 3 seams: the Leaderboards, Quests and Shop nav items appear only while their feature flag
+ * is on (`home.flags`), a coins pill appears when `home.coins` is present, and ws-engagement fills
+ * two slots it owns: `heartsPopover(home)` (components/engagement/hearts-popover.tsx) and
+ * `<EngagementRail />` (components/engagement/Rail.tsx) in the right rail.
  */
 import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, type ComponentType, type ReactNode, type SVGProps } from 'react'
 import { StatPill } from '@zaboon/ui'
-import type { HomeResponse } from '@zaboon/contracts'
+import type { FlagName, HomeResponse } from '@zaboon/contracts'
+import { EngagementRail } from '@/components/engagement/Rail'
+import { heartsPopover } from '@/components/engagement/hearts-popover'
+import { MergeDroppedNotice } from '@/components/pages/MergeDroppedNotice'
 import { useEnsureGuest, useHome } from '@/lib/app-services'
-import { CourseBadge, LearnIcon, LettersIcon, PracticeIcon, ProfileIcon } from './nav-icons'
+import {
+  CourseBadge,
+  LeaderboardIcon,
+  LearnIcon,
+  LettersIcon,
+  PracticeIcon,
+  ProfileIcon,
+  QuestsIcon,
+  ShopIcon,
+} from './nav-icons'
 
 interface NavItem {
   href: string
   label: string
   Icon: ComponentType<SVGProps<SVGSVGElement>>
+  /** Shown only while this feature flag is on (P2). */
+  flag?: FlagName
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/learn', label: 'Learn', Icon: LearnIcon },
   { href: '/letters', label: 'Letters', Icon: LettersIcon },
   { href: '/practice', label: 'Practice', Icon: PracticeIcon },
+  { href: '/leaderboard', label: 'Leaderboards', Icon: LeaderboardIcon, flag: 'leagues' },
+  { href: '/quests', label: 'Quests', Icon: QuestsIcon, flag: 'quests' },
+  { href: '/shop', label: 'Shop', Icon: ShopIcon, flag: 'shop' },
   { href: '/profile', label: 'Profile', Icon: ProfileIcon },
 ]
+
+/** The nav items to show: flag-gated items only while their flag is on. */
+export function navItems(flags: Readonly<Record<string, boolean>> | undefined): NavItem[] {
+  return NAV_ITEMS.filter((item) => item.flag === undefined || flags?.[item.flag] === true)
+}
 
 function Stats({ home }: { home: HomeResponse | undefined }) {
   return (
@@ -35,18 +62,29 @@ function Stats({ home }: { home: HomeResponse | undefined }) {
         value={home?.streak.current ?? 0}
         active={home?.streak.status === 'extended'}
       />
+      {home?.coins !== undefined && <StatPill kind="coins" value={home.coins} />}
       <StatPill
         kind="hearts"
         value={home?.lives.policy === 'unlimited' ? 'infinite' : (home?.lives.count ?? 5)}
+        popover={heartsPopover(home)}
+        popoverLabel="Hearts"
       />
     </div>
   )
 }
 
-function NavLinks({ variant, pathname }: { variant: 'side' | 'tab'; pathname: string }) {
+function NavLinks({
+  variant,
+  pathname,
+  flags,
+}: {
+  variant: 'side' | 'tab'
+  pathname: string
+  flags: Readonly<Record<string, boolean>> | undefined
+}) {
   return (
     <ul className={clsx(variant === 'side' ? 'flex flex-col gap-2' : 'flex justify-around')}>
-      {NAV_ITEMS.map(({ href, label, Icon }) => {
+      {navItems(flags).map(({ href, label, Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`)
         return (
           <li key={href}>
@@ -101,7 +139,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             z
           </span>
         </Link>
-        <NavLinks variant="side" pathname={pathname} />
+        <NavLinks variant="side" pathname={pathname} flags={home.data?.flags} />
       </nav>
 
       <header className="sticky top-0 z-10 border-b-2 border-line bg-bg px-4 py-3 desktop:hidden">
@@ -109,6 +147,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main id="main" className="mx-auto w-full max-w-[600px] flex-1 px-4 pt-6 pb-28 tablet:pb-10">
+        {/* ws-pages: a guest merge that was given up on, shown app-wide to that member only. */}
+        <div className="mb-4 empty:hidden">
+          <MergeDroppedNotice />
+        </div>
         {children}
       </main>
 
@@ -128,13 +170,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             </p>
           </section>
         )}
+        {home.data && <EngagementRail home={home.data} />}
       </aside>
 
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-10 border-t-2 border-line bg-bg px-2 py-2 tablet:hidden"
       >
-        <NavLinks variant="tab" pathname={pathname} />
+        <NavLinks variant="tab" pathname={pathname} flags={home.data?.flags} />
       </nav>
     </div>
   )

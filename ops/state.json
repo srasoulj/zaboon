@@ -1,7 +1,7 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T19:55:00Z",
-  "wave": 2,
+  "updatedAt": "2026-09-25T21:40:00Z",
+  "wave": 3,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
@@ -70,29 +70,35 @@
       ]
     },
     "ws-renderers": {
-      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
+      "status": "done; paths handed to ws-typing (Wave 3)",
       "prs": [
         21,
-        31
+        31,
+        37
       ]
     },
     "ws-player": {
-      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
+      "status": "done; player paths handed to ws-engagement (Wave 3)",
       "prs": [
         22,
-        30
+        30,
+        39
       ]
     },
     "ws-path-letters": {
-      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
+      "status": "done (round 2 merged in #43)",
       "prs": [
-        32
+        32,
+        40,
+        43
       ]
     },
     "ws-pages": {
-      "status": "fix round in progress (post-merge review findings sent 2026-09-25T19:48Z; new PR expected)",
+      "status": "done (round 2 merged in #44; notice mounted in the shell)",
       "prs": [
-        35
+        35,
+        41,
+        44
       ]
     },
     "ws-qa-1": {
@@ -150,12 +156,20 @@
     },
     "ws-content-gen": {
       "wave": 2,
-      "status": "text drafts done (units 1–5); Unit 1 media integrated by the orchestrator media PR: 79 clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits (WebP + PNG masters, provenance sidecars)",
+      "status": "text drafts done (units 1–5); Unit 1 media merged in #38 (79 clips + 30 slow + 30 envelopes, 8 illustrations, 5 portraits)",
       "runsIn": "orchestrator"
     },
     "ws-qa": {
       "wave": 2,
       "status": "ws-qa-1 done (#33); bugs #27–#29 fixed by the orchestrator"
+    },
+    "ws-engagement": {
+      "wave": 3,
+      "status": "to spawn after the Wave 3 prep PR"
+    },
+    "ws-typing": {
+      "wave": 3,
+      "status": "to spawn after the Wave 3 prep PR"
     }
   },
   "humanBacklog": [
@@ -198,7 +212,16 @@
     33,
     34,
     35,
-    36
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -230,6 +253,14 @@
     "SRS should ignore declined traces",
     "ws-api: repos.learning.deleteLevelProgress",
     "Repo-wide formatter pass when no workers are active",
-    "WebKit e2e coverage (CI runners unavailable; Chromium only locally)"
-  ]
+    "WebKit e2e coverage (CI runners unavailable; Chromium only locally)",
+    "Only 4 of the 8 Unit 1 illustrations appear (select_image options are fixed per challenge): water, river, mulberry and ice cream wait for later units",
+    "Show the character portraits on the path banners (chat gets them in Wave 3)"
+  ],
+  "mvp": {
+    "gate": "passed",
+    "sha": "963915d",
+    "pr": 38,
+    "tag": "pending: the session git proxy refuses tag pushes (HTTP 403); owner pushes `git tag -a mvp 963915d`"
+  }
 }

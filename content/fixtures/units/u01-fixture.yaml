@@ -73,5 +73,25 @@ levels:
   - id: u01-r1
     kind: unit_review
     title: Unit review
+  # Wave 3 (P2): typed Persian and letter tracing. Last on the path, so every MVP level before it
+  # (and every MVP test) is unaffected; its focus items all appear in the levels above, so the
+  # unit's bundle and the unit review's pools are unchanged.
+  - id: u01-t1
+    kind: lesson
+    title: Typing and tracing
+    lessons: 1
+    spec:
+      focus:
+        lexemes: [lx_nun, lx_chay, lx_sib, lx_mikham]
+        sentences: [s_u01_0003, s_u01_0005, s_u01_0007]
+        letters: [l_be]
+        chats: []
+      mix: standard
+      pinnedOnly: true
+      pinned:
+        - { type: translate_type, direction: en_fa, items: [s_u01_0003] }
+        - { type: listen_type, items: [s_u01_0005] }
+        - { type: cloze_type, items: [s_u01_0007] }
+        - { type: letter_trace, items: [l_be] }
 status: approved
 provenance: { author: fixtures }

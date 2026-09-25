@@ -9,6 +9,12 @@
  *   4. The rest follows the level's mix profile over the focus items.
  * Every candidate ref is probed with the real builder, so types whose media or distractors are
  * missing are skipped. All choices come from the seed: same input → same session.
+ *
+ * Wave 3 seam: mix categories behind a feature (`typing`, `letterTrace`) are dropped from the
+ * weights unless `GenerateInput.features` turns the feature on, so with every feature off a session
+ * is exactly the MVP's (packages/session-engine/oracles/mvp-sessions.golden.json). With a feature
+ * on, the category has no pool yet and its slots fall back to the MVP categories (ws-typing adds
+ * the pools and builders); `practiceMode` is accepted and not used yet.
  */
 import type {
   CompiledSentence,
@@ -25,6 +31,7 @@ import type {
   ChallengeType,
   Direction,
   FsrsCard,
+  PracticeMode,
   SessionKind,
 } from '@zaboon/contracts'
 import { isDue } from '@zaboon/srs'
@@ -43,6 +50,14 @@ export interface LearnerState {
   exposures: Readonly<Record<string, number>>
 }
 
+/** Wave 3 features a session may use; absent or false = off (the MVP session). */
+export interface SessionFeatures {
+  /** flags.persianKeyboard: typed Persian (translate_type en→fa, listen_type, cloze_type). */
+  persianTyping?: boolean
+  /** flags.letterTrace: letter_trace. */
+  letterTrace?: boolean
+}
+
 export interface GenerateInput {
   content: ContentView
   kind: SessionKind
@@ -54,6 +69,10 @@ export interface GenerateInput {
   seed: string
   now: Date
   config: AppConfig
+  /** Wave 3 features from the request's flags (the server passes them; absent = all off). */
+  features?: SessionFeatures
+  /** Practice hub mode (P2, practice sessions only). Accepted; not used by the engine yet. */
+  practiceMode?: PracticeMode
 }
 
 export interface GeneratedSession {
@@ -217,6 +236,18 @@ function findLevel(content: ContentView, levelId: string | null): Level | null {
 
 function mixWeights(cfg: AppConfig, profile: string): Record<string, number> {
   return cfg.mixProfiles[profile] ?? cfg.mixProfiles.standard ?? { productionBank: 1 }
+}
+
+/** Mix categories that exist only behind a Wave 3 feature (AppConfig.mixProfiles). */
+const GATED_CATEGORIES: Readonly<Record<string, keyof SessionFeatures>> = {
+  typing: 'persianTyping',
+  letterTrace: 'letterTrace',
+}
+
+/** Drops every gated category whose feature is off (in place). */
+function dropDisabled(weights: Record<string, number>, features: SessionFeatures | undefined): void {
+  for (const [category, feature] of Object.entries(GATED_CATEGORIES))
+    if (features?.[feature] !== true) delete weights[category]
 }
 
 // ----------------------------------------------------------------------------------- course pools
@@ -429,6 +460,7 @@ function planCourse(
 
   const profile = PROFILE_FOR_KIND[kind] ?? level?.spec?.mix ?? 'standard'
   const weights = { ...mixWeights(config, profile) }
+  dropDisabled(weights, input.features)
   const front: ChallengeRef[] = []
   const rest: ChallengeRef[] = []
   let left = budget
@@ -609,6 +641,7 @@ function planLetters(
   // The letterIntro share is served by the new-letter intros above (like newWord in lessons).
   const weights = { ...mixWeights(config, 'letters') }
   delete weights.letterIntro
+  dropDisabled(weights, input.features)
   rest.push(...p.fillByMix(Math.max(0, left), weights, pools, LETTER_FALLBACK))
   return { front, rest }
 }
