@@ -1,0 +1,3701 @@
+[
+ {
+  "scenario": "lesson u01-s0",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   }
+  ],
+  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+ },
+ {
+  "scenario": "lesson u01-s0",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   }
+  ],
+  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+ },
+ {
+  "scenario": "lesson u01-s0",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   }
+  ],
+  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+ },
+ {
+  "scenario": "lesson u01-l1",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "select_image",
+    "items": [
+     "lx_ab"
+    ],
+    "distractors": [
+     "lx_nun",
+     "lx_chay",
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "complete_chat",
+    "items": [
+     "c_u01_001"
+    ]
+   }
+  ],
+  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+ },
+ {
+  "scenario": "lesson u01-l1",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "select_image",
+    "items": [
+     "lx_ab"
+    ],
+    "distractors": [
+     "lx_nun",
+     "lx_chay",
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "complete_chat",
+    "items": [
+     "c_u01_001"
+    ]
+   }
+  ],
+  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+ },
+ {
+  "scenario": "lesson u01-l1",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "select_image",
+    "items": [
+     "lx_ab"
+    ],
+    "distractors": [
+     "lx_nun",
+     "lx_chay",
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_mersi",
+     "lx_maman",
+     "lx_baba",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "complete_chat",
+    "items": [
+     "c_u01_001"
+    ]
+   }
+  ],
+  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+ },
+ {
+  "scenario": "lesson u01-l2",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_mim",
+     "l_nun"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_sib"
+    ]
+   }
+  ],
+  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+ },
+ {
+  "scenario": "lesson u01-l2",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_mim",
+     "l_nun"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_sib"
+    ]
+   }
+  ],
+  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+ },
+ {
+  "scenario": "lesson u01-l2",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_mim",
+     "l_nun"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_sib"
+    ]
+   }
+  ],
+  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+ },
+ {
+  "scenario": "practice (fresh)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_nun",
+     "lx_chay",
+     "lx_to",
+     "lx_salam",
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0003"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "select_image",
+    "items": [
+     "lx_chay"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   }
+  ],
+  "challenges": "3d8605ed4f566ea5ce1e86cab7b6729b6236056c760d2e2bd7d07ddeeabbd669"
+ },
+ {
+  "scenario": "practice (fresh)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0008"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_ruz",
+     "lx_mersi",
+     "lx_bad",
+     "lx_man",
+     "lx_chay"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   }
+  ],
+  "challenges": "2ecbc41395167cf0ac7ce18f8d8e618a0c1eea217b24adba40462e6dbe6f346d"
+ },
+ {
+  "scenario": "practice (fresh)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_ruz",
+     "lx_mikham",
+     "lx_nun",
+     "lx_ab",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_image",
+    "items": [
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   }
+  ],
+  "challenges": "f88d927d2af44f7bb336e560318aa5e0afc630ce14aa18f22ac7f8fdd026501c"
+ },
+ {
+  "scenario": "practice (experienced)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_khub",
+     "lx_maman",
+     "lx_baba",
+     "lx_sib",
+     "lx_ruz"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "select_image",
+    "items": [
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "34b0fe37f4041be689113ec97ecf63cebf0ae4654bc99d71268da11f6025f82c"
+ },
+ {
+  "scenario": "practice (experienced)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_to",
+     "lx_ab",
+     "lx_salam",
+     "lx_nun",
+     "lx_maman"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_chay"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0008"
+    ],
+    "variant": 2
+   }
+  ],
+  "challenges": "dd36752fac5bd1de30e3f9d33d4280a1747f6e0a50308dcd002f5384c331bf46"
+ },
+ {
+  "scenario": "practice (experienced)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_to",
+     "lx_mersi",
+     "lx_khub",
+     "lx_bad",
+     "lx_chay"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   }
+  ],
+  "challenges": "057f03dc2970c4f0900f499f2ebf8d9ba35921a9ea2b8be5b608e8521ff439e0"
+ },
+ {
+  "scenario": "unit_review u01-r1 (fresh)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_mikham",
+     "lx_ab",
+     "lx_man",
+     "lx_maman",
+     "lx_nun"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_khub",
+     "lx_chay",
+     "lx_baba",
+     "lx_salam",
+     "lx_sib"
+    ]
+   }
+  ],
+  "challenges": "dd555c8a1a6f6a1cdba10e88ca578681e333172517b12c26c3df2e98b4be2b56"
+ },
+ {
+  "scenario": "unit_review u01-r1 (fresh)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_mersi",
+     "lx_maman",
+     "lx_khub",
+     "lx_chay",
+     "lx_man"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_sib",
+     "lx_baba",
+     "lx_ab",
+     "lx_salam",
+     "lx_mikham"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0008"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "c8d6e29671e48d21dc47e724f5fa47e9bbaab0b33000e2ddd9faa993646939df"
+ },
+ {
+  "scenario": "unit_review u01-r1 (fresh)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0001"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_sib",
+     "lx_baba",
+     "lx_man",
+     "lx_salam",
+     "lx_nun"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_maman",
+     "lx_chay",
+     "lx_ab",
+     "lx_mersi",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0002"
+    ],
+    "variant": 4
+   }
+  ],
+  "challenges": "badb4d1cd0533eb72d7d2022e555818d384cbc0b7593a69704d8fa3a03df6567"
+ },
+ {
+  "scenario": "unit_review u01-r1 (experienced)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_sib"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_mikham",
+     "lx_ab",
+     "lx_man",
+     "lx_maman",
+     "lx_nun"
+    ]
+   }
+  ],
+  "challenges": "a5f6a43adc4fc57c339d3201b68e2993e457439453e6c070d6019fe0194b0481"
+ },
+ {
+  "scenario": "unit_review u01-r1 (experienced)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_sib"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_mersi",
+     "lx_maman",
+     "lx_khub",
+     "lx_chay",
+     "lx_man"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "b65fb51b193e53b7d4638ca3d6a662a75d74e8511c0d2943a43042ac8f3eb23a"
+ },
+ {
+  "scenario": "unit_review u01-r1 (experienced)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_maman",
+     "lx_chay",
+     "lx_ab",
+     "lx_mersi",
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0001"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   }
+  ],
+  "challenges": "2ccf4cd91f094cbd996ee6c7ffa9e649d08f6eae1a4effed1c9924095bb231f1"
+ },
+ {
+  "scenario": "letters u01-letters-1",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_alef"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_dal"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_dal"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_re"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_re"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_ze"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_re",
+     "l_ze",
+     "l_alef"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_maman"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_baba"
+    ]
+   }
+  ],
+  "challenges": "81f8ba3c7281d84a88d5cfe034d2260bc907a0830c1ab44c7c5813d22a4e3810"
+ },
+ {
+  "scenario": "letters u01-letters-1",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_alef"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_dal"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_dal"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_re"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_re"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_salam"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_dal",
+     "l_re",
+     "l_vav"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_ruz"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_re"
+    ],
+    "variant": 2
+   }
+  ],
+  "challenges": "d0806c126f142303bca9832a69970a3694c0b50b971e9e56425496d9f316d93b"
+ },
+ {
+  "scenario": "letters u01-letters-1",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_alef"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_dal"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_dal"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_re"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_re"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_khub"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_re"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_ruz"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_vav",
+     "l_re",
+     "l_ze"
+    ]
+   }
+  ],
+  "challenges": "1105cf46dd9eb737836182f68f3309ece7d3109b7bfd12ffc4afd31aaee388ab"
+ },
+ {
+  "scenario": "letters u01-letters-2 (experienced)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "read_word",
+    "items": [
+     "lx_mersi"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_nun"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_sin",
+     "l_mim",
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_sin"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_ye",
+     "l_nun"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_baba"
+    ]
+   }
+  ],
+  "challenges": "e26c3dc2d1a95ab25d8b7a85f9b8eee01e6997cdeb2b8b475d2d9ce169d0c09a"
+ },
+ {
+  "scenario": "letters u01-letters-2 (experienced)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_man"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_nun",
+     "l_ye"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_sin",
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_sin"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_salam"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_man"
+    ]
+   }
+  ],
+  "challenges": "11e4863707de5bf639f4720b19913dff96dbff6ec605af7221b6307ac319aed5"
+ },
+ {
+  "scenario": "letters u01-letters-2 (experienced)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "build_word",
+    "items": [
+     "lx_salam"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_sib"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_ye",
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_nun",
+     "l_sin"
+    ]
+   }
+  ],
+  "challenges": "d6d11c429282f9a53ef03805c4f49b5fa42753a7bb43763d8e410f46378bfd8a"
+ },
+ {
+  "scenario": "letters (all known)",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_mim",
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_salam"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_man"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_sin"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_maman"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_sin",
+     "l_dal",
+     "l_be"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_mersi"
+    ]
+   }
+  ],
+  "challenges": "1a1590e7e560cc81339db1fc17d1c91a2e110075e2c4a3a7df9540d61a81c305"
+ },
+ {
+  "scenario": "letters (all known)",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_sin"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_sin",
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_maman"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_ab"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_mim",
+     "l_dal",
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_sin"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_mersi"
+    ]
+   }
+  ],
+  "challenges": "3c8215435314769ab7b96ded1c6a2b80fed9410a12f150714c2ffd5d23c0e8e5"
+ },
+ {
+  "scenario": "letters (all known)",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "build_word",
+    "items": [
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_dal"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_maman"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_sin",
+     "l_dal",
+     "l_alef"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_mim",
+     "l_be"
+    ]
+   }
+  ],
+  "challenges": "4d95689f07a6b9f686ec032717cd75a750a100f4d6edc16380c4183a6f508aa4"
+ },
+ {
+  "scenario": "generated intro lesson",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_salam"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_mersi"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_khub"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0004"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   }
+  ],
+  "challenges": "a72a714af0b248eedfe3d28d68bec00979229c948507898517ff508c306eda4e"
+ },
+ {
+  "scenario": "generated intro lesson",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_salam"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_mersi"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_khub"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0004"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   }
+  ],
+  "challenges": "7123d59e225916de78cb4d84af734feaa6f35b89b501921082f8e29aed6e3580"
+ },
+ {
+  "scenario": "generated intro lesson",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_salam"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_mersi"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_khub"
+    ],
+    "direction": "fa_en",
+    "variant": 1
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0004"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   }
+  ],
+  "challenges": "390b3b56ceb1d046281db6cad2388c02b945f295bd48d759a2ac81e60715da35"
+ },
+ {
+  "scenario": "generated standard lesson #3",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "select_image",
+    "items": [
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_salam",
+     "lx_maman",
+     "lx_mersi",
+     "lx_sib",
+     "lx_ruz"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_nun",
+     "lx_chay",
+     "lx_mikham",
+     "lx_ab",
+     "lx_to"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "60e4936d1c80b4925149e4bfbb17667e7ac186a99a4f4d713c84d063305a754d"
+ },
+ {
+  "scenario": "generated standard lesson #3",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_baba",
+     "lx_sib",
+     "lx_chay",
+     "lx_ruz",
+     "lx_bad"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_mikham",
+     "lx_khub",
+     "lx_to",
+     "lx_nun",
+     "lx_maman"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   }
+  ],
+  "challenges": "ff705381b9a1ac1dd2f06fb365ec877b167040156ca3cc3a029c07e40fb36f1e"
+ },
+ {
+  "scenario": "generated standard lesson #3",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_bad",
+     "lx_mikham",
+     "lx_nun",
+     "lx_sib",
+     "lx_ab"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_sib"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "match_pairs",
+    "items": [
+     "lx_to",
+     "lx_maman",
+     "lx_chay",
+     "lx_ruz",
+     "lx_mersi"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0003"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   }
+  ],
+  "challenges": "20e78db7e076d8d75e0af52de803a44a2f4947ebd0f4e21790f2b1c488b08ad3"
+ },
+ {
+  "scenario": "generated letters-mix lesson",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_mim",
+     "l_nun"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_baba"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_baba"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   }
+  ],
+  "challenges": "93099ca03dd47aa2062b840db9c55e455a9c7f7b24649e968bd62f6f9b7f521a"
+ },
+ {
+  "scenario": "generated letters-mix lesson",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_maman"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_salam"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_be",
+     "l_nun",
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   }
+  ],
+  "challenges": "6a5df0f5183fd259add7121cf7ddea01823be5c49b5306a710beca00172b71f1"
+ },
+ {
+  "scenario": "generated letters-mix lesson",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_be"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ]
+   },
+   {
+    "type": "letter_intro",
+    "items": [
+     "l_nun"
+    ],
+    "variant": 1
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_nun"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_be"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "build_word",
+    "items": [
+     "lx_nun"
+    ]
+   },
+   {
+    "type": "letter_forms",
+    "items": [
+     "l_nun",
+     "l_mim",
+     "l_be"
+    ]
+   },
+   {
+    "type": "read_word",
+    "items": [
+     "lx_nun"
+    ]
+   },
+   {
+    "type": "letter_sound",
+    "items": [
+     "l_mim"
+    ],
+    "variant": 2
+   }
+  ],
+  "challenges": "d109c72f016c2c44ca81dd7f20a750f8724f3ff69a788ddcead5fb9610c003d3"
+ },
+ {
+  "scenario": "legendary",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_sib"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "4ddd1b9158e66aec30549f250156d8906648f8ad276f1656b46128e16858e69c"
+ },
+ {
+  "scenario": "legendary",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0005"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0004"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0004"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_chay"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   }
+  ],
+  "challenges": "909294637cf248a144bb298c84b055103e7a2b698858e1ec094d30815ec20e5d"
+ },
+ {
+  "scenario": "legendary",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "lx_ab"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "select_image",
+    "items": [
+     "lx_sib"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   }
+  ],
+  "challenges": "bab72ad0d3ef239bb7c6a174936c33b2b5eb261a5b033228bd9b8d93e1d48edb"
+ },
+ {
+  "scenario": "jump_test",
+  "seed": "golden-a",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0008"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0007"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0006"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0006"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   }
+  ],
+  "challenges": "9142b7f1831453453a8ece8507851d345dac9c5100633bb9d166029f77747ea2"
+ },
+ {
+  "scenario": "jump_test",
+  "seed": "golden-b",
+  "refs": [
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0003"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0003"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0002"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0003"
+    ],
+    "direction": "en_fa"
+   }
+  ],
+  "challenges": "d2b2a6c07983a10f1a270396f8be48fe194ba2cbf831023590135410cf90d227"
+ },
+ {
+  "scenario": "jump_test",
+  "seed": "golden-c",
+  "refs": [
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0003"
+    ],
+    "variant": 2
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0001"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0008"
+    ]
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0007"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0008"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0005"
+    ]
+   },
+   {
+    "type": "translate_type",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0002"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0001"
+    ]
+   },
+   {
+    "type": "select_translation",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0005"
+    ],
+    "direction": "fa_en"
+   },
+   {
+    "type": "cloze_choice",
+    "items": [
+     "s_u01_0002"
+    ],
+    "variant": 4
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0007"
+    ],
+    "direction": "en_fa"
+   },
+   {
+    "type": "listen_tap",
+    "items": [
+     "s_u01_0002"
+    ]
+   },
+   {
+    "type": "translate_bank",
+    "items": [
+     "s_u01_0006"
+    ],
+    "direction": "fa_en"
+   }
+  ],
+  "challenges": "86c775fb31872b4f39e395d8b9b3339f68fe982953bec1cfd70d4e22bd835022"
+ }
+]
