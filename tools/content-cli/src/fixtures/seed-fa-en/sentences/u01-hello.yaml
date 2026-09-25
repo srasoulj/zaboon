@@ -1,0 +1,417 @@
+# Unit 1 sentences (STYLE.md). `fa` keeps Persian punctuation; token surfaces carry none.
+# `en`: the first path of the first pattern is the model answer; commas and a final ? live inside
+# tokens/alternatives, never right after a ]. `faAccept` has no punctuation and its first pattern
+# accepts `fa`; formal register, pronoun drop, ZWNJ and orthography variants are merged automatically.
+
+# --- u01-l1: hello and thanks -------------------------------------------------------------------
+- id: s_u01_0001
+  fa: سلام!
+  translit: "salām!"
+  tokens:
+    - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hello" }
+  en: "[Hello/Hi]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0002
+  fa: سلام، خوبی؟
+  faFormal: سلام، خوب هستی؟
+  translit: "salām, khubi?"
+  translitFormal: "salām, khub hasti?"
+  tokens:
+    - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hi" }
+    - { surface: خوبی, lexeme: lx_khubi, translit: khubi, gloss: "how are you? (lit. are you well?)" }
+  en:
+    - "[Hello,/Hi,] [how are you?/how are you doing?/how's it going?/how is it going?]"
+    - "[Hello,/Hi,] are you [good?/well?/okay?/OK?/all right?/fine?/doing well?]"
+  faAccept: "سلام [خوبی/چطوری]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [greeting, question]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0003
+  fa: مرسی!
+  faFormal: متشکرم!
+  translit: "mersi!"
+  translitFormal: "motashakkeram!"
+  tokens:
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+  en: "[Thanks/Thank you]"
+  faAccept: "[مرسی/ممنون/ممنونم]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [politeness]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0004
+  fa: مرسی، خوبم.
+  faFormal: متشکرم، خوب هستم.
+  translit: "mersi, khubam."
+  translitFormal: "motashakkeram, khub hastam."
+  tokens:
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+    - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "I'm good" }
+  en:
+    - "[Thanks,/Thank you,] I'm [good/fine/well/okay/OK/doing well]"
+    - "I'm [good,/fine,/well,/okay,/OK,] [thanks/thank you]"
+  faAccept:
+    - "[مرسی/ممنون/ممنونم] [من/] خوبم"
+    - "[من/] خوبم [مرسی/ممنون]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0005
+  fa: خداحافظ!
+  translit: "khodāhāfez!"
+  tokens:
+    - { surface: خداحافظ, lexeme: lx_khodahafez, translit: khodāhāfez, gloss: "goodbye" }
+  en: "[Goodbye/Bye/Bye-bye/Bye bye]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0006
+  fa: بله، خوبم.
+  faFormal: بله، خوب هستم.
+  translit: "bale, khubam."
+  translitFormal: "bale, khub hastam."
+  tokens:
+    - { surface: بله, lexeme: lx_bale, translit: bale, gloss: "yes" }
+    - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "I'm fine" }
+  en: "Yes, I'm [good/fine/well/okay/OK/doing well]"
+  faAccept: "بله [من/] خوبم"
+  audio: { speaker: kian }
+  unit: u01-hello
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0007
+  fa: نه، مرسی.
+  faFormal: نه، متشکرم.
+  translit: "na, mersi."
+  translitFormal: "na, motashakkeram."
+  tokens:
+    - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+  en: "No, [thanks/thank you]"
+  faAccept: "نه [مرسی/ممنون]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [politeness, taarof]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. The polite first refusal of an offer (ta'ārof)."
+
+- id: s_u01_0008
+  fa: مرسی، خداحافظ!
+  faFormal: متشکرم، خداحافظ!
+  translit: "mersi, khodāhāfez!"
+  translitFormal: "motashakkeram, khodāhāfez!"
+  tokens:
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+    - { surface: خداحافظ, lexeme: lx_khodahafez, translit: khodāhāfez, gloss: "goodbye" }
+  en: "[Thanks,/Thank you,] [goodbye/bye]"
+  faAccept: "[مرسی/ممنون] خداحافظ"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+# --- u01-l2: good morning, you, excuse me ---------------------------------------------------------
+- id: s_u01_0009
+  fa: خیلی ممنون!
+  translit: "kheyli mamnun!"
+  tokens:
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very much" }
+    - { surface: ممنون, lexeme: lx_mamnun, translit: mamnun, gloss: "thanks" }
+  en:
+    - "Thank you [very much/so much]"
+    - "Thanks [a lot/so much/very much]"
+    - "Many thanks"
+  faAccept: "خیلی [ممنون/ممنونم/مرسی]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [politeness]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0010
+  fa: ببخشید!
+  translit: "bebakhshid!"
+  tokens:
+    - { surface: ببخشید, lexeme: lx_bebakhshid, translit: bebakhshid, gloss: "excuse me; sorry" }
+  en: "[Excuse me/Sorry/I'm sorry/Pardon me/Pardon]"
+  faAccept: "[ببخشید/ببخشین]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [politeness]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0011
+  fa: سلام، شما خوبین؟
+  faFormal: سلام، شما خوب هستید؟
+  translit: "salām, shomā khubin?"
+  translitFormal: "salām, shomā khub hastid?"
+  tokens:
+    - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hello" }
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you (polite)" }
+    - { surface: خوبین, lexeme: lx_khub, translit: khubin, gloss: "are well" }
+  en:
+    - "[Hello,/Hi,] [how are you?/how are you doing?/how are you all?]"
+    - "[Hello,/Hi,] are you [good?/well?/okay?/OK?/all right?/fine?/doing well?]"
+  faAccept: "سلام [شما/] [خوبین/خوبید/چطورین/چطورید]"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [greeting, question, politeness]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. Polite شما with the colloquial 2pl ending -in."
+
+- id: s_u01_0012
+  fa: من خوبم، تو چطوری؟
+  faFormal: من خوب هستم، تو چطور هستی؟
+  translit: "man khubam, to chetori?"
+  translitFormal: "man khub hastam, to chetowr hasti?"
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: "I" }
+    - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "am good" }
+    - { surface: تو, lexeme: lx_to, translit: to, gloss: "you" }
+    - { surface: چطوری, lexeme: lx_chetor, translit: chetori, gloss: "how are (you)?" }
+  en: "I'm [good,/fine,/well,/okay,/OK,] [how are you?/how about you?/what about you?/and you?/and how are you?]"
+  faAccept: "من خوبم تو [چطوری/خوبی]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [greeting, question]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0013
+  fa: صبح بخیر!
+  translit: "sobh bekheyr!"
+  tokens:
+    - { surface: صبح, lexeme: lx_sobh, translit: sobh, gloss: "morning" }
+    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (lit. with goodness)" }
+  en: "Good morning"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0014
+  fa: شب بخیر!
+  translit: "shab bekheyr!"
+  tokens:
+    - { surface: شب, lexeme: lx_shab, translit: shab, gloss: "night" }
+    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (lit. with goodness)" }
+  en: "Good [night/evening]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [greeting]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. Mostly said when parting at night; 'good evening' accepted as a translation."
+
+- id: s_u01_0015
+  fa: صبح بخیر، مامان‌بزرگ!
+  translit: "sobh bekheyr, māmānbozorg!"
+  tokens:
+    - { surface: صبح, lexeme: lx_sobh, translit: sobh, gloss: "morning" }
+    - { surface: بخیر, lexeme: lx_bekheyr, translit: bekheyr, gloss: "good (lit. with goodness)" }
+    - { surface: مامان‌بزرگ, lexeme: lx_maman_bozorg, translit: māmānbozorg, gloss: "grandma" }
+  en: "Good morning, [Grandma/Granny/Grandmother/Grandmom/Nana/Maman Bozorg]"
+  faAccept: "صبح بخیر [مامان‌بزرگ/مادربزرگ]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [greeting, family]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0016
+  fa: ممنونم، شما چطورین؟
+  faFormal: ممنونم، شما چطور هستید؟
+  translit: "mamnunam, shomā chetorin?"
+  translitFormal: "mamnunam, shomā chetowr hastid?"
+  tokens:
+    - { surface: ممنونم, lexeme: lx_mamnun, translit: mamnunam, gloss: "thank you (lit. I'm grateful)" }
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you (polite)" }
+    - { surface: چطورین, lexeme: lx_chetor, translit: chetorin, gloss: "how are (you)?" }
+  en: "[Thank you,/Thanks,] [how are you?/how about you?/what about you?/and you?/and how are you?]"
+  faAccept: "[ممنونم/ممنون/مرسی] [شما/] [چطورین/چطورید/خوبین/خوبید]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [politeness, question]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+# --- u01-l3: names and ta'ārof --------------------------------------------------------------------
+- id: s_u01_0017
+  fa: اسمم شیرینه.
+  faFormal: اسم من شیرین است.
+  translit: "esmam shirine."
+  translitFormal: "esm-e man shirin ast."
+  tokens:
+    - { surface: اسمم, lexeme: lx_esm, translit: esmam, gloss: "my name" }
+    - { surface: شیرینه, lexeme: lx_name_shirin, translit: shirine, gloss: "is Shirin" }
+  en: "[My name is/My name's] Shirin"
+  faAccept: "[اسمم/اسم من] شیرینه"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [name]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0018
+  fa: اسمت چیه؟
+  faFormal: اسمت چیست؟
+  translit: "esmet chiye?"
+  translitFormal: "esmet chist?"
+  tokens:
+    - { surface: اسمت, lexeme: lx_esm, translit: esmet, gloss: "your name" }
+    - { surface: چیه, lexeme: lx_chi, translit: chiye, gloss: "what is" }
+  en: "[What's/What is] your name?"
+  faAccept: "[اسمت/اسم تو] چیه"
+  audio: { speaker: shirin }
+  unit: u01-hello
+  tags: [name, question]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0019
+  fa: اسمتون چیه؟
+  faFormal: اسمتان چیست؟
+  translit: "esmetun chiye?"
+  translitFormal: "esmetān chist?"
+  tokens:
+    - { surface: اسمتون, lexeme: lx_esm, translit: esmetun, gloss: "your name (polite)" }
+    - { surface: چیه, lexeme: lx_chi, translit: chiye, gloss: "what is" }
+  en: "[What's/What is] your name?"
+  faAccept: "[اسمتون/اسم شما] چیه"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [name, question, politeness]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. Colloquial -tun for written -tān (the -ān → -un shift)."
+
+- id: s_u01_0020
+  fa: اسمم لیلاست.
+  faFormal: اسم من لیلا است.
+  translit: "esmam leylāst."
+  translitFormal: "esm-e man leylā ast."
+  tokens:
+    - { surface: اسمم, lexeme: lx_esm, translit: esmam, gloss: "my name" }
+    - { surface: لیلاست, lexeme: lx_name_leila, translit: leylāst, gloss: "is Leila" }
+  en: "[My name is/My name's] [Leila/Leyla/Layla]"
+  faAccept: "[اسمم/اسم من] لیلاست"
+  audio: { speaker: leila }
+  unit: u01-hello
+  tags: [name]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. After a vowel the colloquial 'is' is -st (لیلاست), after a consonant -e (شیرینه)."
+
+- id: s_u01_0021
+  fa: بفرمایید!
+  translit: "befarmāyid!"
+  tokens:
+    - { surface: بفرمایید, lexeme: lx_befarmayid, translit: befarmāyid, gloss: "please, go ahead" }
+  en:
+    - "[Please,/] [go ahead/come in/have a seat/sit down/help yourself/after you]"
+    - "[Here you are/Here you go/Please]"
+  faAccept: "[بفرمایید/بفرمایین/بفرما]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [politeness, taarof]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0022
+  fa: بفرمایید چایی!
+  faFormal: بفرمایید چای!
+  translit: "befarmāyid chāyi!"
+  translitFormal: "befarmāyid chāy!"
+  tokens:
+    - { surface: بفرمایید, lexeme: lx_befarmayid, translit: befarmāyid, gloss: "please have" }
+    - { surface: چایی, lexeme: lx_chay, translit: chāyi, gloss: "tea" }
+  en:
+    - "[Please/] have some tea"
+    - "[Here's/Here is] [some/your/] tea"
+    - "[Please/] help yourself to [some/] tea"
+  faAccept:
+    - "[بفرمایید/بفرمایین/بفرما] چایی"
+    - "چایی [بفرمایید/بفرمایین/بفرما]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [taarof]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0023
+  fa: خواهش می‌کنم.
+  translit: "khāhesh mikonam."
+  tokens:
+    - { surface: خواهش, lexeme: lx_khahesh, translit: khāhesh, gloss: "request" }
+    - { surface: می‌کنم, lexeme: lx_kardan, translit: mikonam, gloss: "(I) make" }
+  en:
+    - "You're welcome"
+    - "[Don't mention it/No problem/My pleasure/Not at all/Please]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [politeness, taarof]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+- id: s_u01_0024
+  fa: تعارف نکن!
+  translit: "ta'ārof nakon!"
+  tokens:
+    - { surface: تعارف, lexeme: lx_taarof, translit: "ta'ārof", gloss: "ta'ārof (polite formality)" }
+    - { surface: نکن, lexeme: lx_kardan, translit: nakon, gloss: "don't do" }
+  en:
+    - "Don't be [shy/so polite/formal]"
+    - "Don't stand on ceremony"
+    - "No need to be [polite/shy/formal]"
+    - "[No/Don't/Don't do] [ta'ārof/ta'arof/taarof/tarof]"
+  faAccept: "تعارف [نکن/نکنین/نکنید]"
+  audio: { speaker: maman-bozorg }
+  unit: u01-hello
+  tags: [taarof]
+  status: draft
+  provenance:
+    author: claude-seed
+    notes: "hand-written seed; needs native review. Said by the host after a polite refusal: 'no ta'ārof, take it!'"
+
+- id: s_u01_0025
+  fa: باشه، مرسی!
+  faFormal: باشد، متشکرم!
+  translit: "bāshe, mersi!"
+  translitFormal: "bāshad, motashakkeram!"
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+  en: "[Okay,/OK,/Alright,/All right,/Fine,] [thanks/thank you]"
+  faAccept: "باشه [مرسی/ممنون]"
+  audio: { speaker: kian }
+  unit: u01-hello
+  tags: [taarof]
+  status: draft
+  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }

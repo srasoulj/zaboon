@@ -1,12 +1,49 @@
-# Stub so the path renders all of Section 1. Full content comes later.
+# Unit 3: family members, having and loving, ta'ārof at Grandma's. Each lesson level introduces new
+# items and may reuse anything from the levels and units before it. AI draft (openai/gpt-6-astra,
+# prompt draft-v1); status: draft until native review.
 id: u03-family
-title: "Family"
-subtitle: "Talk about the people closest to you"
+title: Family
+subtitle: Talk about the people closest to you
 register: colloquial
 color: lajvard
+guidebook: guidebooks/u03-family.md
 characters: [maman-bozorg, kian]
 levels:
   - id: u03-l1
     kind: lesson
+    title: My family
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_khanevade, lx_khahar, lx_baradar, lx_baba_bozorg, lx_ma]
+        sentences: [s_u03_0001, s_u03_0002, s_u03_0003, s_u03_0004, s_u03_0005, s_u03_0006, s_u03_0007, s_u03_0008, s_u03_0009]
+        chats: [c_u03_001]
+      mix: intro
+  - id: u03-l2
+    kind: lesson
+    title: Brothers and sisters
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_dashtan, lx_bache, lx_pesar, lx_dokhtar, lx_un, lx_va, lx_faghat]
+        sentences: [s_u03_0010, s_u03_0011, s_u03_0012, s_u03_0013, s_u03_0014, s_u03_0015, s_u03_0016, s_u03_0017, s_u03_0018]
+        chats: [c_u03_002, c_u03_003]
+      mix: standard
+  - id: u03-c1
+    kind: chest
+  - id: u03-l3
+    kind: lesson
+    title: At Grandma's
+    lessons: 4
+    spec:
+      focus:
+        lexemes: [lx_salam_resundan, lx_be, lx_dust_dashtan, lx_ro, lx_hame, lx_aziz, lx_ghorbunet_beram]
+        sentences: [s_u03_0019, s_u03_0020, s_u03_0021, s_u03_0022, s_u03_0023, s_u03_0024, s_u03_0025, s_u03_0026]
+        chats: [c_u03_004, c_u03_005]
+      mix: standard
+  - id: u03-p1
+    kind: practice
+  - id: u03-review
+    kind: unit_review
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Level titles and focus lists from the model's draft (Family); lessons: 4 per lesson level; chest after level 2." }

@@ -16,6 +16,7 @@ import {
   LetterId,
   PaletteColor,
   Token,
+  UnitId,
 } from '@zaboon/content-schema'
 
 export { ChallengeType, Direction, ItemRef, AnswerGraph, MVP_CHALLENGE_TYPES } from '@zaboon/content-schema'
@@ -571,6 +572,8 @@ export const LettersResponse = z.object({
       translit: z.string(),
       strength: Strength,
       introduced: z.boolean(),
+      /** Resolved URL of the letter's sound (tap to hear), when the course has one. */
+      audio: z.string().optional(),
     }),
   ),
   lessons: z.array(z.object({ id: LevelId, title: z.string(), letters: z.array(LetterId), state: LevelState })),
@@ -586,10 +589,26 @@ export const WordsResponse = z.object({
       gloss: z.string(),
       strength: Strength,
       dueAt: IsoDateTime.nullable(),
+      /** Resolved URL of the word's audio, when the course has one. */
+      audio: z.string().optional(),
     }),
   ),
 })
 export type WordsResponse = z.infer<typeof WordsResponse>
+
+/**
+ * GET /api/guidebooks/:unitId (?courseId= like /api/path): the unit's Guidebook as markdown. Persian
+ * phrases are `<fa audio="…">…</fa>` elements whose audio refs the server resolves to URLs
+ * (an unresolvable ref becomes `audio=""`); render it sanitized, never as raw HTML.
+ */
+export const GuidebookResponse = z.object({
+  courseId: z.string(),
+  contentVersion: z.number().int(),
+  unitId: UnitId,
+  title: z.string(),
+  markdown: z.string(),
+})
+export type GuidebookResponse = z.infer<typeof GuidebookResponse>
 
 export const ProfileResponse = z.object({
   id: Uuid,

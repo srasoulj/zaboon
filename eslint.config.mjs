@@ -28,6 +28,8 @@ export default tseslint.config(
       '**/test-results/**',
       '**/next-env.d.ts',
       '.local/**',
+      // Subagents' git worktrees are full repo copies.
+      '.claude/**',
     ],
   },
   js.configs.recommended,

@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -12,8 +12,8 @@ import {
 import { createAiContext, MissingKeyError, printDryRun } from './ai-context'
 import { draftUnit, loadBrief, UnitBrief, type DraftOutput } from './draft'
 import { goodDraft } from './fixtures/draft-u02'
+import { seedCourseCopy } from './fixtures/seed-course'
 import { loadCourse } from './load'
-import { repoRoot } from './paths'
 import { validateCourse } from './validate'
 import { TEST_KEY } from './fixtures/test-key'
 
@@ -27,9 +27,7 @@ afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 
 /** A private copy of the seed course, so drafts never touch content/. */
 function seedCopy(): string {
-  const dir = join(temp(), 'fa-en')
-  cpSync(join(repoRoot(), 'content/fa-en'), dir, { recursive: true })
-  return dir
+  return seedCourseCopy(join(temp(), 'fa-en'))
 }
 
 const brief = UnitBrief.parse({

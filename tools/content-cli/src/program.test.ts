@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
@@ -7,6 +7,7 @@ import { goodDraft } from './fixtures/draft-u02'
 import { repoRoot } from './paths'
 import { createProgram, type ProgramIO } from './program'
 import { MemoryUploader } from './storage'
+import { seedCourseCopy } from './fixtures/seed-course'
 import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
@@ -39,9 +40,7 @@ async function run(args: string[], io: Partial<ProgramIO> = {}) {
 }
 
 function seedCopy(): string {
-  const dir = join(temp(), 'fa-en')
-  cpSync(join(repoRoot(), 'content/fa-en'), dir, { recursive: true })
-  return dir
+  return seedCourseCopy(join(temp(), 'fa-en'))
 }
 
 function briefFile(): string {

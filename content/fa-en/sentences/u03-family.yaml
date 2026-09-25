@@ -1,0 +1,466 @@
+# Unit 3 sentences. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: s_u03_0001
+  fa: این کیه، کیان؟
+  faFormal: این کیست، کیان؟
+  translit: "in kiye, kiān?"
+  translitFormal: "in kist, kiān?"
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: کیه, lexeme: lx_ki, translit: kiye, gloss: "who is" }
+    - { surface: کیان, lexeme: lx_name_kian, translit: kiān, gloss: "Kian" }
+  en:
+    - "[Who's/Who is] this, Kian?"
+    - "Kian, [who's/who is] this?"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Grandma asks Kian about a person in a photo. Assembly edit: the draft duplicated s_u02_0007 (این کیه؟); Grandma now addresses Kian." }
+
+- id: s_u03_0002
+  fa: این مامانمه.
+  faFormal: این مامان من است.
+  translit: "in māmāname."
+  translitFormal: "in māmān-e man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: مامانمه, lexeme: lx_maman, translit: māmāname, gloss: "is my mom" }
+  en: "This is my [mom/mum/mother/mama]"
+  faAccept:
+    - "این [مامانمه/مادرمه]"
+    - "این [مامان/مادر] منه"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0003
+  fa: این بابامه.
+  faFormal: این بابای من است.
+  translit: "in bābāme."
+  translitFormal: "in bābā-ye man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: بابامه, lexeme: lx_baba, translit: bābāme, gloss: "is my dad" }
+  en: "This is my [dad/father/papa]"
+  faAccept:
+    - "این [بابامه/پدرمه]"
+    - "این [بابای/پدر] منه"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0004
+  fa: این خواهرمه.
+  faFormal: این خواهر من است.
+  translit: "in khāharame."
+  translitFormal: "in khāhar-e man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: خواهرمه, lexeme: lx_khahar, translit: khāharame, gloss: "is my sister" }
+  en: "This is my sister"
+  faAccept: "این [خواهرمه/خواهر منه]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0005
+  fa: این برادرمه.
+  faFormal: این برادر من است.
+  translit: "in barādarame."
+  translitFormal: "in barādar-e man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: برادرمه, lexeme: lx_baradar, translit: barādarame, gloss: "is my brother" }
+  en: "This is my brother"
+  faAccept: "این [برادرمه/برادر منه]"
+  audio: { speaker: shirin }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0006
+  fa: این بابابزرگمه.
+  faFormal: این بابابزرگ من است.
+  translit: "in bābābozorgame."
+  translitFormal: "in bābābozorg-e man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: بابابزرگمه, lexeme: lx_baba_bozorg, translit: bābābozorgame, gloss: "is my grandpa" }
+  en: "This is my [grandpa/grandfather/granddad]"
+  faAccept:
+    - "این [بابابزرگمه/پدربزرگمه]"
+    - "این [بابابزرگ/پدربزرگ] منه"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0007
+  fa: این مامان‌بزرگمه.
+  faFormal: این مامان‌بزرگ من است.
+  translit: "in māmānbozorgame."
+  translitFormal: "in māmānbozorg-e man ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: مامان‌بزرگمه, lexeme: lx_maman_bozorg, translit: māmānbozorgame, gloss: "is my grandma" }
+  en: "This is my [grandma/grandmother/granny]"
+  faAccept:
+    - "این [مامان‌بزرگمه/مادربزرگمه]"
+    - "این [مامان‌بزرگ/مادربزرگ] منه"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0008
+  fa: ما ایرانی هستیم.
+  translit: "mā irāni hastim."
+  tokens:
+    - { surface: ما, lexeme: lx_ma, translit: mā, gloss: "we" }
+    - { surface: ایرانی, lexeme: lx_irani, translit: irāni, gloss: "Iranian" }
+    - { surface: هستیم, lexeme: lx_budan, translit: hastim, gloss: "are" }
+  en:
+    - "We're Iranian"
+    - "We're Iranians"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [identity]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0009
+  fa: خواهرت خوبه؟
+  faFormal: خواهرت خوب است؟
+  translit: "khāharet khube?"
+  translitFormal: "khāharat khub ast?"
+  tokens:
+    - { surface: خواهرت, lexeme: lx_khahar, translit: khāharet, gloss: "your sister" }
+    - { surface: خوبه, lexeme: lx_khub, translit: khube, gloss: "is well" }
+  en: "Is your sister [well?/okay?/all right?/doing well?/fine?]"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Grandma asks Kian about his sister. }
+
+- id: s_u03_0010
+  fa: خواهر داری؟
+  translit: "khāhar dāri?"
+  tokens:
+    - { surface: خواهر, lexeme: lx_khahar, translit: khāhar, gloss: "sister" }
+    - { surface: داری, lexeme: lx_dashtan, translit: dāri, gloss: "do you have" }
+  en:
+    - "Do you have [a sister?/any sisters?]"
+    - "Have you got [a sister?/any sisters?]"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Standalone role-play question, not a continuation of the photo conversation." }
+
+- id: s_u03_0011
+  fa: آره، یه خواهر دارم.
+  faFormal: بله، یک خواهر دارم.
+  translit: "āre, ye khāhar dāram."
+  translitFormal: "bale, yek khāhar dāram."
+  tokens:
+    - { surface: آره, lexeme: lx_are, translit: āre, gloss: "yes" }
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: خواهر, lexeme: lx_khahar, translit: khāhar, gloss: "sister" }
+    - { surface: دارم, lexeme: lx_dashtan, translit: dāram, gloss: "I have" }
+  en: "[Yes,/Yeah,] [I have/I've got] [a/one] sister"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0012
+  fa: برادر ندارم.
+  translit: "barādar nadāram."
+  tokens:
+    - { surface: برادر, lexeme: lx_baradar, translit: barādar, gloss: "brother" }
+    - { surface: ندارم, lexeme: lx_dashtan, translit: nadāram, gloss: "I don't have" }
+  en:
+    - "I don't have [a brother/any brothers]"
+    - "I haven't got [a brother/any brothers]"
+    - "I have no [brothers/brother]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, negative]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0013
+  fa: شما بچه دارین؟
+  faFormal: شما بچه دارید؟
+  translit: "shomā bache dārin?"
+  translitFormal: "shomā bache dārid?"
+  tokens:
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you" }
+    - { surface: بچه, lexeme: lx_bache, translit: bache, gloss: "children" }
+    - { surface: دارین, lexeme: lx_dashtan, translit: dārin, gloss: "do you have" }
+  en:
+    - "Do you have [any/] [children?/kids?]"
+    - "Have you got [any/] [children?/kids?]"
+    - "Do you have a child?"
+  faAccept: "شما بچه [دارین/دارید]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, question, polite]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Polite role-play question to an older adult. }
+
+- id: s_u03_0014
+  fa: یه پسر و یه دختر دارم.
+  faFormal: یک پسر و یک دختر دارم.
+  translit: "ye pesar o ye dokhtar dāram."
+  translitFormal: "yek pesar va yek dokhtar dāram."
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: پسر, lexeme: lx_pesar, translit: pesar, gloss: "son" }
+    - { surface: و, lexeme: lx_va, translit: o, gloss: "and" }
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: دختر, lexeme: lx_dokhtar, translit: dokhtar, gloss: "daughter" }
+    - { surface: دارم, lexeme: lx_dashtan, translit: dāram, gloss: "I have" }
+  en:
+    - "[I have/I've got] [a/one] son and [a/one] daughter"
+    - "[I have/I've got] [a/one] boy and [a/one] girl"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0015
+  fa: اون فقط یه برادر داره.
+  faFormal: او فقط یک برادر دارد.
+  translit: "un faghat ye barādar dāre."
+  translitFormal: "u faghat yek barādar dārad."
+  tokens:
+    - { surface: اون, lexeme: lx_un, translit: un, gloss: "he or she" }
+    - { surface: فقط, lexeme: lx_faghat, translit: faghat, gloss: "only" }
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "one" }
+    - { surface: برادر, lexeme: lx_baradar, translit: barādar, gloss: "brother" }
+    - { surface: داره, lexeme: lx_dashtan, translit: dāre, gloss: "has" }
+  en:
+    - "[He/She] [only has/has only] one brother"
+    - "[He/She] has just one brother"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Only one brother; this does not necessarily exclude sisters. }
+
+- id: s_u03_0016
+  fa: اون بچه نداره.
+  faFormal: او بچه ندارد.
+  translit: "un bache nadāre."
+  translitFormal: "u bache nadārad."
+  tokens:
+    - { surface: اون, lexeme: lx_un, translit: un, gloss: "he or she" }
+    - { surface: بچه, lexeme: lx_bache, translit: bache, gloss: "children" }
+    - { surface: نداره, lexeme: lx_dashtan, translit: nadāre, gloss: "doesn't have" }
+  en:
+    - "[He/She] doesn't have [any/] [children/kids]"
+    - "[He/She] doesn't have a child"
+    - "[He/She] has no [children/kids]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, negative]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0017
+  fa: اسمش چیه؟
+  faFormal: اسمش چیست؟
+  translit: "esmesh chiye?"
+  translitFormal: "esmash chist?"
+  tokens:
+    - { surface: اسمش, lexeme: lx_esm, translit: esmesh, gloss: "his or her name" }
+    - { surface: چیه, lexeme: lx_chi, translit: chiye, gloss: "what is" }
+  en:
+    - "[What's/What is] [his/her] name?"
+    - "What is [he/she] called?"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0018
+  fa: اسمش شیرینه.
+  faFormal: اسمش شیرین است.
+  translit: "esmesh shirine."
+  translitFormal: "esmash shirin ast."
+  tokens:
+    - { surface: اسمش, lexeme: lx_esm, translit: esmesh, gloss: "her or his name" }
+    - { surface: شیرینه, lexeme: lx_name_shirin, translit: shirine, gloss: "is Shirin" }
+  en:
+    - "[Her/His] name is Shirin"
+    - "[She's/He's] called Shirin"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [name]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Both possessive genders are grammatically valid; Shirin is conventionally a feminine name. }
+
+- id: s_u03_0019
+  fa: خانواده‌ت خوبن؟
+  faFormal: خانواده‌ات خوب هستند؟
+  translit: "khānevādat khuban?"
+  translitFormal: "khānevādeat khub hastand?"
+  tokens:
+    - { surface: خانواده‌ت, lexeme: lx_khanevade, translit: khānevādat, gloss: "your family" }
+    - { surface: خوبن, lexeme: lx_khub, translit: khuban, gloss: "are well" }
+  en:
+    - "Is your family [well?/okay?/doing well?/all right?]"
+    - "Are your family [well?/okay?/doing well?/all right?]"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Plural agreement refers to family members collectively. Assembly edit: colloquial -e + -et is pronounced -at (khānevādat)." }
+
+- id: s_u03_0020
+  fa: مرسی، خانواده‌م خوبن.
+  faFormal: متشکرم، خانواده‌ام خوب هستند.
+  translit: "mersi, khānevādam khuban."
+  translitFormal: "motashakkeram, khānevādeam khub hastand."
+  tokens:
+    - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: "thanks" }
+    - { surface: خانواده‌م, lexeme: lx_khanevade, translit: khānevādam, gloss: "my family" }
+    - { surface: خوبن, lexeme: lx_khub, translit: khuban, gloss: "are well" }
+  en:
+    - "[Thanks,/Thank you,] my family [is/are] [well/fine/doing well/okay]"
+    - "My family [is/are] [well,/fine,/doing well,/okay,] [thanks/thank you]"
+  faAccept:
+    - "[مرسی/ممنون/ممنونم] خانواده‌م خوبن"
+    - "خانواده‌م خوبن [مرسی/ممنون/ممنونم]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0021
+  fa: به مامانت سلام برسون!
+  faFormal: به مامانت سلام برسان!
+  translit: "be māmānet salām beresun!"
+  translitFormal: "be māmānat salām beresān!"
+  tokens:
+    - { surface: به, lexeme: lx_be, translit: be, gloss: "to" }
+    - { surface: مامانت, lexeme: lx_maman, translit: māmānet, gloss: "your mom" }
+    - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: "hello" }
+    - { surface: برسون, lexeme: lx_resundan, translit: beresun, gloss: "pass on" }
+  en:
+    - "Say [hi/hello] to your [mom/mum/mother] [for me/from me/]"
+    - "Give your [mom/mum/mother] my [regards/best]"
+  faAccept: "به [مامانت/مادرت] سلام برسون"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Grandma asks Kian to pass on her greeting. }
+
+- id: s_u03_0022
+  fa: باشه، مامان‌بزرگ.
+  faFormal: باشد، مامان‌بزرگ.
+  translit: "bāshe, māmānbozorg."
+  translitFormal: "bāshad, māmānbozorg."
+  tokens:
+    - { surface: باشه, lexeme: lx_bashe, translit: bāshe, gloss: "okay" }
+    - { surface: مامان‌بزرگ, lexeme: lx_maman_bozorg, translit: māmānbozorg, gloss: "Grandma" }
+  en: "[Okay,/OK,/All right,/Sure,] [Grandma/Granny]"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0023
+  fa: مامانمو دوست دارم.
+  faFormal: مامانم را دوست دارم.
+  translit: "māmānamo dust dāram."
+  translitFormal: "māmānam rā dust dāram."
+  tokens:
+    - { surface: مامانمو, lexeme: lx_maman, translit: māmānamo, gloss: "my mom (object)" }
+    - { surface: دوست, lexeme: lx_dust, translit: dust, gloss: "love (lit. friend)" }
+    - { surface: دارم, lexeme: lx_dashtan, translit: dāram, gloss: "I have (دوست دارم = I love)" }
+  en: "I [love/like] my [mom/mum/mother/mama]"
+  faAccept: "[من/] [مامانمو/مادرمو] دوست دارم"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, affection, object-marker]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Object و attaches after the consonant in مامانم. }
+
+- id: s_u03_0024
+  fa: شما رو خیلی دوست دارم.
+  faFormal: شما را خیلی دوست دارم.
+  translit: "shomā ro kheyli dust dāram."
+  translitFormal: "shomā rā kheyli dust dāram."
+  tokens:
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you" }
+    - { surface: رو, lexeme: lx_ro, translit: ro, gloss: "(object marker)" }
+    - { surface: خیلی, lexeme: lx_kheyli, translit: kheyli, gloss: "very much" }
+    - { surface: دوست, lexeme: lx_dust, translit: dust, gloss: "love (lit. friend)" }
+    - { surface: دارم, lexeme: lx_dashtan, translit: dāram, gloss: "I have (دوست دارم = I love)" }
+  en:
+    - "I [love/like] you [very much/a lot/so much]"
+    - "I really [love/like] you"
+  faAccept:
+    - "شما رو خیلی دوست دارم"
+    - "خیلی دوستتون دارم"
+  audio: { speaker: kian }
+  unit: u03-family
+  tags: [family, affection, polite, object-marker]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Kian addresses Grandma respectfully with شما. }
+
+- id: s_u03_0025
+  fa: همه رو دوست دارم.
+  faFormal: همه را دوست دارم.
+  translit: "hame ro dust dāram."
+  translitFormal: "hame rā dust dāram."
+  tokens:
+    - { surface: همه, lexeme: lx_hame, translit: hame, gloss: "everyone" }
+    - { surface: رو, lexeme: lx_ro, translit: ro, gloss: "(object marker)" }
+    - { surface: دوست, lexeme: lx_dust, translit: dust, gloss: "love (lit. friend)" }
+    - { surface: دارم, lexeme: lx_dashtan, translit: dāram, gloss: "I have (دوست دارم = I love)" }
+  en: "I [love/like] [everyone/everybody]"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [family, affection, object-marker]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: s_u03_0026
+  fa: قربونت برم، عزیزم!
+  faFormal: قربانت بروم، عزیزم!
+  translit: "ghorbunet beram, azizam!"
+  translitFormal: "ghorbānat beravam, azizam!"
+  tokens:
+    - { surface: قربونت, lexeme: lx_ghorbun, translit: ghorbunet, gloss: "your sacrifice (lit.)" }
+    - { surface: برم, lexeme: lx_raftan, translit: beram, gloss: "may I go (in the formula)" }
+    - { surface: عزیزم, lexeme: lx_aziz, translit: azizam, gloss: "my dear" }
+  en:
+    - "I [adore/love] you, [my dear/darling/sweetheart]"
+    - "I love you so much, [my dear/darling/sweetheart]"
+    - "[May I/Let me] be sacrificed for you, [my dear/darling/sweetheart]"
+  audio: { speaker: maman-bozorg }
+  unit: u03-family
+  tags: [affection, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Grandma's warm response to Kian; affectionate hyperbole, not literal sacrifice. Assembly edit: removed 'Bless you' (a wrong translation)." }

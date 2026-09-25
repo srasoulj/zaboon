@@ -1,0 +1,346 @@
+# Unit 2 lexemes. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: lx_budan
+  fa: بودن
+  translit: budan
+  pos: verb
+  glosses: [to be]
+  forms: { pres-1sg: هستم, pres-2pl: هستین, neg-pres-1sg: نیستم, pres-2sg: هستی, pres-1pl: هستیم, past-3sg: بود }
+  introducedIn: u02-about-me
+  tags: [copula]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Use the separate verb after vowel-final words such as ایرانی and آمریکایی. }
+
+- id: lx_name_kian
+  fa: کیان
+  translit: kiān
+  pos: noun
+  glosses: [Kian (a name)]
+  forms: { 1sg: کیانم }
+  introducedIn: u02-about-me
+  tags: [name]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_irani
+  fa: ایرانی
+  translit: irāni
+  pos: adjective
+  glosses: [Iranian]
+  introducedIn: u02-about-me
+  tags: [nationality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_amrikayi
+  fa: آمریکایی
+  translit: āmrikāyi
+  pos: adjective
+  glosses: [American]
+  introducedIn: u02-about-me
+  tags: [nationality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: fixed a corrupted transliteration (āmr kāyi)." }
+
+- id: lx_are
+  fa: آره
+  faFormal: بله
+  translit: āre
+  translitFormal: bale
+  pos: interjection
+  glosses: [yeah, "yes"]
+  introducedIn: u02-about-me
+  tags: [casual]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Casual yes; بله is the more polite choice. Assembly edit: distinct first gloss from lx_bale." }
+
+- id: lx_khoshbakhtam
+  fa: خوشبختم
+  translit: khoshbakhtam
+  pos: phrase
+  glosses: [nice to meet you, pleased to meet you]
+  introducedIn: u02-about-me
+  tags: [introduction, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "A conventional expression when meeting someone, not an everyday greeting to someone you already know." }
+
+- id: lx_ki
+  fa: کی
+  translit: ki
+  pos: pronoun
+  glosses: [who]
+  forms: { 3sg: کیه }
+  introducedIn: u02-about-me
+  tags: [question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: کیه is pronounced kiye; its written-standard counterpart is کیست. }
+
+- id: lx_in
+  fa: این
+  translit: in
+  pos: pronoun
+  glosses: [this]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_ahl
+  fa: اهل
+  translit: ahl
+  pos: noun
+  glosses: [from, native of]
+  introducedIn: u02-about-me
+  tags: [origin]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: اهل کجایی؟ is the usual conversational way to ask where someone is from. }
+
+- id: lx_koja
+  fa: کجا
+  translit: kojā
+  pos: adverb
+  glosses: [where]
+  forms: { 2sg: کجایی, 2pl: کجایین }
+  introducedIn: u02-about-me
+  tags: [question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_tehran
+  fa: تهران
+  translit: tehrān
+  pos: noun
+  glosses: [Tehran]
+  forms: { 1sg: تهرانم }
+  introducedIn: u02-about-me
+  tags: [place]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_losanjeles
+  fa: لس‌آنجلس
+  translit: losānjeles
+  pos: noun
+  glosses: [Los Angeles, LA]
+  forms: { 1sg: لس‌آنجلسم }
+  introducedIn: u02-about-me
+  tags: [place]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_iran
+  fa: ایران
+  translit: irān
+  pos: noun
+  glosses: [Iran]
+  forms: { 1sg: ایرانم }
+  introducedIn: u02-about-me
+  tags: [place]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_amrika
+  fa: آمریکا
+  translit: āmrikā
+  pos: noun
+  glosses: [America, United States]
+  introducedIn: u02-about-me
+  tags: [place]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "In this context, آمریکا means the United States." }
+
+- id: lx_zendegi_kardan
+  fa: زندگی کردن
+  translit: zendegi kardan
+  pos: phrase
+  glosses: [to live]
+  introducedIn: u02-about-me
+  tags: [residence]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_zendegi
+  fa: زندگی
+  translit: zendegi
+  pos: noun
+  glosses: [life]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Combines with کردن to mean 'to live'. }
+
+- id: lx_tu
+  fa: تو
+  faFormal: در
+  translit: tu
+  translitFormal: dar
+  pos: preposition
+  glosses: [in, inside]
+  introducedIn: u02-about-me
+  tags: [location]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Pronounced tu, unlike the pronoun تو, pronounced to." }
+
+- id: lx_alan
+  fa: الان
+  translit: alān
+  pos: adverb
+  glosses: [now, currently]
+  introducedIn: u02-about-me
+  tags: [time]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_inja
+  fa: اینجا
+  translit: injā
+  pos: adverb
+  glosses: [here]
+  introducedIn: u02-about-me
+  tags: [location]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_farsi
+  fa: فارسی
+  translit: fārsi
+  pos: noun
+  glosses: [Persian, Farsi]
+  introducedIn: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_engelisi
+  fa: انگلیسی
+  translit: engelisi
+  pos: noun
+  glosses: [English]
+  introducedIn: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: transliteration engelisi (was englisi)." }
+
+- id: lx_ye_kam
+  fa: یه کم
+  faFormal: یک کم
+  translit: ye kam
+  translitFormal: yek kam
+  pos: phrase
+  glosses: [a little, a bit]
+  introducedIn: u02-about-me
+  tags: [quantity]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_ye
+  fa: یه
+  faFormal: یک
+  translit: ye
+  translitFormal: yek
+  pos: number
+  glosses: [a, one (before a noun)]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: glosses: یه is the indefinite a/one." }
+
+- id: lx_kam
+  fa: کم
+  translit: kam
+  pos: adverb
+  glosses: [little, not much]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_harf_zadan
+  fa: حرف زدن
+  translit: harf zadan
+  pos: phrase
+  glosses: [to speak, to talk]
+  introducedIn: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_harf
+  fa: حرف
+  translit: harf
+  pos: noun
+  glosses: [talk, word]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_zadan
+  fa: زدن
+  translit: zadan
+  pos: verb
+  glosses: [to hit]
+  forms: { pres-1sg: می‌زنم, pres-2sg: می‌زنی }
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: حرف زدن means 'to speak'; do not translate زدن literally in this expression. }
+
+- id: lx_balad
+  fa: بلد
+  translit: balad
+  pos: adjective
+  glosses: [know how, familiar with]
+  forms: { 1sg: بلدم, 2sg: بلدی }
+  introducedIn: u02-about-me
+  tags: [ability]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "فارسی بلدم means 'I know Persian'; بلد describes practical knowledge or ability. Assembly edit: clearer first gloss." }
+
+- id: lx_fahmidan
+  fa: فهمیدن
+  translit: fahmidan
+  pos: verb
+  glosses: [to understand]
+  forms: { neg-pres-1sg: نمی‌فهمم }
+  introducedIn: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_dunestan
+  fa: دونستن
+  faFormal: دانستن
+  translit: dunestan
+  translitFormal: dānestan
+  pos: verb
+  glosses: [to know]
+  forms: { neg-pres-1sg: نمی‌دونم }
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_vali
+  fa: ولی
+  translit: vali
+  pos: conjunction
+  glosses: [but]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: lx_daneshju
+  fa: دانشجو
+  translit: dāneshju
+  pos: noun
+  glosses: [university student, college student]
+  introducedIn: u02-about-me
+  tags: [education]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "دانشجو specifically means a university or college student, not a school pupil." }
+
+- id: lx_khundan
+  fa: خوندن
+  faFormal: خواندن
+  translit: khundan
+  translitFormal: khāndan
+  pos: verb
+  glosses: [to read, reading]
+  introducedIn: u02-about-me
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Infinitive used as the skill noun 'reading' before بلد نیستم. This verb can also mean 'to sing' in other contexts. Assembly edit: added by the same model repair call." }

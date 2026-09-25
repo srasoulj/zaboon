@@ -113,8 +113,18 @@
         "apps/web/app/admin/**",
         "apps/web/app/(marketing)/**",
         "apps/web/app/sw.ts",
-        "apps/web/public/**",
-        "apps/web/components/pages/**"
+        "apps/web/components/pages/**",
+        "apps/web/public/icons/**",
+        "apps/web/public/images/**",
+        "apps/web/app/serwist/**",
+        "apps/web/app/~offline/**",
+        "apps/web/app/manifest.ts",
+        "apps/web/app/robots.ts",
+        "apps/web/app/sitemap.ts",
+        "apps/web/app/icon.png",
+        "apps/web/app/apple-icon.png",
+        "apps/web/app/favicon.ico",
+        "e2e/pages/**"
       ]
     },
     "ws-player": {
@@ -142,7 +152,13 @@
         "apps/web/app/(app)/letters/**",
         "apps/web/app/(app)/practice/**",
         "apps/web/components/path/**",
-        "apps/web/components/letters/**"
+        "apps/web/components/letters/**",
+        "apps/web/components/practice/**",
+        "apps/web/app/api/guidebooks/**",
+        "apps/web/lib/server/guidebook.ts",
+        "apps/web/lib/server/guidebook.test.ts",
+        "apps/web/tests/api/guidebook.db.test.ts",
+        "e2e/path/**"
       ]
     },
     "ws-qa": {

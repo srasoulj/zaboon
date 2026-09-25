@@ -23,8 +23,9 @@ const nextConfig: NextConfig = {
     '@zaboon/srs',
     '@zaboon/ui',
   ],
-  // Postgres drivers stay server-side Node modules.
-  serverExternalPackages: ['postgres'],
+  // Postgres drivers stay server-side Node modules; esbuild(-wasm) bundles the Serwist service
+  // worker at request/build time (this is all `withSerwist` from @serwist/turbopack adds).
+  serverExternalPackages: ['postgres', 'esbuild', 'esbuild-wasm'],
 }
 
 export default nextConfig

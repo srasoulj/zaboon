@@ -79,6 +79,7 @@
   translit: bābā
   pos: noun
   glosses: [dad]
+  forms: { poss-1sg-cop-3sg: بابامه }
   introducedIn: u01-hello
   tags: [letters]
   status: draft
@@ -89,6 +90,7 @@
   translit: māmān
   pos: noun
   glosses: [mom]
+  forms: { poss-1sg-cop-3sg: مامانمه, poss-2sg: مامانت, poss-1sg-obj: مامانمو }
   introducedIn: u01-hello
   tags: [letters]
   status: draft

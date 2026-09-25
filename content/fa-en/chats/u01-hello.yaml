@@ -1,56 +1,67 @@
-# complete_chat items: `speaker` says `prompt`; the learner picks the best reply. `answer` is the
-# index in `options` (the player shuffles them). Exactly one option is a sensible reply.
+# Unit 1 complete_chat items. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked
+# against STYLE.md; every item is status: draft until a native reviewer approves it. `speaker` says
+# `prompt`; the learner picks the best reply; `answer` is the index in `options`.
 
-# u01-l1. Shirin: "Hi, how are you?" → "Thanks, I'm good."
 - id: c_u01_001
   speaker: shirin
   prompt: s_u01_0002
   options: [s_u01_0004, s_u01_0005, s_u01_0007]
   answer: 0
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# u01-l2. Maman Bozorg: "Good morning!" → "Good morning, Grandma!" (not "Good night!")
 - id: c_u01_002
   speaker: maman-bozorg
   prompt: s_u01_0013
   options: [s_u01_0014, s_u01_0015, s_u01_0010]
   answer: 1
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# u01-l3. Maman Bozorg: "Have some tea!" → "Thank you very much!"
 - id: c_u01_003
   speaker: maman-bozorg
   prompt: s_u01_0022
   options: [s_u01_0017, s_u01_0005, s_u01_0009]
   answer: 2
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# u01-l3. Maman Bozorg (after your polite refusal): "Don't be shy!" → "Okay, thanks!"
 - id: c_u01_004
   speaker: maman-bozorg
   prompt: s_u01_0024
   options: [s_u01_0025, s_u01_0013, s_u01_0018]
   answer: 0
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# u01-l3. Shirin: "What's your name?" → "My name is Leila."
 - id: c_u01_005
   speaker: shirin
   prompt: s_u01_0018
   options: [s_u01_0009, s_u01_0020, s_u01_0021]
   answer: 1
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
 
-# u01-l3. Shirin: "Thanks!" → "You're welcome."
 - id: c_u01_006
   speaker: shirin
   prompt: s_u01_0003
   options: [s_u01_0002, s_u01_0014, s_u01_0023]
   answer: 2
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Seed item (claude-seed) reviewed and kept by the model. }
+
+- id: c_u01_007
+  speaker: shirin
+  prompt: s_u01_0011
+  options: [s_u01_0014, s_u01_0027, s_u01_0007]
+  answer: 1
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Shirin politely asks Grandma how she is. }
+
+- id: c_u01_008
+  speaker: kian
+  prompt: s_u01_0028
+  options: [s_u01_0014, s_u01_0013, s_u01_0007]
+  answer: 0
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: Grandma returns Kian's bedtime farewell. }

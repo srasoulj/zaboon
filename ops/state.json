@@ -1,19 +1,19 @@
 {
-  "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in.",
-  "updatedAt": "2026-09-25T12:40:00Z",
+  "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
+  "updatedAt": "2026-09-25T15:40:00Z",
   "wave": 2,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
     "keyLimitUsd": 10,
-    "keyUsageUsd": 2.78,
-    "accountBalanceUsd": 0.35,
-    "accountTotalCreditsUsd": 60,
-    "note": "The OpenRouter ACCOUNT is the binding limit (\u2248$0.35 left); calls fail with 402 before the key limit. Check GET /api/v1/credits before paid calls.",
+    "keyUsageUsd": 3.774,
+    "accountBalanceUsd": 6.53,
+    "note": "The internal cap ($9.50 of key usage) is the binding limit now; the account was topped up (other usage on the account is not this project's). Check GET /api/v1/key and /api/v1/credits before paid calls.",
     "spent": {
       "textPilot": 0.0018,
+      "text": 2.76,
       "art": 1.0168,
-      "text": "in progress (ae2230ee agent)"
+      "media": "Unit 1 audio/illustrations/portraits in progress"
     }
   },
   "limits": {
@@ -30,7 +30,6 @@
   },
   "sessions": {
     "ws-db": {
-      "id": "session_0172d5pN43xji8PgEBpoeWLJ",
       "status": "done",
       "prs": [
         6,
@@ -38,7 +37,6 @@
       ]
     },
     "ws-ui": {
-      "id": "session_019e4DiSNMURTw63RfcC9YtL",
       "status": "done",
       "prs": [
         7,
@@ -46,93 +44,104 @@
       ]
     },
     "ws-farsi-grader": {
-      "id": "session_01ERE37gxebVt7zXkSj41e7V",
       "status": "done",
       "prs": [
         11
       ]
     },
     "ws-engine": {
-      "id": "session_01GMAFKhR9awbrv2NZvy8Vad",
       "status": "done",
       "prs": [
         10
       ]
     },
     "ws-content-cli": {
-      "id": "session_01DFr9q2YY9UL6zAWrjKShQ6",
       "status": "done",
       "prs": [
         14
       ]
     },
     "ws-api": {
-      "id": "session_01K8QSgsrTYth9yMMVyykHU6",
-      "status": "pr-open",
+      "status": "done",
       "prs": [
-        17
+        17,
+        23
       ]
     },
     "ws-renderers": {
-      "id": "session_012hNJar8avALKv7z5A4zfqD",
-      "status": "working",
-      "prs": []
+      "status": "done",
+      "prs": [
+        21
+      ]
     },
     "ws-player": {
-      "id": "session_01JnuRkWaXLyrTU9ShoPt22K",
-      "status": "working",
+      "status": "done",
+      "prs": [
+        22
+      ]
+    },
+    "ws-path-letters": {
+      "status": "spawning",
+      "prs": []
+    },
+    "ws-pages": {
+      "status": "spawning",
+      "prs": []
+    },
+    "ws-qa-1": {
+      "status": "spawning",
       "prs": []
     }
   },
   "workstreams": {
     "ws-farsi-grader": {
       "wave": 1,
-      "status": "pending"
+      "status": "done"
     },
     "ws-engine": {
       "wave": 1,
-      "status": "pending"
+      "status": "done"
     },
     "ws-db": {
       "wave": 1,
-      "status": "working"
+      "status": "done"
     },
     "ws-ui": {
       "wave": 1,
-      "status": "working"
+      "status": "done"
     },
     "ws-content-cli": {
       "wave": 1,
-      "status": "pending"
+      "status": "done"
     },
     "ws-api": {
       "wave": 2,
-      "status": "pending"
+      "status": "done"
     },
     "ws-pages": {
       "wave": 2,
-      "status": "pending"
+      "status": "spawning"
     },
     "ws-player": {
       "wave": 2,
-      "status": "pending"
+      "status": "done"
     },
     "ws-renderers": {
       "wave": 2,
-      "status": "pending"
+      "status": "done"
     },
     "ws-path-letters": {
       "wave": 2,
-      "status": "pending"
+      "status": "spawning"
     },
     "ws-content-gen": {
       "wave": 2,
-      "status": "pending",
+      "status": "text drafts done (units 1–5); Unit 1 media in progress",
       "runsIn": "orchestrator"
     },
     "ws-qa": {
       "wave": 2,
-      "status": "pending"
+      "status": "ws-qa-1 spawning"
     }
   },
   "humanBacklog": [
@@ -141,7 +150,7 @@
     "Rive animator for character rigs",
     "Legal review: trade dress, sanctions (contractors in Iran)",
     "Accounts for deploy: Supabase, Vercel, Stripe, email, Turnstile, domain",
-    "Top up the OpenRouter account (\u2248$0.35 left of $60): ~$5 finishes the 5 cast portraits, Unit 1 illustrations and audio; more for Units 2\u20135 media",
+    "OpenRouter: the internal cap ($9.50) limits AI media to Unit 1; Units 2–5 media need a larger budget",
     "Add OPENROUTER_API_KEY_BUILD/APP to the environment settings so keys survive this container",
     "GitHub Actions runners never start (billing/account): CI is workflow_dispatch only; pnpm verify is the gate"
   ],
@@ -162,11 +171,15 @@
     15,
     16,
     18,
-    19
+    19,
+    20,
+    21,
+    22,
+    23
   ],
   "routines": {
-    "hourly": "trig_01Kp8fBefCCmUMchhp34dDWY",
-    "dailyAudit": "trig_01E3FFpKr6d8jLws9Ua1kDvF"
+    "hourly": "active (id kept outside the repo)",
+    "dailyAudit": "active (id kept outside the repo)"
   },
   "trackerIssue": 4,
   "notes": [
@@ -174,6 +187,7 @@
     "Never `git add -A` while local subagents write into the tree; stage explicit paths.",
     "Message a worker session: create a poke-only Routine with persistent_session_id=<session>, fire_trigger, then delete_trigger.",
     "The user merges worker PRs quickly; always run a post-merge verify on main and a reviewer subagent on merged code.",
-    "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active."
+    "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active.",
+    "Worker specs live in ops/prompts/<ws>.md (prepended with _preamble.md); session ids only in /root/.config/zaboon/orchestrator.json."
   ]
 }

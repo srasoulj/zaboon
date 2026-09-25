@@ -1,0 +1,459 @@
+# Unit 2 sentences. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: s_u02_0001
+  fa: من کیانم.
+  faFormal: من کیان هستم.
+  translit: "man kiānam."
+  translitFormal: "man kiān hastam."
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: "I" }
+    - { surface: کیانم, lexeme: lx_name_kian, translit: kiānam, gloss: "am Kian" }
+  en: "I'm Kian"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [introduction]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0002
+  fa: من ایرانی هستم.
+  translit: "man irāni hastam."
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: "I" }
+    - { surface: ایرانی, lexeme: lx_irani, translit: irāni, gloss: "Iranian" }
+    - { surface: هستم, lexeme: lx_budan, translit: hastam, gloss: "am" }
+  en: "I'm [an/] Iranian"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [nationality]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0003
+  fa: شما ایرانی هستین؟
+  faFormal: شما ایرانی هستید؟
+  translit: "shomā irāni hastin?"
+  translitFormal: "shomā irāni hastid?"
+  tokens:
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you" }
+    - { surface: ایرانی, lexeme: lx_irani, translit: irāni, gloss: "Iranian" }
+    - { surface: هستین, lexeme: lx_budan, translit: hastin, gloss: "are" }
+  en: "Are you [an/] Iranian?"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [nationality, question, polite]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Kian addresses someone he has just met, using polite شما." }
+
+- id: s_u02_0004
+  fa: آره، منم ایرانی هستم.
+  faFormal: بله، من هم ایرانی هستم.
+  translit: "āre, manam irāni hastam."
+  translitFormal: "bale, man ham irāni hastam."
+  tokens:
+    - { surface: آره, lexeme: lx_are, translit: āre, gloss: "yes" }
+    - { surface: منم, lexeme: lx_man, translit: manam, gloss: "I too" }
+    - { surface: ایرانی, lexeme: lx_irani, translit: irāni, gloss: "Iranian" }
+    - { surface: هستم, lexeme: lx_budan, translit: hastam, gloss: "am" }
+  en:
+    - "[Yes,/Yeah,] I'm [an/] Iranian [too/as well]"
+    - "[Yes,/Yeah,] I'm also [an/] Iranian"
+    - "[Yes,/Yeah,] me too, I'm [an/] Iranian"
+  faAccept: "[آره/بله] [منم/من هم] ایرانی هستم"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [nationality, casual]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Speaking casually with a peer, Kian identifies with his Iranian heritage. منم means من هم here, not 'I am'. Assembly edit: faAccept also allows بله with منم." }
+
+- id: s_u02_0005
+  fa: نه، من آمریکایی نیستم.
+  translit: "na, man āmrikāyi nistam."
+  tokens:
+    - { surface: نه, lexeme: lx_na, translit: na, gloss: "no" }
+    - { surface: من, lexeme: lx_man, translit: man, gloss: "I" }
+    - { surface: آمریکایی, lexeme: lx_amrikayi, translit: āmrikāyi, gloss: "American" }
+    - { surface: نیستم, lexeme: lx_budan, translit: nistam, gloss: "am not" }
+  en: "No, I'm not [an/] American"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [nationality, negative]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: fixed a corrupted transliteration (āmr kāyi)." }
+
+- id: s_u02_0006
+  fa: خوشبختم.
+  translit: "khoshbakhtam."
+  tokens:
+    - { surface: خوشبختم, lexeme: lx_khoshbakhtam, translit: khoshbakhtam, gloss: "nice to meet you" }
+  en:
+    - "[Nice/Pleased/Glad] to meet you"
+    - "It's [nice/a pleasure/good] to meet you"
+    - "I'm [pleased/glad/happy] to meet you"
+    - "Nice meeting you"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [introduction, politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Said after an introduction. }
+
+- id: s_u02_0007
+  fa: این کیه؟
+  faFormal: این کیست؟
+  translit: "in kiye?"
+  translitFormal: "in kist?"
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: کیه, lexeme: lx_ki, translit: kiye, gloss: "who is" }
+  en:
+    - "[Who's/Who is] this?"
+    - "Who is this person?"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [question, identity]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian asks about someone in a photo; this avoids pointing at a present stranger. }
+
+- id: s_u02_0008
+  fa: این شیرینه.
+  faFormal: این شیرین است.
+  translit: "in shirine."
+  translitFormal: "in shirin ast."
+  tokens:
+    - { surface: این, lexeme: lx_in, translit: in, gloss: "this" }
+    - { surface: شیرینه, lexeme: lx_name_shirin, translit: shirine, gloss: "is Shirin" }
+  en: "[This/It] is Shirin"
+  audio: { speaker: leila }
+  unit: u02-about-me
+  tags: [identity]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Leila identifies Shirin in the photo. }
+
+- id: s_u02_0009
+  fa: اهل کجایی؟
+  faFormal: اهل کجا هستی؟
+  translit: "ahl-e kojāyi?"
+  translitFormal: "ahl-e kojā hasti?"
+  tokens:
+    - { surface: اهل, lexeme: lx_ahl, translit: ahl-e, gloss: "from" }
+    - { surface: کجایی, lexeme: lx_koja, translit: kojāyi, gloss: "where are you" }
+  en:
+    - "Where are you from?"
+    - "Where do you come from?"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [origin, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Shirin and Kian now address each other informally. }
+
+- id: s_u02_0010
+  fa: اهل تهرانم.
+  faFormal: اهل تهران هستم.
+  translit: "ahl-e tehrānam."
+  translitFormal: "ahl-e tehrān hastam."
+  tokens:
+    - { surface: اهل, lexeme: lx_ahl, translit: ahl-e, gloss: "from" }
+    - { surface: تهرانم, lexeme: lx_tehran, translit: tehrānam, gloss: "Tehran (I am)" }
+  en:
+    - "I'm from Tehran"
+    - "I come from Tehran"
+    - "I'm a native of Tehran"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [origin]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: The copula attaches to تهران; اهل تهران together means 'from Tehran'. }
+
+- id: s_u02_0011
+  fa: من اهل لس‌آنجلسم.
+  faFormal: من اهل لس‌آنجلس هستم.
+  translit: "man ahl-e losānjelesam."
+  translitFormal: "man ahl-e losānjeles hastam."
+  tokens:
+    - { surface: من, lexeme: lx_man, translit: man, gloss: "I" }
+    - { surface: اهل, lexeme: lx_ahl, translit: ahl-e, gloss: "from" }
+    - { surface: لس‌آنجلسم, lexeme: lx_losanjeles, translit: losānjelesam, gloss: "Los Angeles (I am)" }
+  en:
+    - "I'm from [Los Angeles/LA]"
+    - "I come from [Los Angeles/LA]"
+    - "I'm a native of [Los Angeles/LA]"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [origin]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0012
+  fa: شما اهل کجایین؟
+  faFormal: شما اهل کجا هستید؟
+  translit: "shomā ahl-e kojāyin?"
+  translitFormal: "shomā ahl-e kojā hastid?"
+  tokens:
+    - { surface: شما, lexeme: lx_shoma, translit: shomā, gloss: "you" }
+    - { surface: اهل, lexeme: lx_ahl, translit: ahl-e, gloss: "from" }
+    - { surface: کجایین, lexeme: lx_koja, translit: kojāyin, gloss: "where are" }
+  en:
+    - "Where are you from?"
+    - "Where do you come from?"
+  faAccept: "شما اهل [کجایین/کجایید]"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [origin, question, polite]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian addresses an older person he has just met. }
+
+- id: s_u02_0013
+  fa: اهل ایرانم.
+  faFormal: اهل ایران هستم.
+  translit: "ahl-e irānam."
+  translitFormal: "ahl-e irān hastam."
+  tokens:
+    - { surface: اهل, lexeme: lx_ahl, translit: ahl-e, gloss: "from" }
+    - { surface: ایرانم, lexeme: lx_iran, translit: irānam, gloss: "Iran (I am)" }
+  en:
+    - "I'm from Iran"
+    - "I come from Iran"
+    - "I'm a native of Iran"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [origin]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Origin and nationality are related but not interchangeable. }
+
+- id: s_u02_0014
+  fa: تو آمریکا زندگی می‌کنم.
+  faFormal: در آمریکا زندگی می‌کنم.
+  translit: "tu āmrikā zendegi mikonam."
+  translitFormal: "dar āmrikā zendegi mikonam."
+  tokens:
+    - { surface: تو, lexeme: lx_tu, translit: tu, gloss: "in" }
+    - { surface: آمریکا, lexeme: lx_amrika, translit: āmrikā, gloss: "America" }
+    - { surface: زندگی, lexeme: lx_zendegi, translit: zendegi, gloss: "life" }
+    - { surface: می‌کنم, lexeme: lx_kardan, translit: mikonam, gloss: "I do" }
+  en:
+    - "I live in [America/the United States/the US/the USA]"
+    - "I'm living in [America/the United States/the US/the USA]"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [residence]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian describes his home residence while visiting Tehran. }
+
+- id: s_u02_0015
+  fa: کجا زندگی می‌کنی؟
+  translit: "kojā zendegi mikoni?"
+  tokens:
+    - { surface: کجا, lexeme: lx_koja, translit: kojā, gloss: "where" }
+    - { surface: زندگی, lexeme: lx_zendegi, translit: zendegi, gloss: "life" }
+    - { surface: می‌کنی, lexeme: lx_kardan, translit: mikoni, gloss: "you do" }
+  en:
+    - "Where do you live?"
+    - "Where are you living?"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [residence, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0016
+  fa: تو تهران زندگی می‌کنم.
+  faFormal: در تهران زندگی می‌کنم.
+  translit: "tu tehrān zendegi mikonam."
+  translitFormal: "dar tehrān zendegi mikonam."
+  tokens:
+    - { surface: تو, lexeme: lx_tu, translit: tu, gloss: "in" }
+    - { surface: تهران, lexeme: lx_tehran, translit: tehrān, gloss: "Tehran" }
+    - { surface: زندگی, lexeme: lx_zendegi, translit: zendegi, gloss: "life" }
+    - { surface: می‌کنم, lexeme: lx_kardan, translit: mikonam, gloss: "I do" }
+  en:
+    - "I live in Tehran"
+    - "I'm living in Tehran"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [residence]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0017
+  fa: الان اینجا زندگی می‌کنم.
+  translit: "alān injā zendegi mikonam."
+  tokens:
+    - { surface: الان, lexeme: lx_alan, translit: alān, gloss: "now" }
+    - { surface: اینجا, lexeme: lx_inja, translit: injā, gloss: "here" }
+    - { surface: زندگی, lexeme: lx_zendegi, translit: zendegi, gloss: "life" }
+    - { surface: می‌کنم, lexeme: lx_kardan, translit: mikonam, gloss: "I do" }
+  en:
+    - "I live here now"
+    - "I'm living here now"
+    - "I currently live here"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [residence, time]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: dropped an unnatural word-order variant." }
+
+- id: s_u02_0018
+  fa: تو دانشجو هستی؟
+  translit: "to dāneshju hasti?"
+  tokens:
+    - { surface: تو, lexeme: lx_to, translit: to, gloss: "you" }
+    - { surface: دانشجو, lexeme: lx_daneshju, translit: dāneshju, gloss: "university student" }
+    - { surface: هستی, lexeme: lx_budan, translit: hasti, gloss: "are" }
+  en:
+    - "Are you a [university student?/college student?/student?]"
+    - "Are you [at university?/in college?]"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [education, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian asks Shirin about university. }
+
+- id: s_u02_0019
+  fa: آره، دانشجو هستم.
+  faFormal: بله، دانشجو هستم.
+  translit: "āre, dāneshju hastam."
+  translitFormal: "bale, dāneshju hastam."
+  tokens:
+    - { surface: آره, lexeme: lx_are, translit: āre, gloss: "yes" }
+    - { surface: دانشجو, lexeme: lx_daneshju, translit: dāneshju, gloss: "university student" }
+    - { surface: هستم, lexeme: lx_budan, translit: hastam, gloss: "I am" }
+  en:
+    - "[Yes,/Yeah,] I'm a [university student/college student/student]"
+    - "[Yes,/Yeah,] I'm [at university/in college]"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [education]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0020
+  fa: فارسی حرف می‌زنی؟
+  translit: "fārsi harf mizani?"
+  tokens:
+    - { surface: فارسی, lexeme: lx_farsi, translit: fārsi, gloss: "Persian" }
+    - { surface: حرف, lexeme: lx_harf, translit: harf, gloss: "talk" }
+    - { surface: می‌زنی, lexeme: lx_zadan, translit: mizani, gloss: "you speak" }
+  en:
+    - "Do you speak [Persian?/Farsi?]"
+    - "Can you speak [Persian?/Farsi?]"
+    - "Are you speaking [Persian?/Farsi?]"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [language, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0021
+  fa: یه کم فارسی حرف می‌زنم.
+  faFormal: یک کم فارسی حرف می‌زنم.
+  translit: "ye kam fārsi harf mizanam."
+  translitFormal: "yek kam fārsi harf mizanam."
+  tokens:
+    - { surface: یه, lexeme: lx_ye, translit: ye, gloss: "a" }
+    - { surface: کم, lexeme: lx_kam, translit: kam, gloss: "little" }
+    - { surface: فارسی, lexeme: lx_farsi, translit: fārsi, gloss: "Persian" }
+    - { surface: حرف, lexeme: lx_harf, translit: harf, gloss: "talk" }
+    - { surface: می‌زنم, lexeme: lx_zadan, translit: mizanam, gloss: "I speak" }
+  en:
+    - "I speak a [little/little bit of/bit of] [Persian/Farsi]"
+    - "I can speak a [little/little bit of/bit of] [Persian/Farsi]"
+    - "I speak [Persian/Farsi] a [little/bit/little bit]"
+  faAccept:
+    - "یه کم فارسی حرف می‌زنم"
+    - "فارسی یه کم حرف می‌زنم"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: Kian has some spoken Persian from his family. }
+
+- id: s_u02_0022
+  fa: انگلیسی بلدی؟
+  faFormal: انگلیسی بلد هستی؟
+  translit: "engelisi baladi?"
+  translitFormal: "engelisi balad hasti?"
+  tokens:
+    - { surface: انگلیسی, lexeme: lx_engelisi, translit: engelisi, gloss: "English" }
+    - { surface: بلدی, lexeme: lx_balad, translit: baladi, gloss: "do you know" }
+  en:
+    - "Do you know English?"
+    - "Can you speak English?"
+    - "Do you speak English?"
+  audio: { speaker: shirin }
+  unit: u02-about-me
+  tags: [language, question]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: transliteration engelisi." }
+
+- id: s_u02_0023
+  fa: آره، انگلیسی بلدم.
+  faFormal: بله، انگلیسی بلد هستم.
+  translit: "āre, engelisi baladam."
+  translitFormal: "bale, engelisi balad hastam."
+  tokens:
+    - { surface: آره, lexeme: lx_are, translit: āre, gloss: "yes" }
+    - { surface: انگلیسی, lexeme: lx_engelisi, translit: engelisi, gloss: "English" }
+    - { surface: بلدم, lexeme: lx_balad, translit: baladam, gloss: "I know" }
+  en:
+    - "[Yes,/Yeah,] I know English"
+    - "[Yes,/Yeah,] I [can speak/speak] English"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [language]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Assembly edit: transliteration engelisi." }
+
+- id: s_u02_0024
+  fa: ببخشید، نمی‌فهمم.
+  translit: "bebakhshid, nemifahmam."
+  tokens:
+    - { surface: ببخشید, lexeme: lx_bebakhshid, translit: bebakhshid, gloss: "sorry" }
+    - { surface: نمی‌فهمم, lexeme: lx_fahmidan, translit: nemifahmam, gloss: "I don't understand" }
+  en:
+    - "[Sorry,/Excuse me,] I don't understand"
+    - "[Sorry,/Excuse me,] I don't get it"
+  faAccept: "[ببخشید/ببخشین] نمی‌فهمم"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [communication, negative]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Kian needs clarification, not a claim that he understands no Persian." }
+
+- id: s_u02_0025
+  fa: نمی‌دونم.
+  faFormal: نمی‌دانم.
+  translit: "nemidunam."
+  translitFormal: "nemidānam."
+  tokens:
+    - { surface: نمی‌دونم, lexeme: lx_dunestan, translit: nemidunam, gloss: "I don't know" }
+  en:
+    - "I don't know"
+    - "I do not know"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [negative]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z }
+
+- id: s_u02_0026
+  fa: فارسی حرف می‌زنم، ولی خوندن بلد نیستم.
+  faFormal: فارسی حرف می‌زنم، ولی خواندن بلد نیستم.
+  translit: "fārsi harf mizanam, vali khundan balad nistam."
+  translitFormal: "fārsi harf mizanam, vali khāndan balad nistam."
+  tokens:
+    - { surface: فارسی, lexeme: lx_farsi, translit: fārsi, gloss: "Persian" }
+    - { surface: حرف, lexeme: lx_harf, translit: harf, gloss: "speech" }
+    - { surface: می‌زنم, lexeme: lx_zadan, translit: mizanam, gloss: "I speak" }
+    - { surface: ولی, lexeme: lx_vali, translit: vali, gloss: "but" }
+    - { surface: خوندن, lexeme: lx_khundan, translit: khundan, gloss: "reading" }
+    - { surface: بلد, lexeme: lx_balad, translit: balad, gloss: "knowing how" }
+    - { surface: نیستم, lexeme: lx_budan, translit: nistam, gloss: "I am not" }
+  en:
+    - "I speak [Persian,/Farsi,] but I [can't/cannot/don't know how to] read [it/]"
+    - "I can speak [Persian,/Farsi,] but I [can't/cannot/don't know how to] read [it/]"
+  audio: { speaker: kian }
+  unit: u02-about-me
+  tags: [heritage]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:21:37Z, notes: "Kian speaks Persian but can't read it yet (heritage learner). Assembly edit: replaced by a model repair call (guidebooks call) because the first draft «فارسی بلدم ولی یه کم حرف می‌زنم.» was illogical; en widened." }

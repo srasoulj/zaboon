@@ -1,0 +1,151 @@
+# The Letters track (LEARNING-ENGINE §2.2). `lessons` give the teaching order: first the letters
+# that never join the next letter (ا د ر ز و), then frequent joiners. `order` is the letter's
+# position in the 32-letter Persian alphabet (ا = 1 … ی = 32), so sorting by it gives alphabetical
+# order and adding letters later never renumbers existing ones. `family` groups letters that share a
+# base shape. Example words live in lexemes/letters.yaml (plus u01 words such as من, تو, مرسی).
+letters:
+  # --- letters-1: letters that never join the next letter ----------------------------------------
+  - id: l_alef
+    letter: ا
+    name: alef
+    translit: ā/a
+    ipa: ɒː/æ
+    connects: false
+    family: alef
+    order: 1
+    examples: [lx_daru, lx_baba, lx_maman]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_dal
+    letter: د
+    name: dāl
+    translit: d
+    ipa: d
+    connects: false
+    family: dal
+    order: 10
+    examples: [lx_dar, lx_daru, lx_rud]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_re
+    letter: ر
+    name: re
+    translit: r
+    ipa: r
+    connects: false
+    family: re
+    order: 12
+    examples: [lx_ruz, lx_rud, lx_dar]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_ze
+    letter: ز
+    name: ze
+    translit: z
+    ipa: z
+    connects: false
+    family: re
+    order: 13
+    examples: [lx_zud, lx_zard, lx_ruz]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_vav
+    letter: و
+    name: vāv
+    translit: v/u
+    ipa: v/uː
+    connects: false
+    family: vav
+    order: 30
+    examples: [lx_rud, lx_zud, lx_daru]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  # --- letters-2: first joining letters ----------------------------------------------------------
+  - id: l_be
+    letter: ب
+    name: be
+    translit: b
+    ipa: b
+    connects: true
+    family: be
+    order: 2
+    examples: [lx_baba, lx_ab, lx_bad]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_mim
+    letter: م
+    name: mim
+    translit: m
+    ipa: m
+    connects: true
+    family: mim
+    order: 28
+    examples: [lx_maman, lx_mard, lx_man]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_nun
+    letter: ن
+    name: nun
+    translit: n
+    ipa: n
+    connects: true
+    family: nun
+    order: 29
+    examples: [lx_nun, lx_man, lx_maman]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  # --- letters-3: more joining letters -----------------------------------------------------------
+  - id: l_ye
+    letter: ی
+    name: ye
+    translit: y/i
+    ipa: j/iː
+    connects: true
+    family: ye
+    order: 32
+    examples: [lx_sib, lx_mersi, lx_bastani]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_te
+    letter: ت
+    name: te
+    translit: t
+    ipa: t
+    connects: true
+    family: be
+    order: 4
+    examples: [lx_to, lx_dust, lx_tut]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+  - id: l_sin
+    letter: س
+    name: sin
+    translit: s
+    ipa: s
+    connects: true
+    family: sin
+    order: 15
+    examples: [lx_sib, lx_sard, lx_dust]
+    status: draft
+    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+
+lessons:
+  - id: letters-1
+    title: Letters that never join
+    letters: [l_alef, l_dal, l_re, l_ze, l_vav]
+  - id: letters-2
+    title: First joining letters
+    letters: [l_be, l_mim, l_nun]
+  - id: letters-3
+    title: More joining letters
+    letters: [l_ye, l_te, l_sin]

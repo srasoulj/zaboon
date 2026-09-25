@@ -1,0 +1,38 @@
+# Course-wide sets of interchangeable spellings (LEARNING-ENGINE §3.2), merged into every answer
+# graph in both directions. A set may span several tokens.
+# - Only spellings that are pronounced the same belong here (خوبی/خوبین or خوبین/خوبید do not).
+# - The first entry is the house style (STYLE.md); the others are accepted.
+# - Not listed because normalization already handles them: ZWNJ vs no ZWNJ (میخوام/می‌خوام),
+#   Arabic ي/ك, ئی/یی (بفرمائید/بفرمایید), ۀ/هٔ/ه‌ی.
+
+# خواستن "to want": the silent و of خوا is often dropped in informal writing.
+- [می‌خوام, می‌خام]
+- [می‌خوای, می‌خای]
+- [می‌خواد, می‌خاد]
+- [می‌خوایم, می‌خایم]
+- [می‌خواین, می‌خاین]
+- [می‌خوان, می‌خان]
+- [نمی‌خوام, نمی‌خام]
+- [نمی‌خوای, نمی‌خای]
+- [نمی‌خواد, نمی‌خاد]
+
+# The spoken plural -ā, also written with the standard suffix ـها.
+- [کتابا, کتاب‌ها]
+- [دوستا, دوست‌ها]
+- [اینا, این‌ها]
+- [اونا, اون‌ها]
+
+# The spoken object marker -o (formal را), also written as a separate رو.
+- [اینو, این رو]
+- [اونو, اون رو]
+
+# Words written joined, or as two words.
+- [چیکار, چی کار]
+- [چطور, چه‌طور]
+- [چطوری, چه‌طوری]
+- [چقدر, چه‌قدر]
+- [اینجا, این جا]
+- [اونجا, اون جا]
+- [خداحافظ, خدا حافظ]
+- [بخیر, به خیر]
+- [مامان‌بزرگ, مامان بزرگ]

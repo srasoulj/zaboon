@@ -103,6 +103,9 @@ describe('GET /api/letters', () => {
       'current',
       'locked',
     ])
+    // Tap-to-hear: letter audio refs resolve to hashed URLs under the published version.
+    const alef = before.body.letters.find((l: { id: string }) => l.id === 'l_alef')
+    expect(alef.audio).toMatch(/^\/content\/.+\/l_alef\.[0-9a-f]+\.mp3$/)
 
     await play(h, alice, { kind: 'letters' })
     const after = await get(h, api.letters, '/api/letters', alice)
@@ -137,6 +140,7 @@ describe('GET /api/words', () => {
     const res = await get(h, api.words, '/api/words', alice)
     const salam = res.body.words.find((w: { lexemeId: string }) => w.lexemeId === 'lx_salam')
     expect(salam).toMatchObject({ fa: 'سلام', strength: 4 })
+    expect(salam.audio).toMatch(/^\/content\/.+\/lx_salam\.[0-9a-f]+\.mp3$/)
     expect(typeof salam.dueAt).toBe('string')
     expect(salam.gloss.length).toBeGreaterThan(0)
     expect((await get(h, api.words, '/api/words?courseId=fixture', bob)).body).toEqual({

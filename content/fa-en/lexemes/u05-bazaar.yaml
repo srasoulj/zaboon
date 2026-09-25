@@ -1,0 +1,301 @@
+# Unit 5 lexemes. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: lx_yek
+  fa: یک
+  translit: yek
+  pos: number
+  glosses: [one]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Use یک when counting; use یه before a noun. }
+
+- id: lx_do
+  fa: دو
+  translit: do
+  pos: number
+  glosses: [two]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_se
+  fa: سه
+  translit: se
+  pos: number
+  glosses: [three]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_char
+  fa: چهار
+  translit: chār
+  translitFormal: chahār
+  pos: number
+  glosses: [four]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Standard spelling retained; colloquial pronunciation is chār. }
+
+- id: lx_panj
+  fa: پنج
+  translit: panj
+  pos: number
+  glosses: [five]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_shish
+  fa: شش
+  translit: shish
+  translitFormal: shesh
+  pos: number
+  glosses: [six]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_haft
+  fa: هفت
+  translit: haft
+  pos: number
+  glosses: [seven]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_hasht
+  fa: هشت
+  translit: hasht
+  pos: number
+  glosses: [eight]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_noh
+  fa: نه
+  translit: noh
+  pos: number
+  glosses: [nine]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Pronounced noh, unlike نه na meaning no." }
+
+- id: lx_dah
+  fa: ده
+  translit: dah
+  pos: number
+  glosses: [ten]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_ta
+  fa: تا
+  translit: tā
+  pos: particle
+  glosses: [item counter]
+  introducedIn: u05-bazaar
+  tags: [counting]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Counter between a number and a noun; usually untranslated in English. }
+
+- id: lx_chand
+  fa: چند
+  translit: chand
+  pos: number
+  glosses: [how many, how much]
+  forms: { 3sg: چنده }
+  introducedIn: u05-bazaar
+  tags: [counting, prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Introduce the price form چنده at level 2. }
+
+- id: lx_hezar
+  fa: هزار
+  translit: hezār
+  pos: number
+  glosses: [thousand]
+  introducedIn: u05-bazaar
+  tags: [numbers, money]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_toman
+  fa: تومن
+  faFormal: تومان
+  translit: toman
+  translitFormal: tomān
+  pos: noun
+  glosses: [toman]
+  forms: { 3sg: تومنه }
+  introducedIn: u05-bazaar
+  tags: [money]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_gerun
+  fa: گرون
+  faFormal: گران
+  translit: gerun
+  translitFormal: gerān
+  pos: adjective
+  glosses: [expensive, pricey]
+  forms: { 3sg: گرونه }
+  introducedIn: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_arzun
+  fa: ارزون
+  faFormal: ارزان
+  translit: arzun
+  translitFormal: arzān
+  pos: adjective
+  glosses: [cheap, inexpensive]
+  forms: { 3sg: ارزونه }
+  introducedIn: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_kilo
+  fa: کیلو
+  translit: kilo
+  pos: noun
+  glosses: [kilo, kilogram]
+  forms: { per-unit: کیلویی }
+  introducedIn: u05-bazaar
+  tags: [shopping]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: "Assembly edit: loanword final و is pronounced o (kilo)." }
+
+- id: lx_bist
+  fa: بیست
+  translit: bist
+  pos: number
+  glosses: [twenty]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_panjah
+  fa: پنجاه
+  translit: panjāh
+  pos: number
+  glosses: [fifty]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_sad
+  fa: صد
+  translit: sad
+  pos: number
+  glosses: [hundred]
+  introducedIn: u05-bazaar
+  tags: [numbers]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_cheghadr
+  fa: چقدر
+  translit: cheghadr
+  pos: adverb
+  glosses: [how much]
+  introducedIn: u05-bazaar
+  tags: [quantity, prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_takhfif
+  fa: تخفیف
+  translit: takhfif
+  pos: noun
+  glosses: [discount]
+  introducedIn: u05-bazaar
+  tags: [bargaining]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_dadan
+  fa: دادن
+  translit: dādan
+  pos: verb
+  glosses: [to give]
+  forms: { pres-2pl: می‌دین, imp-2pl: بدین }
+  introducedIn: u05-bazaar
+  tags: [bargaining]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Polite plural forms address a seller. }
+
+- id: lx_akhar
+  fa: آخر
+  translit: ākhar
+  pos: noun
+  glosses: [end]
+  forms: { poss-3sg: آخرش }
+  introducedIn: u05-bazaar
+  tags: [bargaining]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: آخرش چند؟ asks for the seller's final price. }
+
+- id: lx_ghabel_nadare
+  fa: قابل نداره
+  faFormal: قابل ندارد
+  translit: ghābel nadāre
+  translitFormal: ghābel nadārad
+  pos: phrase
+  glosses: ["it's nothing", be my guest]
+  introducedIn: u05-bazaar
+  tags: [taarof, payment]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Courtesy formula when paying; not necessarily an offer to waive payment. }
+
+- id: lx_ghabel
+  fa: قابل
+  translit: ghābel
+  pos: adjective
+  glosses: [worthy]
+  introducedIn: u05-bazaar
+  tags: [taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: Helper token for قابل نداره. }
+
+- id: lx_kharidan
+  fa: خریدن
+  translit: kharidan
+  pos: verb
+  glosses: [to buy]
+  forms: { pres-1sg: می‌خرم }
+  introducedIn: u05-bazaar
+  tags: [shopping]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z }
+
+- id: lx_shodan
+  fa: شدن
+  translit: shodan
+  pos: verb
+  glosses: [to become, to come to]
+  forms: { pres-3sg: می‌شه }
+  introducedIn: u05-bazaar
+  tags: [prices]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:37:48Z, notes: چقدر می‌شه؟ asks what the total or fare comes to. }

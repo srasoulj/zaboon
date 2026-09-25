@@ -4,6 +4,7 @@
  *   const home = await api('home')
  *   const s = await api('createSession', { body: { courseId, kind: 'lesson', levelId, tz } })
  *   await api('completeSession', { params: { id }, body })
+ *   const reports = await api('adminReports', { query: { status: 'open' } })
  *
  * Responses are validated against the same zod contracts the server uses. Errors become
  * `ApiClientError` with the contract's error code.
@@ -38,6 +39,8 @@ export class ApiClientError extends Error {
 
 export type ApiCallOptions<N extends RouteName> = {
   params?: Record<string, string>
+  /** Query-string parameters (e.g. `courseId`, admin filters); undefined values are left out. */
+  query?: Record<string, string | undefined>
   signal?: AbortSignal
 } & (RouteRequest<N> extends undefined ? { body?: undefined } : { body: RouteRequest<N> })
 
@@ -65,14 +68,22 @@ export function createApiClient(deps: ApiClientDeps): ApiClient {
   const doFetch = deps.fetch ?? ((...a: Parameters<typeof fetch>) => fetch(...a))
   const call = async (
     name: RouteName,
-    opts: { params?: Record<string, string>; body?: unknown; signal?: AbortSignal } = {},
+    opts: {
+      params?: Record<string, string>
+      query?: Record<string, string | undefined>
+      body?: unknown
+      signal?: AbortSignal
+    } = {},
   ) => {
     const def = routes[name]
     const token = await deps.getAccessToken()
     const now = testNow()
+    const search = new URLSearchParams()
+    for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined) search.set(k, v)
+    const qs = search.toString()
     let res: Response
     try {
-      res = await doFetch(`${deps.baseUrl ?? ''}${buildPath(def.path, opts.params)}`, {
+      res = await doFetch(`${deps.baseUrl ?? ''}${buildPath(def.path, opts.params)}${qs ? `?${qs}` : ''}`, {
         method: def.method,
         headers: {
           [APP_VERSION_HEADER]: APP_VERSION,
@@ -112,4 +123,5 @@ export const queryKeys = {
   words: ['words'],
   profile: ['profile'],
   settings: ['settings'],
+  guidebook: (unitId: string) => ['guidebook', unitId] as const,
 } as const

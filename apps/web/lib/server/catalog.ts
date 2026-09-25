@@ -13,7 +13,13 @@ import {
 } from '@zaboon/contracts'
 import { repos, withUserLock, type Db, type Tx } from '@zaboon/db'
 import { retrievability, strengthBars } from '@zaboon/srs'
-import { allLexemes, loadBundle, requireCurrentVersion, type LoadedBundle } from './content'
+import {
+  allLexemes,
+  loadBundle,
+  mediaUrl,
+  requireCurrentVersion,
+  type LoadedBundle,
+} from './content'
 import { ApiError } from './errors'
 import {
   letterLessonStates,
@@ -93,6 +99,7 @@ export function buildLetters(
             translit: l.translit,
             strength: card ? strengthOf(card, ctx.now, ctx.config) : 0,
             introduced: card !== undefined,
+            ...(l.audio ? { audio: mediaUrl(bundle, l.audio) } : {}),
           }
         }),
       lessons: bundle.letters.track.lessons.map((l) => ({
@@ -122,6 +129,7 @@ export function buildWords(
           gloss: l.glosses[0] ?? '',
           strength: strengthOf(e.card, ctx.now, ctx.config),
           dueAt: e.card.lastReview === null ? null : e.card.due,
+          ...(l.audio ? { audio: mediaUrl(bundle, l.audio) } : {}),
         }
       })
     return { words }

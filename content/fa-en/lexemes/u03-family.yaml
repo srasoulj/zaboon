@@ -1,0 +1,235 @@
+# Unit 3 lexemes. AI draft (openai/gpt-6-astra, prompt draft-v1), assembled and checked against
+# STYLE.md; every item is status: draft until a native reviewer approves it.
+
+- id: lx_khanevade
+  fa: خانواده
+  translit: khānevāde
+  pos: noun
+  glosses: [family]
+  forms: { poss-1sg: خانواده‌م, poss-2sg: خانواده‌ت }
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_khahar
+  fa: خواهر
+  translit: khāhar
+  pos: noun
+  glosses: [sister]
+  forms: { poss-1sg-cop-3sg: خواهرمه, poss-2sg: خواهرت }
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_baradar
+  fa: برادر
+  translit: barādar
+  pos: noun
+  glosses: [brother]
+  forms: { poss-1sg-cop-3sg: برادرمه }
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_baba_bozorg
+  fa: بابابزرگ
+  translit: bābābozorg
+  pos: noun
+  glosses: [grandpa, grandfather]
+  forms: { poss-1sg-cop-3sg: بابابزرگمه }
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_ma
+  fa: ما
+  translit: mā
+  pos: pronoun
+  glosses: [we, us]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_dashtan
+  fa: داشتن
+  translit: dāshtan
+  pos: verb
+  glosses: [to have]
+  forms: { pres-1sg: دارم, pres-2sg: داری, pres-3sg: داره, pres-2pl: دارین, neg-pres-1sg: ندارم, neg-pres-3sg: نداره }
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Also supplies the finite verb in دوست داشتن. }
+
+- id: lx_bache
+  fa: بچه
+  translit: bache
+  pos: noun
+  glosses: [child, kid]
+  forms: { plural: بچه‌ها }
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_pesar
+  fa: پسر
+  translit: pesar
+  pos: noun
+  glosses: [son, boy]
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_dokhtar
+  fa: دختر
+  translit: dokhtar
+  pos: noun
+  glosses: [daughter, girl]
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_un
+  fa: اون
+  faFormal: او
+  translit: un
+  translitFormal: u
+  pos: pronoun
+  glosses: [he, she]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Gender-neutral singular personal pronoun here. }
+
+- id: lx_va
+  fa: و
+  translit: o
+  translitFormal: va
+  pos: conjunction
+  glosses: [and]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Pronounced o in these colloquial sentences. }
+
+- id: lx_faghat
+  fa: فقط
+  translit: faghat
+  pos: adverb
+  glosses: [only, just]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_salam_resundan
+  fa: سلام رسوندن
+  faFormal: سلام رساندن
+  translit: salām resundan
+  translitFormal: salām resāndan
+  pos: phrase
+  glosses: [to say hi for someone, to send regards]
+  introducedIn: u03-family
+  tags: [politeness]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_resundan
+  fa: رسوندن
+  faFormal: رساندن
+  translit: resundan
+  translitFormal: resāndan
+  pos: verb
+  glosses: [to convey, to deliver]
+  forms: { imp-2sg: برسون }
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_be
+  fa: به
+  translit: be
+  pos: preposition
+  glosses: [to]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_dust_dashtan
+  fa: دوست داشتن
+  translit: dust dāshtan
+  pos: phrase
+  glosses: [to love, to like]
+  introducedIn: u03-family
+  tags: [family]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Token دوست reuses lx_dust; the whole verb means love or like. }
+
+- id: lx_ro
+  fa: رو
+  faFormal: را
+  translit: ro
+  translitFormal: rā
+  pos: particle
+  glosses: [object marker]
+  introducedIn: u03-family
+  tags: [grammar]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Separate after vowels; after consonants, attached و is recorded on the host lexeme." }
+
+- id: lx_hame
+  fa: همه
+  translit: hame
+  pos: pronoun
+  glosses: [everyone, everybody, all]
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_aziz
+  fa: عزیز
+  translit: aziz
+  pos: adjective
+  glosses: [dear, darling]
+  forms: { poss-1sg: عزیزم }
+  introducedIn: u03-family
+  tags: [affection]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z }
+
+- id: lx_ghorbunet_beram
+  fa: قربونت برم
+  faFormal: قربانت بروم
+  translit: ghorbunet beram
+  translitFormal: ghorbānat beravam
+  pos: phrase
+  glosses: [I adore you, "I'd do anything for you"]
+  introducedIn: u03-family
+  tags: [affection, taarof]
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: "Literally “may I be sacrificed for you”; a common affectionate formula, not a literal offer." }
+
+- id: lx_ghorbun
+  fa: قربون
+  faFormal: قربان
+  translit: ghorbun
+  translitFormal: ghorbān
+  pos: noun
+  glosses: [sacrifice]
+  forms: { poss-2sg: قربونت }
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Helper for the affectionate formula قربونت برم. }
+
+- id: lx_raftan
+  fa: رفتن
+  translit: raftan
+  pos: verb
+  glosses: [to go]
+  forms: { subj-1sg: برم }
+  introducedIn: u03-family
+  status: draft
+  provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:26:03Z, notes: Introduced only within قربونت برم. }

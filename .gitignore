@@ -25,3 +25,6 @@ blob-report/
 
 # Local content builds (content-cli publish --local)
 apps/web/public/content/
+
+# Subagent git worktrees (Claude Code)
+.claude/worktrees/

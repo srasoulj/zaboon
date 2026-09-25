@@ -1,7 +1,8 @@
 # Unit 1: greetings, thanks and ta'ārof. Each lesson level introduces new items and may reuse
-# anything from the levels before it (sentences in chats, token lexemes).
+# anything from the levels and units before it. AI draft (openai/gpt-6-astra, prompt draft-v1);
+# status: draft until native review.
 id: u01-hello
-title: "Hello & ta'ārof"
+title: Hello & ta'ārof
 subtitle: Greet people, say thanks, be polite
 register: colloquial
 color: firouzeh
@@ -15,44 +16,34 @@ levels:
     spec:
       focus:
         lexemes: [lx_salam, lx_khubi, lx_khub, lx_mersi, lx_bale, lx_na, lx_khodahafez]
-        sentences:
-          [s_u01_0001, s_u01_0002, s_u01_0003, s_u01_0004, s_u01_0005, s_u01_0006, s_u01_0007, s_u01_0008]
+        sentences: [s_u01_0001, s_u01_0002, s_u01_0003, s_u01_0004, s_u01_0005, s_u01_0006, s_u01_0007, s_u01_0008, s_u01_0026]
         chats: [c_u01_001]
       mix: intro
-
   - id: u01-l2
     kind: lesson
-    title: "Good morning, Grandma"
+    title: Good morning, Grandma
     lessons: 4
     spec:
       focus:
-        lexemes:
-          [lx_mamnun, lx_kheyli, lx_bebakhshid, lx_man, lx_to, lx_shoma, lx_chetor, lx_sobh_bekheyr, lx_shab_bekheyr, lx_maman_bozorg]
-        sentences:
-          [s_u01_0009, s_u01_0010, s_u01_0011, s_u01_0012, s_u01_0013, s_u01_0014, s_u01_0015, s_u01_0016]
-        chats: [c_u01_002]
+        lexemes: [lx_mamnun, lx_kheyli, lx_bebakhshid, lx_man, lx_to, lx_shoma, lx_chetor, lx_sobh_bekheyr, lx_shab_bekheyr, lx_maman_bozorg]
+        sentences: [s_u01_0009, s_u01_0010, s_u01_0011, s_u01_0012, s_u01_0013, s_u01_0014, s_u01_0015, s_u01_0016, s_u01_0027, s_u01_0028]
+        chats: [c_u01_002, c_u01_007, c_u01_008]
       mix: standard
-
   - id: u01-c1
     kind: chest
-
   - id: u01-l3
     kind: lesson
-    title: "Names and ta'ārof"
+    title: Names and ta'ārof
     lessons: 4
     spec:
       focus:
         lexemes: [lx_esm, lx_chi, lx_befarmayid, lx_chay, lx_taarof_nakon, lx_bashe, lx_khahesh_mikonam]
-        sentences:
-          [s_u01_0017, s_u01_0018, s_u01_0019, s_u01_0020, s_u01_0021, s_u01_0022, s_u01_0023, s_u01_0024, s_u01_0025]
+        sentences: [s_u01_0017, s_u01_0018, s_u01_0019, s_u01_0020, s_u01_0021, s_u01_0022, s_u01_0023, s_u01_0024, s_u01_0025, s_u01_0029, s_u01_0030]
         chats: [c_u01_003, c_u01_004, c_u01_005, c_u01_006]
       mix: standard
-
   - id: u01-p1
     kind: practice
-
   - id: u01-review
     kind: unit_review
-
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { model: openai/gpt-6-astra, prompt: draft-v1, generatedAt: 2026-09-25T12:13:59Z, notes: "Level titles and focus lists from the model's draft (Hello & ta'ārof); lessons: 4 per lesson level; chest after level 2." }
