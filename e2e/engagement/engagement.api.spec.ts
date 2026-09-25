@@ -23,7 +23,7 @@ test('with the flags off the engagement routes are 404 and the result has no P2 
 })
 
 test('earning XP places a member on the leaderboard', async ({ request }) => {
-  const week = randomPastWeek()
+  const week = await randomPastWeek()
   const member = await signInEmail(request, uniqueEmail())
   const result = await playLesson(request, member, { flags: ENGAGEMENT_ON, now: week.now })
   expect(result.league).toMatchObject({ tier: 'mes', weeklyXp: 15, rank: 1, joinedNow: true })
@@ -51,7 +51,7 @@ test('earning XP places a member on the leaderboard', async ({ request }) => {
 test('the weekly rollover (Vercel Cron) closes the week once and pays the winner', async ({
   request,
 }) => {
-  const week = randomPastWeek()
+  const week = await randomPastWeek()
   const winner = await signInEmail(request, uniqueEmail())
   const second = await signInEmail(request, uniqueEmail())
   // Leagues only: a quest reward would add to the coins this test counts.
@@ -60,10 +60,9 @@ test('the weekly rollover (Vercel Cron) closes the week once and pays the winner
   await playLesson(request, second, { flags: leagues, now: week.now, wrong: [0] })
 
   expect((await request.get('/api/cron/league-rollover')).status()).toBe(401)
-  const run = () =>
-    request.get('/api/cron/league-rollover', {
-      headers: { ...cronHeaders(), 'x-test-now': week.after },
-    })
+  // Like Vercel Cron: at the real time, which closes every ended week (this one included). The
+  // cron bucket's rate limit also runs on the request clock, so no x-test-now here.
+  const run = () => request.get('/api/cron/league-rollover', { headers: cronHeaders() })
   const first = await run()
   expect(first.status(), await first.text()).toBe(200)
   const body = await first.json()

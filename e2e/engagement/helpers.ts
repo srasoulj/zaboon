@@ -1,7 +1,7 @@
 /**
  * Helpers for the P2 engagement specs. The local e2e database is shared and never reset, so every
- * spec plays in a league week of its own: a random week in the past (a future week would make the
- * rollover close the real current week under the other specs). Coins for shop specs are granted
+ * spec plays in a league week of its own: an unused week in the past (a future week would make the
+ * rollover, which closes every ended week, close the real current week under the other specs). Coins for shop specs are granted
  * straight in the database (ledger + wallet together, like a grant), because earning 100+ coins
  * through lessons would take a dozen sessions.
  */
@@ -14,19 +14,36 @@ import type { User } from '../pages/helpers'
 
 export const ENGAGEMENT_ON = { leagues: true, quests: true, shop: true, practiceHub: true }
 
-const WEEK_MS = 7 * 86_400_000
-/** Monday 2000-01-03 00:00 UTC. */
-const EPOCH = Date.parse('2000-01-03T00:00:00.000Z')
+const DB_URL = `postgres://supabase_admin@127.0.0.1:${process.env.ZABOON_DB_PORT ?? 54322}/${
+  process.env.ZABOON_DB_NAME ?? 'zaboon'
+}`
 
-/** A random league week before 2019 (Wednesday noon of it as `now`). */
-export function randomPastWeek() {
-  const startsAt = EPOCH + randomInt(0, 990) * WEEK_MS
-  return {
-    startsAt: new Date(startsAt).toISOString(),
-    endsAt: new Date(startsAt + WEEK_MS).toISOString(),
-    now: new Date(startsAt + 2.5 * 86_400_000).toISOString(),
-    /** One minute after the week ends: when the rollover closes it. */
-    after: new Date(startsAt + WEEK_MS + 60_000).toISOString(),
+const WEEK_MS = 7 * 86_400_000
+/** Monday 1900-01-01 00:00 UTC. */
+const EPOCH = Date.parse('1900-01-01T00:00:00.000Z')
+
+/**
+ * A league week of the 20th century that nobody has used yet (checked in the database), with
+ * Wednesday noon of it as `now`. A used week may already be closed by an earlier rollover.
+ */
+export async function randomPastWeek() {
+  const sql = postgres(DB_URL, { max: 1, onnotice: () => {} })
+  try {
+    for (;;) {
+      const startsAt = EPOCH + randomInt(0, 5200) * WEEK_MS
+      const iso = new Date(startsAt).toISOString()
+      const used = await sql`SELECT 1 FROM public.league_weeks WHERE starts_at = ${iso}`
+      if (used.length > 0) continue
+      return {
+        startsAt: iso,
+        endsAt: new Date(startsAt + WEEK_MS).toISOString(),
+        now: new Date(startsAt + 2.5 * 86_400_000).toISOString(),
+        /** One minute after the week ends. */
+        after: new Date(startsAt + WEEK_MS + 60_000).toISOString(),
+      }
+    }
+  } finally {
+    await sql.end()
   }
 }
 
@@ -86,10 +103,6 @@ export async function loseHearts(request: APIRequestContext, user: User, n: numb
     expect(res.status()).toBe(200)
   }
 }
-
-const DB_URL = `postgres://supabase_admin@127.0.0.1:${process.env.ZABOON_DB_PORT ?? 54322}/${
-  process.env.ZABOON_DB_NAME ?? 'zaboon'
-}`
 
 /** Credits coins (one ledger row + the wallet, in one transaction), as a grant would. */
 export async function grantCoins(userId: string, amount: number): Promise<void> {

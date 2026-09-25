@@ -34,7 +34,7 @@ test('earning XP puts you on the leaderboard (tier banner, you, zones)', async (
   request,
   browserName,
 }) => {
-  const week = randomPastWeek()
+  const week = await randomPastWeek()
   const member = await signInEmail(request, uniqueEmail())
   await onboard(request, member)
   await playLesson(request, member, { flags: ENGAGEMENT_ON, now: week.now })
