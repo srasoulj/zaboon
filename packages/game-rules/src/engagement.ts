@@ -7,8 +7,11 @@
  * documents each rule). Placement and rollover of a cohort are `placeInCohort` / `rolloverCohort`
  * (index.ts, oracles/leagues.yaml).
  */
+import { LEAGUE_TIERS } from '@zaboon/contracts'
 import type {
   AppConfig,
+  LeagueOutcome,
+  LeagueTier,
   LivesState,
   QuestMetric,
   SessionKind,
@@ -88,6 +91,13 @@ export function leagueXpStep(input: {
   if (!input.linked || input.flagged || input.sessionXp <= 0) return { join: false, weeklyXp }
   if (weeklyXp === null) return { join: true, weeklyXp: input.sessionXp }
   return { join: false, weeklyXp: weeklyXp + input.sessionXp }
+}
+
+/** The tier a learner plays next week after `outcome` in `tier` (one step; clamped at the ends). */
+export function tierAfter(tier: LeagueTier, outcome: LeagueOutcome): LeagueTier {
+  const i = LEAGUE_TIERS.indexOf(tier)
+  const j = outcome === 'promote' ? i + 1 : outcome === 'demote' ? i - 1 : i
+  return LEAGUE_TIERS[Math.min(LEAGUE_TIERS.length - 1, Math.max(0, j))]!
 }
 
 // ----------------------------------------------------------------------------------------- coins

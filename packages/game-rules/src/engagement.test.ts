@@ -8,6 +8,7 @@ import {
   nextLocalMidnight,
   purchase,
   shopItems,
+  tierAfter,
   unavailable,
   weekOf,
   type ShopState,
@@ -44,6 +45,16 @@ describe('league weeks', () => {
       startsAt: '2026-09-21T00:00:00.000Z',
       endsAt: '2026-09-28T00:00:00.000Z',
     })
+  })
+})
+
+describe('tierAfter', () => {
+  it('moves one tier and stops at the ends', () => {
+    expect(tierAfter('mes', 'promote')).toBe('noqreh')
+    expect(tierAfter('tala', 'demote')).toBe('noqreh')
+    expect(tierAfter('tala', 'stay')).toBe('tala')
+    expect(tierAfter('almas', 'promote')).toBe('almas')
+    expect(tierAfter('mes', 'demote')).toBe('mes')
   })
 })
 
