@@ -706,6 +706,8 @@ export const DevTokenResponse = z.object({
   user: z.object({ id: Uuid, isAnonymous: z.boolean(), email: z.string().nullable() }),
 })
 export const DevSignInRequest = z.object({ email: z.string().email() })
+/** Local stand-in for Supabase's refresh token: re-issues a token for a recently expired one. */
+export const DevRefreshRequest = z.object({ accessToken: z.string().min(20) })
 export const DevLinkRequest = z.object({ email: z.string().email() })
 
 // ---------------------------------------------------------------------------------------------

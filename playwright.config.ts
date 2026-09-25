@@ -52,6 +52,7 @@ export default defineConfig({
     timeout: 180_000,
     env: {
       AUTH_MODE: 'local',
+      NEXT_PUBLIC_AUTH_MODE: 'local',
       ZABOON_DEV_AUTH: '1',
       NEXT_TELEMETRY_DISABLED: '1',
     },

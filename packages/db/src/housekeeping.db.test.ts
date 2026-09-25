@@ -8,7 +8,11 @@ import type { SessionAnswerInput } from './repos/sessions'
 let ctx: TestContext
 let alice: string
 
-const NOW = '2026-09-25T12:00:00.000Z'
+// The pinned clock sits just after the real time: rows the test inserts get created_at = now(),
+// so they must be older than NOW whatever the time of day (a fixed instant made this a time bomb).
+const NOW_MS = Date.now() + 5 * 60_000
+const NOW = new Date(NOW_MS).toISOString()
+const at = (offsetHours: number) => new Date(NOW_MS + offsetHours * 3_600_000).toISOString()
 
 async function newSession(userId: string, overrides: { expiresAt?: string; contentVersion?: number } = {}) {
   return withUserLock(ctx.h.db, userId, (tx) =>
@@ -20,8 +24,8 @@ async function newSession(userId: string, overrides: { expiresAt?: string; conte
       seed: 's',
       challengeRefs: [],
       tz: 'UTC',
-      startedAt: '2026-09-24T10:00:00.000Z',
-      expiresAt: overrides.expiresAt ?? '2026-09-25T10:00:00.000Z',
+      startedAt: at(-26),
+      expiresAt: overrides.expiresAt ?? at(-2),
       graderVersion: 1,
     }),
   )
@@ -42,9 +46,9 @@ afterAll(() => ctx.close())
 
 describe('internal.expire_stale_sessions', () => {
   it('expires started sessions past their TTL only', async () => {
-    const stale = await newSession(alice, { expiresAt: '2026-09-25T11:00:00.000Z' })
-    const fresh = await newSession(alice, { expiresAt: '2026-09-25T13:00:00.000Z' })
-    const done = await newSession(alice, { expiresAt: '2026-09-25T11:00:00.000Z' })
+    const stale = await newSession(alice, { expiresAt: at(-1) })
+    const fresh = await newSession(alice, { expiresAt: at(1) })
+    const done = await newSession(alice, { expiresAt: at(-1) })
     await withUserLock(ctx.h.db, alice, (tx) => repos.sessions.completeSession(tx, alice, done.id, { result: {}, completedAt: NOW }))
 
     const [r] = await ctx.admin`SELECT internal.expire_stale_sessions(${NOW}::timestamptz) AS n`

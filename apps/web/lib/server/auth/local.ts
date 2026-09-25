@@ -76,15 +76,22 @@ export async function signLocalToken(
   return { accessToken, expiresAt: new Date(exp * 1000) }
 }
 
-export async function verifyLocalToken(token: string): Promise<Partial<AccessClaims>> {
+export async function verifyLocalToken(
+  token: string,
+  opts: { allowExpiredForSeconds?: number } = {},
+): Promise<Partial<AccessClaims>> {
   try {
     const { payload } = await jwtVerify(token, localSecret(), {
       issuer: LOCAL_ISSUER,
       audience: LOCAL_AUDIENCE,
       algorithms: ['HS256'],
+      ...(opts.allowExpiredForSeconds ? { clockTolerance: opts.allowExpiredForSeconds } : {}),
     })
     return payload as Partial<AccessClaims>
   } catch {
     throw new ApiError('unauthorized', 'invalid or expired token')
   }
 }
+
+/** How long an expired local token can still be refreshed (Supabase refresh tokens last longer). */
+export const LOCAL_REFRESH_WINDOW_SECONDS = 30 * 24 * 3600

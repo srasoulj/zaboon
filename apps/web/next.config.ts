@@ -6,6 +6,8 @@ const devAuth = process.env.ZABOON_DEV_AUTH === '1'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The dev-tools badge overlaps the mobile tab bar (and e2e clicks).
+  devIndicators: false,
   pageExtensions: ['tsx', 'ts', 'jsx', 'js', ...(devAuth ? ['dev.tsx', 'dev.ts'] : [])],
   // Playwright and local tools reach the dev server via 127.0.0.1.
   allowedDevOrigins: ['127.0.0.1'],
