@@ -696,16 +696,14 @@ const learnerArb = (content: ContentView) => {
 }
 
 function checkScenario(scenarios: Scenario[], runs: number) {
-  const scenario = fc
-    .constantFrom(...scenarios)
-    .chain((sc) =>
-      fc.record({
-        sc: fc.constant(sc),
-        seed: fc.string(),
-        lessonIndex: fc.nat(4),
-        learner: learnerArb(sc.content),
-      }),
-    )
+  const scenario = fc.constantFrom(...scenarios).chain((sc) =>
+    fc.record({
+      sc: fc.constant(sc),
+      seed: fc.string(),
+      lessonIndex: fc.nat(4),
+      learner: learnerArb(sc.content),
+    }),
+  )
   fc.assert(
     fc.property(scenario, ({ sc, seed, lessonIndex, learner }) => {
       const input: GenerateInput = {
@@ -744,14 +742,26 @@ function checkScenario(scenarios: Scenario[], runs: number) {
   )
 }
 
-describe('properties', () => {
-  it('fixture course: schema-valid, deterministic and rebuildable for any seed and learner', () => {
-    checkScenario(fixtureScenarios, 150)
-  })
+// Each property run generates, regenerates and rebuilds a whole session with the real grader
+// (tens of ms), so 150 runs need more than Vitest's 5 s default.
+const PROPERTY_TIMEOUT_MS = 60_000
 
-  it('content/fa-en: schema-valid, deterministic and rebuildable for any seed and learner', () => {
-    checkScenario(faEnScenarios, 150)
-  })
+describe('properties', () => {
+  it(
+    'fixture course: schema-valid, deterministic and rebuildable for any seed and learner',
+    () => {
+      checkScenario(fixtureScenarios, 150)
+    },
+    PROPERTY_TIMEOUT_MS,
+  )
+
+  it(
+    'content/fa-en: schema-valid, deterministic and rebuildable for any seed and learner',
+    () => {
+      checkScenario(faEnScenarios, 150)
+    },
+    PROPERTY_TIMEOUT_MS,
+  )
 
   it('different seeds give different generated sessions', () => {
     const view = withSpec(fx, { mix: 'standard' })
