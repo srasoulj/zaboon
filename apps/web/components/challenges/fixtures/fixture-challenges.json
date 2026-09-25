@@ -822,5 +822,32 @@
     },
     "tiles": ["س", "ب", "ن", "ی", "و"],
     "answer": ["س", "ی", "ب"]
+  },
+  {
+    "index": 5,
+    "ref": {
+      "type": "letter_forms",
+      "items": ["l_be"]
+    },
+    "isNew": false,
+    "type": "letter_forms",
+    "pairs": [
+      {
+        "left": "isolated",
+        "right": "ب"
+      },
+      {
+        "left": "initial",
+        "right": "ب‍"
+      },
+      {
+        "left": "medial",
+        "right": "‍ب‍"
+      },
+      {
+        "left": "final",
+        "right": "‍ب"
+      }
+    ]
   }
 ]

@@ -3,7 +3,7 @@
  * player (holds the draft, records every callback, fakes the audio service).
  */
 import { cleanup, render } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent, { type UserEvent } from '@testing-library/user-event'
 import {
   Challenge,
   type ChallengeOf,
@@ -12,7 +12,7 @@ import {
 } from '@zaboon/contracts'
 import { gradeResponse } from '@zaboon/session-engine'
 import { useState, type ReactElement } from 'react'
-import { afterEach, vi } from 'vitest'
+import { afterEach, expect, vi } from 'vitest'
 import type { ChallengeAudio, ChallengeDisplay, ChallengeRenderer } from '@/lib/challenge-registry'
 import recorded from './fixtures/fixture-challenges.json'
 import { renderers } from './index'
@@ -125,4 +125,22 @@ export function renderChallenge(challenge: Challenge, opts: RenderOptions = {}) 
 /** Matches an accessible name that starts with `text` (graded cards append ", correct"/", incorrect"). */
 export function startsWith(text: string): RegExp {
   return new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+}
+
+/**
+ * A labelled group is English (its name is read with an English voice); returns the Persian
+ * content inside it, which must carry lang="fa" dir="rtl" itself.
+ */
+export function persianOf(group: HTMLElement): HTMLElement {
+  expect(group).toHaveAttribute('lang', 'en')
+  const fa = group.querySelector<HTMLElement>('[lang="fa"]')
+  expect(fa).not.toBeNull()
+  expect(fa).toHaveAttribute('dir', 'rtl')
+  return fa!
+}
+
+/** Presses Tab (keyboard only, like a learner) until `el` has focus; fails after 40 presses. */
+export async function tabTo(user: UserEvent, el: HTMLElement): Promise<void> {
+  for (let i = 0; i < 40 && document.activeElement !== el; i++) await user.tab()
+  expect(el).toHaveFocus()
 }

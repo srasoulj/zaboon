@@ -1,12 +1,14 @@
 'use client'
 import type { ChallengeOf } from '@zaboon/contracts'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
-import { MatchColumns } from './MatchColumns'
+import { FORM_LABEL, type FormPosition } from './LetterIntro'
+import { MatchColumns, type MatchItem } from './MatchColumns'
 import { ChallengeFrame, styles } from './shared'
 
 type Props = ChallengeRendererProps<ChallengeOf<'letter_forms'>>
 
 const ZWJ = '‍'
+const POSITIONS: readonly string[] = ['isolated', 'initial', 'medial', 'final']
 
 /** Which contextual form a ZWJ-marked string is (start/middle/end), for its accessible name. */
 export function formPosition(form: string): 'start' | 'middle' | 'end' | 'alone' {
@@ -18,32 +20,49 @@ export function formPosition(form: string): 'start' | 'middle' | 'end' | 'alone'
   return 'alone'
 }
 
-/** Match each letter's isolated form to one of its joined forms (each shown as ONE text run). */
+/**
+ * Two shapes, depending on what the builder made:
+ * - several letters: match each isolated letter to one of its joined forms;
+ * - one letter: match each position name (Alone/Start/Middle/End, English) to its shape.
+ * Every shape is ONE Persian text run, so it joins exactly as it would in a word.
+ */
 export function LetterForms(props: Props) {
   const { challenge, display } = props
   const { pairs } = challenge
-  const item = (text: string, named: boolean) => ({
-    lang: 'fa' as const,
-    ...(named ? { label: `${text.replaceAll(ZWJ, '')}, ${formPosition(text)} form` } : {}),
+  const byPosition = pairs.every((p) => POSITIONS.includes(p.left))
+  const shape = (text: string, position?: string): MatchItem => ({
     content: (
-      <span className={styles.pairForm} lang="fa" dir="rtl">
-        {text}
-      </span>
+      <>
+        <span className={styles.pairForm} lang="fa" dir="rtl">
+          {text}
+        </span>
+        {position !== undefined && <span className={styles.srOnly}>, {position} form</span>}
+      </>
     ),
+  })
+  const positionName = (left: string): MatchItem => ({
+    content: <span className={styles.choiceLatin}>{FORM_LABEL[left as FormPosition]}</span>,
   })
   return (
     <ChallengeFrame
       type={challenge.type}
       display={display}
-      heading="Match the letter to its joined form"
+      heading={
+        byPosition ? 'Match each position to its shape' : 'Match the letter to its joined form'
+      }
     >
       <MatchColumns
         {...props}
         seed={`${challenge.index}:${pairs.map((p) => p.right).join('|')}`}
-        leftLabel="Letters"
-        rightLabel="Joined forms"
-        left={pairs.map((p) => item(p.left, false))}
-        right={pairs.map((p) => item(p.right, true))}
+        leftLabel={byPosition ? 'Positions' : 'Letters'}
+        rightLabel={byPosition ? 'Shapes' : 'Joined forms'}
+        leftDir={byPosition ? 'ltr' : 'rtl'}
+        rightDir="rtl"
+        left={pairs.map((p) => (byPosition ? positionName(p.left) : shape(p.left)))}
+        // By position, naming a shape's position would give the answer away.
+        right={pairs.map((p) =>
+          byPosition ? shape(p.right) : shape(p.right, formPosition(p.right)),
+        )}
       />
     </ChallengeFrame>
   )

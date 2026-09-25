@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { fixture, renderChallenge } from '../testing'
+import { fixture, renderChallenge, persianOf } from '../testing'
 
 const ZWNJ = '‌'
 const faEn = fixture('translate_bank', 0)
@@ -14,7 +14,9 @@ describe('translate_bank fa→en', () => {
     expect(faEn.direction).toBe('fa_en')
     renderChallenge(faEn)
     expect(screen.getByRole('heading', { name: 'Write this in English' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Prompt' })).toHaveAttribute('lang', 'fa')
+    expect(persianOf(screen.getByRole('group', { name: 'Prompt' }))).toHaveTextContent(
+      faEn.prompt.text,
+    )
     expect(answer()).toHaveAttribute('dir', 'ltr')
     expect(within(bank()).getAllByRole('button')).toHaveLength(faEn.bank.length)
   })

@@ -3,11 +3,11 @@ import type { ChallengeOf, LetterInfo } from '@zaboon/contracts'
 import { FaText } from '@zaboon/ui'
 import { useEffect, useRef } from 'react'
 import type { ChallengeRendererProps } from '@/lib/challenge-registry'
-import { AudioButton, ChallengeFrame, FaInline, playMedia, styles } from './shared'
+import { AudioButton, ChallengeFrame, FaInline, Labelled, playMedia, styles } from './shared'
 
 type Props = ChallengeRendererProps<ChallengeOf<'letter_intro'>>
 
-const ZWJ = '‍'
+const ZWJ = '\u200D'
 
 export type FormPosition = 'isolated' | 'initial' | 'medial' | 'final'
 
@@ -24,7 +24,8 @@ export function joinedForm(form: string, position: FormPosition, connects: boole
 }
 
 const POSITIONS: readonly FormPosition[] = ['isolated', 'initial', 'medial', 'final']
-const POSITION_LABEL: Record<FormPosition, string> = {
+/** English position names (also the left column of single-letter letter_forms). */
+export const FORM_LABEL: Record<FormPosition, string> = {
   isolated: 'Alone',
   initial: 'Start',
   medial: 'Middle',
@@ -34,12 +35,9 @@ const POSITION_LABEL: Record<FormPosition, string> = {
 function LetterCard({ letter, onPlay }: { letter: LetterInfo; onPlay: (() => void) | null }) {
   return (
     <div className={styles.letterCard}>
-      <FaText
-        as="p"
-        text={letter.letter}
-        className={styles.bigLetter}
-        aria-label={`The letter ${letter.name}`}
-      />
+      <Labelled label={`The letter ${letter.name}`}>
+        <FaText as="p" text={letter.letter} className={styles.bigLetter} />
+      </Labelled>
       <p className={styles.letterName}>
         <span lang="fa-Latn">{letter.name}</span>
       </p>
@@ -52,7 +50,7 @@ function LetterCard({ letter, onPlay }: { letter: LetterInfo; onPlay: (() => voi
         <dl className={styles.forms}>
           {POSITIONS.map((p) => (
             <div key={p} className={styles.form}>
-              <dt>{POSITION_LABEL[p]}</dt>
+              <dt>{FORM_LABEL[p]}</dt>
               <dd lang="fa" dir="rtl" data-form={p}>
                 {joinedForm(letter.forms[p], p, letter.connects)}
               </dd>

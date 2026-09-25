@@ -1,99 +1,163 @@
-import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { fixture, renderChallenge } from '../testing'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { MatchPairs } from '../MatchPairs'
+import { DISPLAY, fixture, renderChallenge, startsWith, tabTo } from '../testing'
 
 const c = fixture('match_pairs')
 const fa = () => screen.getByRole('group', { name: 'Persian' })
 const en = () => screen.getByRole('group', { name: 'English' })
+const faCard = (i: number) =>
+  within(fa()).getByRole('button', { name: startsWith(c.pairs[i]!.fa.fa) })
+const enCard = (i: number) => within(en()).getByRole('button', { name: startsWith(c.pairs[i]!.en) })
+const status = () => screen.getByRole('status')
 
 describe('match_pairs', () => {
-  it('shows two columns; the Persian one is RTL with lang="fa" buttons', () => {
+  it('shows an RTL Persian column; only the Persian content (not the card) is lang="fa"', () => {
     renderChallenge(c)
     expect(screen.getByRole('heading', { name: 'Select the matching pairs' })).toBeInTheDocument()
     expect(fa()).toHaveAttribute('dir', 'rtl')
     const buttons = within(fa()).getAllByRole('button')
     expect(buttons).toHaveLength(c.pairs.length)
-    for (const b of buttons) expect(b).toHaveAttribute('lang', 'fa')
+    for (const b of buttons) {
+      expect(b).not.toHaveAttribute('lang')
+      expect(b.querySelector('[lang="fa"][dir="rtl"]')).not.toBeNull()
+    }
     expect(within(en()).getAllByRole('button')).toHaveLength(c.pairs.length)
+  })
+
+  it('gives every one of the 10 cards a shortcut: 1–5 left, 6–9 and 0 right', () => {
+    renderChallenge(c)
+    const keys = [
+      ...within(fa()).getAllByRole('button'),
+      ...within(en()).getAllByRole('button'),
+    ].map((b) => b.getAttribute('aria-keyshortcuts'))
+    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
+    const tenth = within(en()).getAllByRole('button')[4]!
+    expect(tenth.querySelector('kbd')).toHaveTextContent('0')
   })
 
   it('matching every pair reports {kind:"pairs"} graded correct and submits', async () => {
     const h = renderChallenge(c)
-    for (const [i, p] of c.pairs.entries()) {
+    for (const [i] of c.pairs.entries()) {
       // alternate the side tapped first
       if (i % 2 === 0) {
-        await h.user.click(within(fa()).getByRole('button', { name: p.fa.fa }))
-        await h.user.click(within(en()).getByRole('button', { name: p.en }))
+        await h.user.click(faCard(i))
+        await h.user.click(enCard(i))
       } else {
-        await h.user.click(within(en()).getByRole('button', { name: p.en }))
-        await h.user.click(within(fa()).getByRole('button', { name: p.fa.fa }))
+        await h.user.click(enCard(i))
+        await h.user.click(faCard(i))
       }
-      expect(within(en()).getByRole('button', { name: p.en })).toBeDisabled()
+      expect(enCard(i)).toHaveAttribute('aria-disabled', 'true')
+      expect(enCard(i)).toHaveAttribute('data-matched', 'true')
     }
     expect(h.onResponse).toHaveBeenCalledTimes(1)
     expect(h.last()).toEqual({ kind: 'pairs', value: c.pairs.map((_, i) => [i, i]) })
     expect(h.verdict()).toBe('correct')
     expect(h.onSubmit).toHaveBeenCalledTimes(1)
     expect(h.onMismatch).not.toHaveBeenCalled()
+    expect(status()).toHaveTextContent('All pairs matched.')
+  })
+
+  it('announces matches and mismatches politely', async () => {
+    const h = renderChallenge(c)
+    await h.user.click(faCard(0))
+    await h.user.click(enCard(0))
+    expect(status()).toHaveTextContent(`Matched. 1 of ${c.pairs.length} pairs done.`)
+    await h.user.click(faCard(1))
+    await h.user.click(enCard(2))
+    expect(status()).toHaveTextContent('Not a match. Try again.')
   })
 
   it('a wrong pair shakes, calls onMismatch and reports nothing (a wrong draft cannot be built)', async () => {
     const h = renderChallenge(c)
-    await h.user.click(within(fa()).getByRole('button', { name: c.pairs[0]!.fa.fa }))
-    await h.user.click(within(en()).getByRole('button', { name: c.pairs[1]!.en }))
+    await h.user.click(faCard(0))
+    await h.user.click(enCard(1))
     expect(h.onMismatch).toHaveBeenCalledTimes(1)
     expect(h.onResponse).not.toHaveBeenCalled()
-    expect(within(en()).getByRole('button', { name: /^thanks/ })).toHaveAttribute(
-      'data-shake',
-      'true',
-    )
-    expect(within(fa()).getByRole('button', { name: /^سلام/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
-    // an incomplete draft graded by the player would be wrong
+    expect(enCard(1)).toHaveAttribute('data-shake', 'true')
+    expect(faCard(0)).toHaveAttribute('aria-pressed', 'false')
     expect(h.last()).toBeNull()
   })
 
   it('does not shake under reduced motion', async () => {
     const h = renderChallenge(c, { display: { reducedMotion: true } })
-    await h.user.click(within(fa()).getByRole('button', { name: c.pairs[0]!.fa.fa }))
-    await h.user.click(within(en()).getByRole('button', { name: c.pairs[1]!.en }))
+    await h.user.click(faCard(0))
+    await h.user.click(enCard(1))
     expect(h.onMismatch).toHaveBeenCalledTimes(1)
-    expect(within(en()).getByRole('button', { name: /^thanks/ })).toHaveAttribute(
-      'data-shake',
-      'false',
-    )
+    expect(enCard(1)).toHaveAttribute('data-shake', 'false')
   })
 
   it('tapping the same button again deselects it; tapping a Persian word says it when sound is on', async () => {
     const h = renderChallenge(c, { display: { sound: true } })
-    const salam = within(fa()).getByRole('button', { name: c.pairs[0]!.fa.fa })
-    await h.user.click(salam)
-    expect(salam).toHaveAttribute('aria-pressed', 'true')
+    await h.user.click(faCard(0))
+    expect(faCard(0)).toHaveAttribute('aria-pressed', 'true')
     expect(h.audio.play).toHaveBeenCalledWith(c.pairs[0]!.fa.audio!.normal)
-    await h.user.click(salam)
-    expect(salam).toHaveAttribute('aria-pressed', 'false')
+    await h.user.click(faCard(0))
+    expect(faCard(0)).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('works with the keyboard alone', async () => {
+  it('works with the keyboard alone (Tab + Enter/Space); focus stays on the matched card', async () => {
     const h = renderChallenge(c)
-    for (const p of c.pairs) {
-      within(fa()).getByRole('button', { name: p.fa.fa }).focus()
+    for (const [i] of c.pairs.entries()) {
+      await tabTo(h.user, faCard(i))
       await h.user.keyboard('{Enter}')
-      within(en()).getByRole('button', { name: p.en }).focus()
+      await tabTo(h.user, enCard(i))
       await h.user.keyboard(' ')
+      expect(enCard(i)).toHaveFocus() // not lost to <body>
     }
     expect(h.verdict()).toBe('correct')
     expect(h.onSubmit).toHaveBeenCalledTimes(1)
   })
 
-  it('digit keys tap buttons in reading order', async () => {
+  it('digit keys tap cards in reading order, including 0 for the tenth', async () => {
     const h = renderChallenge(c)
-    const first = within(fa()).getAllByRole('button')[0]!
     await h.user.keyboard('1')
-    expect(first).toHaveAttribute('aria-pressed', 'true')
+    expect(within(fa()).getAllByRole('button')[0]).toHaveAttribute('aria-pressed', 'true')
+    await h.user.keyboard('1')
+    await h.user.keyboard('0')
+    expect(within(en()).getAllByRole('button')[4]).toHaveAttribute('aria-pressed', 'true')
     expect(h.onMismatch).not.toHaveBeenCalled()
+  })
+
+  it('ignores digit keys while a modal dialog is open', async () => {
+    const h = renderChallenge(c)
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    document.body.append(dialog)
+    await h.user.keyboard('1')
+    await h.user.keyboard('6')
+    dialog.remove()
+    for (const b of screen.getAllByRole('button'))
+      expect(b).not.toHaveAttribute('aria-pressed', 'true')
+    expect(h.onMismatch).not.toHaveBeenCalled()
+    expect(h.onResponse).not.toHaveBeenCalled()
+  })
+
+  it('submits only once the player holds the complete draft', async () => {
+    const user = userEvent.setup()
+    const onSubmit = vi.fn()
+    const audio = { play: vi.fn(), stop: vi.fn(), mouthOpen: () => 0 }
+    // A player that drops the draft (e.g. while its quit dialog is open) never echoes it back.
+    render(
+      <MatchPairs
+        challenge={c}
+        response={null}
+        onResponse={() => {}}
+        onSubmit={onSubmit}
+        onMismatch={() => {}}
+        phase="answering"
+        verdict={null}
+        display={DISPLAY}
+        audio={audio}
+      />,
+    )
+    for (const [i] of c.pairs.entries()) {
+      await user.click(faCard(i))
+      await user.click(enCard(i))
+    }
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 
   it('is locked in feedback', async () => {
@@ -101,9 +165,10 @@ describe('match_pairs', () => {
       phase: 'feedback',
       response: { kind: 'pairs', value: [[0, 0]] },
     })
-    expect(within(fa()).getByRole('button', { name: c.pairs[0]!.fa.fa })).toBeDisabled()
-    await h.user.click(within(fa()).getByRole('button', { name: c.pairs[1]!.fa.fa }))
-    await h.user.click(within(en()).getByRole('button', { name: c.pairs[2]!.en }))
+    expect(faCard(0)).toHaveAttribute('aria-disabled', 'true')
+    await h.user.click(faCard(1))
+    await h.user.click(enCard(2))
+    await h.user.keyboard('1')
     expect(h.onMismatch).not.toHaveBeenCalled()
     expect(h.onResponse).not.toHaveBeenCalled()
   })

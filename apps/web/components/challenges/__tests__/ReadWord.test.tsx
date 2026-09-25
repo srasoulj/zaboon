@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { ChallengeOf } from '@zaboon/contracts'
-import { fixture, renderChallenge, startsWith } from '../testing'
+import { fixture, renderChallenge, startsWith, persianOf } from '../testing'
 
 const c = fixture('read_word')
 const correct = c.choices[c.answer]!
@@ -13,9 +13,7 @@ describe('read_word', () => {
     expect(c.ask).toBe('translit')
     renderChallenge(c, { display: { transliteration: true } })
     expect(screen.getByRole('heading', { name: 'How do you read this word?' })).toBeInTheDocument()
-    const word = screen.getByRole('group', { name: 'Word' })
-    expect(word).toHaveAttribute('lang', 'fa')
-    expect(word).toHaveAttribute('dir', 'rtl')
+    const word = persianOf(screen.getByRole('group', { name: 'Word' }))
     expect(word).toHaveTextContent(c.word.fa)
     expect(word).not.toHaveTextContent(c.word.translit)
     expect(
