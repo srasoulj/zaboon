@@ -19,7 +19,10 @@ export interface ChatRequest {
     json_schema: { name: string; strict: boolean; schema: unknown }
   }
   modalities?: ('text' | 'image' | 'audio')[]
-  audio?: { voice: string; format: 'mp3' | 'wav' }
+  /** Audio output. OpenRouter only returns it on a streamed request, which only allows pcm16. */
+  audio?: { voice: string; format: 'mp3' | 'wav' | 'pcm16' }
+  /** Server-sent events. FetchTransport assembles the chunks into one ChatResponse. */
+  stream?: boolean
   max_tokens?: number
   temperature?: number
   provider?: { data_collection?: 'allow' | 'deny' }

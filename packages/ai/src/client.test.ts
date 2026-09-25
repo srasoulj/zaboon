@@ -6,6 +6,7 @@ import {
   BudgetExceededError,
   chatResponse,
   isStrictCompatible,
+  looksLikeWav,
   MemoryBudgetLedger,
   MemoryResponseCache,
   MockTransport,
@@ -193,27 +194,37 @@ describe('image()', () => {
 })
 
 describe('speech() and transcribe()', () => {
-  it('requests mp3 audio output with the voice and returns the bytes', async () => {
+  it('streams pcm16 audio output with the voice and returns it as a 24 kHz mono WAV', async () => {
+    const pcm = Buffer.from([1, 0, 2, 0, 0xff, 0x7f, 0, 0x80])
     const { ai, transport } = client(() =>
-      chatResponse(null, { audio: { data: MP3.toString('base64'), transcript: 'سلام' } }),
+      chatResponse(null, { audio: { data: pcm.toString('base64'), transcript: 'سلام' } }),
     )
     const r = await ai.speech('سَلام', 'coral')
-    expect(r.bytes.equals(MP3)).toBe(true)
+    expect(r.mime).toBe('audio/wav')
+    expect(looksLikeWav(r.bytes)).toBe(true)
+    expect(r.bytes.readUInt16LE(22)).toBe(1) // channels
+    expect(r.bytes.readUInt32LE(24)).toBe(24_000) // sample rate
+    expect(r.bytes.readUInt16LE(34)).toBe(16) // bits per sample
+    expect(r.bytes.readUInt32LE(40)).toBe(pcm.length)
+    expect(r.bytes.subarray(44).equals(pcm)).toBe(true)
     expect(r.transcript).toBe('سلام')
     const req = transport.calls[0]!
     expect(req).toMatchObject({
       model: MODELS.content_audio,
       modalities: ['text', 'audio'],
-      audio: { voice: 'coral', format: 'mp3' },
+      audio: { voice: 'coral', format: 'pcm16' },
+      stream: true,
     })
     expect(req.messages.at(-1)).toEqual({ role: 'user', content: 'سَلام' })
   })
 
-  it('rejects non-mp3 audio', async () => {
-    const { ai } = client(() =>
-      chatResponse(null, { audio: { data: Buffer.from('RIFFxxxxWAVE').toString('base64') } }),
+  it('rejects missing audio and audio that is not 16-bit PCM', async () => {
+    const odd = client(() =>
+      chatResponse(null, { audio: { data: Buffer.from([1, 2, 3]).toString('base64') } }),
     )
-    await expect(ai.speech('x', 'coral')).rejects.toThrow(/not an MP3/)
+    await expect(odd.ai.speech('x', 'coral')).rejects.toThrow(/not 16-bit PCM/)
+    const none = client(() => chatResponse('I cannot speak that.'))
+    await expect(none.ai.speech('x', 'coral')).rejects.toThrow(/no audio/)
   })
 
   it('transcribes audio input', async () => {

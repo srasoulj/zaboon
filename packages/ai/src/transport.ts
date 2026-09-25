@@ -138,7 +138,10 @@ export class FetchTransport implements AiTransport {
       this.retry,
       signal,
     )
-    const json = (await res.json()) as ChatResponse & {
+    const text = await res.text()
+    // A streamed request answers with server-sent events, unless it failed before streaming.
+    if (req.stream && !text.trimStart().startsWith('{')) return assembleChatStream(text)
+    const json = JSON.parse(text) as ChatResponse & {
       error?: { message?: string; code?: number }
     }
     // OpenRouter can answer 200 with an error object (e.g. a provider failure mid-stream).
@@ -153,6 +156,76 @@ export class FetchTransport implements AiTransport {
       this.retry,
     )
     return (await res.json()) as T
+  }
+}
+
+/** One `chat.completion.chunk` event of a streamed response (the fields we assemble). */
+interface ChatChunk {
+  id?: string
+  model?: string
+  choices?: {
+    delta?: { content?: string | null; audio?: { data?: string; transcript?: string } }
+    finish_reason?: string | null
+  }[]
+  usage?: ChatResponse['usage']
+  error?: { message?: string; code?: number }
+}
+
+/**
+ * Assembles a server-sent-events body of `chat.completion.chunk` events into one ChatResponse:
+ * text deltas and audio transcript deltas are concatenated, audio chunks are decoded one by one
+ * (each is its own base64 string) and joined, and the final `usage` (with OpenRouter's `cost`) is
+ * kept. An `error` event throws, like an error object in a plain response.
+ */
+export function assembleChatStream(sse: string): ChatResponse {
+  let id = ''
+  let model = ''
+  let content = ''
+  let transcript = ''
+  let finishReason: string | null = null
+  let usage: ChatResponse['usage']
+  let hasAudio = false
+  const audio: Buffer[] = []
+  for (const line of sse.split(/\r?\n/)) {
+    // Blank lines separate events; lines starting with ':' are keep-alive comments.
+    if (!line.startsWith('data:')) continue
+    const data = line.slice(5).trim()
+    if (!data || data === '[DONE]') continue
+    let chunk: ChatChunk
+    try {
+      chunk = JSON.parse(data) as ChatChunk
+    } catch {
+      throw new AiHttpError(502, `unreadable stream event: ${data}`)
+    }
+    if (chunk.error) throw new AiHttpError(chunk.error.code ?? 502, JSON.stringify(chunk.error))
+    id ||= chunk.id ?? ''
+    model ||= chunk.model ?? ''
+    if (chunk.usage) usage = chunk.usage
+    const choice = chunk.choices?.[0]
+    if (!choice) continue
+    if (choice.finish_reason) finishReason = choice.finish_reason
+    if (choice.delta?.content) content += choice.delta.content
+    const part = choice.delta?.audio
+    if (part) {
+      hasAudio = true
+      if (part.data) audio.push(Buffer.from(part.data, 'base64'))
+      if (part.transcript) transcript += part.transcript
+    }
+  }
+  const data = Buffer.concat(audio).toString('base64')
+  return {
+    id,
+    model,
+    choices: [
+      {
+        message: {
+          content: content || null,
+          ...(hasAudio ? { audio: { data, ...(transcript ? { transcript } : {}) } } : {}),
+        },
+        finish_reason: finishReason,
+      },
+    ],
+    ...(usage ? { usage } : {}),
   }
 }
 

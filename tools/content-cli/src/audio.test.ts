@@ -11,7 +11,9 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
+import { pcm16ToWav } from '@zaboon/ai'
 import {
+  encodeTtsMp3,
   envelopeFromPcm,
   normalizeArgs,
   pcmArgs,
@@ -119,6 +121,43 @@ describe('audio processing', () => {
     })
     expect(again.skipped).toEqual([{ id: 's_u01_0001', reason: 'already processed (use --force)' }])
   })
+
+  it('encodes TTS audio (a WAV) as the house MP3 through a temp file', async () => {
+    const wav = pcm16ToWav(pcm(10, 10))
+    let seen: string[] = []
+    let input: Buffer | null = null
+    const fake: FfmpegRunner = async (args) => {
+      seen = args
+      input = readFileSync(args[args.indexOf('-i') + 1]!)
+      writeFileSync(args.at(-1)!, 'mp3 bytes')
+      return Buffer.alloc(0)
+    }
+    const mp3 = await encodeTtsMp3(wav, fake)
+    expect(mp3.toString()).toBe('mp3 bytes')
+    expect(input!.equals(wav)).toBe(true)
+    expect(seen).toEqual(normalizeArgs(seen[seen.indexOf('-i') + 1]!, seen.at(-1)!))
+    expect(existsSync(seen.at(-1)!)).toBe(false) // the temp dir is removed
+  })
+
+  it('encodes a real 24 kHz TTS WAV to mono MP3 with ffmpeg (or says it is missing)', async () => {
+    const samples = 12_000 // 0.5 s at 24 kHz
+    const tone = Buffer.alloc(samples * 2)
+    for (let i = 0; i < samples; i++)
+      tone.writeInt16LE(Math.round(8000 * Math.sin((2 * Math.PI * 440 * i) / 24_000)), i * 2)
+    if (spawnSync('ffmpeg', ['-version']).status !== 0) {
+      await expect(encodeTtsMp3(pcm16ToWav(tone))).rejects.toThrow(/ffmpeg is not installed/)
+      return
+    }
+    const file = join(temp(), 'tts.mp3')
+    writeFileSync(file, await encodeTtsMp3(pcm16ToWav(tone)))
+    const probe = JSON.parse(
+      spawnSync('ffprobe', ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', file], {
+        encoding: 'utf8',
+      }).stdout,
+    ) as { streams: { codec_name: string; channels: number }[]; format: { duration: string } }
+    expect(probe.streams[0]).toMatchObject({ codec_name: 'mp3', channels: 1 })
+    expect(Number(probe.format.duration)).toBeGreaterThan(0.4)
+  }, 30_000)
 
   it('runs the real ffmpeg when it is installed, and says so clearly when it is not', async () => {
     const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0

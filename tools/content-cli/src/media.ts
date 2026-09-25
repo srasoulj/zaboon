@@ -3,7 +3,8 @@
  *
  *   art  character and illustration images with the pinned GPT Image model, passing style-bible
  *        images as references;
- *   tts  draft audio with the pinned audio model, from `faVocalized` (vowel marks disambiguate).
+ *   tts  draft audio with the pinned audio model, from `faVocalized` (vowel marks disambiguate),
+ *        encoded with ffmpeg as the house MP3 (−16 LUFS, mono, 64 kbps).
  *
  * Every generated file gets a provenance sidecar (`<file>.yaml`), the item's YAML points at the new
  * media, and the item becomes `status: draft` again: nothing generated ships without approval.
@@ -24,6 +25,7 @@ import {
   type MediaProvenance,
 } from '@zaboon/ai'
 import type { DryRunCall } from './ai-context'
+import { encodeTtsMp3, type FfmpegRunner } from './audio'
 import type { LoadedCourse } from './load'
 import { ART_CHARACTER, ART_ITEM, TTS_LINE } from './prompts'
 import { setItemFields } from './yaml-out'
@@ -195,6 +197,8 @@ export interface TtsOptions {
   force?: boolean
   now?: Date
   log?: (line: string) => void
+  /** Tests: ffmpeg runner for the WAV → MP3 encode. */
+  run?: FfmpegRunner
 }
 
 export interface TtsJob {
@@ -290,7 +294,7 @@ export async function generateTts(opts: TtsOptions): Promise<TtsResult> {
     writeMedia(
       course,
       j.ref,
-      r.bytes,
+      await encodeTtsMp3(r.bytes, opts.run),
       mediaProvenance(j.ref, r.model, TTS_LINE, { voice: j.voice, input: j.text, now: opts.now }),
     )
     setItemFields(

@@ -18,6 +18,7 @@ import {
   type ChatRequest,
   type ContentPart,
 } from '@zaboon/ai'
+import type { FfmpegRunner } from './audio'
 import { loadCourse } from './load'
 import { generateArt, generateTts, readSidecar } from './media'
 import { suggestVariants, type SuggestOutput } from './suggest'
@@ -45,6 +46,8 @@ const WEBP = Buffer.concat([
   Buffer.alloc(24, 3),
 ])
 const MP3 = Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64, 1)])
+/** 16-bit PCM, what gpt-audio streams (speech() returns it as a WAV). */
+const PCM = Buffer.from([0, 0, 0x10, 0x27, 0xf0, 0xd8, 0, 0])
 const ai = (respond: (req: ChatRequest) => ReturnType<typeof chatResponse>) => {
   const transport = new MockTransport(respond)
   return { transport, ai: new AiClient({ apiKey: TEST_KEY, transport }) }
@@ -130,7 +133,10 @@ describe('art', () => {
     rmSync(join(dir, 'style-bible'), { recursive: true, force: true })
     mkdirSync(join(dir, 'style-bible'))
     const charactersFile = join(dir, 'characters.yaml')
-    writeFileSync(charactersFile, readFileSync(charactersFile, 'utf8').replace(/^ +image: .*\n/gm, ''))
+    writeFileSync(
+      charactersFile,
+      readFileSync(charactersFile, 'utf8').replace(/^ +image: .*\n/gm, ''),
+    )
     writeFileSync(join(dir, 'style-bible/shape-language.png'), PNG)
     writeFileSync(join(dir, 'style-bible/hodhod-turnaround.png'), PNG)
     writeFileSync(join(dir, 'style-bible/shirin-turnaround.png'), PNG)
@@ -212,9 +218,17 @@ describe('tts', () => {
   it('voices sentences from faVocalized/fa with the speaker voice and marks them for sign-off', async () => {
     const dir = seedCopy()
     setItemFields(join(dir, 'characters.yaml'), 'shirin', [{ path: ['voice'], value: 'coral' }])
+    setItemFields(join(dir, 'characters.yaml'), 'kian', [{ path: ['voice'], value: 'ash' }])
     const { ai: client, transport } = ai(() =>
-      chatResponse(null, { audio: { data: MP3.toString('base64') }, model: 'openai/gpt-audio' }),
+      chatResponse(null, { audio: { data: PCM.toString('base64') }, model: 'openai/gpt-audio' }),
     )
+    // The WAV from speech() is encoded to MP3 by ffmpeg; the fake records what it was given.
+    const encoded: Buffer[] = []
+    const run: FfmpegRunner = async (args) => {
+      encoded.push(readFileSync(args[args.indexOf('-i') + 1]!))
+      writeFileSync(args.at(-1)!, MP3)
+      return Buffer.alloc(0)
+    }
     const now = new Date('2026-09-25T00:00:00Z')
     const r = await generateTts({
       course: loadCourse(dir),
@@ -223,18 +237,23 @@ describe('tts', () => {
       lexemes: true,
       ai: client,
       now,
+      run,
     })
     expect(r.written).toEqual([
       'audio/s_u01_0001.mp3',
       'audio/s_u01_0004.mp3',
       'audio/lx_salam.mp3',
     ])
+    // Speakers use their own voice; lexemes (no speaker) use the default voice.
     expect(transport.calls.map((c) => [c.audio!.voice, c.messages.at(-1)!.content])).toEqual([
       ['coral', 'سلام!'],
-      ['alloy', 'مرسی، خوبم.'],
+      ['ash', 'مرسی، خوبم.'],
       ['alloy', 'سلام'],
     ])
     expect(transport.calls[0]!.model).toBe('openai/gpt-audio')
+    expect(encoded).toHaveLength(3)
+    expect(encoded[0]!.subarray(44).equals(PCM)).toBe(true)
+    expect(readFileSync(join(dir, 'assets/audio/s_u01_0001.mp3')).equals(MP3)).toBe(true)
 
     const course = loadCourse(dir)
     expect(course.sentences.find((s) => s.id === 's_u01_0001')!.audio).toEqual({
@@ -249,9 +268,13 @@ describe('tts', () => {
       voice: 'coral',
       input: 'سلام!',
     })
-    expect(readFileSync(join(dir, 'sentences/u01-hello.yaml'), 'utf8')).toContain(
-      '# Unit 1 sentences (STYLE.md).',
-    )
+    // Comments survive the edit: the file still starts with the live file's header line.
+    const header = readFileSync(
+      join(repoRoot(), 'content/fa-en/sentences/u01-hello.yaml'),
+      'utf8',
+    ).split('\n')[0]!
+    expect(header).toMatch(/^# Unit 1 sentences/)
+    expect(readFileSync(join(dir, 'sentences/u01-hello.yaml'), 'utf8').split('\n')[0]).toBe(header)
     expect(errorsOf(dir)).toEqual([])
 
     const again = await generateTts({ course, unit: 'u01-hello', ids: ['s_u01_0001'], ai: client })
@@ -283,8 +306,9 @@ describe('tts', () => {
   })
 
   it('dry run lists one call per clip', async () => {
-    const r = await generateTts({ course: loadCourse(seedCopy()), unit: 'u01-hello', dryRun: true })
-    expect(r.dryRun).toHaveLength(25)
+    const course = loadCourse(seedCopy())
+    const r = await generateTts({ course, unit: 'u01-hello', dryRun: true })
+    expect(r.dryRun).toHaveLength(course.sentences.filter((s) => s.unit === 'u01-hello').length)
     expect(r.dryRun![0]).toMatchObject({ model: 'openai/gpt-audio', audioOutputTokens: 600 })
   })
 })

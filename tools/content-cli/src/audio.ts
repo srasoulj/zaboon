@@ -10,7 +10,7 @@
  * runner so tests can check the exact filter chains without the binary.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LoadedCourse } from './load'
@@ -57,6 +57,24 @@ export function normalizeArgs(input: string, output: string): string[] {
 
 export function slowArgs(input: string, output: string): string[] {
   return [...base, '-i', input, '-af', `atempo=${SLOW_TEMPO},${LOUDNORM}`, ...encode, output]
+}
+
+/**
+ * TTS audio (the WAV from `speech()`) → the house MP3 (−16 LUFS, mono, 64 kbps), through a temp
+ * dir. Lexeme clips are used as written (`audio` only processes sentences), so every TTS clip is
+ * normalized here.
+ */
+export async function encodeTtsMp3(bytes: Buffer, run: FfmpegRunner = runFfmpeg): Promise<Buffer> {
+  const work = mkdtempSync(join(tmpdir(), 'zaboon-tts-'))
+  try {
+    const input = join(work, 'speech.wav')
+    const output = join(work, 'speech.mp3')
+    writeFileSync(input, bytes)
+    await run(normalizeArgs(input, output))
+    return readFileSync(output)
+  } finally {
+    rmSync(work, { recursive: true, force: true })
+  }
 }
 
 /** Decodes to raw 16-bit mono PCM on stdout, for the envelope. */

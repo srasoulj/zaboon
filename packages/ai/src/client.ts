@@ -4,7 +4,7 @@
  *   chat()        raw /chat/completions (usage accounting + data-collection policy always applied)
  *   json()        structured output: zod → JSON schema → response_format, validated, one repair retry
  *   image()       image generation (modalities image+text), PNG/WebP bytes from data URLs
- *   speech()      TTS through an audio-output chat model (mp3)
+ *   speech()      TTS through an audio-output chat model (streamed pcm16, returned as WAV)
  *   transcribe()  speech → text through an audio-input chat model
  *
  * Paid calls reserve an estimate on the BudgetLedger first and record OpenRouter's reported cost
@@ -14,7 +14,7 @@
 import { z } from 'zod'
 import { cacheKey } from './cache'
 import { AiResponseError } from './errors'
-import { decodeDataUrl, looksLikeMp3, sniffImage, toDataUrl } from './media'
+import { decodeDataUrl, pcm16ToWav, sniffImage, toDataUrl } from './media'
 import { approxTokens, estimateUsd } from './pricing'
 import { FetchTransport } from './transport'
 import type {
@@ -108,7 +108,10 @@ export interface SpeechOptions extends CallOptions {
 }
 
 export interface SpeechResult {
+  /** A WAV file: 24 kHz, 16-bit, mono. */
   bytes: Buffer
+  mime: 'audio/wav'
+  /** What the model says it spoke (its own transcript of the audio). */
   transcript?: string
   model: string
   costUsd: number
@@ -345,13 +348,18 @@ export class AiClient {
     }
   }
 
-  /** Text → MP3 speech. `voice` is the provider voice name (a character's `voice`). */
+  /**
+   * Text → speech as a WAV file. `voice` is the provider voice name (a character's `voice`).
+   * OpenRouter only returns audio output on a streamed request, and OpenAI only streams raw
+   * `pcm16`, so the PCM is wrapped in a WAV container here; callers encode it (content-cli: MP3).
+   */
   async speech(text: string, voice: string, opts: SpeechOptions = {}): Promise<SpeechResult> {
     const model = opts.model ?? MODELS.content_audio
     const req: ChatRequest = {
       model,
       modalities: ['text', 'audio'],
-      audio: { voice, format: 'mp3' },
+      audio: { voice, format: 'pcm16' },
+      stream: true,
       messages: [
         { role: 'system', content: opts.instructions ?? DEFAULT_TTS_INSTRUCTIONS },
         { role: 'user', content: text },
@@ -360,9 +368,14 @@ export class AiClient {
     const extract = (r: ChatResponse) => {
       const audio = r.choices[0]?.message.audio
       if (!audio?.data) throw new AiResponseError('no audio in the response')
-      const bytes = Buffer.from(audio.data, 'base64')
-      if (!looksLikeMp3(bytes)) throw new AiResponseError('audio is not an MP3')
-      return { bytes, ...(audio.transcript ? { transcript: audio.transcript } : {}) }
+      const pcm = Buffer.from(audio.data, 'base64')
+      if (pcm.length % 2 !== 0)
+        throw new AiResponseError(`audio is not 16-bit PCM (${pcm.length} bytes)`)
+      return {
+        bytes: pcm16ToWav(pcm),
+        mime: 'audio/wav' as const,
+        ...(audio.transcript ? { transcript: audio.transcript } : {}),
+      }
     }
     const res = await this.call(req, opts, (r) => void extract(r))
     return {

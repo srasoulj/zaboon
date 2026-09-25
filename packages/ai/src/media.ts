@@ -38,6 +38,37 @@ export function sniffImage(bytes: Buffer): ImageMime | null {
   return null
 }
 
+/** gpt-audio's streamed `pcm16` output: 24 kHz, 16-bit little-endian, mono. */
+export const PCM16_SAMPLE_RATE = 24_000
+
+/** Wraps raw 16-bit little-endian PCM in a WAV (RIFF) container. */
+export function pcm16ToWav(pcm: Buffer, sampleRate = PCM16_SAMPLE_RATE, channels = 1): Buffer {
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0, 'ascii')
+  header.writeUInt32LE(36 + pcm.length, 4)
+  header.write('WAVE', 8, 'ascii')
+  header.write('fmt ', 12, 'ascii')
+  header.writeUInt32LE(16, 16) // fmt chunk size
+  header.writeUInt16LE(1, 20) // integer PCM
+  header.writeUInt16LE(channels, 22)
+  header.writeUInt32LE(sampleRate, 24)
+  header.writeUInt32LE(sampleRate * channels * 2, 28) // byte rate
+  header.writeUInt16LE(channels * 2, 32) // block align
+  header.writeUInt16LE(16, 34) // bits per sample
+  header.write('data', 36, 'ascii')
+  header.writeUInt32LE(pcm.length, 40)
+  return Buffer.concat([header, pcm])
+}
+
+/** WAV: a RIFF container of type WAVE. */
+export function looksLikeWav(bytes: Buffer): boolean {
+  return (
+    bytes.length >= 12 &&
+    bytes.toString('ascii', 0, 4) === 'RIFF' &&
+    bytes.toString('ascii', 8, 12) === 'WAVE'
+  )
+}
+
 /** MP3: an ID3 tag or an MPEG audio frame sync. */
 export function looksLikeMp3(bytes: Buffer): boolean {
   if (bytes.length >= 3 && bytes.toString('ascii', 0, 3) === 'ID3') return true
