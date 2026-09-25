@@ -2,7 +2,7 @@
 -- app_server is an ordinary role (docs/ARCHITECTURE.md §9).
 BEGIN;
 SET LOCAL search_path = extensions, public;
-SELECT plan(14);
+SELECT plan(15);
 
 SELECT is_empty(
   $$ SELECT r.rolname, c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
@@ -59,6 +59,13 @@ SELECT ok(NOT has_table_privilege('app_server', 'public.xp_ledger', 'UPDATE')
 SELECT ok(NOT has_table_privilege('app_server', 'public.coin_ledger', 'UPDATE')
           AND NOT has_table_privilege('app_server', 'public.coin_ledger', 'DELETE'),
   'coin_ledger is append-only for app_server');
+
+-- A hung request can never hold a pooled connection forever (20260925000700_app_server_timeouts).
+SELECT set_eq(
+  $$ SELECT unnest(s.setconfig) FROM pg_db_role_setting s JOIN pg_roles r ON r.oid = s.setrole
+     WHERE r.rolname = 'app_server' AND s.setdatabase = 0 $$,
+  ARRAY['lock_timeout=10s', 'idle_in_transaction_session_timeout=60s', 'statement_timeout=15s'],
+  'app_server sessions start with lock, idle-in-transaction and statement timeouts');
 
 SELECT * FROM finish();
 ROLLBACK;

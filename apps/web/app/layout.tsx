@@ -14,9 +14,12 @@ const vazirmatn = Vazirmatn({
 })
 
 export const metadata: Metadata = {
+  // Absolute URLs for canonical links, Open Graph, the sitemap and robots.txt.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: { default: 'Zaboon: learn Persian', template: '%s · Zaboon' },
   description: 'A playful way to learn Persian (Farsi), one bite-sized lesson at a time.',
   applicationName: 'Zaboon',
+  appleWebApp: { capable: true, title: 'Zaboon', statusBarStyle: 'default' },
 }
 
 export const viewport: Viewport = {

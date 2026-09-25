@@ -95,6 +95,15 @@ export const routes = {
     request: undefined,
     response: c.WordsResponse,
   }),
+  guidebook: route({
+    method: 'GET',
+    path: '/api/guidebooks/:unitId',
+    auth: 'user',
+    phase: 'mvp',
+    bucket: 'default',
+    request: undefined,
+    response: c.GuidebookResponse,
+  }),
   profile: route({
     method: 'GET',
     path: '/api/profile',

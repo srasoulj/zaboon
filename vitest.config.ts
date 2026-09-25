@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
@@ -6,13 +7,17 @@ import react from '@vitejs/plugin-react'
 // - dom:  React component tests (`*.test.tsx`), jsdom environment
 // - db:   integration tests against local Postgres (`*.db.test.ts`); run with `pnpm test:db`
 const shared = {
-  exclude: ['**/node_modules/**', '**/.next/**', '**/dist/**', 'e2e/**'],
+  // `.claude/` holds subagents' git worktrees (full repo copies) — never test those.
+  exclude: ['**/node_modules/**', '**/.next/**', '**/dist/**', 'e2e/**', '.claude/**'],
 }
+// The web app's `@/…` import alias (apps/web/tsconfig.json), so tests can import app modules.
+const resolve = { alias: { '@': fileURLToPath(new URL('./apps/web', import.meta.url)) } }
 
 export default defineConfig({
   test: {
     projects: [
       {
+        resolve,
         test: {
           name: 'unit',
           environment: 'node',
@@ -22,6 +27,7 @@ export default defineConfig({
       },
       {
         plugins: [react()],
+        resolve,
         test: {
           name: 'dom',
           environment: 'jsdom',
@@ -31,6 +37,7 @@ export default defineConfig({
         },
       },
       {
+        resolve,
         test: {
           name: 'db',
           environment: 'node',

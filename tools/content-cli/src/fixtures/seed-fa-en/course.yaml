@@ -1,0 +1,11 @@
+# The real course. Seed content (see STYLE.md); every authored item is status: draft until a native
+# reviewer approves it. Only u01-hello has full content so far; u02–u05 are stubs so the path renders.
+id: fa-en
+title: Persian (Farsi)
+fromLang: en
+learningLang: fa
+sections:
+  - id: s1
+    title: "Section 1: First steps"
+    cefr: A1
+    units: [u01-hello, u02-about-me, u03-family, u04-food, u05-bazaar]

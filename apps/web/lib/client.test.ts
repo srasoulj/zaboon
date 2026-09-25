@@ -66,6 +66,15 @@ describe('api client', () => {
     expect(init.headers).not.toHaveProperty('authorization')
   })
 
+  it('appends query parameters and leaves out undefined ones', async () => {
+    const fetchMock = vi.fn(async () => json(200, { reports: [] }))
+    const api = createApiClient({ getAccessToken: async () => 'abc', fetch: fetchMock })
+    await api('adminReports', { query: { status: 'open', before: undefined, limit: '20' } })
+    await api('adminReports')
+    const urls = fetchMock.mock.calls.map((c) => (c as unknown as [string])[0])
+    expect(urls).toEqual(['/api/admin/reports?status=open&limit=20', '/api/admin/reports'])
+  })
+
   it('turns error envelopes, bad responses and network failures into ApiClientError', async () => {
     const envelope = createApiClient({
       getAccessToken: async () => null,

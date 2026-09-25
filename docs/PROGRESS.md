@@ -25,24 +25,30 @@
 | ws-db | 1 | `supabase/migrations`, `packages/db` | ✅ merged | #6, #15 |
 | ws-ui | 1 | `packages/ui` | ✅ merged | #7, #16 |
 | ws-content-cli | 1 | `packages/ai`, `tools/content-cli` | ✅ merged | #14 |
-| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | 🔍 in review | #17 |
-| ws-renderers | 2 | 13 challenge renderers | 🔄 working | |
-| ws-player | 2 | lesson player | 🔄 working | |
-| ws-path-letters | 2 | path, letters | ⏳ after ws-api | |
-| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ⏳ after ws-api | |
-| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | 🔄 text drafting with Astra; art partly done | |
-| ws-qa-N | 2+ | `e2e/` | ⏳ | |
+| ws-api | 2 | `apps/web/app/api`, `apps/web/lib/server` | ✅ merged | #17, #23 |
+| ws-renderers | 2 | 13 challenge renderers + dev gallery | ✅ merged | #21 |
+| ws-player | 2 | lesson player, offline outbox, resume | ✅ merged | #22 |
+| ws-path-letters | 2 | path, guidebook, letters, practice | 🔄 spawning ([spec](../ops/prompts/ws-path-letters.md)) | |
+| ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | 🔄 spawning ([spec](../ops/prompts/ws-pages.md)) | |
+| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; 🔄 Unit 1 media | |
+| ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | 🔄 spawning ([spec](../ops/prompts/ws-qa.md)) | |
+
+Post-merge follow-ups applied by the orchestrator: the lesson outbox now replays app-wide
+(`providers.tsx`), cached queries reset when the signed-in identity changes, `app_server` has lock,
+idle-in-transaction and statement timeouts (a backstop for the #23 pool deadlock), the API client
+takes query strings, and the contracts gained the `guidebook` route plus letter/word audio URLs.
 
 ## AI spend
 
-The OpenRouter **account** is the binding limit: $60 total credit, about $0.35 left when checked
-at 12:40 UTC (most of it was spent before this project). This project's key has used $2.78:
+This project's key has used **$3.77** of the internal **$9.50** cap (checked 15:30 UTC):
 
 - text pilot: $0.002;
-- art: $1.02 (style bible, Hodhod turnaround and expressions, Maman Bozorg);
-- text drafts: in progress.
+- text drafts, units 1–5 (Astra): $2.76;
+- art: $1.02 (style bible, Hodhod turnaround and expressions, Maman Bozorg).
 
-The key's own limit ($10) is not reachable until the account is topped up.
+The account itself was topped up (balance about $6.50; other usage on the account isn't this
+project's). The remaining ≈ $5.70 goes to Unit 1 media, in this order: audio, `select_image`
+illustrations, then the five remaining cast portraits.
 
 ## Human-review backlog (cannot be automated honestly)
 
@@ -51,6 +57,6 @@ The key's own limit ($10) is not reachable until the account is topped up.
 - A Rive animator for the character rigs (placeholders are SVG).
 - Legal review: trade dress; sanctions before contracting anyone in Iran.
 - Accounts for deployment: Supabase, Vercel, Stripe, email provider, Turnstile, domain.
-- **Top up the OpenRouter account.** About $5 finishes the 5 remaining cast portraits, Unit 1 illustrations and audio; Units 2–5 media need more.
+- **A larger AI budget** for Units 2–5 media (the $9.50 internal cap covers Unit 1 only).
 - Add `OPENROUTER_API_KEY_BUILD` / `OPENROUTER_API_KEY_APP` to the environment settings so the key survives this container.
 - GitHub Actions never assigns runners on this repository (billing or account setting), so CI is manual-only and `pnpm verify` is the gate.

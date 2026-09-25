@@ -1,5 +1,4 @@
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -21,19 +20,17 @@ import {
 } from '@zaboon/ai'
 import { loadCourse } from './load'
 import { generateArt, generateTts, readSidecar } from './media'
-import { repoRoot } from './paths'
 import { suggestVariants, type SuggestOutput } from './suggest'
 import { validateCourse } from './validate'
 import { setItemFields } from './yaml-out'
+import { seedCourseCopy } from './fixtures/seed-course'
 import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
 function seedCopy(): string {
   const root = mkdtempSync(join(tmpdir(), 'zaboon-authoring-'))
   dirs.push(root)
-  const dir = join(root, 'fa-en')
-  cpSync(join(repoRoot(), 'content/fa-en'), dir, { recursive: true })
-  return dir
+  return seedCourseCopy(join(root, 'fa-en'))
 }
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 

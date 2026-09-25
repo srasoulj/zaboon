@@ -43,6 +43,8 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    // A registered service worker would bypass page.route(); PWA specs opt back in per test.
+    serviceWorkers: 'block',
   },
   projects,
   webServer: {
