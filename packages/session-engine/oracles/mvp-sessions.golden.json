@@ -35,7 +35,7 @@
     ]
    }
   ],
-  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+  "challenges": 1141109667906732
  },
  {
   "scenario": "lesson u01-s0",
@@ -73,7 +73,7 @@
     ]
    }
   ],
-  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+  "challenges": 1141109667906732
  },
  {
   "scenario": "lesson u01-s0",
@@ -111,7 +111,7 @@
     ]
    }
   ],
-  "challenges": "40dd54c67c4ac65a09cdd74174b14a6e764f2139aaa45cc88f760b08f113227e"
+  "challenges": 1141109667906732
  },
  {
   "scenario": "lesson u01-l1",
@@ -185,7 +185,7 @@
     ]
    }
   ],
-  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+  "challenges": 2651261442005682
  },
  {
   "scenario": "lesson u01-l1",
@@ -259,7 +259,7 @@
     ]
    }
   ],
-  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+  "challenges": 2651261442005682
  },
  {
   "scenario": "lesson u01-l1",
@@ -333,7 +333,7 @@
     ]
    }
   ],
-  "challenges": "96b4ee8751ab2294b3fffe084ba00bbdd43aa5f50abdbbed483d3834c9479de3"
+  "challenges": 2651261442005682
  },
  {
   "scenario": "lesson u01-l2",
@@ -372,7 +372,7 @@
     ]
    }
   ],
-  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+  "challenges": 102552895313133
  },
  {
   "scenario": "lesson u01-l2",
@@ -411,7 +411,7 @@
     ]
    }
   ],
-  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+  "challenges": 102552895313133
  },
  {
   "scenario": "lesson u01-l2",
@@ -450,7 +450,7 @@
     ]
    }
   ],
-  "challenges": "05d4574e554ed7f7bebca9fdb0591214cc05a765f9d631bf523ad006126167a4"
+  "challenges": 102552895313133
  },
  {
   "scenario": "practice (fresh)",
@@ -526,7 +526,7 @@
     ]
    }
   ],
-  "challenges": "3d8605ed4f566ea5ce1e86cab7b6729b6236056c760d2e2bd7d07ddeeabbd669"
+  "challenges": 1082333349606758
  },
  {
   "scenario": "practice (fresh)",
@@ -603,7 +603,7 @@
     ]
    }
   ],
-  "challenges": "2ecbc41395167cf0ac7ce18f8d8e618a0c1eea217b24adba40462e6dbe6f346d"
+  "challenges": 823243245703527
  },
  {
   "scenario": "practice (fresh)",
@@ -679,7 +679,7 @@
     ]
    }
   ],
-  "challenges": "f88d927d2af44f7bb336e560318aa5e0afc630ce14aa18f22ac7f8fdd026501c"
+  "challenges": 4372590908059460
  },
  {
   "scenario": "practice (experienced)",
@@ -755,7 +755,7 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "34b0fe37f4041be689113ec97ecf63cebf0ae4654bc99d71268da11f6025f82c"
+  "challenges": 926956543492161
  },
  {
   "scenario": "practice (experienced)",
@@ -832,7 +832,7 @@
     "variant": 2
    }
   ],
-  "challenges": "dd36752fac5bd1de30e3f9d33d4280a1747f6e0a50308dcd002f5384c331bf46"
+  "challenges": 3891615424497085
  },
  {
   "scenario": "practice (experienced)",
@@ -909,7 +909,7 @@
     ]
    }
   ],
-  "challenges": "057f03dc2970c4f0900f499f2ebf8d9ba35921a9ea2b8be5b608e8521ff439e0"
+  "challenges": 96689339930380
  },
  {
   "scenario": "unit_review u01-r1 (fresh)",
@@ -1023,7 +1023,7 @@
     ]
    }
   ],
-  "challenges": "dd555c8a1a6f6a1cdba10e88ca578681e333172517b12c26c3df2e98b4be2b56"
+  "challenges": 3893739112212214
  },
  {
   "scenario": "unit_review u01-r1 (fresh)",
@@ -1137,7 +1137,7 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "c8d6e29671e48d21dc47e724f5fa47e9bbaab0b33000e2ddd9faa993646939df"
+  "challenges": 3533204001070664
  },
  {
   "scenario": "unit_review u01-r1 (fresh)",
@@ -1251,7 +1251,7 @@
     "variant": 4
    }
   ],
-  "challenges": "badb4d1cd0533eb72d7d2022e555818d384cbc0b7593a69704d8fa3a03df6567"
+  "challenges": 3287216869410099
  },
  {
   "scenario": "unit_review u01-r1 (experienced)",
@@ -1362,7 +1362,7 @@
     ]
    }
   ],
-  "challenges": "a5f6a43adc4fc57c339d3201b68e2993e457439453e6c070d6019fe0194b0481"
+  "challenges": 2919659773740284
  },
  {
   "scenario": "unit_review u01-r1 (experienced)",
@@ -1473,7 +1473,7 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "b65fb51b193e53b7d4638ca3d6a662a75d74e8511c0d2943a43042ac8f3eb23a"
+  "challenges": 3208354825606117
  },
  {
   "scenario": "unit_review u01-r1 (experienced)",
@@ -1583,7 +1583,7 @@
     ]
    }
   ],
-  "challenges": "2ccf4cd91f094cbd996ee6c7ffa9e649d08f6eae1a4effed1c9924095bb231f1"
+  "challenges": 788301746401428
  },
  {
   "scenario": "letters u01-letters-1",
@@ -1657,7 +1657,7 @@
     ]
    }
   ],
-  "challenges": "81f8ba3c7281d84a88d5cfe034d2260bc907a0830c1ab44c7c5813d22a4e3810"
+  "challenges": 2286484422338589
  },
  {
   "scenario": "letters u01-letters-1",
@@ -1730,7 +1730,7 @@
     "variant": 2
    }
   ],
-  "challenges": "d0806c126f142303bca9832a69970a3694c0b50b971e9e56425496d9f316d93b"
+  "challenges": 3667999800619330
  },
  {
   "scenario": "letters u01-letters-1",
@@ -1804,7 +1804,7 @@
     ]
    }
   ],
-  "challenges": "1105cf46dd9eb737836182f68f3309ece7d3109b7bfd12ffc4afd31aaee388ab"
+  "challenges": 299466400586219
  },
  {
   "scenario": "letters u01-letters-2 (experienced)",
@@ -1877,7 +1877,7 @@
     ]
    }
   ],
-  "challenges": "e26c3dc2d1a95ab25d8b7a85f9b8eee01e6997cdeb2b8b475d2d9ce169d0c09a"
+  "challenges": 3983272328370837
  },
  {
   "scenario": "letters u01-letters-2 (experienced)",
@@ -1951,7 +1951,7 @@
     ]
    }
   ],
-  "challenges": "11e4863707de5bf639f4720b19913dff96dbff6ec605af7221b6307ac319aed5"
+  "challenges": 314771231505893
  },
  {
   "scenario": "letters u01-letters-2 (experienced)",
@@ -2024,7 +2024,7 @@
     ]
    }
   ],
-  "challenges": "d6d11c429282f9a53ef03805c4f49b5fa42753a7bb43763d8e410f46378bfd8a"
+  "challenges": 3779097770141743
  },
  {
   "scenario": "letters (all known)",
@@ -2097,7 +2097,7 @@
     ]
    }
   ],
-  "challenges": "1a1590e7e560cc81339db1fc17d1c91a2e110075e2c4a3a7df9540d61a81c305"
+  "challenges": 458878844032524
  },
  {
   "scenario": "letters (all known)",
@@ -2169,7 +2169,7 @@
     ]
    }
   ],
-  "challenges": "3c8215435314769ab7b96ded1c6a2b80fed9410a12f150714c2ffd5d23c0e8e5"
+  "challenges": 1064470402380103
  },
  {
   "scenario": "letters (all known)",
@@ -2242,7 +2242,7 @@
     ]
    }
   ],
-  "challenges": "4d95689f07a6b9f686ec032717cd75a750a100f4d6edc16380c4183a6f508aa4"
+  "challenges": 1364865611496043
  },
  {
   "scenario": "generated intro lesson",
@@ -2333,7 +2333,7 @@
     ]
    }
   ],
-  "challenges": "a72a714af0b248eedfe3d28d68bec00979229c948507898517ff508c306eda4e"
+  "challenges": 2940811699227428
  },
  {
   "scenario": "generated intro lesson",
@@ -2424,7 +2424,7 @@
     ]
    }
   ],
-  "challenges": "7123d59e225916de78cb4d84af734feaa6f35b89b501921082f8e29aed6e3580"
+  "challenges": 1990379547272593
  },
  {
   "scenario": "generated intro lesson",
@@ -2515,7 +2515,7 @@
     ]
    }
   ],
-  "challenges": "390b3b56ceb1d046281db6cad2388c02b945f295bd48d759a2ac81e60715da35"
+  "challenges": 1003526447491869
  },
  {
   "scenario": "generated standard lesson #3",
@@ -2608,7 +2608,7 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "60e4936d1c80b4925149e4bfbb17667e7ac186a99a4f4d713c84d063305a754d"
+  "challenges": 1704557475383307
  },
  {
   "scenario": "generated standard lesson #3",
@@ -2702,7 +2702,7 @@
     ]
    }
   ],
-  "challenges": "ff705381b9a1ac1dd2f06fb365ec877b167040156ca3cc3a029c07e40fb36f1e"
+  "challenges": 4493726438890010
  },
  {
   "scenario": "generated standard lesson #3",
@@ -2796,7 +2796,7 @@
     ]
    }
   ],
-  "challenges": "20e78db7e076d8d75e0af52de803a44a2f4947ebd0f4e21790f2b1c488b08ad3"
+  "challenges": 578862194755437
  },
  {
   "scenario": "generated letters-mix lesson",
@@ -2883,7 +2883,7 @@
     "variant": 2
    }
   ],
-  "challenges": "93099ca03dd47aa2062b840db9c55e455a9c7f7b24649e968bd62f6f9b7f521a"
+  "challenges": 2586711867776327
  },
  {
   "scenario": "generated letters-mix lesson",
@@ -2970,7 +2970,7 @@
     "variant": 2
    }
   ],
-  "challenges": "6a5df0f5183fd259add7121cf7ddea01823be5c49b5306a710beca00172b71f1"
+  "challenges": 1871227313554429
  },
  {
   "scenario": "generated letters-mix lesson",
@@ -3056,7 +3056,7 @@
     "variant": 2
    }
   ],
-  "challenges": "d109c72f016c2c44ca81dd7f20a750f8724f3ff69a788ddcead5fb9610c003d3"
+  "challenges": 3677438826518210
  },
  {
   "scenario": "legendary",
@@ -3163,7 +3163,7 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "4ddd1b9158e66aec30549f250156d8906648f8ad276f1656b46128e16858e69c"
+  "challenges": 1369792729943654
  },
  {
   "scenario": "legendary",
@@ -3270,7 +3270,7 @@
     ]
    }
   ],
-  "challenges": "909294637cf248a144bb298c84b055103e7a2b698858e1ec094d30815ec20e5d"
+  "challenges": 2543347666767652
  },
  {
   "scenario": "legendary",
@@ -3375,7 +3375,7 @@
     ]
    }
   ],
-  "challenges": "bab72ad0d3ef239bb7c6a174936c33b2b5eb261a5b033228bd9b8d93e1d48edb"
+  "challenges": 3284733761765106
  },
  {
   "scenario": "jump_test",
@@ -3482,7 +3482,7 @@
     ]
    }
   ],
-  "challenges": "9142b7f1831453453a8ece8507851d345dac9c5100633bb9d166029f77747ea2"
+  "challenges": 2555451838837061
  },
  {
   "scenario": "jump_test",
@@ -3589,7 +3589,7 @@
     "direction": "en_fa"
    }
   ],
-  "challenges": "d2b2a6c07983a10f1a270396f8be48fe194ba2cbf831023590135410cf90d227"
+  "challenges": 3706635898296378
  },
  {
   "scenario": "jump_test",
@@ -3696,6 +3696,6 @@
     "direction": "fa_en"
    }
   ],
-  "challenges": "86c775fb31872b4f39e395d8b9b3339f68fe982953bec1cfd70d4e22bd835022"
+  "challenges": 2371059776166002
  }
 ]
