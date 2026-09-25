@@ -1,0 +1,16 @@
+# Environment files: never commit secrets (see .env.example for variable names)
+.env
+.env*.local
+
+# Dependencies and build output
+node_modules/
+.next/
+.turbo/
+dist/
+coverage/
+
+# content-cli caches (AI responses, TTS renders)
+.cache/
+
+# OS / editor
+.DS_Store
