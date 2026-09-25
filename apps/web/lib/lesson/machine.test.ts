@@ -177,6 +177,82 @@ describe('lesson machine: happy path', () => {
   })
 })
 
+describe('lesson machine: P2 complete screens (league change → quest progress)', () => {
+  const quest = {
+    id: 'lessons_1',
+    metric: 'lessons' as const,
+    title: 'Complete a lesson',
+    target: 1,
+    progress: 1,
+    completed: true,
+    reward: 10,
+    justCompleted: true,
+  }
+  const league = {
+    tier: 'mes' as const,
+    weeklyXp: 15,
+    rank: 2,
+    previousRank: null,
+    joinedNow: true,
+  }
+
+  async function finishWith(result: SessionResult) {
+    const h = run({ complete: async () => ({ status: 'delivered', result }) })
+    await ready(h.actor)
+    for (let i = 0; i < 3; i++) {
+      answerRight(h.actor)
+      h.actor.send({ type: 'CONTINUE' })
+    }
+    await waitFor(h.actor, (s) => s.matches({ complete: 'summary' }))
+    return h.actor
+  }
+  const walk = (actor: Actor): string[] => {
+    const seen: string[] = []
+    while (actor.getSnapshot().status !== 'done') {
+      actor.send({ type: 'CONTINUE' })
+      const v = actor.getSnapshot().value
+      seen.push(typeof v === 'object' && 'complete' in v ? String(v.complete) : 'done')
+    }
+    return seen
+  }
+
+  it('summary → streak → goal → league → quests → exit when the result carries them', async () => {
+    const actor = await finishWith(
+      testResult({ league, quests: [quest], coins: { earned: 10, total: 10 } }),
+    )
+    expect(actor.getSnapshot().context.summary).toMatchObject({
+      league,
+      quests: [quest],
+      coins: { earned: 10, total: 10 },
+    })
+    expect(walk(actor)).toEqual(['streak', 'goal', 'league', 'quests', 'done'])
+  })
+
+  it('shows the league only when the standing changed, and nothing new without the fields', async () => {
+    const same = { ...league, joinedNow: false, previousRank: 2 }
+    expect(walk(await finishWith(testResult({ league: same, quests: [quest] })))).toEqual([
+      'streak',
+      'goal',
+      'quests',
+      'done',
+    ])
+    const up = { ...league, joinedNow: false, previousRank: 5 }
+    expect(walk(await finishWith(testResult({ league: up })))).toEqual([
+      'streak',
+      'goal',
+      'league',
+      'done',
+    ])
+    const unplaced = { ...league, rank: null, joinedNow: false }
+    expect(walk(await finishWith(testResult({ league: unplaced, quests: [] })))).toEqual([
+      'streak',
+      'goal',
+      'done',
+    ])
+    expect(walk(await finishWith(testResult()))).toEqual(['streak', 'goal', 'done'])
+  })
+})
+
 describe('lesson machine: wrong answers, hearts and re-queue', () => {
   it('a wrong answer costs a heart, records an event and is re-queued at the end', async () => {
     const { actor, calls } = run()

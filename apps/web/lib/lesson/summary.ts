@@ -13,6 +13,10 @@ import {
 import { dailyGoalStep, sessionXp } from '@zaboon/game-rules'
 import { firstTryAccuracy, wrongAttempts, type Progress } from './progress'
 
+/** P2 additions (from SessionResult; absent while their flags are off, and offline). */
+export type LeagueChange = NonNullable<SessionResult['league']>
+export type QuestProgress = NonNullable<SessionResult['quests']>[number]
+
 export interface CompleteSummary {
   source: 'server' | 'local'
   xp: number
@@ -22,10 +26,28 @@ export interface CompleteSummary {
   durationMs: number
   streak: { days: number; extendedToday: boolean }
   dailyGoal: { xp: number; goal: number; justMet: boolean }
+  /** flags.leagues (linked accounts): the league standing after the lesson. */
+  league?: LeagueChange
+  /** flags.quests: the day's quests after the lesson. */
+  quests?: QuestProgress[]
+  /** flags.shop/quests: coins earned by the lesson and the balance after it. */
+  coins?: { earned: number; total: number }
+}
+
+/** The league screen shows when the lesson changed the learner's standing. */
+export function leagueChanged(league: LeagueChange | undefined): league is LeagueChange {
+  return (
+    league !== undefined &&
+    league.rank !== null &&
+    (league.joinedNow || league.rank !== league.previousRank)
+  )
 }
 
 export function summaryFromResult(result: SessionResult): CompleteSummary {
   return {
+    ...(result.league ? { league: result.league } : {}),
+    ...(result.quests ? { quests: result.quests } : {}),
+    ...(result.coins ? { coins: result.coins } : {}),
     source: 'server',
     xp: result.xp.total,
     perfect: result.perfect,

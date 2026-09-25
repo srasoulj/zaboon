@@ -10,6 +10,7 @@ import type { AuthClient } from '../../lib/auth-client'
 import { createSilentAudio } from '../../lib/lesson/audio'
 import { MemoryOutboxStore, MemorySnapshotStore } from '../../lib/lesson/stores'
 import type { CompleteSummary } from '../../lib/lesson/summary'
+import type { LessonRequest } from '../../lib/lesson/request'
 import { testChallenges, testResult, testSession, USER_ID } from '../../lib/lesson/test-support'
 import { DailyGoalScreen, StreakScreen, SummaryScreen } from './CompleteScreens'
 import { LessonFeedback, praiseFor } from './LessonFeedback'
@@ -264,6 +265,7 @@ function renderPlayer(
     resolve?: RendererResolver
     settings?: Partial<Pick<Settings, 'keyboardLayout'>>
     flags?: Record<string, boolean>
+    request?: LessonRequest
   } = {},
 ) {
   const calls: { name: string; opts: unknown }[] = []
@@ -305,7 +307,7 @@ function renderPlayer(
   const utils = render(
     wrap(
       <LessonPlayer
-        request={{ courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0' }}
+        request={opts.request ?? { courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0' }}
         userId={USER_ID}
         settings={{ sound: false, transliteration: 'auto', vowelMarks: 'auto', ...opts.settings }}
         {...(opts.flags ? { flags: opts.flags } : {})}
@@ -415,6 +417,73 @@ describe('LessonPlayer', () => {
     await screen.findByTestId('complete-goal')
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     await waitFor(() => expect(onExit).toHaveBeenCalledWith('/learn'))
+  })
+
+  it('P2: league change → quest progress after the goal, and the P2 queries refetch', async () => {
+    const quest = {
+      id: 'lessons_1',
+      metric: 'lessons' as const,
+      title: 'Complete a lesson',
+      target: 1,
+      progress: 1,
+      completed: true,
+      reward: 10,
+      justCompleted: true,
+    }
+    const result = testResult({
+      league: { tier: 'noqreh', weeklyXp: 15, rank: 3, previousRank: null, joinedNow: true },
+      quests: [quest],
+      coins: { earned: 10, total: 110 },
+    })
+    const { onExit, queryClient } = renderPlayer({ api: { completeSession: () => result } })
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    await screen.findByTestId('test-renderer')
+    for (let i = 0; i < 3; i++) {
+      await waitFor(() =>
+        expect(screen.getByTestId('test-renderer')).toHaveAttribute('data-phase', 'answering'),
+      )
+      fireEvent.click(screen.getByTestId('test-answer-correct'))
+      fireEvent.keyDown(document.body, { key: 'Enter' })
+      await screen.findByTestId('lesson-feedback')
+      fireEvent.keyDown(document.body, { key: 'Enter' })
+    }
+    await screen.findByTestId('complete-summary')
+    for (const key of ['leaderboard', 'quests', 'shop', 'practice'])
+      await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: [key] }))
+    for (const id of ['complete-streak', 'complete-goal']) {
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+      await screen.findByTestId(id)
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    const league = await screen.findByTestId('complete-league')
+    expect(league).toHaveTextContent('You joined a league!')
+    expect(league).toHaveTextContent('Noqreh League')
+    expect(league).toHaveTextContent("You're #3 this week with 15 XP.")
+    const fa = league.querySelector('[lang="fa"]')!
+    expect(fa).toHaveAttribute('dir', 'rtl')
+    expect(fa.textContent).toBe('نقره')
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    const quests = await screen.findByTestId('complete-quests')
+    expect(quests).toHaveTextContent('Quest complete!')
+    expect(screen.getByTestId('quests-coins')).toHaveTextContent('+10 coins')
+    expect(screen.getByRole('progressbar', { name: 'Complete a lesson' })).toHaveAttribute(
+      'aria-valuenow',
+      '1',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    await waitFor(() => expect(onExit).toHaveBeenCalledWith('/learn'))
+  })
+
+  it('a practice hub mode reaches createSession', async () => {
+    const { calls } = renderPlayer({
+      request: { courseId: 'fixture', kind: 'practice', levelId: null, mode: 'listening' },
+      session: { ...testSession(), kind: 'practice', levelId: null },
+    })
+    await screen.findByTestId('test-renderer')
+    expect(calls[0]).toMatchObject({
+      name: 'createSession',
+      opts: { body: { courseId: 'fixture', kind: 'practice', mode: 'listening' } },
+    })
   })
 
   it('a wrong answer costs a heart, sends the event and re-queues the challenge', async () => {

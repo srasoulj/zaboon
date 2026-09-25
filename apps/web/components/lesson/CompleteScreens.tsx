@@ -7,7 +7,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import clsx from 'clsx'
 import { Button3D, Character, ConfettiBurst, Icon, usePrefersReducedMotion } from '@zaboon/ui'
-import { formatDuration, type CompleteSummary } from '../../lib/lesson/summary'
+import { QuestList, TierName } from '../engagement/shared'
+import {
+  formatDuration,
+  type CompleteSummary,
+  type LeagueChange,
+  type QuestProgress,
+} from '../../lib/lesson/summary'
 
 /** Counts from 0 to `target` over `duration` ms (instantly under reduced motion). */
 export function useCountUp(target: number, duration = 900): number {
@@ -200,6 +206,71 @@ export function DailyGoalScreen({
       <p className="text-stone" data-testid="goal-progress">
         {`${xp} / ${goal} XP today`}
       </p>
+    </Screen>
+  )
+}
+
+/** P2 (flags.leagues): the lesson placed the learner in this week's cohort or moved their rank. */
+export function LeagueChangeScreen({
+  league,
+  onContinue,
+}: {
+  league: LeagueChange
+  onContinue: () => void
+}) {
+  const rose =
+    league.previousRank !== null && league.rank !== null && league.rank < league.previousRank
+  return (
+    <Screen onContinue={onContinue} testId="complete-league">
+      <Icon name="trophy" size={110} className="text-zaferan-500" />
+      <h1 className="text-[28px] font-extrabold" data-testid="league-change-title">
+        {league.joinedNow ? 'You joined a league!' : rose ? 'You moved up!' : 'League update'}
+      </h1>
+      <p className="text-[20px] font-extrabold">
+        <TierName tier={league.tier} />
+      </p>
+      <p className="text-stone font-bold" data-testid="league-change-rank" data-rank={league.rank}>
+        {`You're #${league.rank} this week with ${league.weeklyXp} XP.`}
+      </p>
+    </Screen>
+  )
+}
+
+/** P2 (flags.quests): the day's quests after the lesson, with the ones it completed. */
+export function QuestProgressScreen({
+  quests,
+  coins,
+  onContinue,
+}: {
+  quests: readonly QuestProgress[]
+  coins?: { earned: number; total: number } | undefined
+  onContinue: () => void
+}) {
+  const just = quests.filter((q) => q.justCompleted)
+  return (
+    <Screen onContinue={onContinue} testId="complete-quests">
+      {just.length > 0 && <ConfettiBurst fireKey={4} />}
+      <Icon name="chest" size={96} className="text-zaferan-500" />
+      <h1 className="text-[28px] font-extrabold">
+        {just.length === 0
+          ? 'Daily quests'
+          : just.length === 1
+            ? 'Quest complete!'
+            : `${just.length} quests complete!`}
+      </h1>
+      <div className="w-full max-w-[420px] text-start">
+        <QuestList quests={quests} highlight={new Set(just.map((q) => q.id))} />
+      </div>
+      {coins && coins.earned > 0 && (
+        <p
+          className="flex items-center gap-2 text-[20px] font-extrabold text-lajvard-500 dark:text-ink"
+          data-testid="quests-coins"
+          data-value={coins.earned}
+        >
+          <Icon name="coin" size={28} className="text-lajvard-500" />
+          {`+${coins.earned} coins`}
+        </p>
+      )}
     </Screen>
   )
 }

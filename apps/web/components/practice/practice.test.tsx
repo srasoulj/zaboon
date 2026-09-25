@@ -80,3 +80,48 @@ describe('PracticeHub', () => {
     expect(await screen.findByTestId('words-empty')).toHaveTextContent(/no words yet/i)
   })
 })
+
+describe('PracticeHub with the practice hub flag (P2)', () => {
+  const PRACTICE = {
+    courseId: 'fixture',
+    modes: [
+      { mode: 'mixed' as const, available: true, count: 4 },
+      { mode: 'mistakes' as const, available: true, count: 2 },
+      { mode: 'listening' as const, available: true, count: null },
+      { mode: 'typing' as const, available: false, count: null },
+    ],
+  }
+
+  it('flag off: the MVP page (START, no practice request)', async () => {
+    const { calls } = renderWithServices(<PracticeHub />, {
+      handlers: { home: () => testHome('fixture'), words: () => WORDS },
+    })
+    expect(await screen.findByTestId('practice-start')).toBeInTheDocument()
+    expect(screen.queryByTestId('practice-hub')).toBeNull()
+    expect(calls.map((c) => c.name)).not.toContain('practice')
+  })
+
+  it('flag on: mode cards open practice sessions with their mode; unavailable ones are not links', async () => {
+    renderWithServices(<PracticeHub />, {
+      handlers: {
+        home: () => ({ ...testHome('fixture'), flags: { practiceHub: true } }),
+        words: () => WORDS,
+        practice: () => PRACTICE,
+      },
+    })
+    await screen.findByTestId('practice-hub')
+    const cards = await screen.findAllByTestId('practice-mode')
+    expect(cards.map((c) => c.dataset.mode)).toEqual(['mixed', 'mistakes', 'listening', 'typing'])
+    expect(within(cards[0]!).getByRole('link')).toHaveAttribute(
+      'href',
+      '/lesson?course=fixture&kind=practice&mode=mixed',
+    )
+    expect(within(cards[1]!).getByRole('link')).toHaveTextContent('2 to review')
+    expect(within(cards[3]!).queryByRole('link')).toBeNull()
+    expect(cards[3]).toHaveTextContent('Not available yet')
+    expect(screen.queryByTestId('practice-start')).toBeNull()
+    expect(screen.getAllByRole('heading', { name: /^practice$/i })).toHaveLength(1)
+    // The word list stays.
+    expect(await screen.findByTestId('words-list')).toBeInTheDocument()
+  })
+})

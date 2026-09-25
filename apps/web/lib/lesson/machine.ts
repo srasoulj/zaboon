@@ -4,7 +4,9 @@
  *   loading ──► preloading ──► playing ─────────────────────────────► completing ──► complete
  *   (create or    (all session   ├ answering ⇄ checking ► feedback ┤   (outbox)       ├ summary
  *    resume)       audio)        └ (history) ◄── quitConfirm        │                  ├ streak
- *                                            outOfHearts ◄──────────┘                  └ goal
+ *                                            outOfHearts ◄──────────┘                  ├ goal
+ *                                                                     (P2, when present) ├ league
+ *                                                                                        └ quests
  *   expired (session gone) · error (load/complete failed) · exited (final: leave the player)
  *
  * Side effects are named actions/actors that the player provides (`machine.provide`): creating or
@@ -40,7 +42,13 @@ import {
 } from './progress'
 import { requestKey, type LessonRequest } from './request'
 import type { LessonSnapshot } from './stores'
-import { localSummary, summaryFromResult, type CompleteSummary, type HomeBefore } from './summary'
+import {
+  leagueChanged,
+  localSummary,
+  summaryFromResult,
+  type CompleteSummary,
+  type HomeBefore,
+} from './summary'
 
 // ------------------------------------------------------------------------------------------- types
 export interface LessonMachineInput {
@@ -234,6 +242,9 @@ export const lessonMachine = setup({
       outOfHearts(context.session.kind, context.hearts),
     showStreak: ({ context }) => context.summary?.streak.extendedToday === true,
     showGoal: ({ context }) => context.summary?.dailyGoal.justMet === true,
+    // P2 screens, only when the server's result carries them (flags on, online).
+    showLeague: ({ context }) => leagueChanged(context.summary?.league),
+    showQuests: ({ context }) => (context.summary?.quests?.length ?? 0) > 0,
   },
 }).createMachine({
   id: 'lesson',
@@ -522,6 +533,8 @@ export const lessonMachine = setup({
             CONTINUE: [
               { guard: 'showStreak', target: 'streak' },
               { guard: 'showGoal', target: 'goal' },
+              { guard: 'showLeague', target: 'league' },
+              { guard: 'showQuests', target: 'quests' },
               { target: '#lesson.exited', actions: assign({ exit: 'home' }) },
             ],
           },
@@ -531,11 +544,31 @@ export const lessonMachine = setup({
           on: {
             CONTINUE: [
               { guard: 'showGoal', target: 'goal' },
+              { guard: 'showLeague', target: 'league' },
+              { guard: 'showQuests', target: 'quests' },
               { target: '#lesson.exited', actions: assign({ exit: 'home' }) },
             ],
           },
         },
         goal: {
+          on: {
+            CONTINUE: [
+              { guard: 'showLeague', target: 'league' },
+              { guard: 'showQuests', target: 'quests' },
+              { target: '#lesson.exited', actions: assign({ exit: 'home' }) },
+            ],
+          },
+        },
+        // P2: league change → quest progress (DESIGN-SYSTEM §2.3).
+        league: {
+          on: {
+            CONTINUE: [
+              { guard: 'showQuests', target: 'quests' },
+              { target: '#lesson.exited', actions: assign({ exit: 'home' }) },
+            ],
+          },
+        },
+        quests: {
           on: { CONTINUE: { target: '#lesson.exited', actions: assign({ exit: 'home' }) } },
         },
       },

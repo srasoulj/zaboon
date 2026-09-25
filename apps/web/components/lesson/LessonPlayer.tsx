@@ -31,7 +31,13 @@ import {
 import { progressValue } from '../../lib/lesson/progress'
 import { exitHref, lessonHref, requestKey, type LessonRequest } from '../../lib/lesson/request'
 import type { HomeBefore } from '../../lib/lesson/summary'
-import { DailyGoalScreen, StreakScreen, SummaryScreen } from './CompleteScreens'
+import {
+  DailyGoalScreen,
+  LeagueChangeScreen,
+  QuestProgressScreen,
+  StreakScreen,
+  SummaryScreen,
+} from './CompleteScreens'
 import { OutOfHeartsModal, QuitDialog } from './Dialogs'
 import { LessonFeedback } from './LessonFeedback'
 import { LessonFooter } from './LessonFooter'
@@ -165,6 +171,7 @@ export function LessonPlayer({
                 courseId: input.request.courseId,
                 kind: input.request.kind,
                 ...(input.request.levelId !== null ? { levelId: input.request.levelId } : {}),
+                ...(input.request.mode !== undefined ? { mode: input.request.mode } : {}),
                 tz: browserTimeZone(),
               },
             }),
@@ -219,6 +226,11 @@ export function LessonPlayer({
         queryClient.invalidateQueries({ queryKey: queryKeys.path }),
         queryClient.invalidateQueries({ queryKey: queryKeys.letters }),
         queryClient.invalidateQueries({ queryKey: queryKeys.words }),
+        // P2: a lesson moves weekly XP, quest progress and coins (no-ops while nothing is cached).
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.quests }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.shop }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.practice }),
       ]),
     [queryClient],
   )
@@ -345,6 +357,16 @@ export function LessonPlayer({
     const next = () => send({ type: 'CONTINUE' })
     if (state.matches({ complete: 'streak' }))
       return <StreakScreen days={ctx.summary.streak.days} onContinue={next} />
+    if (state.matches({ complete: 'league' }) && ctx.summary.league)
+      return <LeagueChangeScreen league={ctx.summary.league} onContinue={next} />
+    if (state.matches({ complete: 'quests' }) && ctx.summary.quests)
+      return (
+        <QuestProgressScreen
+          quests={ctx.summary.quests}
+          coins={ctx.summary.coins}
+          onContinue={next}
+        />
+      )
     if (state.matches({ complete: 'goal' }))
       return (
         <DailyGoalScreen
