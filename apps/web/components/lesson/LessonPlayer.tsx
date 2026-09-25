@@ -77,16 +77,20 @@ const creating = createInFlight<CreateSessionResponse>()
 const INTERACTIVE =
   'button, a[href], input, textarea, select, [role="button"], [contenteditable="true"]'
 
+/** A selected choice or match card (the kit's ChoiceCard). Other pressed buttons, like placed
+ * build_word tiles, are not choices: Enter on them keeps its own meaning (remove the letter). */
+const SELECTED_CHOICE = '.zb-choice[aria-pressed="true"]'
+
 /**
  * True when Enter on this element should be left to the element itself. One exception: while CHECK
- * is possible (`canCheck`: answering with a draft), Enter on an already-selected choice
- * (`aria-pressed="true"`, e.g. a card Chrome focused when it was clicked) means CHECK, not "select
- * it again". Without a draft it stays native: in match_pairs `aria-pressed` marks half of a pair
- * (there is no draft until every pair is matched), and Enter must deselect that card.
+ * is possible (`canCheck`: answering with a draft), Enter on an already-selected choice card (e.g.
+ * one Chrome focused when it was clicked) means CHECK, not "select it again". Without a draft it
+ * stays native: in match_pairs a selected card is half of a pair (no draft until every pair is
+ * matched), and Enter must deselect it.
  */
 export function isInteractive(target: EventTarget | null, canCheck = false): boolean {
   if (!(target instanceof HTMLElement)) return false
-  if (canCheck && target.closest('[aria-pressed="true"]')) return false
+  if (canCheck && target.closest(SELECTED_CHOICE)) return false
   return target.isContentEditable || target.closest(INTERACTIVE) !== null
 }
 

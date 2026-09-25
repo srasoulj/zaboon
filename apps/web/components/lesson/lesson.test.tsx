@@ -7,7 +7,6 @@ import type { ApiClient } from '../../lib/api-client'
 import { AppServicesProvider } from '../../lib/app-services'
 import type { AuthClient } from '../../lib/auth-client'
 import { createSilentAudio } from '../../lib/lesson/audio'
-import { Outbox } from '../../lib/lesson/outbox'
 import { MemoryOutboxStore, MemorySnapshotStore } from '../../lib/lesson/stores'
 import type { CompleteSummary } from '../../lib/lesson/summary'
 import { testChallenges, testResult, testSession, USER_ID } from '../../lib/lesson/test-support'
@@ -16,9 +15,8 @@ import { LessonFeedback, praiseFor } from './LessonFeedback'
 import { LessonFooter } from './LessonFooter'
 import { LessonPlayer } from './LessonPlayer'
 import { answerText, ReportSheet, reportItemRef } from './ReportSheet'
-import { MAX_ATTEMPTS } from '../../lib/lesson/outbox'
+import { MAX_ATTEMPTS, Outbox, type OutboxSender } from '../../lib/lesson/outbox'
 import {
-  apiSender,
   LessonServicesProvider,
   OutboxReplayer,
   outboxUser,
@@ -250,6 +248,14 @@ describe('test renderer responses', () => {
 })
 
 // ------------------------------------------------------------------------------------ the player
+/** A sender that uses the fake api as is (the player tests don't exercise identity). */
+function apiSender(api: ApiClient): OutboxSender {
+  return {
+    event: (id, body) => api('sessionEvent', { params: { id }, body }),
+    complete: (id, body) => api('completeSession', { params: { id }, body }),
+  }
+}
+
 function renderPlayer(
   opts: {
     api?: Partial<Record<string, (o: unknown) => unknown>>
@@ -460,21 +466,15 @@ describe('LessonPlayer', () => {
 })
 
 /** The replayer needs the auth client (the outbox's sender reads { userId, token } from it). */
-const withAuth = (api: ApiClient, node: ReactNode, userId?: string) => (
-  <AppServicesProvider
-    api={api}
-    auth={
-      {
-        // Signed in as whoever the replayer sends for (or `userId` when given).
-        getSession: async () => {
-          const u = userId ?? outboxUser()
-          return u
-            ? { accessToken: 't', expiresAt: 0, userId: u, isAnonymous: true, email: null }
-            : null
-        },
-      } as unknown as AuthClient
-    }
-  >
+/** Signed in as whoever the replayer sends for (one stable fake auth client). */
+const fakeAuth = {
+  getSession: async () => {
+    const u = outboxUser()
+    return u ? { accessToken: 't', expiresAt: 0, userId: u, isAnonymous: true, email: null } : null
+  },
+} as unknown as AuthClient
+const withAuth = (api: ApiClient, node: ReactNode) => (
+  <AppServicesProvider api={api} auth={fakeAuth}>
     {node}
   </AppServicesProvider>
 )
@@ -579,6 +579,7 @@ describe('Enter on an already-selected choice', () => {
     await screen.findByTestId('test-renderer')
     fireEvent.click(screen.getByTestId('test-answer-correct'))
     const card = document.createElement('button')
+    card.className = 'card-3d zb-choice' // a ChoiceCard
     card.setAttribute('aria-pressed', 'true')
     screen.getByTestId('test-renderer').appendChild(card)
     card.focus()
@@ -592,6 +593,7 @@ describe('Enter on an already-selected choice', () => {
     await screen.findByTestId('test-renderer')
     fireEvent.click(screen.getByTestId('test-answer-correct'))
     const card = document.createElement('button')
+    card.className = 'card-3d zb-choice' // a ChoiceCard
     card.setAttribute('aria-pressed', 'false')
     screen.getByTestId('test-renderer').appendChild(card)
     card.focus()
@@ -630,5 +632,24 @@ describe('Enter with the real renderers (ws-renderers)', () => {
     expect(card).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByTestId('lesson-feedback')).toBeNull()
     expect(screen.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'locked')
+  })
+})
+
+describe('Enter on a placed build_word tile', () => {
+  it('removes the letter (native), with no CHECK and no heart lost', async () => {
+    const challenge = { ...fixture('build_word'), index: 0 }
+    renderPlayer({ session: testSession({ challenges: [challenge] }), resolve: rendererFor })
+    const letters = await screen.findByRole('group', { name: 'Letters' })
+    const tile = within(letters).getAllByRole('button')[0]!
+    fireEvent.click(tile) // one letter placed: the renderer reports a (partial) draft
+    expect(tile).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByTestId('lesson-check')).toHaveAttribute('data-variant', 'primary')
+    tile.focus()
+    const notPrevented = fireEvent.keyDown(tile, { key: 'Enter' })
+    expect(notPrevented).toBe(true) // left to the tile
+    fireEvent.click(tile) // the browser's native Enter activation
+    expect(tile).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
   })
 })

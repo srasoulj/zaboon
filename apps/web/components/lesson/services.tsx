@@ -13,7 +13,7 @@ import type { AuthClient } from '../../lib/auth-client'
 import type { ChallengeRenderer } from '../../lib/challenge-registry'
 import type { LessonAudio } from '../../lib/lesson/audio'
 import { openLessonStores } from '../../lib/lesson/idb'
-import { Outbox, type OutboxSender } from '../../lib/lesson/outbox'
+import { Outbox } from '../../lib/lesson/outbox'
 import { identitySender } from '../../lib/lesson/sender'
 import type { SnapshotStore } from '../../lib/lesson/stores'
 
@@ -47,26 +47,15 @@ export function useLessonServices(): LessonServices {
 }
 
 // --------------------------------------------------------------------------- shared browser outbox
-/** A sender that always uses `api`'s own token (tests; the app uses identitySender). */
-export function apiSender(api: ApiClient): OutboxSender {
-  return {
-    event: (id, body) => api('sessionEvent', { params: { id }, body }),
-    complete: (id, body) => api('completeSession', { params: { id }, body }),
-  }
-}
-
 /**
- * Who the outbox sends for: the user of the most recently mounted replayer that is still mounted
- * (the app shell and the lesson page both mount one). Null when none is mounted.
+ * The mounted replayers (the app shell and the lesson page both mount one), most recent last. The
+ * outbox sends for the most recent one's user, and its sender reads `{ userId, token }` from that
+ * replayer's auth client at send time. Each replayer removes itself on unmount, so no stale user or
+ * auth lingers; with none mounted, nothing is sent.
  */
-const mountedUsers: string[] = []
-export const outboxUser = (): string | null => mountedUsers.at(-1) ?? null
-
-/**
- * The auth client the outbox's sender reads `{ userId, token }` from at send time (registered by the
- * mounted replayers). Without it the sender falls back to the app's API client.
- */
-let outboxAuth: Pick<AuthClient, 'getSession'> | null = null
+const mounted: { userId: string; auth: Pick<AuthClient, 'getSession'> }[] = []
+export const outboxUser = (): string | null => mounted.at(-1)?.userId ?? null
+const outboxAuth = (): Pick<AuthClient, 'getSession'> | null => mounted.at(-1)?.auth ?? null
 
 let shared: Promise<{ snapshots: SnapshotStore; outbox: Outbox }> | null = null
 let sharedApi: ApiClient | null = null
@@ -82,8 +71,7 @@ export function sharedLessonStores(
       outbox: new Outbox({
         store: outbox,
         send: identitySender({
-          auth: () => outboxAuth,
-          api,
+          auth: outboxAuth,
           clientFor: (token) => createApiClient({ getAccessToken: async () => token }),
         }),
         currentUserId: outboxUser,
@@ -116,18 +104,13 @@ const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 3_600_000
  * online, and with backoff after failures (inside Outbox). Returns true once one of THIS user's
  * entries gave up (dead-lettered), for a quiet notice; a new user starts without it.
  */
-export function useOutboxReplay(
-  api: ApiClient,
-  userId: string | null,
-  auth?: Pick<AuthClient, 'getSession'>,
-): boolean {
+export function useOutboxReplay(api: ApiClient, userId: string | null): boolean {
+  const auth = useAuth()
   const [gaveUpFor, setGaveUpFor] = useState<string | null>(null)
   useEffect(() => {
-    if (auth) outboxAuth = auth
-  }, [auth])
-  useEffect(() => {
     if (!userId) return
-    mountedUsers.push(userId)
+    const me = { userId, auth }
+    mounted.push(me)
     let alive = true
     let outbox: Outbox | null = null
     let unsubscribe = () => {}
@@ -147,17 +130,16 @@ export function useOutboxReplay(
       alive = false
       unsubscribe()
       window.removeEventListener('online', flush)
-      const i = mountedUsers.lastIndexOf(userId)
-      if (i >= 0) mountedUsers.splice(i, 1)
+      const i = mounted.lastIndexOf(me)
+      if (i >= 0) mounted.splice(i, 1)
     }
-  }, [api, userId])
+  }, [api, userId, auth])
   return userId !== null && gaveUpFor === userId
 }
 
 /** Drop-in component form of useOutboxReplay, with a quiet notice when a write gave up. */
 export function OutboxReplayer({ api, userId }: { api: ApiClient; userId: string | null }) {
-  const auth = useAuth()
-  const gaveUp = useOutboxReplay(api, userId, auth)
+  const gaveUp = useOutboxReplay(api, userId)
   // Dismissal is per user: another user's notice starts undismissed.
   const [dismissedFor, setDismissedFor] = useState<string | null>(null)
   if (!gaveUp || dismissedFor === userId) return null

@@ -456,8 +456,7 @@ describe('identitySender: token and user read together', () => {
         if (name === 'sessionEvent') return { lives: lives(4), duplicate: false }
         return testResult()
       }) as unknown as ApiClient
-    const fallback = vi.fn() as unknown as ApiClient
-    const sender = identitySender({ auth: () => auth, api: fallback, clientFor })
+    const sender = identitySender({ auth: () => auth, clientFor })
     return {
       sender,
       tokens,
@@ -501,17 +500,22 @@ describe('identitySender: token and user read together', () => {
     const h = harness(USER_ID)
     const store = new MemoryOutboxStore()
     let reactUser: string | null = USER_ID // React hasn't re-rendered yet: still says USER_ID
+    const timers: number[] = []
     const outbox = new Outbox({
       store,
       send: h.sender,
       currentUserId: () => reactUser,
-      schedule: () => () => {},
+      schedule: (_fn, ms) => {
+        timers.push(ms)
+        return () => {}
+      },
     })
     await outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
     await outbox.enqueueComplete(USER_ID, SESSION_ID, COMPLETE_BODY)
     h.signIn(OTHER_USER) // sign-out + new guest, before React knows
     const report = await outbox.flush()
-    expect(report).toMatchObject({ delivered: 0, dropped: 0, dead: 0, remaining: 2 })
+    expect(report).toEqual({ delivered: 0, dropped: 0, dead: 0, remaining: 2, stalled: false })
+    expect(timers).toEqual([]) // blocked is not a failure: no backoff retry
     expect(h.tokens).toEqual([])
     expect([...store.rows.values()].map((e) => e.attempts)).toEqual([0, 0])
 
@@ -525,10 +529,21 @@ describe('identitySender: token and user read together', () => {
     expect(classify(new IdentityMismatchError())).toBe('blocked')
   })
 
-  it('without an auth client it falls back to the app API client', async () => {
-    const api = vi.fn(async () => ({ lives: lives(4), duplicate: false })) as unknown as ApiClient
-    const sender = identitySender({ auth: () => null, api, clientFor: () => api })
-    await sender.event(SESSION_ID, ev(0), USER_ID)
-    expect(api).toHaveBeenCalledWith('sessionEvent', { params: { id: SESSION_ID }, body: ev(0) })
+  it('without an auth client nothing is sent: the entry is blocked, never sent with an unknown token', async () => {
+    const clientFor = vi.fn()
+    const sender = identitySender({ auth: () => null, clientFor })
+    await expect(sender.event(SESSION_ID, ev(0), USER_ID)).rejects.toBeInstanceOf(
+      IdentityMismatchError,
+    )
+    expect(clientFor).not.toHaveBeenCalled()
+    const store = new MemoryOutboxStore()
+    const outbox = new Outbox({ store, send: sender, currentUserId: () => USER_ID })
+    await outbox.enqueueEvent(USER_ID, SESSION_ID, ev(0))
+    expect(await outbox.flush()).toMatchObject({
+      delivered: 0,
+      dropped: 0,
+      remaining: 1,
+      stalled: false,
+    })
   })
 })
