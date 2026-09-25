@@ -92,6 +92,44 @@ describe('mergeGuestIntoMember', () => {
     expect(await withUser(ctx.h.db, member, (tx) => progress.getXpTotal(tx, member))).toBe(37)
   })
 
+  it('keeps wallet and coin ledger consistent when both claimed the same reward', async () => {
+    const guest = await ctx.newUser()
+    const member = await ctx.newUser({ anonymous: false })
+    // Both claimed today's quest (same reason + ref); the guest also earned a bonus and spent some.
+    await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES
+      (${guest}, 5, 'quest', '2026-09-25:earn_xp'), (${guest}, 3, 'bonus', 'b1'), (${guest}, -2, 'refill', 'r1'),
+      (${member}, 5, 'quest', '2026-09-25:earn_xp')`
+    await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 6), (${member}, 5)`
+
+    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+
+    const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
+    const [l] = await ctx.admin`SELECT sum(amount)::int AS total, count(*)::int AS n FROM public.coin_ledger WHERE user_id = ${member}`
+    // 5 (member's quest) + 3 (bonus) - 2 (refill); the guest's duplicate quest reward is not counted twice.
+    expect(w!.coins).toBe(6)
+    expect(l).toEqual({ total: 6, n: 3 })
+  })
+
+  it('creates the member wallet from the copied ledger and never goes negative', async () => {
+    const guest = await ctx.newUser()
+    const member = await ctx.newUser({ anonymous: false })
+    await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES
+      (${guest}, 4, 'quest', 'q1'), (${guest}, -4, 'refill', 'r1'), (${member}, 4, 'quest', 'q1')`
+    await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 0)`
+    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    // Member had no wallet row; the copied delta is -4, clamped at zero.
+    const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
+    expect(w!.coins).toBe(0)
+
+    const g2 = await ctx.newUser()
+    const m2 = await ctx.newUser({ anonymous: false })
+    await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES (${g2}, 7, 'signup', NULL)`
+    await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${g2}, 7)`
+    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: g2, memberId: m2 }))
+    const [w2] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${m2}`
+    expect(w2!.coins).toBe(7)
+  })
+
   it('works when the member has no rows yet', async () => {
     const guest = await ctx.newUser()
     const member = await ctx.newUser({ anonymous: false })
