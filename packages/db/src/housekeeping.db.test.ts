@@ -139,8 +139,9 @@ describe('internal.prune_rate_limits / prune_webhook_events', () => {
 })
 
 describe('pg_cron schedules', () => {
-  it('are registered in the database that hosts pg_cron', async () => {
-    // Test clones don't host pg_cron; the migrated main database does (cron.database_name).
+  // scripts/db-local.sh always installs pg_cron and points cron.database_name at the main database,
+  // mirroring Supabase, so the jobs must exist there. (Per-test clones can't host pg_cron.)
+  it('are installed and registered in the cron database, owned by the migration role', async () => {
     const main = postgres({
       host: '127.0.0.1',
       port: Number(process.env.ZABOON_DB_PORT ?? 54322),
@@ -150,15 +151,21 @@ describe('pg_cron schedules', () => {
       onnotice: () => {},
     })
     try {
-      const [ext] = await main`SELECT count(*)::int AS n FROM pg_extension WHERE extname = 'pg_cron'`
-      if (ext!.n === 0) return // pg_cron unavailable in this environment: the guarded block is skipped
-      const jobs = await main`SELECT jobname, command FROM cron.job WHERE jobname LIKE 'zaboon-%' ORDER BY jobname`
-      expect(jobs.map((j) => j.jobname)).toEqual([
-        'zaboon-expire-stale-sessions',
-        'zaboon-prune-rate-limits',
-        'zaboon-prune-session-answers',
-        'zaboon-prune-webhook-events',
-        'zaboon-rollup-item-stats',
+      const [cfg] = await main`
+        SELECT current_setting('cron.database_name', true) AS cron_db,
+               current_database() AS db,
+               EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron') AS available,
+               EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') AS installed`
+      expect(cfg).toEqual({ cron_db: cfg!.db, db: cfg!.db, available: true, installed: true })
+      const jobs = await main`
+        SELECT jobname, schedule, command, username, active FROM cron.job
+        WHERE jobname LIKE 'zaboon-%' ORDER BY jobname`
+      expect(jobs.map((j) => ({ ...j }))).toEqual([
+        { jobname: 'zaboon-expire-stale-sessions', schedule: '*/15 * * * *', command: 'SELECT internal.expire_stale_sessions()', username: 'postgres', active: true },
+        { jobname: 'zaboon-prune-rate-limits', schedule: '20 * * * *', command: 'SELECT internal.prune_rate_limits()', username: 'postgres', active: true },
+        { jobname: 'zaboon-prune-session-answers', schedule: '40 3 * * *', command: 'SELECT internal.prune_session_answers()', username: 'postgres', active: true },
+        { jobname: 'zaboon-prune-webhook-events', schedule: '50 3 * * *', command: 'SELECT internal.prune_webhook_events()', username: 'postgres', active: true },
+        { jobname: 'zaboon-rollup-item-stats', schedule: '10 3 * * *', command: 'SELECT internal.rollup_item_stats()', username: 'postgres', active: true },
       ])
     } finally {
       await main.end()

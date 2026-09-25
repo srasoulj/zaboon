@@ -166,10 +166,12 @@ export async function addDailyActivity(
 
 /** Records that streak freezes covered these (missed) days. */
 export async function markFreezeUsed(tx: Tx, userId: string, localDates: readonly string[]): Promise<void> {
-  if (localDates.length === 0) return
+  // De-duplicated: one upsert touching the same row twice would fail (21000) and abort the commit.
+  const unique = [...new Set(localDates)]
+  if (unique.length === 0) return
   const t = schema.dailyActivity
   await tx
     .insert(t)
-    .values(localDates.map((localDate) => ({ userId, localDate, freezeUsed: true })))
+    .values(unique.map((localDate) => ({ userId, localDate, freezeUsed: true })))
     .onConflictDoUpdate({ target: [t.userId, t.localDate], set: { freezeUsed: true } })
 }

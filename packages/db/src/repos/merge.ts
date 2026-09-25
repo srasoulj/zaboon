@@ -12,7 +12,9 @@
  * - FSRS cards: the stronger card wins (higher stability, then more reps); exposures take the max;
  * - enrollments: XP adds up, newest content version, the member's current level unless unset;
  * - level_progress: most lessons done, legendary if either, earliest completion;
- * - mistakes add up; items and coins add up; the member's lives, consents and league tier win;
+ * - mistakes and items add up; coin_ledger rows are copied unless the member already has the same
+ *   (reason, ref), and the wallet gains exactly the copied amounts;
+ * - the member's lives, consents and league tier win;
  * - streaks: every field takes the max. The caller should then recompute the streak from the merged
  *   daily_activity with @zaboon/game-rules (the one implementation of streak math) and save it.
  * - finally the guest's profile is deleted, cascading to whatever was not moved.
@@ -161,15 +163,23 @@ export async function mergeGuestIntoMember(
   await run(sql`UPDATE public.reports SET user_id = ${m} WHERE user_id = ${g}`)
 
   // P2 state.
+  // Coins: copy the guest's ledger; entries the member already has (same reason + ref, e.g. a quest
+  // both claimed) are skipped, and the wallet gains exactly the copied amounts, so wallet and
+  // ledger stay consistent. The balance never goes below zero.
+  const coinsMoved = await count(sql`
+    WITH copied AS (
+      INSERT INTO public.coin_ledger (user_id, amount, reason, ref, created_at)
+      SELECT ${m}, amount, reason, ref, created_at FROM public.coin_ledger WHERE user_id = ${g}
+      ORDER BY id
+      ON CONFLICT (user_id, reason, ref) DO NOTHING
+      RETURNING amount
+    )
+    SELECT coalesce(sum(amount), 0)::int AS n FROM copied`)
   await run(sql`
     INSERT INTO public.wallet AS w (user_id, coins)
-    SELECT ${m}, coins FROM public.wallet WHERE user_id = ${g}
-    ON CONFLICT (user_id) DO UPDATE SET coins = w.coins + excluded.coins, updated_at = now()`)
-  await run(sql`
-    INSERT INTO public.coin_ledger (user_id, amount, reason, ref, created_at)
-    SELECT ${m}, amount, reason, ref, created_at FROM public.coin_ledger WHERE user_id = ${g}
-    ORDER BY id
-    ON CONFLICT (user_id, reason, ref) DO NOTHING`)
+    SELECT ${m}, greatest(0, ${coinsMoved}::int)
+    WHERE ${coinsMoved}::int <> 0 OR EXISTS (SELECT 1 FROM public.wallet WHERE user_id = ${g})
+    ON CONFLICT (user_id) DO UPDATE SET coins = greatest(0, w.coins + ${coinsMoved}::int), updated_at = now()`)
   await run(sql`
     INSERT INTO public.entitlements AS en (user_id, entitlement, source, expires_at)
     SELECT ${m}, entitlement, source, expires_at FROM public.entitlements WHERE user_id = ${g}

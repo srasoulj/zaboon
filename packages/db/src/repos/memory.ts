@@ -16,6 +16,7 @@ export interface MemoryEntry {
   exposures: number
 }
 
+/** Upserts accept duplicate ids; the last entry for an id wins. */
 export interface MemoryUpsert {
   id: string
   card: FsrsCard
@@ -86,6 +87,14 @@ function upsertSet(withExposures: boolean) {
   }
 }
 
+/**
+ * One entry per id, the LAST one winning. A single INSERT … ON CONFLICT DO UPDATE that touches the
+ * same row twice fails with 21000 and would abort the caller's whole commit transaction.
+ */
+function lastPerId(entries: readonly MemoryUpsert[]): MemoryUpsert[] {
+  return [...new Map(entries.map((e) => [e.id, e])).values()]
+}
+
 // ---------------------------------------------------------------------------------------------
 // Lexemes
 // ---------------------------------------------------------------------------------------------
@@ -115,8 +124,9 @@ export async function listDueLexemes(tx: Tx, userId: string, now: string, limit 
 
 export async function upsertLexemeCards(tx: Tx, userId: string, entries: readonly MemoryUpsert[]): Promise<void> {
   const t = schema.lexemeMemory
+  const unique = lastPerId(entries)
   for (const withExposures of [true, false]) {
-    const batch = entries.filter((e) => (e.exposures !== undefined) === withExposures)
+    const batch = unique.filter((e) => (e.exposures !== undefined) === withExposures)
     if (batch.length === 0) continue
     await tx
       .insert(t)
@@ -152,8 +162,9 @@ export async function listDueLetters(tx: Tx, userId: string, now: string, limit 
 
 export async function upsertLetterCards(tx: Tx, userId: string, entries: readonly MemoryUpsert[]): Promise<void> {
   const t = schema.letterMemory
+  const unique = lastPerId(entries)
   for (const withExposures of [true, false]) {
-    const batch = entries.filter((e) => (e.exposures !== undefined) === withExposures)
+    const batch = unique.filter((e) => (e.exposures !== undefined) === withExposures)
     if (batch.length === 0) continue
     await tx
       .insert(t)
