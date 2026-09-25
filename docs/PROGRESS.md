@@ -30,7 +30,7 @@
 | ws-player | 2 | lesson player, offline outbox, resume | ✅ merged | #22, #30 |
 | ws-path-letters | 2 | path, guidebook, letters, practice | ✅ merged ([spec](../ops/prompts/ws-path-letters.md)) | #32 |
 | ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged ([spec](../ops/prompts/ws-pages.md)) | #35 |
-| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media generated (integration pending) | #20, #24 |
+| ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, media PR |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
 
 **Deployment:** the user is deploying `main` to Vercel. Hotfix #34 (from the user's own session)
@@ -52,15 +52,37 @@ takes query strings, and the contracts gained the `guidebook` route plus letter/
 
 ## AI spend
 
-This project's key has used **$3.77** of the internal **$9.50** cap (checked 15:30 UTC):
+This project's key has used **$7.57** of the internal **$9.50** cap (checked 19:50 UTC; the key's
+own hard limit is $10):
 
 - text pilot: $0.002;
 - text drafts, units 1–5 (Astra): $2.76;
-- art: $1.02 (style bible, Hodhod turnaround and expressions, Maman Bozorg).
+- art: $1.02 (style bible, Hodhod turnaround and expressions, Maman Bozorg);
+- Unit 1 media: $3.79. That covers 79 TTS clips (gpt-audio), 8 `select_image` illustrations and
+  5 cast portraits (GPT Image), plus the pilots.
 
-The account itself was topped up (balance about $6.50; other usage on the account isn't this
-project's). The remaining ≈ $5.70 goes to Unit 1 media, in this order: audio, `select_image`
-illustrations, then the five remaining cast portraits.
+About **$1.93** of the cap is left. That isn't enough for Units 2–5 media, so this is on the
+human backlog. The account balance is about $1.83; other usage on the account isn't this
+project's.
+
+**Unit 1 media** (all `status: draft`):
+
+- 79 word and phrase clips, loudness-normalized to about −16 LUFS, plus 30 slow clips and
+  30 mouth envelopes for the sentences.
+- Illustrations: tea, water, bread, apple, ice cream, door, river and mulberry.
+- Portraits: Shirin, Dariush, Kian, Leila and Babak.
+- The images ship as transparent WebP (9–43 KB). The PNG originals are kept next to them as
+  masters, with provenance sidecars.
+
+The TTS pipeline fixes behind the media are in `packages/ai` and `tools/content-cli`:
+
+- OpenRouter audio output needs `stream: true`, so audio is streamed as pcm16.
+- Silent takes are rejected.
+- Leading padding and edge artifacts are trimmed.
+
+Known gap (hardening backlog): `content audio` uses a single-pass `loudnorm`, which undershoots
+on very short clips. The committed clips were normalized separately, so re-running
+`content audio --force` would undo that fix until `audio.ts` does a two-pass loudnorm.
 
 ## Human-review backlog (cannot be automated honestly)
 

@@ -1,0 +1,13 @@
+# Provenance of assets/img/lx_dar.webp (content-cli art, post-processed). Set status: approved and approvedBy after review.
+asset: img/lx_dar.webp
+model: openai/gpt-5.4-image-2
+prompt: art-item@1
+references:
+  - style-bible/shape-language.png
+generatedAt: 2026-09-25T16:16:57.867Z
+status: draft
+derivedFrom: img/lx_dar.png
+generation:
+  id: gen-1790352926-lUYouzmG50Sdrx1iUbbc
+  costUsd: 0.239966
+postProcessing: "sharp: near-white background removed by a flood fill from the image border (white details inside the figure are kept), cut edge un-blended from white, specks dropped, trimmed, padded to a transparent square, max 1024 px; PNG plus a WebP copy (quality 85); the object is centered."

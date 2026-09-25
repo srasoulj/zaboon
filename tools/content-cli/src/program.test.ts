@@ -4,10 +4,10 @@ import { join } from 'node:path'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { chatResponse, MockTransport, type OpenRouterModel } from '@zaboon/ai'
 import { goodDraft } from './fixtures/draft-u02'
+import { seedCourseWithoutMedia } from './fixtures/seed'
 import { repoRoot } from './paths'
 import { createProgram, type ProgramIO } from './program'
 import { MemoryUploader } from './storage'
-import { seedCourseCopy } from './fixtures/seed-course'
 import { TEST_KEY } from './fixtures/test-key'
 
 const dirs: string[] = []
@@ -39,8 +39,9 @@ async function run(args: string[], io: Partial<ProgramIO> = {}) {
   return { out: out.join('\n'), err: err.join('\n'), code }
 }
 
+/** content/fa-en without generated audio and illustrations (the live course may have some). */
 function seedCopy(): string {
-  return seedCourseCopy(join(temp(), 'fa-en'))
+  return seedCourseWithoutMedia(temp())
 }
 
 function briefFile(): string {
