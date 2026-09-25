@@ -1,0 +1,10 @@
+# Pinned OpenRouter model IDs (docs/ARCHITECTURE.md §11, ADR 0008). Never use ~latest aliases.
+# `content_*` models use OPENROUTER_API_KEY_BUILD (content CI / local only).
+# `app_*` models use OPENROUTER_API_KEY_APP (Vercel server only).
+content_text: openai/gpt-6-astra
+content_text_batch: openai/gpt-6-astra:batch
+content_image: openai/gpt-5.4-image-2
+content_audio: openai/gpt-audio
+app_transcribe: openai/gpt-audio-mini
+app_explain: openai/gpt-6-luna
+app_roleplay: openai/gpt-6-sol

@@ -7,8 +7,8 @@ characters.
 
 *Zaboon* is the colloquial Tehrani pronunciation of *zabān*, "language".
 
-> **Status: architecture phase.** This repository contains the architecture and design
-> documentation only; there is no application code yet.
+> **Status: under construction.** Implementation is running in waves (see
+> [docs/PROGRESS.md](docs/PROGRESS.md)). Run `pnpm install && pnpm verify` to check a checkout.
 
 ## What makes it different
 
@@ -38,6 +38,7 @@ characters.
 | [0006](docs/adr/0006-fsrs-spaced-repetition.md) | FSRS for spaced repetition |
 | [0007](docs/adr/0007-hearts-mvp-lives-policy.md) | Hearts in the MVP, behind a `LivesPolicy` seam |
 | [0008](docs/adr/0008-ai-via-openrouter.md) | All AI through OpenRouter, with separate build and app keys |
+| [0009](docs/adr/0009-api-first-data-access.md) | API-first data access: every read and write goes through route handlers, and the browser uses Supabase only for Auth (amends 0002) |
 
 ## Planned stack
 
@@ -55,7 +56,7 @@ characters.
 
 ```
 apps/web/            Next.js learner app, marketing pages and API route handlers
-packages/            ui · farsi · grader · content-schema · session-engine · srs · game-rules · db · ai · config
+packages/            ui · farsi · grader · content-schema · contracts · session-engine · srs · game-rules · db · ai · config
 content/fa-en/       the course: units, lexemes, sentences, letters, guidebooks, style bible, assets
 tools/content-cli/   draft · suggest · art · tts · audio · validate · build · publish · models
 supabase/            migrations, RLS, pgTAP tests

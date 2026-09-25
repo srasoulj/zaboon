@@ -1,6 +1,6 @@
 # Zaboon — System Architecture
 
-> Status: **proposed** (architecture phase, no application code yet) · Last updated: 2026-09-25
+> Status: **accepted; implementation in progress** (see [PROGRESS](PROGRESS.md)) · Last updated: 2026-09-25
 >
 > Companion documents: [Design system](DESIGN-SYSTEM.md) · [Learning engine](LEARNING-ENGINE.md) · [Decision records](adr/)
 
@@ -40,6 +40,7 @@ but not Persian.
 |---|---|---|
 | Platform | **Web only for now**: a responsive, installable PWA. Native apps may come later | [ADR 0001](adr/0001-web-first-nextjs-pwa.md) |
 | Backend | **Supabase** | [ADR 0002](adr/0002-supabase-server-authoritative-writes.md) |
+| Data access | **Every read and write goes through our route handlers**, typed by zod contracts. The browser uses Supabase only for Auth, and RLS denies the browser's roles everything | [ADR 0009](adr/0009-api-first-data-access.md) |
 | Register | **Colloquial (Tehrani) Persian first**, with formal/written forms layered alongside | [ADR 0003](adr/0003-colloquial-first-register-model.md) |
 | Script | **Persian script from day 1**, a transliteration aid that fades, and a Letters tab | [ADR 0004](adr/0004-script-first-transliteration-fade.md) |
 | AI | **Everything goes through OpenRouter**, with separate keys for the build pipeline and the app. Course materials: `openai/gpt-6-astra`. Assets: the latest GPT Image, `openai/gpt-5.4-image-2` | [ADR 0008](adr/0008-ai-via-openrouter.md) |
@@ -52,8 +53,8 @@ but not Persian.
 | UI | Tailwind CSS v4 on design tokens · **Motion** (UI transitions) · **Rive** (characters) · **Howler.js** (sound-effect sprite) |
 | Client state | TanStack Query (server data) · **XState** (lesson player) · Zustand (UI preferences) |
 | Backend | **Supabase**: Postgres + RLS, Auth (anonymous guest → linked account), Storage + CDN, pg_cron |
-| Writes | Route handlers own a **Postgres transaction** (Drizzle over postgres.js through Supavisor transaction mode) and run the shared TS rules under a per-user advisory lock. Each rule has exactly one implementation |
-| Reads | The browser uses supabase-js with the publishable key, under RLS |
+| Writes | Route handlers validate the request against a zod contract (`packages/contracts`), own a **Postgres transaction** (Drizzle over postgres.js through Supavisor transaction mode) and run the shared TS rules under a per-user advisory lock. Each rule has exactly one implementation |
+| Reads | **Also through route handlers** (`GET /api/home`, `/api/path`, …), typed by the same contracts. The browser uses supabase-js **only for Auth** and never queries PostgREST; RLS denies `anon` and `authenticated` everything ([ADR 0009](adr/0009-api-first-data-access.md)) |
 | Monorepo | pnpm + Turborepo, with just-in-time internal packages (no per-package build step) |
 | Content | Course source written as **YAML in git**, validated with zod, compiled to **immutable versioned JSON bundles** and audio on a CDN ([ADR 0005](adr/0005-content-as-code-immutable-bundles.md)) |
 | AI (build pipeline) | **OpenRouter**, key `OPENROUTER_API_KEY_BUILD` (content CI and local dev only). Text: `openai/gpt-6-astra`. Images: `openai/gpt-5.4-image-2`. Draft audio: `openai/gpt-audio` |
@@ -80,20 +81,21 @@ flowchart LR
     OB[("IndexedDB<br/>lesson snapshot · outbox")]
   end
   subgraph Vercel
-    RH["Route handlers (Node)<br/>meta · sessions · account · reports"]
+    RH["Route handlers (Node) + zod contracts<br/>meta · reads · sessions · account · reports"]
     CRON["Vercel Cron → /api/cron/*"]
     MK["Marketing + SEO pages (SSG)"]
   end
   subgraph Supabase
     AUTH["Auth<br/>anonymous → linked"]
-    PG[("Postgres<br/>RLS · pg_cron housekeeping")]
+    PG[("Postgres<br/>RLS deny-all · app_server policies<br/>pg_cron housekeeping")]
     ST["Storage + CDN<br/>/v{N}/ bundles · audio · images · .riv"]
   end
-  UI -- "reads (RLS)" --> PG
-  UI --> AUTH
+  UI -- "Bearer JWT: reads (GET /api/*)" --> RH
+  UI -- "Auth only" --> AUTH
   LP --- OB
   LP -- "Bearer JWT: start · events · complete" --> RH
-  RH -- "SQL transaction + advisory lock" --> PG
+  RH -- "SQL as app_server · writes: transaction + advisory lock" --> PG
+  RH -. "JWKS (verify JWTs)" .-> AUTH
   CRON --> RH
   UI -- "immutable GET" --> ST
   RH --> EXT["Email · Stripe · Web Push (P2)"]
@@ -105,10 +107,10 @@ flowchart LR
 
 ### 3.1 Core rules
 
-1. **Reads are direct; writes go through the server.**
-   - The browser reads its own rows and its league cohort through RLS.
-   - Every change to game state goes through a route handler, which verifies the Bearer JWT with `getClaims()` (asymmetric signing keys, so verification is local).
-   - The handler runs **one Postgres transaction** under `pg_advisory_xact_lock(user)`, using the shared TS rules in `game-rules` and `srs`.
+1. **Reads and writes both go through the server** ([ADR 0009](adr/0009-api-first-data-access.md)).
+   - The browser uses Supabase only for Auth and never queries PostgREST. Screens read through route handlers (`GET /api/home`, `/api/path`, … §7), and every request and response is a zod contract from `packages/contracts`.
+   - Every route handler verifies the Bearer JWT against the project's JWKS with `jose` (asymmetric signing keys, so verification is local; §9), and every user-scoped repository method takes the caller's `userId`.
+   - Every change to game state runs in **one Postgres transaction** under `pg_advisory_xact_lock(user)`, using the shared TS rules in `game-rules` and `srs`.
    - The client runs the same rules only for optimistic display, then shows the deltas the server returns.
 2. **Grading happens locally; the server re-grades for consistency.**
    - Answer keys ship to the client so feedback is instant, which means re-grading can't stop someone looking answers up. Anti-cheat therefore relies on plausibility checks (§9).
@@ -120,7 +122,7 @@ flowchart LR
    - Below `minAppVersion`, the API returns HTTP 426 and the app shows an "Update available" prompt.
    - Each enrollment records its content version, and `pathMigrations` are applied lazily.
 4. **Domain packages are framework-agnostic.** A lint rule bans react, next and DOM imports in `farsi`, `grader`, `session-engine`, `srs`, `game-rules` and `content-schema`, so a future native app can reuse them unchanged.
-5. **Region pinning.** Route handlers set `preferredRegion` to the Supabase database's region.
+5. **Region pinning.** Route handlers set `preferredRegion` to the Supabase database's region, which keeps the extra hop that reads now take short.
 
 ### 3.2 Lesson lifecycle
 
@@ -158,24 +160,29 @@ zaboon/
 │     ├─ (app)/                  # client-rendered: learn, letters, practice, leaderboard, quests, shop, profile, settings
 │     ├─ lesson/[sessionId]/     # full-screen lesson player (no app chrome)
 │     ├─ onboarding/ · admin/    # admin = report triage (role-gated)
-│     └─ api/                    # meta, sessions, account, reports, admin, cron, billing, webhooks, push, ai
+│     └─ api/                    # meta, reads (home, path, letters, words, profile, settings, …), sessions, account,
+│                                #   reports, admin, cron, billing, webhooks, push, ai; dev/ (local auth mode only, *.dev.ts)
 ├─ packages/
 │  ├─ ui/                        # tokens.json → CSS vars/Tailwind theme; 3D component kit
 │  ├─ farsi/                     # normalization pipeline, tokenizing, transliteration, keyboard layouts
 │  ├─ grader/                    # accepted-answer pattern compiler + matcher
 │  ├─ content-schema/            # zod schemas + TS types (authoring YAML and compiled bundles)
+│  ├─ contracts/                 # zod request/response contracts shared by route handlers and the browser
 │  ├─ session-engine/            # deterministic session builder
 │  ├─ srs/                       # ts-fsrs wrapper, outcome→rating mapping
 │  ├─ game-rules/                # XP, streak/day math, lives, quests — pure functions
-│  ├─ db/                        # Drizzle schema (introspected) + withUserLock(); generated Supabase types for the browser
+│  ├─ db/                        # Drizzle schema (introspected) + withUserLock(); repositories (every user-scoped method takes a userId)
 │  ├─ ai/                        # OpenRouter client (OpenAI-compatible), ai.models.yaml registry, versioned prompts,
 │  │                             #   zod structured outputs; never reads env; the caller passes in its own key
 │  └─ config/                    # tsconfig, eslint (incl. no-DOM rule for domain packages)
 ├─ content/fa-en/                # course.yaml, letters.yaml, units/, lexemes/, sentences/, characters/,
 │                                #   guidebooks/*.md, orthography-variants.yaml, tests/grading.yaml, STYLE.md,
 │                                #   style-bible/ (approved references), assets/ (approved art + provenance sidecars)
+├─ content/fixtures/             # frozen fixture course for e2e: all 13 MVP challenge types, never AI-generated
 ├─ tools/content-cli/            # draft · suggest · art · tts · audio · validate · build · publish · models
-├─ supabase/                     # migrations/ (schema, RLS, grants, pg_cron), tests/ (pgTAP), seed.sql
+├─ scripts/                      # db-local.sh (native Postgres 16, no Docker) · migrate.ts (local migrations) · verify.sh
+├─ supabase/                     # migrations/ (schema, RLS, grants, pg_cron), tests/ (pgTAP), seed.sql,
+│                                #   local/shim.sql (local only: Supabase roles, auth schema, default grants)
 └─ docs/                         # this documentation + ADRs
 ```
 
@@ -184,8 +191,8 @@ zaboon/
 ## 5. Data model
 
 All tables live in the `public` schema with RLS enabled. Server-only SQL helpers live in
-`internal`; RLS helper functions live in `rls` (see §9). The client can never write the
-game-state tables.
+`internal`; RLS helper functions live in `rls` (see §9). The browser never reads or writes tables
+directly: route handlers do both, as `app_server`.
 
 ### 5.1 MVP tables
 
@@ -261,19 +268,27 @@ every number comes from `app_config`.
   - Rollover is idempotent through `league_weeks.closed_at`.
   - Joining requires a linked account.
   - Tiers are named after Persian gems and metals: Mes, Noqreh, Talā, Firouzeh, Aqiq, Lājvard, Yāqut, Zomorrod, Morvārid, Almās.
-  - The leaderboard refetches on focus and after each lesson; no Realtime subscription.
+  - The leaderboard (`GET /api/leaderboard`) refetches on focus and after each lesson; no Realtime subscription.
 - **Quests (P2):** 3 daily quests drawn from templates with a deterministic per-user seed.
 
 ---
 
 ## 7. API
 
-All route handlers validate input with zod, verify the Bearer JWT with `getClaims()`, apply
-per-user rate limits and set `preferredRegion` to the database region.
+All route handlers validate input against the zod contracts in `packages/contracts`, which also
+type their responses. They verify the Bearer JWT (§9), apply per-user rate limits and set
+`preferredRegion` to the database region. Reads go through them too: the browser never queries
+PostgREST ([ADR 0009](adr/0009-api-first-data-access.md)).
 
 | Endpoint | Phase | Purpose |
 |---|---|---|
 | `GET /api/meta` | MVP | `contentVersion`, `minAppVersion` and public config (`Cache-Control: no-store`) |
+| `GET /api/home` | MVP | The app shell's state: the learner (guest or linked), streak display state (§6), hearts, XP, daily-goal progress and current level |
+| `GET /api/path` | MVP | The learning path at the learner's content version, with each level's state and lessons done |
+| `GET /api/letters` | MVP | Letters tab: each letter's strength (from `letter_memory`) and the letter lessons |
+| `GET /api/words` | MVP | Words list with strength bars, from `lexeme_memory` |
+| `GET /api/profile` | MVP | The learner's profile and stats |
+| `GET` · `PATCH /api/settings` | MVP | Read and update settings: transliteration, vowel marks, sound, motion, keyboard layout, daily goal |
 | `POST /api/sessions` | MVP | Generate a lesson or practice session. Also carries timezone updates |
 | `POST /api/sessions/:id/events` | MVP | Record a wrong attempt, idempotent on `(session, attemptSeq)` |
 | `POST /api/sessions/:id/complete` | MVP | Re-grade, commit, return the deltas. A replay returns the stored `result` |
@@ -281,11 +296,14 @@ per-user rate limits and set `preferredRegion` to the database region.
 | `GET /api/account/export` · `DELETE /api/account` | MVP | GDPR export and delete |
 | `POST /api/reports` · `GET/PATCH /api/admin/reports` | MVP | Content reports; triage requires the admin role claim |
 | `/api/cron/*` | MVP/P2 | Vercel Cron jobs, authenticated by a secret header (§8) |
+| `GET /api/leaderboard` | P2 | The learner's own league cohort: public profile fields and weekly XP |
+| `GET /api/quests` | P2 | Today's quests and their progress |
 | `POST /api/lives/refill` · `POST /api/shop/purchase` | P2 | Spend coins |
 | `POST /api/billing/checkout` · `POST /api/billing/portal` · `POST /api/webhooks/stripe` | P2 | Zaboon Plus → `entitlements` (signature check + `webhook_events` de-duplication) |
 | `POST /api/push/subscribe` | P2 | Store a Web Push subscription |
 | `POST /api/speech/transcribe` | P2 | Transcription for `speak` challenges (OpenRouter app key) |
 | `POST /api/ai/explain` · `POST /api/ai/roleplay` | P3 | OpenRouter app key; per-user quotas |
+| `/api/dev/auth/*` | **Local only** | Sign-in for `AUTH_MODE=local` (§12). Its `*.dev.ts` route files are compiled only when a build-time flag enables them; a production build returns 404 |
 
 **Error conventions:** 401 (no or invalid JWT), 403 (anonymous user on a profile-only feature,
 missing admin claim), 409 (session expired or already completed with a different payload), 426
@@ -312,15 +330,24 @@ external service runs in Node through Vercel Cron. Schedules more often than dai
 
 ## 9. Security and RLS
 
-- **Reads:**
-  - RLS is on every table. The browser can SELECT only its own rows, `public_profiles`, and the rows of its own league cohort.
-  - Cohort access goes through `rls.my_cohort_ids()`, a `SECURITY DEFINER` function, which avoids recursive policies on `league_members`.
-- **Writes:** anon and authenticated roles have **no INSERT, UPDATE or DELETE grants on game tables**. Only user-editable columns (display name, avatar, settings) get a column-level `GRANT UPDATE`.
+- **Data access** ([ADR 0009](adr/0009-api-first-data-access.md)):
+  - The browser never queries PostgREST. Every read and write goes through a route handler, so the publishable key can't read or write anything.
+  - The base migration revokes Supabase's default grants on schema `public` from anon and authenticated, so they have **no grants on any table**. User-editable fields (display name, avatar, settings) change through route handlers such as `PATCH /api/settings`.
+  - RLS is on every table, with **no policies for anon or authenticated** (deny-all).
+  - Explicit policies `TO app_server` define what the server role may do. `app_server` has no `BYPASSRLS`, so a table without a policy is unreachable even from the server.
+- **Ownership:**
+  - Every user-scoped repository method requires a `userId`, taken from the verified JWT.
+  - Every `:id` route has a cross-user (IDOR) test (§15).
+  - Other learners' data is exposed only on purpose: `public_profiles` fields and, in P2, the learner's own league cohort.
+- **Authentication** (`AUTH_MODE`):
+  - Unset or `supabase` (production): route handlers verify Supabase JWTs against the project's JWKS with `jose`, accepting only the project's asymmetric algorithm, its issuer and its `aud`.
+  - `local` is for dev and test only (§12). Its route files (`*.dev.ts`) are compiled only when a build-time flag adds them to Next's `pageExtensions`. It refuses to run if `VERCEL_ENV` is set or the database isn't on loopback, and it's the only mode that honors the `x-test-now` clock header (§12).
+  - CI proves that a production build rejects local tokens and returns 404 for `/api/dev/*`.
 - **Function privileges:**
   - `internal` holds server-only SQL helpers. `ALTER DEFAULT PRIVILEGES IN SCHEMA internal REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`.
-  - `rls` holds policy helpers, with EXECUTE granted to `authenticated` only.
+  - `rls` holds policy helpers, with EXECUTE granted to `app_server` only.
   - Every `SECURITY DEFINER` function sets `search_path = ''`.
-- **Server access:** route handlers connect as a dedicated non-superuser `app_server` role through the Supavisor transaction pooler (postgres.js with `prepare: false`). The Supabase secret key lives only on the server.
+- **Server access:** route handlers connect as a dedicated non-superuser `app_server` role, without `BYPASSRLS`, through the Supavisor transaction pooler (postgres.js with `prepare: false`). The Supabase secret key lives only on the server.
 - **Abuse prevention:**
   - Cloudflare Turnstile protects anonymous sign-in. The default limit of 30 anonymous sign-ins per hour per IP is raised, because mobile carriers put many users behind shared IPs.
   - Per-user rate limits on every endpoint.
@@ -332,9 +359,9 @@ external service runs in Node through Vercel Cron. Schedules more often than dai
   - OpenRouter provider routing is set to `data_collection: "deny"`.
   - Only the minimum learner data is sent: never email or name.
 - **pgTAP tests prove that:**
-  - anon and authenticated can't write game tables;
-  - they can't execute anything in `internal`;
-  - they can't read other users' private rows.
+  - every table has RLS enabled, and anon and authenticated can't read or write any of them;
+  - they can't execute anything in `internal` or `rls`;
+  - `app_server` has no `BYPASSRLS`.
 
 ---
 
@@ -459,7 +486,9 @@ sequenceDiagram
   API->>API: verify signature
   API->>DB: insert webhook_events(event_id) ON CONFLICT DO NOTHING
   API->>DB: upsert entitlements (user, plus, stripe, expires_at)
-  B->>DB: refetch entitlements (RLS)
+  B->>API: GET /api/home (refetch)
+  API->>DB: read learner state incl. entitlements
+  API-->>B: Plus active
 ```
 
 ### 10.6 League rollover (P2)
@@ -546,7 +575,7 @@ pinned family (for example a newer GPT Image), so upgrades are deliberate.
 ## 12. Cross-cutting concerns
 
 - **Auth and onboarding:**
-  - supabase-js runs in the browser, and OAuth uses the PKCE callback.
+  - supabase-js runs in the browser **for Auth only** (it never queries data), and OAuth uses the PKCE callback.
   - Anonymous guest sign-in, protected by Turnstile.
   - "Create a profile" links email (`updateUser`) or Google/Apple (`linkIdentity`); manual linking must be enabled.
   - Onboarding includes a neutral age screen; learners under 13 can't continue (COPPA).
@@ -554,6 +583,10 @@ pinned family (for example a newer GPT Image), so upgrades are deliberate.
   - A **Supabase custom auth domain**, so Google/Apple consent screens show our domain instead of `*.supabase.co`.
   - "Jump here?" tests are in the MVP; a placement test comes in P2.
   - **Heritage fast track:** learners who answer "I speak but can't read" go to the Letters tab and reading-heavy sessions.
+  - **Local auth mode** (`AUTH_MODE=local`, dev and test only; its guards are in §9): `/api/dev/auth/*` stands in for Supabase Auth, so no Supabase project is needed.
+    - Tokens are HS256, signed with a secret generated once per machine, and mirror Supabase's claims exactly: `role: authenticated`, `is_anonymous`, `aud`, a short `exp`, and the admin role in `app_metadata`.
+    - The dev endpoints emulate `identity_already_exists`, so the link-or-merge flow (§10.3) runs locally.
+- **Time:** route handlers read the time from a `Clock` and pass it into the pure rules. In local mode an `x-test-now` header sets it, so tests can time-travel (for example across local midnight for streaks, or forward for heart regeneration); production ignores the header.
 - **Resilience and PWA:**
   - Lesson state is snapshotted to IndexedDB after each step, so a reload resumes the lesson.
   - The outbox lives in the page, because Background Sync only works in Chromium and service workers can't refresh tokens.
@@ -595,22 +628,26 @@ pinned family (for example a newer GPT Image), so upgrades are deliberate.
 ## 13. Environments, CI/CD and secrets
 
 - **Environments:**
-  - **local:** `supabase start` + `pnpm dev`, with content hot-reloaded from `content/`.
+  - **local:** `pnpm dev`, normally with `AUTH_MODE=local` (§12), with content hot-reloaded from `content/`. No Docker:
+    - `pnpm dev` first runs `scripts/db-local.sh ensure`, which starts a native Postgres 16 (pgTAP and pg_cron from apt; data outside the repo).
+    - A local-only shim, `supabase/local/shim.sql`, mirrors Supabase's roles (`postgres` isn't a superuser), the `auth` schema and the default grants.
+    - Migrations keep the Supabase CLI's naming and are applied locally by `scripts/migrate.ts`.
   - **preview:** a Vercel preview for each PR against a shared Supabase **staging** project. The preview URL pattern is in the Auth redirect allowlist.
   - **production.**
 - **CI (GitHub Actions):**
   - typecheck, lint, Vitest;
-  - `content-cli validate`;
-  - `supabase db lint`, then `supabase db reset` + pgTAP;
-  - a drift check on generated types (Supabase types and the Drizzle schema);
-  - Playwright (Chromium + WebKit) against the preview;
-  - secret scanning (gitleaks).
+  - `content-cli validate`, including the fixture course;
+  - the local Postgres from the same `scripts/db-local.sh` as local dev (no Docker), then pgTAP;
+  - a drift check between the migrations and the Drizzle schema;
+  - Playwright (Chromium + WebKit) on the frozen fixture course, against a local-mode build;
+  - a production build, which must reject local tokens and return 404 for `/api/dev/*`;
+  - secret scanning (`scripts/secret-scan.sh`: pattern scan + detect-secrets).
 - **CD:** merging to `main` runs `supabase db push` (forward-only, expand/contract) and then promotes the Vercel deploy. Content releases have their own workflow ([Learning engine §4.4](LEARNING-ENGINE.md#44-release-process)).
 - **Secrets:**
 
   | Where | Secrets |
   |---|---|
-  | Browser | Supabase URL + publishable key, Turnstile site key, Sentry DSN, Amplitude key |
+  | Browser | Supabase URL + publishable key (Auth only), Turnstile site key, Sentry DSN, Amplitude key |
   | Server (Vercel) | Supabase secret key, `app_server` DB URL, Turnstile secret, cron secret, email key, `OPENROUTER_API_KEY_APP` (P2+), Stripe keys (P2), VAPID keys (P2) |
   | Content CI + local dev only | `OPENROUTER_API_KEY_BUILD`, storage upload key |
 
@@ -647,8 +684,11 @@ pinned family (for example a newer GPT Image), so upgrades are deliberate.
 
 The Phase 0 walking skeleton proves the design in code:
 
-- Playwright (Chromium + WebKit, desktop and mobile viewports) takes an anonymous user through one lesson: fa→en and en→fa word bank, typed English, match pairs. XP and the streak persist.
+- Playwright (Chromium + WebKit, desktop and mobile viewports) takes an anonymous user through one lesson of the frozen fixture course (`content/fixtures`): fa→en and en→fa word bank, typed English, match pairs. XP and the streak persist.
 - Replaying `POST /complete` returns an identical result.
 - Two concurrent completions for the same user lose no XP (advisory lock).
-- pgTAP proves the RLS and grant rules in §9.
+- Every `:id` route has a cross-user (IDOR) test: a second learner can't read or change the first learner's resources.
+- Time-travel tests move the server's `Clock` with the `x-test-now` header (local mode only): for example, lessons on consecutive local days extend the streak, a missed day consumes a freeze, and hearts regenerate over time.
+- A production build rejects local-mode tokens and returns 404 for `/api/dev/*`.
+- pgTAP proves the RLS and grant rules in §9, including deny-all for anon and authenticated on every table.
 - Grader golden tests pass, covering half-space variants, Arabic letters, same-sound spelling swaps and register variants.

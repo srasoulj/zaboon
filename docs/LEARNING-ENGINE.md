@@ -321,7 +321,7 @@ The content team runs these. They are AI-assisted, and a human approves every re
 - Model IDs are pinned in `packages/ai/ai.models.yaml`; `~latest` aliases are never used.
 - Responses are cached by `hash(model, prompt version, input)`, so reruns are free and reproducible.
 - Bulk text runs use the `:batch` variant, which is half price.
-- The build key has its own OpenRouter credit limit.
+- The build key has its own OpenRouter credit limit. The key available today has a $10 limit, so AI media is produced for Unit 1 first.
 - **Nothing AI-generated is published without human approval.** `validate` rejects anything still in `status: draft`.
 
 ### 4.3 Release commands (CI)
@@ -337,6 +337,10 @@ The content team runs these. They are AI-assisted, and a human approves every re
    - the normalization lint (§1.5) passes.
 2. **`build`** emits `manifest.json`, one bundle per unit, a letters bundle, guidebooks and `pathMigrations`.
 3. **`publish`** uploads `/v{N}/` (immutable) to Storage and inserts a `content_versions` row. Making it current is a separate, approved step.
+
+**Fixture course:** `content/fixtures` holds a frozen course that covers all 13 MVP challenge
+types (§6). End-to-end tests run on it, never on AI-generated content, so they don't change when
+the real course is redrafted. `validate --fixtures` checks it strictly in CI.
 
 ### 4.4 Release process
 
@@ -467,11 +471,12 @@ learner mistake.
 
 ### 7.3 Client/server agreement
 
-The server re-grades every completed session against the stored refs and the immutable bundle.
-If it disagrees with a verdict the learner already saw, the learner's verdict stands when their
-`graderVersion` is in the supported window (the last N), and the mismatch is logged. Since answer
-keys ship to the client anyway, re-grading is about consistency, not secrecy. Anti-cheat relies on
-plausibility checks ([Architecture §9](ARCHITECTURE.md#9-security-and-rls)).
+In `POST /api/sessions/:id/complete`, the server re-grades every completed session against the
+stored refs and the immutable bundle. If it disagrees with a verdict the learner already saw, the
+learner's verdict stands when their `graderVersion` is in the supported window (the last N), and
+the mismatch is logged. Since answer keys ship to the client anyway, re-grading is about
+consistency, not secrecy. Anti-cheat relies on plausibility checks in the route handlers, which are
+the only path to the database ([Architecture §9](ARCHITECTURE.md#9-security-and-rls)).
 
 ---
 
