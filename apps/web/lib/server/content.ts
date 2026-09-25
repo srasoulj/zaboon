@@ -48,6 +48,11 @@ export function currentVersion(db: Db, courseId: string): Promise<CourseVersion 
   return value
 }
 
+/** Tests only: forget cached current-version pointers (after publishing a new version). */
+export function resetContentCache(): void {
+  currentCache.clear()
+}
+
 export async function requireCurrentVersion(db: Db, courseId: string): Promise<CourseVersion> {
   const cv = await currentVersion(db, courseId)
   if (!cv) throw new ApiError('not_found', `no published content for course ${courseId}`)
@@ -116,6 +121,14 @@ export function findLevel(bundle: LoadedBundle, levelId: string): LevelLocation 
     if (level) return { unitIndex, unit, level }
   }
   return null
+}
+
+/** Every lexeme in the bundle (units in path order, then letter examples), first definition wins. */
+export function allLexemes(bundle: LoadedBundle): Map<string, Lexeme> {
+  const out = new Map<string, Lexeme>()
+  for (const u of bundle.units) for (const l of u.lexemes) if (!out.has(l.id)) out.set(l.id, l)
+  for (const l of bundle.letters.lexemes) if (!out.has(l.id)) out.set(l.id, l)
+  return out
 }
 
 /** What the session engine may read for a level: its unit plus everything taught up to it. */
