@@ -1,0 +1,8 @@
+# Provenance of assets/audio/lx_mersi.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/lx_mersi.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: alloy
+input: مرسی
+generatedAt: 2026-09-25T16:01:22.883Z
+status: draft

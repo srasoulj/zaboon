@@ -1,0 +1,8 @@
+# Provenance of assets/audio/s_u01_0025.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/s_u01_0025.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: ash
+input: باشه، مرسی!
+generatedAt: 2026-09-25T16:01:15.567Z
+status: draft

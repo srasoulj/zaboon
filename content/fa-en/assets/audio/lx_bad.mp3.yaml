@@ -1,0 +1,8 @@
+# Provenance of assets/audio/lx_bad.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/lx_bad.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: alloy
+input: بد
+generatedAt: 2026-09-25T16:01:17.447Z
+status: draft

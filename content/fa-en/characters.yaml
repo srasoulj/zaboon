@@ -1,4 +1,5 @@
-# The cast (DESIGN-SYSTEM §7). Voices and Rive/art assets are added later by the pipeline.
+# The cast (DESIGN-SYSTEM §7). Rive/art assets are added later by the pipeline. `voice` is the
+# draft gpt-audio TTS voice (content-cli `tts`), one per character, until voice actors record.
 # Colors are palette tokens; the palette has six colors for seven characters, so Kian shares
 # firouzeh with Maman Bozorg (family resemblance).
 - id: hodhod
@@ -10,6 +11,7 @@
     Conference of the Birds. His saffron crest flares when you get something right and droops when
     you don't.
   color: zaferan
+  voice: verse
   image: characters/hodhod/expressions.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
@@ -22,6 +24,7 @@
     Maman Bozorg has the tea poured before you've taken off your shoes, and she is a grandmaster
     of ta'ārof. She will insist you eat more, no matter how many times you say no.
   color: firouzeh
+  voice: sage
   image: characters/maman-bozorg/portrait.webp
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
@@ -35,6 +38,7 @@
     faculty and home. Her humor is bone-dry: she will tell you your accent is "almost perfect"
     with a completely straight face.
   color: lajvard
+  voice: coral
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -46,6 +50,7 @@
     Dariush drives a taxi in Tehran and has an opinion on everything, from the traffic to poetry
     to the price of tomatoes. He teaches directions, numbers and the city, whether you asked or not.
   color: pesteh
+  voice: echo
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -57,6 +62,7 @@
     Kian was born in Los Angeles and grew up hearing Persian at home, but he never learned to read
     it. He is learning alongside you and isn't afraid to make mistakes out loud.
   color: firouzeh
+  voice: ash
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -68,6 +74,7 @@
     Leila runs a small kitchen near the bazaar that is famous for its tahdig. She teaches food words
     the best way she knows: by making you taste everything.
   color: anar
+  voice: shimmer
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
 
@@ -79,5 +86,6 @@
     Babak plays the santur and has a line of Hafez ready for every occasion. He brings music, poetry
     and a little history into the course.
   color: bademjan
+  voice: ballad
   status: draft
   provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }

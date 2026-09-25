@@ -1,0 +1,8 @@
+# Provenance of assets/audio/lx_khub.mp3 (content-cli). Set status: approved and approvedBy after review.
+asset: audio/lx_khub.mp3
+model: openai/gpt-audio
+prompt: tts-line@1
+voice: alloy
+input: خوب
+generatedAt: 2026-09-25T16:01:22.753Z
+status: draft
