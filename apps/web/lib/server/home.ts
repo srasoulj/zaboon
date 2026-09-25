@@ -33,8 +33,11 @@ export async function buildHome(
       [...enrollments].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null
     const courseId = latest?.courseId ?? DEFAULT_COURSE_ID
     const cv = await currentVersion(tx, courseId)
+    // Only an enrollment behind the current version needs the bundle (and a migration).
     const active =
-      latest && cv ? await migrateEnrollment(tx, user.id, await loadBundle(cv)) : latest
+      latest && cv && latest.contentVersion < cv.version
+        ? await migrateEnrollment(tx, user.id, await loadBundle(cv))
+        : latest
     const today = dateInZone(now, profile.timezone)
     const streak = (await repos.state.getStreak(tx, user.id)) ?? initialStreak(config)
     const lives = (await repos.state.getLives(tx, user.id)) ?? initialLives(now, config)
