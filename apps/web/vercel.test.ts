@@ -1,6 +1,7 @@
 /**
  * apps/web/vercel.json (orchestrator-owned; the Vercel project's root directory is apps/web):
- * every scheduled path is a cron route of the contract, which Vercel calls with GET and
+ * the build runs the release (migrations, then content: scripts/release.ts) before `next build`,
+ * and every scheduled path is a cron route of the contract, which Vercel calls with GET and
  * `Authorization: Bearer $CRON_SECRET` (withRoute's `cron` auth).
  */
 import { readFileSync } from 'node:fs'
@@ -8,13 +9,28 @@ import { describe, expect, it } from 'vitest'
 import { routes } from '@zaboon/contracts'
 
 interface VercelJson {
+  buildCommand?: string
   crons?: { path: string; schedule: string }[]
 }
 
-const vercel = JSON.parse(
-  readFileSync(new URL('./vercel.json', import.meta.url), 'utf8'),
-) as VercelJson
+const readJson = (rel: string) =>
+  JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8')) as Record<string, unknown>
+
+const vercel = readJson('./vercel.json') as VercelJson
 const crons = vercel.crons ?? []
+
+describe('vercel.json build', () => {
+  it('runs the release, then next build (docs/DEPLOY.md §5.1)', () => {
+    expect(vercel.buildCommand).toBe('pnpm run vercel-build')
+    const web = readJson('./package.json') as { scripts: Record<string, string> }
+    expect(web.scripts['vercel-build']!.split('&&').map((s) => s.trim())).toEqual([
+      'pnpm --workspace-root run release',
+      'next build',
+    ])
+    const root = readJson('../../package.json') as { scripts: Record<string, string> }
+    expect(root.scripts.release).toBe('tsx scripts/release.ts')
+  })
+})
 
 describe('vercel.json crons', () => {
   it('schedules only GET cron routes from the contract', () => {

@@ -14,7 +14,7 @@
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
 | 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51; QA with the flags on (ws-qa-2, #57), its bugs fixed in #59 |
 | 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | ✅ prep #56 and #58; **speak** #60 with review fixes #61 and #65; **Stories** #64 with its path contract fix (#66). fa-en has three AI-composed draft stories (units 1, 2 and 4) |
-| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ✅ runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 (owner's session); flaky QA tests #63, #66; Lighthouse audit, formatter pass with a format gate in verify, `.env.example` sync (#67) |
+| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ✅ runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 and release on deploy #67 (owner's session); flaky QA tests #63, #66; Lighthouse audit, formatter pass with a format gate in verify, `.env.example` sync (#68) |
 
 ## Final report (2026-09-26, orchestrator)
 
@@ -47,7 +47,7 @@ Every wave in the plan is done: the MVP, Wave 3 (engagement, typing, tracing) an
   - fa-en: text drafts for units 1–5 (Astra) and Unit 1 media (79 clips, 8 illustrations, 5 portraits);
   - three draft stories;
   - everything is `status: draft` until a native speaker reviews it.
-- **Operations:** the deploy runbook ([DEPLOY.md](DEPLOY.md)), the RLS and grants model with pgTAP isolation tests, rate limits, body caps, the anti-cheat rules, and a cron rollover.
+- **Operations:** the deploy runbook ([DEPLOY.md](DEPLOY.md)), and release on deploy (#67): each production build applies pending migrations and publishes changed content. Also the RLS and grants model with pgTAP isolation tests, rate limits, body caps, the anti-cheat rules, and a cron rollover.
 
 **Lighthouse** (13.5, mobile preset with simulated throttling; production build served locally; flags at their defaults):
 
@@ -65,12 +65,11 @@ Every wave in the plan is done: the MVP, Wave 3 (engagement, typing, tracing) an
 
 **Budget:** AI spend is $7.72 of the $9.50 internal cap. 15 of 20 sessions were used, and the wall clock was about 25 h of 48.
 
-**The owner still needs to** (details in [DEPLOY.md](DEPLOY.md) and tracker #4):
+**The owner still needs to** (details in [DEPLOY.md](DEPLOY.md), "First deploy, in order", and tracker #4):
 
 - turn on anonymous sign-ins in Supabase;
-- set the Vercel Root Directory and environment variables;
-- apply the migrations;
-- publish the content;
+- enable pg_cron;
+- set the Vercel Root Directory and environment variables, including `DATABASE_URL_MIGRATE` (Production only). The production build then applies the migrations and publishes the content (#67);
 - push the `mvp` tag;
 - before turning `speak` on, set `APP_SIGNING_SECRET` and a credit-limited `OPENROUTER_API_KEY_APP`.
 
@@ -122,7 +121,8 @@ variables (names in `.env.example`; list in #34). Deploy runbook notes:
 - The Vercel project's Root Directory must be `apps/web`. `apps/web/vercel.json` holds the Monday 00:00 UTC league-rollover cron.
 - Set `CRON_SECRET`, or the cron route refuses every call.
 - The rollover route exists since #48. It is idempotent and closes missed weeks oldest first.
-- `CONTENT_BASE_URL` must be set at build time and at runtime. The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
+- `CONTENT_BASE_URL` is optional since the release on deploy: unset, the app uses the Supabase project's public `content` bucket (apps/web/lib/content-base-url.ts). The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
+- Every production build applies pending migrations and publishes changed content before `next build` (scripts/release.ts, `DATABASE_URL_MIGRATE`; [DEPLOY.md](DEPLOY.md) §3.2, §4, §8), so merging to `main` is the whole release.
 
 **Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
 the real renderers, the lesson player, the API and Postgres on desktop and mobile Chromium: all 13 MVP

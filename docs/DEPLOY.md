@@ -4,9 +4,10 @@
 > `docs/PROGRESS.md` and PR #34. Paths are relative to the repo root. **Owner:** marks something
 > the code does not settle (a decision or a check for the project owner). Names only, never values.
 
-**First deploy, in order:** Supabase Auth (§3.1) → migrations, `app_server` password, checks (§3.2)
-→ `content` bucket (§3.3) → publish `fa-en` and make it current (§4) → Vercel settings and
-variables, deploy (§5) → smoke test (§7) → feature flags when wanted (§6).
+**First deploy, in order:** Supabase Auth (§3.1) → pg_cron, `app_server` password,
+`DATABASE_URL_MIGRATE` (§3.2) → `content` bucket (§3.3) → Vercel settings and variables, deploy
+(§5): the production build applies the migrations and publishes `fa-en` (§4) → smoke test (§7) →
+feature flags when wanted (§6).
 
 ## 1. Overview
 
@@ -66,18 +67,28 @@ Check: `curl -s https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` lists a
 ### 3.2 Database
 
 Migrations run as **`postgres`**, the non-superuser role that owns the tables: one transaction per
-file, recorded in `supabase_migrations.schema_migrations`. Production uses `supabase db push`;
-scripts/migrate.ts mirrors it locally (docs/adr/0009). Don't mix roles: pg_cron runs each job as the
-role that scheduled it, and only the owner may execute `internal.*`
+file, recorded in `supabase_migrations.schema_migrations`, the way `supabase db push` does
+(scripts/migrations.ts; scripts/migrate.ts runs the same code locally, docs/adr/0009). **Every
+production build applies the pending files** before `next build` (scripts/release.ts, §5.1) over
+`DATABASE_URL_MIGRATE`: a build whose migration fails does not deploy, and the live deployment keeps
+working meanwhile because migrations are expand-only (docs/ARCHITECTURE.md §12). `supabase db push`
+still works on the same history table for a manual run. Don't mix roles: pg_cron runs each job as
+the role that scheduled it, and only the owner may execute `internal.*`
 (20260925000400_housekeeping.sql). Never apply `supabase/local/shim.sql` (a local emulation of
 Supabase's roles, `auth` schema and extensions), and don't install pgTAP: the `supabase/tests/`
 suites run locally only (packages/db/src/pgtap.db.test.ts).
 
-1. Enable **pg_cron** under Database → Extensions first (packages/db/README.md).
-2. Push with `supabase db push` as `postgres`, and watch for `WARNING: zaboon: …` lines. **Owner:**
-   the repo has no `supabase/config.toml`. If the CLI needs one, create it outside the repo, or
-   apply the files with `psql` as `postgres` in filename order, one transaction each, recording each
-   in `supabase_migrations.schema_migrations (version, name, statements)` like scripts/migrate.ts.
+1. Enable **pg_cron** under Database → Extensions first (packages/db/README.md); otherwise the
+   schedules migration only warns and the five housekeeping jobs stay unscheduled.
+2. Build `DATABASE_URL_MIGRATE` from the dashboard's **session pooler** string (Connect → Session
+   pooler, port 5432; the transaction pooler works too, prepared statements are off) with the
+   `postgres.<ref>` user and the project's database password, plus `?sslmode=require`, and set it
+   on Vercel for **Production only** (§5.2). The next production build applies every file below
+   and logs `[release] applied <version>_<name>` per file; preview builds have no
+   `DATABASE_URL_MIGRATE` and skip the step. (By hand instead: `supabase db push` as `postgres`, or
+   `psql` in filename order, one transaction each, recording each in
+   `supabase_migrations.schema_migrations (version, name, statements)`; the build then finds them
+   recorded.)
 
 | File (supabase/migrations/) | What it does |
 |---|---|
@@ -90,6 +101,9 @@ suites run locally only (packages/db/src/pgtap.db.test.ts).
 | `20260925000600_pg_cron_schedules.sql` | Installs pg_cron when it can and (re)schedules 5 jobs; otherwise a `WARNING` |
 | `20260925000700_app_server_timeouts.sql` | `app_server`: lock 10 s, idle in transaction 60 s, statement 15 s |
 | `20260926000000_engagement.sql` | League-week shape, engagement policies, 10 `quest_defs` rows |
+| `20260926100000_hardening.sql` | Size caps in the database (`item_ref` ≤ 120 characters, `session_answers.response` ≤ 8 KiB), added `NOT VALID` |
+| `20260927000000_speech_quota.sql` | Per-learner daily transcription quota table (`speak`) |
+| `20260927000100_story_sessions.sql` | `sessions.kind` accepts `'story'` (`stories`) |
 
 3. Set the `app_server` password out of band, never in git (base migration). `postgres` created
    the role, so it may alter it (20260925000700_app_server_timeouts.sql). Use `\password app_server`
@@ -102,7 +116,7 @@ suites run locally only (packages/db/src/pgtap.db.test.ts).
 5. Verify in the SQL editor (adapted from supabase/tests/001–002):
 
 ```sql
-SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;  -- 9 rows
+SELECT version, name FROM supabase_migrations.schema_migrations ORDER BY version;  -- one row per file above
 SELECT rolcanlogin, rolsuper, rolbypassrls, rolcreaterole, rolcreatedb
 FROM pg_roles WHERE rolname = 'app_server';                                        -- t f f f f
 SELECT unnest(s.setconfig) FROM pg_db_role_setting s JOIN pg_roles r ON r.oid = s.setrole
@@ -153,70 +167,70 @@ CLAUDE.md rule 6), and the API plays any course with a current version (`courseI
 `POST /api/sessions`, apps/web/lib/server/sessions.ts). `publish --local` is for dev only
 (tools/content-cli/src/publish.ts).
 
+**Every production build publishes** (scripts/release.ts, after the migrations of §3.2 and before
+`next build`): it builds each course in `RELEASE_COURSES`, compares the build's content hash with
+the current version's `build-info.json` in the bucket and, when they differ, uploads
+`fa-en/v<N+1>/` (hashed assets already there are reused), inserts the `content_versions` row and
+makes it current, all in the same build. Unchanged content uploads nothing, so a code-only merge
+leaves the current version alone. The upload uses `SUPABASE_SECRET_KEY` (or
+`CONTENT_STORAGE_UPLOAD_KEY` when set) against `NEXT_PUBLIC_SUPABASE_URL`, bucket `content`
+(§3.3). A `v<N>/` that already exists, or that a failed build left half-uploaded, is skipped for
+the next number, never overwritten (ten numbers at most), and a content error fails the build
+before anything is uploaded. Servers pick the new pointer up within about 10 s
+(apps/web/lib/server/content.ts); `GET /api/meta` then reports `contentVersion: <N+1>`.
+
 **Owner decision: drafts.** Every item in `content/fa-en` is `status: draft`
 (content/fa-en/course.yaml; docs/PROGRESS.md), so a strict build fails with "only approved items can
-be published" (tools/content-cli/src/validate.ts). `--allow-drafts` publishes them and records
-`includes_drafts = true`; the docs say nothing AI-generated ships without human approval
-(docs/ARCHITECTURE.md §11.3).
+be published" (tools/content-cli/src/validate.ts). `RELEASE_COURSES` publishes fa-en with
+`allowDrafts: true`, and its rows record `includes_drafts = true`; the docs say nothing AI-generated
+ships without human approval (docs/ARCHITECTURE.md §11.3). Flip the flag in scripts/release.ts once
+the content is reviewed; `pnpm content validate --course fa-en` must pass by then.
 
-Run on a trusted machine or in content CI, never on Vercel (.env.example):
+A course has at most one current version (unique index `content_versions_one_current`,
+20260925000100_core.sql). Sessions keep the version they started on, and enrollments move forward
+through `pathMigrations` (docs/adr/0005). The row's `min_app_version` is unused: `/api/meta` reads
+`minAppVersion` from `app_config` (apps/web/app/api/meta/route.ts).
+
+**Rollback:** content rolls forward only. Revert the content commit on `main` (or restore the
+last-good `content/fa-en`) and merge: the next production build publishes it as **v\<N+1\>**. Never
+move the pointer backwards past a path migration (docs/adr/0005; docs/LEARNING-ENGINE.md §4.4).
+
+**Publishing by hand** (another environment, or a build that must not publish) still works from a
+trusted machine, with the content-CLI credentials of .env.example:
 
 ```bash
 export SUPABASE_URL=https://<ref>.supabase.co   # read by tools/content-cli/src/storage.ts
 export CONTENT_STORAGE_UPLOAD_KEY=…             # from your secret store; write access to the bucket
-pnpm content validate --course fa-en            # strict: fails while items are drafts
-pnpm content build --course fa-en --version <N> [--allow-drafts]   # optional: inspect .local/content-build/fa-en/v<N>/
 pnpm content publish --target storage --course fa-en --version <N> [--allow-drafts]
 ```
 
-- `<N>` = `SELECT coalesce(max(version), 0) + 1 FROM public.content_versions WHERE course_id = 'fa-en';`.
-  `publish` builds by itself and refuses a version whose `manifest.json` already exists.
-- Upload order: hashed assets (skipped when present), then the `fa-en/v<N>/` files, `manifest.json`
-  last. A failed run leaves a partial `v<N>/`: delete it from the bucket or pick a new `<N>`
-  (tools/content-cli/src/storage.ts).
-- **Owner:** which credential `CONTENT_STORAGE_UPLOAD_KEY` is. The CLI sends it as `apikey` and as
-  `Authorization: Bearer` to the Storage REST API (storage.ts). `.env.example` lacks `SUPABASE_URL`.
-
-**Register, then make current** (a separate, approved step, docs/LEARNING-ENGINE.md §4.4): run the
-INSERT the CLI prints (storage.ts), then the switch that `setCurrentContentVersion` performs
-(packages/db/src/repos/content.ts):
+`<N>` = `SELECT coalesce(max(version), 0) + 1 FROM public.content_versions WHERE course_id = 'fa-en';`.
+`publish` refuses a version whose `manifest.json` exists, and a failed run leaves a partial `v<N>/`
+to delete or skip (tools/content-cli/src/storage.ts). Then run the INSERT it prints and make the
+version current (what `setCurrentContentVersion` does, packages/db/src/repos/content.ts):
 
 ```sql
-INSERT INTO public.content_versions (course_id, version, bundle_path, includes_drafts, is_current)
-VALUES ('fa-en', <N>, 'fa-en/v<N>', <true|false>, false);
-
 BEGIN;
 UPDATE public.content_versions SET is_current = false WHERE course_id = 'fa-en' AND is_current;
 UPDATE public.content_versions SET is_current = true  WHERE course_id = 'fa-en' AND version = <N>;
 COMMIT;
 ```
 
-A course has at most one current version (unique index `content_versions_one_current`,
-20260925000100_core.sql). Servers cache the pointer for about 10 s (apps/web/lib/server/content.ts);
-then `GET /api/meta` reports `contentVersion: <N>`. Sessions keep the version they started on, and
-enrollments move forward through `pathMigrations` (docs/adr/0005). The row's `min_app_version` is
-unused: `/api/meta` reads `minAppVersion` from `app_config` (apps/web/app/api/meta/route.ts).
-
-**Rollback:** republish the previous content as **v\<N+1\>**; never move the pointer backwards past
-a path migration (docs/adr/0005; docs/LEARNING-ENGINE.md §4.4). Build the old source with the
-current CLI, since `--course` accepts a directory (tools/content-cli/src/paths.ts), then register
-`<N+1>` and make it current as above:
-
-```bash
-mkdir -p /tmp/fa-en-rollback
-git archive <last-good-sha> content/fa-en | tar -x -C /tmp/fa-en-rollback
-pnpm content publish --target storage --course /tmp/fa-en-rollback/content/fa-en --version <N+1> [--allow-drafts]
-```
+The next production build compares hashes against whatever is current, so a hand-published version
+is respected until the content changes again.
 
 ## 5. Vercel
 
 ### 5.1 Project and build
 
 - Root Directory **`apps/web`** (docs/PROGRESS.md; apps/web/vercel.test.ts), framework Next.js.
-- Build command: the package's `next build` (apps/web/package.json). **Owner, verify:** the build
-  log must show `next build`, not `turbo run build`. turbo.json declares no `env`, and Turborepo's
-  strict environment mode could hide `CONTENT_BASE_URL` from the build; audio would then be refused
-  without an error (the failure #42 fixed, docs/PROGRESS.md). §7 has a check.
+- Build command: `pnpm run vercel-build` (apps/web/vercel.json `buildCommand`, which wins over the
+  dashboard setting): the release (`pnpm --workspace-root run release` = scripts/release.ts:
+  migrations §3.2, then content §4) and then the package's `next build` (apps/web/package.json).
+  **Owner, verify:** the build log shows `[release] …` lines followed by `next build`, not
+  `turbo run build`. turbo.json declares no `env`, and Turborepo's strict environment mode could
+  hide `CONTENT_BASE_URL` from the build; audio would then be refused without an error (the failure
+  #42 fixed, docs/PROGRESS.md). §7 has a check.
 - Install: pnpm 10.33.0 from `packageManager` (package.json). `onlyBuiltDependencies` lets esbuild
   install; the service-worker route bundles with it (pnpm-workspace.yaml;
   apps/web/app/serwist/[path]/route.ts).
@@ -229,16 +243,18 @@ pnpm content publish --target storage --course /tmp/fa-en-rollback/content/fa-en
 
 ### 5.2 Environment variables
 
-The required set matches PR #34's list. Set each variable for Production and for Preview.
+The required set matches PR #34's list plus `DATABASE_URL_MIGRATE`. Set each variable for
+Production and for Preview, except `DATABASE_URL_MIGRATE`: Production only.
 
 | Variable | When | Required | Read in | Notes |
 |---|---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | build + runtime | yes | apps/web/lib/auth-client.ts, apps/web/lib/server/env.ts | Browser auth; server JWKS and issuer (auth/supabase.ts) and the Admin API (auth/admin.ts). Missing: every API route answers 500 |
+| `NEXT_PUBLIC_SUPABASE_URL` | build + runtime | yes | apps/web/lib/auth-client.ts, apps/web/lib/server/env.ts, scripts/release.ts | Browser auth; server JWKS and issuer (auth/supabase.ts) and the Admin API (auth/admin.ts); the content base when `CONTENT_BASE_URL` is unset, and the bucket the release uploads to. Missing: every API route answers 500 |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | build | yes | apps/web/lib/auth-client.ts | Inlined into the browser; used for Auth only |
 | `NEXT_PUBLIC_SITE_URL` | build | yes | apps/web/app/layout.tsx, robots.ts, sitemap.ts | Canonical origin; falls back to `http://localhost:3000` |
-| `CONTENT_BASE_URL` | build + runtime | yes | apps/web/next.config.ts, apps/web/app/serwist/[path]/route.ts, apps/web/lib/server/env.ts, content.ts | The bucket URL from §3.3. Build: inlined as `NEXT_PUBLIC_CONTENT_BASE_URL` (don't set that name yourself) and into the service worker. Runtime: bundle fetches and media URLs. Unset: the server reads `apps/web/public/content`, which is not deployed (PR #34) |
+| `DATABASE_URL_MIGRATE` | build | yes, Production only | scripts/release.ts, scripts/migrations.ts | §3.2 step 2: the `postgres` role via the session pooler. Missing on a production build: the build fails with `DATABASE_URL_MIGRATE is not set`; unset for Preview, whose builds skip migrations and content |
+| `CONTENT_BASE_URL` | build + runtime | no | apps/web/lib/content-base-url.ts (next.config.ts, apps/web/app/serwist/[path]/route.ts, apps/web/lib/server/env.ts, content.ts) | Where bundles live. Unset: `<NEXT_PUBLIC_SUPABASE_URL>/storage/v1/object/public/content`, the bucket of §3.3 the release publishes to; set it only for content hosted elsewhere. Build: inlined as `NEXT_PUBLIC_CONTENT_BASE_URL` (don't set that name yourself) and into the service worker. Runtime: bundle fetches and media URLs |
 | `DATABASE_URL_APP_SERVER` | runtime | yes | apps/web/lib/server/env.ts | §3.2 step 4. Missing: every API route answers 500. Each server instance opens up to 10 connections (apps/web/lib/server/db.ts) |
-| `SUPABASE_SECRET_KEY` | runtime | yes | apps/web/lib/server/auth/admin.ts | Admin API user deletion for `DELETE /api/account` and guest merges (apps/web/lib/server/account.ts). Server only |
+| `SUPABASE_SECRET_KEY` | build + runtime | yes | scripts/release.ts, apps/web/lib/server/auth/admin.ts | Build: uploads published content to the bucket (§4). Runtime: Admin API user deletion for `DELETE /api/account` and guest merges (apps/web/lib/server/account.ts). Server only |
 | `CRON_SECRET` | runtime | yes | apps/web/lib/server/env.ts, auth/cron.ts | Without it the cron route answers 401 to every call |
 | `OPENROUTER_API_KEY_APP` | runtime | for `speak` | apps/web/lib/server/speech/transcriber.ts | Runtime AI, with its own credit limit set on the key in OpenRouter (docs/adr/0008). Missing: `POST /api/speech/transcribe` answers 503 without spending quota |
 | `APP_SIGNING_SECRET` | runtime | for `speak` | apps/web/lib/server/signing.ts | At least 32 random characters (`openssl rand -base64 48`). Signs speak transcript tokens. Missing or short: transcribe answers 503 before any quota or AI spend, and `/complete` grades every speak answer wrong |
@@ -249,10 +265,10 @@ The required set matches PR #34's list. Set each variable for Production and for
 | `STRIPE_*`, `VAPID_*`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | – | P2 | commented out in .env.example | |
 | `VERCEL_ENV`, `VERCEL_GIT_COMMIT_SHA` | set by Vercel | – | env.ts, apps/web/app/serwist/[path]/route.ts | `VERCEL_ENV` makes local auth mode refuse to start; the SHA versions the precached offline page |
 
-Never put `OPENROUTER_API_KEY_BUILD`, `CONTENT_STORAGE_UPLOAD_KEY` or `SUPABASE_URL` (content CLI
-only) on Vercel (.env.example; docs/adr/0008), and never give a secret the `NEXT_PUBLIC_` prefix
-(docs/ARCHITECTURE.md §13). `NEXT_PUBLIC_*` and `CONTENT_BASE_URL` are compiled into the build:
-changing them needs a new deployment.
+Never put `OPENROUTER_API_KEY_BUILD` on Vercel (.env.example; docs/adr/0008); `SUPABASE_URL` and
+`CONTENT_STORAGE_UPLOAD_KEY` are for publishing by hand (§4), the release does without them. Never
+give a secret the `NEXT_PUBLIC_` prefix (docs/ARCHITECTURE.md §13). `NEXT_PUBLIC_*` and
+`CONTENT_BASE_URL` are compiled into the build: changing them needs a new deployment.
 
 ### 5.3 Must stay unset, in Production and in Preview
 
@@ -385,14 +401,17 @@ In a private browser window:
 
 ## 8. Operations
 
-**Routine release:** `pnpm verify` green → apply new migrations with `supabase db push` before the
-app that needs them goes out (the docs' order, docs/ARCHITECTURE.md §13; migrations are expand-only,
-§12). The documented automatic CD doesn't exist and Vercel builds `main` by itself, so push before
-merging → merge → the §7 `curl` checks → publish content if it changed (§4).
+**Routine release:** `pnpm verify` green → merge to `main`. Vercel builds `main` by itself, and the
+production build applies new migrations and publishes changed content before `next build`
+(scripts/release.ts; §3.2, §4), in the docs' order (migrations before the app that needs them,
+docs/ARCHITECTURE.md §13; migrations are expand-only, §12). A failed migration or content build
+fails the build and the previous deployment stays live; the build log says which step failed
+(`[release] failed:`). Then the §7 `curl` checks.
 
 | Secret | Lives in | Rotation |
 |---|---|---|
 | `app_server` password | Postgres; `DATABASE_URL_APP_SERVER` on Vercel | `\password app_server` as `postgres` → update the variable → redeploy. Requests fail in between. **Owner:** pick a quiet window |
+| Database password (`postgres`) | Supabase; `DATABASE_URL_MIGRATE` on Vercel | Reset under Database settings → update the variable; the next production build uses it (nothing at runtime does) |
 | `CRON_SECRET` | Vercel | Update and redeploy; nothing else stores it (auth/cron.ts) |
 | `SUPABASE_SECRET_KEY` | Vercel | New key in Supabase → update → redeploy → revoke the old one → re-run §7 step 5 |
 | JWT signing key | Supabase | Rotate in Supabase. The server reads the JWKS at runtime (auth/supabase.ts), so no redeploy; keep the old key published until tokens signed with it expire |
@@ -437,12 +456,14 @@ as v\<N+1\> (§4).
 5. **Abuse and guest cleanup.** Turnstile isn't wired (§3.1), and `/api/cron/guest-cleanup`
    (docs/ARCHITECTURE.md §8) doesn't exist, so anonymous users are never deleted. Only the Auth
    rate limit throttles guest creation.
-6. **No CD pipeline.** The docs describe `supabase db push`, then promote on merge
-   (docs/ARCHITECTURE.md §13), but CI is manual-only (.github/workflows/ci.yml). Use §8's order.
+6. **CD is the build.** GitHub Actions is manual-only (.github/workflows/ci.yml), so the production
+   build applies migrations and publishes content itself (§8). There is no staging step for content
+   (docs/LEARNING-ENGINE.md §4.4): what merges to `main` goes live on the next build, and a preview
+   deployment has no backend of its own until a staging project exists (§2).
 7. **Flags.** Wave 3 QA with the flags on is still pending; Wave 4 is in development (§6).
 8. **Documented but not implemented:** `preferredRegion` (§2), Sentry and Amplitude, the CSP
    (docs/ARCHITECTURE.md §9; no headers in apps/web/next.config.ts), OAuth/PKCE (§3.1) and
    runtime AI.
-9. **Config drift.** `.env.example` lacks `SUPABASE_URL` (content CLI) and `NEXT_PUBLIC_AUTH_MODE`,
-   and lists several names no code reads (§5.2). The repo has no `supabase/config.toml` (§3.2), no
+9. **Config drift.** `.env.example` lacks `NEXT_PUBLIC_AUTH_MODE` and lists several names no code
+   reads (§5.2). The repo has no `supabase/config.toml` (§3.2), no
    `supabase/seed.sql` (listed in docs/ARCHITECTURE.md §4) and no `apps/web/proxy.ts` (§1).

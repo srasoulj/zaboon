@@ -4,6 +4,16 @@ import type { NextConfig } from 'next'
 // ZABOON_DEV_AUTH=1 at build/dev-server start (ADR 0009); production builds never contain them.
 const devAuth = process.env.ZABOON_DEV_AUTH === '1'
 
+// The browser plays course media only from the content origin (components/path/play-audio.ts).
+// One source of truth, inlined at build time: CONTENT_BASE_URL, else the Supabase project's public
+// `content` bucket, where the release publishes (scripts/release.ts); '' = same-origin `/content/…`
+// only, as in local mode. The same rule as lib/content-base-url.ts, repeated here because this
+// file loads outside the app's module graph; next-config.test.ts keeps the two in step.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, '')
+const contentBaseUrl =
+  process.env.CONTENT_BASE_URL ||
+  (supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/content` : '')
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // The dev-tools badge overlaps the mobile tab bar (and e2e clicks).
@@ -26,10 +36,7 @@ const nextConfig: NextConfig = {
   // Postgres drivers stay server-side Node modules; esbuild(-wasm) bundles the Serwist service
   // worker at request/build time (this is all `withSerwist` from @serwist/turbopack adds).
   serverExternalPackages: ['postgres', 'esbuild', 'esbuild-wasm'],
-  // The browser plays course media only from the content origin (components/path/play-audio.ts).
-  // One source of truth: the server's CONTENT_BASE_URL, inlined at build time ('' = same-origin
-  // `/content/…` only, as in local mode).
-  env: { NEXT_PUBLIC_CONTENT_BASE_URL: process.env.CONTENT_BASE_URL ?? '' },
+  env: { NEXT_PUBLIC_CONTENT_BASE_URL: contentBaseUrl },
 }
 
 export default nextConfig

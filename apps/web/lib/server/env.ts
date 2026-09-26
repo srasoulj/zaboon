@@ -4,6 +4,8 @@
  * AUTH_MODE=local is the dev/test mode: it refuses to run on Vercel or against a database that is
  * not on loopback, so local tokens can never reach real data.
  */
+import { contentBaseUrlFromEnv } from '../content-base-url'
+
 export type AuthMode = 'local' | 'supabase'
 
 export interface ServerEnv {
@@ -13,7 +15,10 @@ export interface ServerEnv {
   /** app_server connection string (never a superuser, never BYPASSRLS). */
   databaseUrl: string
   supabaseUrl: string | null
-  /** Where immutable content bundles live; null means this app's own /content (apps/web/public). */
+  /**
+   * Where immutable content bundles live: CONTENT_BASE_URL, else the Supabase project's public
+   * `content` bucket (lib/content-base-url.ts); null means this app's own /content (apps/web/public).
+   */
   contentBaseUrl: string | null
   cronSecret: string | null
   /**
@@ -70,7 +75,7 @@ export function serverEnv(): ServerEnv {
     devAuth: mode === 'local' && process.env.ZABOON_DEV_AUTH === '1',
     databaseUrl,
     supabaseUrl,
-    contentBaseUrl: process.env.CONTENT_BASE_URL || null,
+    contentBaseUrl: contentBaseUrlFromEnv(process.env) || null,
     cronSecret: process.env.CRON_SECRET || null,
     signingSecret: process.env.APP_SIGNING_SECRET || null,
     openrouterAppKey: process.env.OPENROUTER_API_KEY_APP || null,
