@@ -37,6 +37,16 @@ const fixture = loadCourse('fixtures')
 const faEn = loadCourse('fa-en')
 const fx = fixture.view('u01-fixture')
 const now = new Date('2026-09-25T12:00:00Z')
+/** DEFAULT_APP_CONFIG plus the Wave 4 `speaking` weight (the orchestrator adds it to the default). */
+const CFG_SPEAKING = {
+  ...cfg,
+  mixProfiles: Object.fromEntries(
+    Object.entries(cfg.mixProfiles).map(([k, w]) => [
+      k,
+      ['standard', 'practice', 'legendary'].includes(k) ? { ...w, speaking: 0.1 } : w,
+    ]),
+  ),
+}
 const fresh: LearnerState = { lexemeCards: {}, letterCards: {}, mistakes: [], exposures: {} }
 
 function gen(content: ContentView, over: Partial<GenerateInput> = {}) {
@@ -126,8 +136,9 @@ describe('session-engine', () => {
 
     it('u01-t1 pins the Wave 3 types (typed Persian, tracing) after every MVP level', () => {
       const levels = fixture.units[0]!.levels
-      expect(levels.at(-1)!.id).toBe('u01-t1')
-      const spec = levels.at(-1)!.spec!
+      const t1 = levels.findIndex((l) => l.id === 'u01-t1')
+      expect(levels[t1 - 1]!.id).toBe('u01-r1') // right after every MVP level
+      const spec = levels[t1]!.spec!
       expect(spec.pinnedOnly).toBe(true)
       expect(spec.pinned.map(refLine)).toEqual([
         { type: 'translate_type', items: ['s_u01_0003'], direction: 'en_fa' },
@@ -474,7 +485,7 @@ describe('session-engine', () => {
       expect(() =>
         buildChallenge({ type: 'select_translation', items: ['s_nope'] }, 0, fx),
       ).toThrow(ContentError)
-      expect(() => buildChallenge({ type: 'speak', items: ['s_u01_0001'] }, 0, fx)).toThrow(
+      expect(() => buildChallenge({ type: 'story', items: ['s_u01_0001'] }, 0, fx)).toThrow(
         NotImplementedError,
       )
       expect(() => buildChallenge({ type: 'story', items: ['s_u01_0001'] }, 0, fx)).toThrow(
@@ -789,6 +800,7 @@ const P2_TYPES: Readonly<Record<string, keyof SessionFeatures>> = {
   listen_type: 'persianTyping',
   cloze_type: 'persianTyping',
   letter_trace: 'letterTrace',
+  speak: 'speak',
 }
 
 /** A type the session may contain: MVP types, and P2 types while their feature is on. */
@@ -808,7 +820,7 @@ function checkScenario(scenarios: Scenario[], runs: number, withFeatures = false
       lessonIndex: fc.nat(4),
       learner: learnerArb(sc.content),
       features: withFeatures
-        ? fc.record({ persianTyping: fc.boolean(), letterTrace: fc.boolean() })
+        ? fc.record({ persianTyping: fc.boolean(), letterTrace: fc.boolean(), speak: fc.boolean() })
         : fc.constant(undefined),
       practiceMode:
         withFeatures && sc.kind === 'practice'
@@ -826,7 +838,7 @@ function checkScenario(scenarios: Scenario[], runs: number, withFeatures = false
         learner,
         seed,
         now,
-        config: cfg,
+        config: withFeatures ? CFG_SPEAKING : cfg,
         ...(features ? { features } : {}),
         ...(practiceMode ? { practiceMode } : {}),
       }
@@ -1257,7 +1269,11 @@ describe('properties', () => {
     'fixture course with Wave 3 features and practice modes: valid, deterministic, rebuildable',
     () => {
       checkScenario(
-        [...fixtureScenarios, { content: fx, kind: 'lesson', levelId: 'u01-t1' }],
+        [
+          ...fixtureScenarios,
+          { content: fx, kind: 'lesson', levelId: 'u01-t1' },
+          { content: fx, kind: 'lesson', levelId: 'u01-v1' },
+        ],
         150,
         true,
       )
@@ -1310,5 +1326,92 @@ describe('complete_chat speakers', () => {
   it('leave the portrait out when the character has none (the placeholder is drawn)', () => {
     const cc = of(chatOnly(fx), 'complete_chat')
     expect(cc.speaker).toStrictEqual({ id: 'leila', name: 'Leila' })
+  })
+})
+
+describe('speak (Wave 4, flags.speak)', () => {
+  const speakOn = { speak: true }
+  const withSpeaking = CFG_SPEAKING
+
+  it('builds a sentence: Persian prompt, English translation, a spoken-transcript key', () => {
+    const r: ChallengeRef = { type: 'speak', items: ['s_u01_0007'] }
+    const sp = of(buildChallenge(r, 2, fx), 'speak')
+    expect(sp.prompt.fa).toBe('من سیب می‌خوام')
+    expect(sp.prompt.tokens?.map((t) => t.surface)).toEqual(['من', 'سیب', 'می‌خوام'])
+    expect(sp.translation).toMatch(/apple/)
+    expect(Challenge.parse(sp)).toStrictEqual(sp)
+    expect(buildChallenge(r, 2, fx)).toEqual(sp) // deterministic
+    // Lenient where speech is: punctuation, ZWNJ, variants, typo and spelling leniency…
+    for (const t of ['من سیب می‌خوام', 'من سیب میخوام.', 'من سیب می‌خام'])
+      expect(gradeResponse(sp, { kind: 'audio', transcript: t }).verdict, t).toBe('correct')
+    expect(gradeResponse(sp, { kind: 'audio', transcript: 'من ثیب می‌خوام' }).verdict).toBe(
+      'spelling',
+    )
+    // …but it must be what the sentence says: no pronoun drop, no register swap.
+    expect(gradeResponse(sp, { kind: 'audio', transcript: 'سیب می‌خوام' }).verdict).toBe('wrong')
+    // The formal verb is one letter away: at most a typo, never the register's own "correct".
+    expect(gradeResponse(sp, { kind: 'audio', transcript: 'من سیب می‌خواهم' }).verdict).toBe('typo')
+    expect(gradeResponse(sp, { kind: 'audio', transcript: 'من نون می‌خوام' }).verdict).toBe('wrong')
+  })
+
+  it('punctuation is not spoken: a transcript without it is correct', () => {
+    const sp = of(buildChallenge({ type: 'speak', items: ['s_u01_0001'] }, 0, fx), 'speak')
+    expect(gradeResponse(sp, { kind: 'audio', transcript: 'سلام خوبی' }).verdict).toBe('correct')
+  })
+
+  it('grades: declined is correct; other response kinds are wrong; words are not speakable', () => {
+    const sp = buildChallenge({ type: 'speak', items: ['s_u01_0001'] }, 0, fx)
+    expect(gradeResponse(sp, { kind: 'audio', transcript: '', declined: true })).toEqual({
+      verdict: 'correct',
+    })
+    expect(gradeResponse(sp, { kind: 'text', value: 'سلام خوبی' }).verdict).toBe('wrong')
+    expect(gradeResponse(sp, { kind: 'audio', transcript: '' }).verdict).toBe('wrong')
+    expect(() => buildChallenge({ type: 'speak', items: ['lx_ab'] }, 0, fx)).toThrow(ContentError)
+  })
+
+  it('mvpTwin: a speak pin plays listen_tap on the same sentence while the flag is off', () => {
+    const r: ChallengeRef = { type: 'speak', items: ['s_u01_0001'] }
+    expect(mvpTwin(r, undefined)).toEqual({ type: 'listen_tap', items: ['s_u01_0001'] })
+    expect(mvpTwin(r, { persianTyping: true, letterTrace: true })).toEqual({
+      type: 'listen_tap',
+      items: ['s_u01_0001'],
+    })
+    expect(mvpTwin(r, speakOn)).toBe(r)
+  })
+
+  it('u01-v1: speak pins with the flag, listen_tap twins without', () => {
+    const on = gen(fx, { levelId: 'u01-v1', features: speakOn })
+    expect(on.refs.map((r) => r.type)).toEqual(['speak', 'speak', 'listen_tap'])
+    expect(rebuildChallenges(on.refs, fx)).toEqual(on.challenges)
+    const off = gen(fx, { levelId: 'u01-v1' })
+    expect(off.refs).toEqual([
+      { type: 'listen_tap', items: ['s_u01_0001'] },
+      { type: 'listen_tap', items: ['s_u01_0007'] },
+      { type: 'listen_tap', items: ['s_u01_0005'] },
+    ])
+    expect(gen(fx, { levelId: 'u01-v1', features: { speak: false } })).toEqual(off)
+  })
+
+  it('the speaking pool appears only with the feature (and the weight), and draws no randomness while off', () => {
+    const learner = { ...fresh, lexemeCards: cards(indexContent(fx).lexemeList.map((l) => l.id)) }
+    const view = withSpec(fx, { mix: 'standard' })
+    const base = { levelId: 'u01-gen', lessonIndex: 1, learner, config: withSpeaking }
+    const seeds = Array.from({ length: 12 }, (_, i) => `sp-${i}`)
+    const speaks = (features?: SessionFeatures) =>
+      seeds
+        .flatMap((seed) => gen(view, { ...base, seed, ...(features ? { features } : {}) }).refs)
+        .filter((r) => r.type === 'speak')
+    expect(speaks()).toEqual([])
+    expect(speaks({ persianTyping: true, letterTrace: true })).toEqual([])
+    expect(speaks(speakOn).length).toBeGreaterThan(0)
+    // With the feature off the extra weight changes nothing: exactly the config without it.
+    for (const seed of seeds.slice(0, 4))
+      expect(gen(view, { ...base, seed })).toEqual(gen(view, { ...base, seed, config: cfg }))
+    // Practice and legendary sessions too, valid and rebuildable.
+    for (const kind of ['practice', 'legendary'] as const) {
+      const out = gen(view, { ...base, kind, seed: 'sp-x', features: speakOn })
+      for (const c of out.challenges) expect(Challenge.safeParse(c).success).toBe(true)
+      expect(rebuildChallenges(out.refs, view)).toEqual(out.challenges)
+    }
   })
 })

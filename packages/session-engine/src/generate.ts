@@ -109,6 +109,7 @@ type Category =
   | 'buildWord'
   | 'typing'
   | 'letterTrace'
+  | 'speaking'
 
 const COURSE_FALLBACK: readonly Category[] = [
   'productionBank',
@@ -277,6 +278,8 @@ export function mvpTwin(r: ChallengeRef, features: SessionFeatures | undefined):
       return typing ? r : { ...r, type: 'cloze_choice' }
     case 'letter_trace':
       return features?.letterTrace === true ? r : { type: 'letter_forms', items: [r.items[0]!] }
+    case 'speak':
+      return features?.speak === true ? r : { type: 'listen_tap', items: [r.items[0]!] }
     default:
       return r
   }
@@ -467,6 +470,11 @@ function coursePools(
   // P2 pools come last and draw from `rnd` only while their feature is on (MVP sessions unchanged).
   if (allowTyping && p.input.features?.persianTyping === true)
     pools.typing = shuffle(persianTypingRefs(p, pool, S, L), rnd)
+  if (p.input.features?.speak === true)
+    pools.speaking = shuffle(
+      S.map((s) => ref('speak', [s.id])),
+      rnd,
+    )
   return pools
 }
 

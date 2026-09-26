@@ -93,5 +93,23 @@ levels:
         - { type: listen_type, items: [s_u01_0005] }
         - { type: cloze_type, items: [s_u01_0007] }
         - { type: letter_trace, items: [l_be] }
+  # Wave 4 (P2): speaking. Appended after u01-t1, so every earlier level is unaffected; its focus
+  # items all appear in the levels above. With flags.speak off the speak pins play listen_tap.
+  - id: u01-v1
+    kind: lesson
+    title: Speaking
+    lessons: 1
+    spec:
+      focus:
+        lexemes: [lx_salam, lx_khub, lx_sib, lx_mikham, lx_chay]
+        sentences: [s_u01_0001, s_u01_0005, s_u01_0007]
+        letters: []
+        chats: []
+      mix: standard
+      pinnedOnly: true
+      pinned:
+        - { type: speak, items: [s_u01_0001] }
+        - { type: speak, items: [s_u01_0007] }
+        - { type: listen_tap, items: [s_u01_0005] }
 status: approved
 provenance: { author: fixtures }

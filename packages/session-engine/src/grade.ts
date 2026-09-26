@@ -95,9 +95,11 @@ export function gradeResponse(
       case 'cloze_type':
         return response.kind === 'text' ? typed(challenge.graph, response.value, 'fa', ctx) : WRONG
       case 'speak':
-        return response.kind === 'audio'
-          ? typed(challenge.graph, response.transcript, 'fa', ctx)
-          : WRONG
+        // "Can't speak now" (declined) grades correct like a declined trace. The server grades a
+        // transcript only when its signed token verifies (apps/web/lib/server/speech).
+        if (response.kind !== 'audio') return WRONG
+        if (response.declined === true) return { verdict: 'correct' }
+        return typed(challenge.graph, response.transcript, 'fa', ctx)
       case 'match_pairs':
       case 'letter_forms':
         return response.kind === 'pairs'
