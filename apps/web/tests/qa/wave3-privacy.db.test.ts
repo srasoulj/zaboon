@@ -74,10 +74,27 @@ describe('GET /api/leaderboard', () => {
   })
 })
 
+/** Metrics that one lesson with a wrong answer advances (not perfect, practice or letters). */
+const LESSON_METRICS = new Set(['xp', 'lessons'])
+
+/**
+ * A guest whose daily quests include one a lesson advances. The draw is per user id, and about one
+ * guest in ten draws none, so the progress assertion below would otherwise be flaky.
+ */
+async function guestWithLessonQuest(): Promise<TestUser> {
+  for (let i = 0; i < 20; i++) {
+    const g = await h.guest()
+    await ensureProfile(h, g, now)
+    const res = await read(h, api.quests, '/api/quests', g, { now, flags: ON })
+    expect(res.status).toBe(200)
+    if (res.body.quests.some((q: Json) => LESSON_METRICS.has(q.metric))) return g
+  }
+  throw new Error('no guest drew an xp or lessons quest in 20 tries')
+}
+
 describe('quests, shop and practice reflect only the caller', () => {
   it("another learner's progress, coins, freezes and mistakes never show up", async () => {
-    const alice = await h.guest()
-    await ensureProfile(h, alice, now)
+    const alice = await guestWithLessonQuest()
     await grantCoins(h, alice.id, 777, uuid())
     await lesson(h, alice, { now, flags: ON, wrong: [0] })
     const bob = await h.guest()
@@ -97,7 +114,9 @@ describe('quests, shop and practice reflect only the caller', () => {
 
     const a = await reads(alice)
     expect(a.shop.coins).toBeGreaterThanOrEqual(777)
-    expect(a.quests.quests.some((q: Json) => q.progress > 0)).toBe(true)
+    const advanced = a.quests.quests.filter((q: Json) => LESSON_METRICS.has(q.metric))
+    expect(advanced.length).toBeGreaterThan(0)
+    for (const q of advanced) expect(q.progress, JSON.stringify(q)).toBeGreaterThan(0)
     expect(a.practice.modes.find((m: Json) => m.mode === 'mistakes')).toMatchObject({
       available: true,
     })
