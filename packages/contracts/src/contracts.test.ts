@@ -1,12 +1,18 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
+import { z } from 'zod'
 import {
   AnswerRecord,
   AppConfig,
   Challenge,
   ChallengeResponse,
+  CourseIdParam,
+  CreateReportRequest,
   CreateSessionRequest,
   DEFAULT_APP_CONFIG,
   DEFAULT_SETTINGS,
+  DevLinkRequest,
+  DevRefreshRequest,
+  DevSignInRequest,
   ERROR_STATUS,
   ErrorCode,
   ErrorEnvelope,
@@ -17,9 +23,14 @@ import {
   LeagueRolloverResponse,
   MAX_CHALLENGES,
   MAX_COHORT_SIZE,
+  MAX_TILE_LENGTH,
+  MAX_TILES,
   MVP_CHALLENGE_TYPES,
+  MergeRequest,
+  OnboardingRequest,
   PracticeMode,
   PracticeResponse,
+  ProfilePatch,
   PurchaseRequest,
   PurchaseResponse,
   QuestDto,
@@ -603,5 +614,110 @@ describe('contracts: Wave 4 speak and stories (P2)', () => {
     expect(ERROR_STATUS.unavailable).toBe(503)
     for (const code of ['quota_exceeded', 'unavailable'] as const)
       expect(ErrorEnvelope.parse({ error: { code, message: 'x' } }).error.code).toBe(code)
+  })
+})
+
+// ------------------------------------------------------------------------------ Hardening
+/** Paths of the strings, lists and open records in a JSON Schema that have no size bound. */
+function unbounded(node: unknown, path: string): string[] {
+  if (!node || typeof node !== 'object') return []
+  const n = node as Record<string, unknown>
+  const out: string[] = []
+  // A UUID has a fixed length; enums and literals are closed.
+  const closed = n.enum !== undefined || n.const !== undefined || n.format === 'uuid'
+  if (n.type === 'string' && n.maxLength === undefined && !closed) out.push(path)
+  if (n.type === 'array' && n.maxItems === undefined) out.push(`${path}[]`)
+  if (
+    n.type === 'object' &&
+    n.additionalProperties !== undefined &&
+    n.additionalProperties !== false
+  )
+    out.push(`${path}{}`)
+  for (const [key, value] of Object.entries(n)) {
+    if (key === 'properties')
+      for (const [p, s] of Object.entries(value as Record<string, unknown>))
+        out.push(...unbounded(s, `${path}.${p}`))
+    else if (key === 'items') out.push(...unbounded(value, `${path}[]`))
+    else if (key === 'anyOf' || key === 'oneOf' || key === 'prefixItems')
+      for (const s of value as unknown[]) out.push(...unbounded(s, path))
+  }
+  return out
+}
+
+const rejects = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success === false
+const accepts = (schema: z.ZodType, value: unknown) => schema.safeParse(value).success
+
+describe('contracts: bounded inputs', () => {
+  it('every string and list a client can send has a maximum size', () => {
+    const found = Object.entries(routes).flatMap(([name, r]) =>
+      r.request ? unbounded(z.toJSONSchema(r.request, { io: 'input' }), name) : [],
+    )
+    // The free-form avatar JSON is capped by its handler (MAX_AVATAR_BYTES in lib/server/profile.ts).
+    expect(found).toEqual(['updateProfile.avatar{}'])
+  })
+
+  it('answer tiles: at most 40 tiles of at most 64 characters', () => {
+    const tiles = (n: number, length: number) => ({
+      kind: 'tiles',
+      value: Array.from({ length: n }, () => 'x'.repeat(length)),
+    })
+    expect([MAX_TILES, MAX_TILE_LENGTH]).toEqual([40, 64])
+    expect(accepts(ChallengeResponse, tiles(40, 64))).toBe(true)
+    expect(rejects(ChallengeResponse, tiles(1, 65))).toBe(true)
+    expect(rejects(ChallengeResponse, tiles(41, 1))).toBe(true)
+    expect(rejects(ChallengeResponse, tiles(1, 100_000))).toBe(true)
+  })
+
+  it('sessions: course id (the GET routes’ rule), level id and timezone are capped', () => {
+    const req = { courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0', tz: 'Asia/Tehran' }
+    expect(CreateSessionRequest.parse({ kind: 'practice', tz: 'UTC' }).courseId).toBe('fa-en')
+    for (const courseId of ['fa-en', 'fixture', 'no-such-course', `a${'-'.repeat(39)}`])
+      expect(accepts(CreateSessionRequest, { ...req, courseId }), courseId).toBe(true)
+    for (const courseId of ['', 'Fa-En', '-fa', 'fa_en', 'fa en', 'a'.repeat(41), 'a'.repeat(1e5)])
+      expect(rejects(CreateSessionRequest, { ...req, courseId }), courseId.slice(0, 50)).toBe(true)
+    expect(CourseIdParam.safeParse('a'.repeat(40)).success).toBe(true)
+    expect(accepts(CreateSessionRequest, { ...req, levelId: `u01-${'a'.repeat(36)}` })).toBe(true)
+    expect(rejects(CreateSessionRequest, { ...req, levelId: `u01-${'a'.repeat(37)}` })).toBe(true)
+    const tz = 'America/Argentina/ComodRivadavia'
+    expect(accepts(CreateSessionRequest, { ...req, tz })).toBe(true)
+    expect(accepts(CreateSessionRequest, { ...req, tz: 'x'.repeat(64) })).toBe(true)
+    expect(rejects(CreateSessionRequest, { ...req, tz: 'x'.repeat(65) })).toBe(true)
+    const onboarding = {
+      reason: 'travel',
+      selfLevel: 'new',
+      dailyGoalXp: 20,
+      ageConfirmed: true,
+      tz,
+    }
+    expect(accepts(OnboardingRequest, onboarding)).toBe(true)
+    expect(rejects(OnboardingRequest, { ...onboarding, tz: 'x'.repeat(65) })).toBe(true)
+  })
+
+  it('completion times: ISO date-times are capped at 64 characters', () => {
+    const body = {
+      answers: [{ index: 0, attemptSeq: 0, response: { kind: 'skip' }, verdict: 'skipped', ms: 1 }],
+      completedAt: '2026-09-25T12:00:00.123456789+03:30',
+      graderVersion: 1,
+    }
+    expect(accepts(CompleteSessionRequest, body)).toBe(true)
+    const long = { ...body, completedAt: `2026-09-25T12:00:00.${'1'.repeat(100)}Z` }
+    expect(rejects(CompleteSessionRequest, long)).toBe(true)
+  })
+
+  it('account, reports and dev auth: tokens, item refs, free text and emails are capped', () => {
+    expect(accepts(MergeRequest, { guestToken: 'x'.repeat(4096) })).toBe(true)
+    expect(rejects(MergeRequest, { guestToken: 'x'.repeat(4097) })).toBe(true)
+    const report = { itemRef: 'lexeme:lx_dastetun_dard_nakone', kind: 'other' }
+    expect(accepts(CreateReportRequest, report)).toBe(true)
+    const longRef = `lexeme:${'a'.repeat(94)}` // 101 characters
+    expect(rejects(CreateReportRequest, { ...report, itemRef: longRef })).toBe(true)
+    expect(rejects(CreateReportRequest, { ...report, answer: 'x'.repeat(501) })).toBe(true)
+    expect(rejects(CreateReportRequest, { ...report, text: 'x'.repeat(1001) })).toBe(true)
+    expect(rejects(ProfilePatch, { username: 'a'.repeat(21) })).toBe(true)
+    const email = `${'a'.repeat(250)}@x.io` // 255 characters
+    expect(rejects(DevSignInRequest, { email })).toBe(true)
+    expect(rejects(DevLinkRequest, { email })).toBe(true)
+    expect(accepts(DevSignInRequest, { email: 'member-1@zaboon.test' })).toBe(true)
+    expect(rejects(DevRefreshRequest, { accessToken: 'x'.repeat(4097) })).toBe(true)
   })
 })
