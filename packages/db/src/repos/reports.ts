@@ -2,7 +2,7 @@
  * Content reports ("my answer should be accepted", audio problems, …). Learners create and list
  * their own; triage (list all, change status) is admin-only and requires system scope.
  */
-import { and, desc, eq, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, lt, sql } from 'drizzle-orm'
 import type { CreateReportRequest, ReportDto, ReportStatus } from '@zaboon/contracts'
 import type { z } from 'zod'
 import type { Tx } from '../index'
@@ -27,7 +27,11 @@ function toDto(r: typeof schema.reports.$inferSelect): Report {
 }
 
 /** Files a report. Throws NotFoundError when `sessionId` is given but is not the caller's session. */
-export async function createReport(tx: Tx, userId: string, input: NewReport): Promise<{ id: string }> {
+export async function createReport(
+  tx: Tx,
+  userId: string,
+  input: NewReport,
+): Promise<{ id: string }> {
   if (input.sessionId !== undefined) {
     const [owned] = isUuid(input.sessionId)
       ? await tx
@@ -49,6 +53,39 @@ export async function createReport(tx: Tx, userId: string, input: NewReport): Pr
     })
     .returning({ id: schema.reports.id })
   return { id: row!.id }
+}
+
+/**
+ * The caller's newest report that is still `new` and identical to `input`: same item, kind,
+ * session, answer and text, where an absent field matches only an absent one. Null when there is
+ * none (the dedupe of POST /api/reports, e.g. an outbox retry).
+ */
+export async function findOpenReport(
+  tx: Tx,
+  userId: string,
+  input: NewReport,
+): Promise<{ id: string } | null> {
+  if (input.sessionId !== undefined && !isUuid(input.sessionId)) return null
+  const t = schema.reports
+  const same = (column: typeof t.sessionId | typeof t.answer | typeof t.text, value?: string) =>
+    value === undefined ? isNull(column) : eq(column, value)
+  const [row] = await tx
+    .select({ id: t.id })
+    .from(t)
+    .where(
+      and(
+        eq(t.userId, userId),
+        eq(t.status, 'new'),
+        eq(t.itemRef, input.itemRef),
+        eq(t.kind, input.kind),
+        same(t.sessionId, input.sessionId),
+        same(t.answer, input.answer),
+        same(t.text, input.text),
+      ),
+    )
+    .orderBy(desc(t.createdAt), desc(t.id))
+    .limit(1)
+  return row ?? null
 }
 
 export async function listReportsForUser(tx: Tx, userId: string): Promise<Report[]> {
@@ -84,7 +121,11 @@ export async function adminListReports(
 }
 
 /** Sets a report's status. Returns null when no such report exists. */
-export async function adminUpdateReport(tx: Tx, id: string, status: ReportStatusValue): Promise<Report | null> {
+export async function adminUpdateReport(
+  tx: Tx,
+  id: string,
+  status: ReportStatusValue,
+): Promise<Report | null> {
   await assertSystemScope(tx)
   if (!isUuid(id)) return null
   const [row] = await tx
