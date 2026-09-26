@@ -1,6 +1,6 @@
 /**
- * Local migration runner. Production uses `supabase db push`; this script mirrors its behavior for
- * the local Postgres started by scripts/db-local.sh.
+ * Local migration runner for the Postgres started by scripts/db-local.sh. Production applies the
+ * same files during the Vercel build (scripts/release.ts); both go through scripts/migrations.ts.
  *
  * 1. Applies supabase/local/shim.sql as the superuser (local-only Supabase emulation).
  * 2. Applies supabase/migrations/<version>_<name>.sql in order as the NON-superuser `postgres`
@@ -12,11 +12,12 @@
  *
  * Env: ZABOON_DB_PORT (54322), ZABOON_DB_NAME (zaboon). Flags: --no-template
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import postgres from 'postgres'
 import { templateKey } from './migrate-key'
+import { applyMigrations, loadMigrations, type MigrationFile } from './migrations'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const HOST = '127.0.0.1'
@@ -28,27 +29,11 @@ const withTemplate = !process.argv.includes('--no-template')
 const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations')
 const SHIM = readFileSync(join(ROOT, 'supabase', 'local', 'shim.sql'), 'utf8')
 
-type Migration = { version: string; name: string; sql: string }
-
-function loadMigrations(): Migration[] {
-  return readdirSync(MIGRATIONS_DIR)
-    .filter((f) => /^\d{14}_[a-z0-9_]+\.sql$/.test(f))
-    .sort()
-    .map((file) => {
-      const [version, ...rest] = file.replace(/\.sql$/, '').split('_')
-      return {
-        version: version!,
-        name: rest.join('_'),
-        sql: readFileSync(join(MIGRATIONS_DIR, file), 'utf8'),
-      }
-    })
-}
-
 function connect(user: string, database: string) {
   return postgres({ host: HOST, port: PORT, user, database, max: 1, onnotice: () => {} })
 }
 
-async function applyAll(database: string, migrations: Migration[]): Promise<number> {
+async function applyAll(database: string, migrations: MigrationFile[]): Promise<number> {
   const admin = connect('supabase_admin', database)
   try {
     await admin.unsafe(SHIM)
@@ -57,23 +42,11 @@ async function applyAll(database: string, migrations: Migration[]): Promise<numb
   }
 
   const sql = connect('postgres', database)
-  let applied = 0
+  let applied: string[]
   try {
-    const done = new Set(
-      (await sql`SELECT version FROM supabase_migrations.schema_migrations`).map(
-        (r) => r.version as string,
-      ),
+    applied = await applyMigrations(sql, migrations, (line) =>
+      console.info(`[migrate] ${database}: ${line}`),
     )
-    for (const m of migrations) {
-      if (done.has(m.version)) continue
-      await sql.begin(async (tx) => {
-        await tx.unsafe(m.sql)
-        await tx`INSERT INTO supabase_migrations.schema_migrations (version, name, statements)
-                 VALUES (${m.version}, ${m.name}, ${[m.sql]})`
-      })
-      applied++
-      console.info(`[migrate] ${database}: applied ${m.version}_${m.name}`)
-    }
   } finally {
     await sql.end()
   }
@@ -89,22 +62,22 @@ async function applyAll(database: string, migrations: Migration[]): Promise<numb
   } finally {
     await admin2.end()
   }
-  return applied
+  return applied.length
 }
 
 /** The template refuses connections, so its build key lives in a database comment. */
 async function templateVersion(admin: postgres.Sql): Promise<string | null> {
-  const rows = await admin`SELECT shobj_description(oid, 'pg_database') AS c FROM pg_database WHERE datname = ${TEMPLATE}`
+  const rows =
+    await admin`SELECT shobj_description(oid, 'pg_database') AS c FROM pg_database WHERE datname = ${TEMPLATE}`
   const comment = (rows[0]?.c as string | null) ?? null
   return comment?.startsWith('migrations:') ? comment.slice('migrations:'.length) : null
 }
 
-async function rebuildTemplate(migrations: Migration[]) {
+async function rebuildTemplate(migrations: MigrationFile[]) {
   const wanted = templateKey(migrations, SHIM)
   const admin = connect('supabase_admin', 'postgres')
   try {
-    const exists =
-      (await admin`SELECT 1 FROM pg_database WHERE datname = ${TEMPLATE}`).length > 0
+    const exists = (await admin`SELECT 1 FROM pg_database WHERE datname = ${TEMPLATE}`).length > 0
     if (exists && (await templateVersion(admin)) === wanted) return
     if (exists) {
       await admin.unsafe(`ALTER DATABASE "${TEMPLATE}" IS_TEMPLATE false`)
@@ -126,7 +99,7 @@ async function rebuildTemplate(migrations: Migration[]) {
 }
 
 async function main() {
-  const migrations = loadMigrations()
+  const migrations = loadMigrations(MIGRATIONS_DIR)
   const applied = await applyAll(DB, migrations)
   console.info(`[migrate] ${DB}: ${applied} new migration(s), ${migrations.length} total`)
   if (withTemplate) await rebuildTemplate(migrations)
