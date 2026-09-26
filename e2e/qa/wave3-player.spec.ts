@@ -9,7 +9,7 @@
 import type { Page } from '@playwright/test'
 import { expect, setTestFlags, setTestNow, test } from '../fixtures'
 import { grantCoins, randomPastWeek } from '../engagement/helpers'
-import { signInPage } from '../pages/helpers'
+import { axeViolations, signInPage } from '../pages/helpers'
 import { play, type Body } from './support'
 import {
   ALL_FLAGS,
@@ -22,6 +22,7 @@ import {
   guideReady,
   guideStrokes,
   memberWithLessonQuest,
+  persianMarkupProblems,
   reachT1,
   readOn,
   scribble,
@@ -106,11 +107,21 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   await expect(page.getByTestId('complete-league')).toBeVisible()
   await expect(page.getByTestId('league-change-title')).toHaveText('You joined a league!')
   await expect(page.getByTestId('league-change-rank')).toHaveAttribute('data-rank', '1')
+  expect(await axeViolations(page, '[data-testid="complete-league"]')).toEqual([])
+  expect(await persianMarkupProblems(page, '[data-testid="complete-league"]')).toEqual([])
   await next()
   await expect(page.getByTestId('complete-quests')).toBeVisible()
   await expect(page.getByTestId('quests-coins')).toHaveAttribute('data-value', '10')
+  expect(await axeViolations(page, '[data-testid="complete-quests"]')).toEqual([])
   await next()
   await expect(page.getByTestId('complete-quests')).toBeHidden()
+
+  // Back in the app without a reload: the stats bar shows the quest coins.
+  await expect(stats(page).getByRole('img', { name: '10 coins' })).toBeVisible()
+  if (test.info().project.name === 'chromium-desktop') {
+    await expect(page.getByTestId('rail-league-rank')).toContainText('#1 · 10 XP')
+    await expect(page.getByTestId('rail-quests')).toBeVisible()
+  }
 
   // /api/home carries coins, league and quests; the quest coins are in the wallet.
   const home = await readOn(request, user, '/api/home', day2)

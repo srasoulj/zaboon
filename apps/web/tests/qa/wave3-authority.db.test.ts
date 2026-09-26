@@ -176,3 +176,39 @@ describe('a declined trace', () => {
     expect(res.body.mistakes).toEqual(['letter:l_be'])
   })
 })
+
+describe('typed Persian is graded on the server with the normalization pipeline', () => {
+  const variants: [string, string, boolean][] = [
+    ['translate_type', 'نون مي‌خوام', true], // Arabic yeh
+    ['translate_type', 'نون میخوام', true], // half-space left out
+    ['translate_type', 'نون می خوام', true], // a space for the half-space
+    ['translate_type', 'نون می‌خوام.', true], // punctuation
+    ['translate_type', 'نونـ می‌خوام', true], // tatweel
+    ['translate_type', 'نون مِی‌خوام', true], // a vowel mark
+    ['translate_type', '  نون   می‌خوام  ', true], // extra spaces
+    ['translate_type', 'نون', false], // half the answer
+    ['translate_type', 'می‌خوام نون', false], // wrong word order
+    ['listen_type', 'چاي مي‌خواي', true],
+    ['listen_type', 'چای می‌خوای؟', true],
+    ['listen_type', 'چای', false],
+    ['cloze_type', 'مي‌خوام', true],
+    ['cloze_type', 'می خوام', true],
+    ['cloze_type', 'خوام', false],
+    ['cloze_type', 'می‌خوام نون', false], // more than the blank
+  ]
+  it('accepts spelling variants and rejects other answers, whatever the client says', async () => {
+    const u = await reachT1(h, day1)
+    for (const [type, value, ok] of variants) {
+      const s = await startT1(h, u, day2, typing)
+      const res = await completeWith(h, u, s, attempts(s, { [type]: { kind: 'text', value } }), {
+        now: day2,
+        graderVersion: untrusted(s.graderVersion),
+      })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(
+        { accuracy: res.body.accuracy, mismatches: res.body.graderMismatches },
+        `${type} «${value}»`,
+      ).toEqual(ok ? { accuracy: 1, mismatches: 0 } : { accuracy: 0.75, mismatches: 1 })
+    }
+  })
+})

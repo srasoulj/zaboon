@@ -32,13 +32,15 @@ async function cohort(request: APIRequestContext): Promise<{ week: Week; members
       await setTier(u.id, 'noqreh')
       members.push(u)
     }
-    let joined = true
+    // Every lesson must land in the week: a closed week takes no XP, which shows as a weekly XP
+    // that didn't grow (then the zones would not follow the lesson counts: start over).
+    let intact = true
     for (const [i, m] of members.entries())
       for (let n = 0; n <= i; n++) {
         const r = await playOn(request, m, LEAGUES, { now: week.now })
-        if ((r.league as { rank: number | null }).rank === null) joined = false
+        if ((r.league as { weeklyXp: number }).weeklyXp !== 15 * (n + 1)) intact = false
       }
-    if (joined) return { week, members }
+    if (intact) return { week, members }
   }
   throw new Error('another rollover closed three fresh weeks during setup')
 }

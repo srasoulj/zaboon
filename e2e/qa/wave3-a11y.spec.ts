@@ -73,7 +73,8 @@ test('the lesson with the Persian keyboard and the trace canvas: axe, keyboard o
   test.setTimeout(90_000)
   const member = await signInEmail(request, uniqueEmail())
   const user = apiUser(member)
-  const now = '2036-04-02T10:00:00.000Z'
+  // League XP is on: play in an unused past week, never the current or a future one.
+  const { now } = await randomPastWeek()
   await onboard10(request, user, now)
   await reachT1(request, user, now)
   await setTestFlags(page, ALL_FLAGS)
