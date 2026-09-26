@@ -13,7 +13,7 @@
 | 1 | farsi+grader, session engine+srs+game rules, database, UI kit, content CLI + AI client | ✅ done (#6, #7, #10, #11, #14; review fixes #15, #16) |
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
 | 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51; QA with the flags on (ws-qa-2, #57), its bugs fixed in #59 |
-| 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | ✅ prep #56 and #58; **speak merged (#60)**, and its review fixes went through the orchestrator (#61, this PR). 🔄 ws-typing builds Stories |
+| 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | ✅ prep #56 and #58; **speak** #60 with review fixes #61 and #65; **Stories** #64 with its path contract fix (#66). fa-en has three AI-composed draft stories (units 1, 2 and 4) |
 | 5 | Hardening: security + code review, audits, docs sync, deploy runbook | 🔄 runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 (owner's session); flaky QA test #63 |
 
 ## Workstreams
@@ -33,7 +33,7 @@
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
 | ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ done, including the review fixes; its paths went to ws-typing for Wave 4 ([spec](../ops/prompts/ws-engagement.md)) | #48, #53 |
-| ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak (✅ #60), then Stories (🔄), owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52, #60 |
+| ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak (✅ #60) and Stories (✅ #64), owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52, #60, #64 |
 | ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ✅ merged: 39 DB and 6 e2e tests; its bugs #54 and #55 are fixed by the orchestrator ([spec](../ops/prompts/ws-qa-2.md)) | #57 |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**
@@ -97,10 +97,28 @@ the orchestrator in the Speak hardening PR):
   - the local DB-test template is rebuilt when any migration changes, not only the last one;
   - the comments and test titles on transcripts and the trust window now say what is true.
 
+**Stories (#64) post-merge review** (orchestrator; no blockers):
+
+- Stories are gated by `flags.stories`. A story session needs no hearts and never spends any (`/events` included), it isn't rated (no SRS, no mistakes), and it completes its level.
+- The migration replaces the `sessions.kind` CHECK safely (NOT VALID, then validated).
+- Two notes:
+  - the no-hearts rule lives in `sessions.ts`, not in `@zaboon/game-rules` (backlog);
+  - the PR reformatted the content CLI's seed fixtures (quote style only; every file parses to the same data).
+
+**fa-en stories** (orchestrator, $0.157 of Astra):
+
+- The composer picks, orders and assigns the unit's own validated sentences (and earlier units'), and writes the English comprehension questions. The lines' tokens, lexemes and audio come from those sentences, so they pass the validator by construction.
+- The stories:
+  - `st_u01_visit`, "Tea with Grandma": 8 lines, all voiced by the recorded speakers;
+  - `st_u02_new_friend`, "A New Friend": 9 lines;
+  - `st_u04_lunch`, "Dinner with Grandma": 8 lines.
+- The stories in units 2 and 4 have no audio yet, like the rest of those units. All three are `status: draft`, pending native review.
+
 ## AI spend
 
-This project's key has used **$7.57** of the internal **$9.50** cap (checked 08:55 UTC on Sep 26;
-the key's own hard limit is $10). The only paid call since then was a format probe (under $0.0001):
+This project's key has used **$7.72** of the internal **$9.50** cap (checked 09:50 UTC on Sep 26;
+the key's own hard limit is $10). Paid calls since then: a speak format probe (under $0.0001) and
+the three fa-en stories ($0.157 of Astra):
 
 - text pilot: $0.002;
 - text drafts, units 1–5 (Astra): $2.76;
@@ -108,8 +126,8 @@ the key's own hard limit is $10). The only paid call since then was a format pro
 - Unit 1 media: $3.79. That covers 79 TTS clips (gpt-audio), 8 `select_image` illustrations and
   5 cast portraits (GPT Image), plus the pilots.
 
-About **$1.93** of the cap is left. That isn't enough for Units 2–5 media, so this is on the
-human backlog. The account balance is about $1.15; other usage on the account isn't this
+About **$1.78** of the cap is left. That isn't enough for Units 2–5 media, so this is on the
+human backlog. The account balance is about $0.99; other usage on the account isn't this
 project's.
 
 **Unit 1 media** (all `status: draft`):
@@ -160,6 +178,9 @@ on very short clips. The committed clips were normalized separately, so re-runni
   - add a global daily transcription cap in `app_config`. The quota is per learner, and guests cost nothing but Turnstile, which isn't wired yet;
   - check the WAV conversion on real Safari (iOS and macOS), where MediaRecorder records mp4/AAC. Local e2e runs Chromium only; a browser that can't decode shows "That recording didn't work", and "Can't speak now" still goes on;
   - benchmark `gpt-audio-mini` against a Gemini Flash audio model on real learner recordings (LEARNING-ENGINE).
+- **Stories:**
+  - move the no-hearts rule for story sessions into `@zaboon/game-rules` (`settleCommit`, `applyMistakeEvent`) with oracle cases; today `sessions.ts` skips them for `kind: 'story'`;
+  - TTS for the unit 2 and 4 story lines (with the rest of those units' media).
 - **Deferred Wave 4 features:** Plus/Stripe and entitlements, reminders (email/Web Push), energy, the placement test, offline lessons. A file-level design exists: contracts, schemas, seams, ownership, specs.
 
 ## Human-review backlog (cannot be automated honestly)

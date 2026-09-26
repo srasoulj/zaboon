@@ -1,0 +1,159 @@
+# u01-hello: the unit's story (P2, flags.stories), played by level u01-st1. Composed by
+# openai/gpt-6-astra (story-compose@1) from the course's own sentences; status: draft until
+# native review.
+- id: st_u01_visit
+  unit: u01-hello
+  title: Tea with Grandma
+  titleFa: چایی با مامان‌بزرگ
+  image: img/lx_chay.webp
+  characters:
+    - shirin
+    - maman-bozorg
+    - kian
+  lines:
+    - speaker: shirin
+      fa: سلام، شما خوبین؟
+      translit: salām, shomā khubin?
+      en: Hello, how are you?
+      tokens:
+        - surface: سلام
+          lexeme: lx_salam
+          translit: salām
+          gloss: hello
+        - surface: شما
+          lexeme: lx_shoma
+          translit: shomā
+          gloss: you (polite)
+        - surface: خوبین
+          lexeme: lx_khub
+          translit: khubin
+          gloss: are well
+      audio: audio/s_u01_0011.mp3
+    - speaker: maman-bozorg
+      fa: خوبم، ممنون.
+      translit: khubam, mamnun.
+      en: I'm fine, thanks
+      tokens:
+        - surface: خوبم
+          lexeme: lx_khub
+          translit: khubam
+          gloss: I'm fine
+        - surface: ممنون
+          lexeme: lx_mamnun
+          translit: mamnun
+          gloss: thanks
+      audio: audio/s_u01_0027.mp3
+    - speaker: maman-bozorg
+      fa: بفرمایید چایی!
+      translit: befarmāyid chāyi!
+      en: Please have some tea
+      tokens:
+        - surface: بفرمایید
+          lexeme: lx_befarmayid
+          translit: befarmāyid
+          gloss: please have
+        - surface: چایی
+          lexeme: lx_chay
+          translit: chāyi
+          gloss: tea
+      audio: audio/s_u01_0022.mp3
+    - speaker: kian
+      fa: نه، مرسی.
+      translit: na, mersi.
+      en: No, thanks
+      tokens:
+        - surface: نه
+          lexeme: lx_na
+          translit: na
+          gloss: no
+        - surface: مرسی
+          lexeme: lx_mersi
+          translit: mersi
+          gloss: thanks
+      audio: audio/s_u01_0007.mp3
+    - speaker: maman-bozorg
+      fa: تعارف نکن!
+      translit: ta'ārof nakon!
+      en: Don't be shy
+      tokens:
+        - surface: تعارف
+          lexeme: lx_taarof
+          translit: ta'ārof
+          gloss: polite formality
+        - surface: نکن
+          lexeme: lx_kardan
+          translit: nakon
+          gloss: don't do
+      audio: audio/s_u01_0024.mp3
+    - speaker: kian
+      fa: باشه، مرسی!
+      translit: bāshe, mersi!
+      en: Okay, thanks
+      tokens:
+        - surface: باشه
+          lexeme: lx_bashe
+          translit: bāshe
+          gloss: okay
+        - surface: مرسی
+          lexeme: lx_mersi
+          translit: mersi
+          gloss: thanks
+      audio: audio/s_u01_0025.mp3
+    - speaker: shirin
+      fa: مرسی، خداحافظ!
+      translit: mersi, khodāhāfez!
+      en: Thanks, goodbye
+      tokens:
+        - surface: مرسی
+          lexeme: lx_mersi
+          translit: mersi
+          gloss: thanks
+        - surface: خداحافظ
+          lexeme: lx_khodahafez
+          translit: khodāhāfez
+          gloss: goodbye
+      audio: audio/s_u01_0008.mp3
+    - speaker: maman-bozorg
+      fa: خداحافظ!
+      translit: khodāhāfez!
+      en: Goodbye
+      tokens:
+        - surface: خداحافظ
+          lexeme: lx_khodahafez
+          translit: khodāhāfez
+          gloss: goodbye
+      audio: audio/s_u01_0005.mp3
+  questions:
+    - after: 2
+      prompt:
+        lang: en
+        text: How is Grandma feeling?
+      choices:
+        - Tired.
+        - Fine.
+        - Cold.
+      answer: 1
+    - after: 4
+      prompt:
+        lang: en
+        text: What does Kian say when Grandma offers tea?
+      choices:
+        - No, thanks.
+        - Yes, please.
+        - Goodbye.
+      answer: 0
+    - after: 6
+      prompt:
+        lang: en
+        text: After Grandma says not to be shy, what does Kian say?
+      choices:
+        - No, thanks.
+        - How are you?
+        - Okay, thanks.
+      answer: 2
+  status: draft
+  provenance:
+    model: openai/gpt-6-astra
+    prompt: story-compose@1
+    generatedAt: 2026-09-26T09:37:03.360Z
+    notes: Composed from the course's own u01-hello (and earlier) sentences; needs native review.

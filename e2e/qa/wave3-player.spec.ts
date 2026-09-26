@@ -30,6 +30,14 @@ import {
 
 const stats = (page: Page) => page.getByTestId('stats').filter({ visible: true })
 
+/**
+ * A human-speed pause before each check: a median answer faster than
+ * AppConfig.antiCheat.minMsPerChallenge (800 ms) flags the session and earns no XP, and then the
+ * complete sequence below (daily goal, league, quests) has nothing to show.
+ */
+const HUMAN_MS = 900
+const human = (page: Page) => page.waitForTimeout(HUMAN_MS)
+
 test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop and practice hub', async ({
   page,
   request,
@@ -55,6 +63,7 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   for (const k of ['ن', 'و', 'ن', 'space', 'م', 'ی', 'half-space', 'خ', 'و', 'ا', 'م'])
     await keys.getByRole('button', { name: k, exact: true }).click()
   await expect(box).toHaveValue(`نون می${ZWNJ}خوام`)
+  await human(page)
   await page.getByTestId('lesson-check').click()
   await feedbackThenContinue(page, 'correct')
 
@@ -67,12 +76,14 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   await page.keyboard.press('Shift+Space')
   for (const k of ['KeyO', 'Comma', 'KeyH', 'KeyD']) await page.keyboard.press(k)
   await expect(heard).toHaveValue(`چای می${ZWNJ}خوای`)
+  await human(page)
   await page.keyboard.press('Enter')
   await feedbackThenContinue(page, 'correct')
 
   // 3. cloze_type: the inline blank.
   await expectType(page, 'cloze_type')
   await challenge(page).getByRole('textbox', { name: 'The missing word' }).fill('میخوام')
+  await human(page)
   await page.getByTestId('lesson-check').click()
   await feedbackThenContinue(page, 'correct')
 
@@ -81,6 +92,7 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   let canvas = challenge(page).getByTestId('trace-canvas')
   await guideReady(canvas)
   await drawStrokes(page, canvas, await scribble(canvas))
+  await human(page)
   await page.getByTestId('lesson-check').click()
   await feedbackThenContinue(page, 'wrong')
   await expect(page.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
@@ -88,6 +100,7 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   canvas = challenge(page).getByTestId('trace-canvas')
   await guideReady(canvas)
   await drawStrokes(page, canvas, await guideStrokes(canvas))
+  await human(page)
   await page.getByTestId('lesson-check').click()
   await expect(page.getByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
   await expect(page.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
