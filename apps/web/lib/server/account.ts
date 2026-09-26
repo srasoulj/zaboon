@@ -3,7 +3,7 @@
  */
 import type { AppConfig } from '@zaboon/contracts'
 import { repos, withSystem, withUser, withUserLock, type Db, type Tx } from '@zaboon/db'
-import { applyActivity, initialStreak } from '@zaboon/game-rules'
+import { dateInZone, replayStreak } from '@zaboon/game-rules'
 import { verifyAccessToken, type AuthUser } from './auth'
 import { authAdmin } from './auth/admin'
 import { currentVersion, loadBundle } from './content'
@@ -37,14 +37,18 @@ async function migrateAllEnrollments(db: Db, userId: string): Promise<void> {
  */
 async function rebuildMemberState(tx: Tx, memberId: string, config: AppConfig): Promise<void> {
   const days = await repos.progress.listDailyActivity(tx, memberId)
-  let state = initialStreak(config)
-  const frozen: string[] = []
-  for (const d of days) {
-    if (d.sessions === 0) continue
-    const r = applyActivity(state, d.localDate, config)
-    state = r.state
-    frozen.push(...r.frozenDates)
-  }
+  // Freezes bought with coins (the member's own and the guest's, whose purchases moved over in the
+  // merge) are replayed on the local date they were bought, so a merge never drops them. With no
+  // purchases this is exactly the plain replay of the active days.
+  const tz = (await repos.profiles.getProfile(tx, memberId))?.timezone ?? 'UTC'
+  const bought = (await repos.wallet.listPurchaseTimes(tx, memberId, 'streak_freeze')).map((t) =>
+    dateInZone(new Date(t), tz),
+  )
+  const { state, frozenDates: frozen } = replayStreak(
+    days.filter((d) => d.sessions > 0).map((d) => d.localDate),
+    bought,
+    config,
+  )
   await repos.state.saveStreak(tx, memberId, state)
   await repos.progress.markFreezeUsed(tx, memberId, frozen)
   await repos.profiles.syncPublicStats(tx, memberId, {

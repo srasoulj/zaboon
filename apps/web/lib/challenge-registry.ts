@@ -13,6 +13,8 @@
  * skip it). Typed Persian `translate_type` (direction en_fa, `answerLang: 'fa'`) has no entry of
  * its own: the `translate_type` renderer handles both answer languages. Typed Persian inputs show
  * the in-app PersianKeyboard when `display.persianKeyboard` is true, in `display.keyboardLayout`.
+ *
+ * Wave 4 adds optional `speak` and `story` entries the same way.
  */
 import type { ComponentType } from 'react'
 import type {
@@ -26,8 +28,8 @@ import type {
 import { renderers } from '@/components/challenges'
 
 export type MvpChallengeType = (typeof MVP_CHALLENGE_TYPES)[number]
-/** P2 types a renderer may be registered for (Wave 3); see the header comment. */
-export type P2ChallengeType = 'listen_type' | 'cloze_type' | 'letter_trace'
+/** P2 types a renderer may be registered for (Waves 3 and 4); see the header comment. */
+export type P2ChallengeType = 'listen_type' | 'cloze_type' | 'letter_trace' | 'speak' | 'story'
 
 export interface ChallengeDisplay {
   /** Show romanization under Persian (Settings.transliteration resolved for this item). */

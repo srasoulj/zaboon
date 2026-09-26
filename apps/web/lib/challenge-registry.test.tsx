@@ -15,24 +15,28 @@ describe('challenge registry', () => {
     for (const t of MVP_CHALLENGE_TYPES) expect(rendererFor(t), t).not.toBeNull()
   })
 
-  it('never has one for types outside the MVP and Wave 3 (speak, story)', () => {
-    expect(rendererFor('speak')).toBeNull()
-    expect(rendererFor('story')).toBeNull()
-  })
-
   it('has a renderer for every Wave 3 type (listen_type, cloze_type, letter_trace)', () => {
-    const p2: P2ChallengeType[] = ['listen_type', 'cloze_type', 'letter_trace']
-    for (const t of p2) expect(rendererFor(t), t).not.toBeNull()
+    const wave3: P2ChallengeType[] = ['listen_type', 'cloze_type', 'letter_trace']
+    for (const t of wave3) expect(rendererFor(t), t).not.toBeNull()
   })
 
-  it('keeps the Wave 3 slots optional and closed to other types', () => {
-    const { listen_type: _l, cloze_type: _c, letter_trace: _t, ...mvp } = renderers
-    const Trace: ChallengeRenderer<ChallengeOf<'letter_trace'>> = () => null
-    const map: RendererMap = { ...mvp, letter_trace: Trace }
-    expect(map.letter_trace).toBe(Trace)
-    expect(map.cloze_type).toBeUndefined()
-    // @ts-expect-error speak is not a Wave 3 renderer slot
-    const notP2: RendererMap = { ...mvp, speak: Trace }
+  it('keeps the P2 slots (Waves 3 and 4) optional and closed to other types', () => {
+    const {
+      listen_type: _l,
+      cloze_type: _c,
+      letter_trace: _t,
+      speak: _s,
+      story: _st,
+      ...mvp
+    } = renderers
+    const Speak: ChallengeRenderer<ChallengeOf<'speak'>> = () => null
+    const map: RendererMap = { ...mvp, speak: Speak }
+    expect(map.speak).toBe(Speak)
+    expect(map.story).toBeUndefined()
+    const p2: P2ChallengeType[] = ['listen_type', 'cloze_type', 'letter_trace', 'speak', 'story']
+    expect(p2).toHaveLength(5)
+    // @ts-expect-error roleplay is not a renderer slot
+    const notP2: RendererMap = { ...mvp, roleplay: Speak }
     expect(notP2).toBeTruthy()
   })
 
