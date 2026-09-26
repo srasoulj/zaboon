@@ -180,6 +180,10 @@ describe('gradeResponse', () => {
       isNew: false,
       type: 'story',
       storyId: 'x',
+      title: 'x',
+      beat: 0,
+      beats: 1,
+      lines: [{ speaker: null, text: { fa: 'مرسی', translit: 'mersi' }, en: 'Thanks' }],
     }
     expect(gradeResponse(story, { kind: 'none' }).verdict).toBe('wrong')
   })

@@ -126,6 +126,7 @@ const PROFILE_FOR_KIND: Readonly<Record<SessionKind, MixProfile | null>> = {
   unit_review: 'standard',
   legendary: 'legendary',
   jump_test: 'legendary',
+  story: null, // P2: a story session is planned from its story, never from a mix
 }
 
 function refKey(r: ChallengeRef): string {

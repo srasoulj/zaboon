@@ -294,6 +294,25 @@ export const routes = {
     response: c.LeagueRolloverResponse,
   }),
 
+  // --- P2 Wave 4: speak (stories play through the session routes). transcribe answers 404
+  // `not_found` while flags.speak is off, and 503 `unavailable` while a server secret or the
+  // transcription provider is missing.
+  /**
+   * One recording of a speak challenge in the caller's open session → transcript + signed token.
+   * 404 (flag off, or not your session); 400 (not a speak challenge, audio too big or too long);
+   * 409 (session completed); 410 (expired); 429 (`rate_limited`, or `quota_exceeded` for the
+   * day); 503.
+   */
+  transcribe: route({
+    method: 'POST',
+    path: '/api/speech/transcribe',
+    auth: 'user',
+    phase: 'p2',
+    bucket: 'speech',
+    request: c.TranscribeRequest,
+    response: c.TranscribeResponse,
+  }),
+
   devAnonymous: route({
     method: 'POST',
     path: '/api/dev/auth/anonymous',

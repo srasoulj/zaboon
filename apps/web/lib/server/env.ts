@@ -16,6 +16,16 @@ export interface ServerEnv {
   /** Where immutable content bundles live; null means this app's own /content (apps/web/public). */
   contentBaseUrl: string | null
   cronSecret: string | null
+  /**
+   * P2: the key of the purpose-scoped signed tokens (signing.ts), from APP_SIGNING_SECRET. Null
+   * when unset: local mode then signs with a fixed dev key; production answers 503 `unavailable`.
+   */
+  signingSecret: string | null
+  /**
+   * P2: the app's own OpenRouter key (speak transcription; ADR 0008), passed to @zaboon/ai by the
+   * server. Null when unset: the routes that need it answer 503 `unavailable`.
+   */
+  openrouterAppKey: string | null
 }
 
 // Local-only dev credential for the loopback database created by scripts/db-local.sh.
@@ -53,6 +63,8 @@ export function serverEnv(): ServerEnv {
     supabaseUrl,
     contentBaseUrl: process.env.CONTENT_BASE_URL || null,
     cronSecret: process.env.CRON_SECRET || null,
+    signingSecret: process.env.APP_SIGNING_SECRET || null,
+    openrouterAppKey: process.env.OPENROUTER_API_KEY_APP || null,
   }
   return cached
 }
