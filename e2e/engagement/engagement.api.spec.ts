@@ -6,6 +6,8 @@ import { cronHeaders, expect, flagsHeader, test } from '../fixtures'
 import { newGuest, signInEmail, uniqueEmail } from '../pages/helpers'
 import { ENGAGEMENT_ON, grantCoins, playLesson, randomPastWeek } from './helpers'
 
+type Member = Awaited<ReturnType<typeof signInEmail>>
+
 const on = flagsHeader(ENGAGEMENT_ON)
 
 test('with the flags off the engagement routes are 404 and the result has no P2 fields', async ({
@@ -51,43 +53,52 @@ test('earning XP places a member on the leaderboard', async ({ request }) => {
 test('the weekly rollover (Vercel Cron) closes the week once and pays the winner', async ({
   request,
 }) => {
-  const week = await randomPastWeek()
-  const winner = await signInEmail(request, uniqueEmail())
-  const second = await signInEmail(request, uniqueEmail())
   // Leagues only: a quest reward would add to the coins this test counts.
   const leagues = { leagues: true }
-  await playLesson(request, winner, { flags: leagues, now: week.now })
-  await playLesson(request, second, { flags: leagues, now: week.now, wrong: [0] })
+  // Any other spec's rollover closes every ended week, this one included, whenever it runs. So set
+  // up until both learners sit in one open cohort (a week closed mid-setup takes no XP: start again
+  // in a fresh week), then assert the week's outcome, never which cron run closed it (#55).
+  let setup: { week: Awaited<ReturnType<typeof randomPastWeek>>; winner: Member } | null = null
+  for (let attempt = 0; attempt < 3 && !setup; attempt++) {
+    const week = await randomPastWeek()
+    const winner = await signInEmail(request, uniqueEmail())
+    const second = await signInEmail(request, uniqueEmail())
+    const a = await playLesson(request, winner, { flags: leagues, now: week.now })
+    const b = await playLesson(request, second, { flags: leagues, now: week.now, wrong: [0] })
+    if (a.league?.rank === 1 && b.league?.rank === 2) setup = { week, winner }
+  }
+  expect(setup, 'both learners joined one open cohort').not.toBeNull()
+  const { week, winner } = setup!
 
   expect((await request.get('/api/cron/league-rollover')).status()).toBe(401)
   // Like Vercel Cron: at the real time, which closes every ended week (this one included). The
   // cron bucket's rate limit also runs on the request clock, so no x-test-now here.
-  const run = () => request.get('/api/cron/league-rollover', { headers: cronHeaders() })
-  const first = await run()
-  expect(first.status(), await first.text()).toBe(200)
-  const body = await first.json()
-  expect(body.closed).toContainEqual(
-    expect.objectContaining({ week: { startsAt: week.startsAt, endsAt: week.endsAt } }),
-  )
-  const again = await (await run()).json()
-  expect(again.closed.map((c: { week: { startsAt: string } }) => c.week.startsAt)).not.toContain(
-    week.startsAt,
-  )
+  const run = async () => {
+    const res = await request.get('/api/cron/league-rollover', { headers: cronHeaders() })
+    expect(res.status(), await res.text()).toBe(200)
+  }
+  const outcome = async () => ({
+    board: await (
+      await request.get('/api/leaderboard', {
+        headers: { ...winner.headers, ...on, 'x-test-now': week.after },
+      })
+    ).json(),
+    coins: (
+      await (await request.get('/api/shop', { headers: { ...winner.headers, ...on } })).json()
+    ).coins,
+  })
 
+  await run()
   // The next week the winner sees last week's result and is in the next tier; coins were paid.
-  const board = await (
-    await request.get('/api/leaderboard', {
-      headers: { ...winner.headers, ...on, 'x-test-now': week.after },
-    })
-  ).json()
-  expect(board).toMatchObject({
+  const first = await outcome()
+  expect(first.board).toMatchObject({
     tier: 'noqreh',
     lastResult: { rank: 1, outcome: 'promote', tier: 'mes', newTier: 'noqreh', coins: 30 },
   })
-  const shop = await (
-    await request.get('/api/shop', { headers: { ...winner.headers, ...on } })
-  ).json()
-  expect(shop.coins).toBe(30)
+  expect(first.coins).toBe(30)
+  // A second run (or any other spec's) changes nothing: the week is closed and paid once.
+  await run()
+  expect(await outcome()).toEqual(first)
 })
 
 test('a completed quest pays coins; a streak freeze can be bought once per purchaseId', async ({

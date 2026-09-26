@@ -207,7 +207,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     reviewShare: 0.3,
     newWordsPerLesson: 3,
   },
-  // `typing` and `letterTrace` count only while their Wave 3 feature is on (see AppConfig).
+  // `typing` and `letterTrace` count only while their Wave 3 feature is on, and `speaking` only
+  // while Wave 4's speak is on (see AppConfig): with a feature off its weight is dropped.
   mixProfiles: {
     intro: { newWord: 0.25, recognition: 0.3, productionBank: 0.2, listening: 0.15, matching: 0.1 },
     standard: {
@@ -216,8 +217,15 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
       listening: 0.25,
       matching: 0.15,
       typing: 0.15,
+      speaking: 0.1,
     },
-    legendary: { productionBank: 0.45, listening: 0.35, recognition: 0.2, typing: 0.2 },
+    legendary: {
+      productionBank: 0.45,
+      listening: 0.35,
+      recognition: 0.2,
+      typing: 0.2,
+      speaking: 0.1,
+    },
     letters: {
       letterIntro: 0.2,
       letterSound: 0.3,
@@ -232,6 +240,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
       listening: 0.25,
       matching: 0.15,
       typing: 0.15,
+      speaking: 0.1,
     },
   },
   antiCheat: { minMsPerChallenge: 800, maxSessionsPerHour: 30, maxXpPerHour: 600 },
