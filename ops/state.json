@@ -1,6 +1,6 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-26T07:45:00Z",
+  "updatedAt": "2026-09-26T07:40:00Z",
   "wave": 4,
   "integrationPr": 2,
   "aiBudget": {
@@ -120,15 +120,17 @@
       ]
     },
     "ws-typing": {
-      "status": "Wave 3 done (#49, #52); Wave 4: speak then stories (spec ops/prompts/ws-wave4.md)",
+      "status": "Wave 4 dispatched 07:27 UTC: speak (claude/zaboon-ws-typing-2), then stories (-3)",
       "prs": [
         49,
         52
       ]
     },
     "ws-qa-2": {
-      "status": "working (spawned 06:15 UTC); filed #54, #55",
-      "prs": [],
+      "status": "done (#57 merged); filed #54 (fixed) and #55 (fixed)",
+      "prs": [
+        57
+      ],
       "issues": [
         54,
         55
@@ -252,7 +254,9 @@
     51,
     52,
     53,
-    56
+    56,
+    57,
+    58
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",

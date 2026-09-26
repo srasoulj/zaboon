@@ -34,7 +34,7 @@
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
 | ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ done, including the review fixes; its paths went to ws-typing for Wave 4 ([spec](../ops/prompts/ws-engagement.md)) | #48, #53 |
 | ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak, then Stories, owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52 |
-| ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | 🔄 working; filed #54 (league seat) and #55 (rollover e2e race) ([spec](../ops/prompts/ws-qa-2.md)) | |
+| ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ✅ merged: 39 DB and 6 e2e tests; its bugs #54 and #55 are fixed by the orchestrator ([spec](../ops/prompts/ws-qa-2.md)) | #57 |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**
 

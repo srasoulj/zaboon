@@ -44,7 +44,7 @@ ALWAYS: with a Wave 4 flag off, the app behaves exactly as today. The MVP golden
 
 PART 1 — SPEAK (flag `speak`)
 1. **Engine:**
-   - Already on main from the orchestrator: `SessionFeatures.speak`, `GATED_CATEGORIES.speaking = 'speak'`, and a gated `speaking` weight in the standard/practice/legendary mix profiles. With the feature off the weight is deleted, so sessions are unchanged.
+   - Already on main from the orchestrator: `SessionFeatures.speak`, `GATED_CATEGORIES.speaking = 'speak'`, and a gated `speaking` weight (0.1) in the standard/practice/legendary mix profiles. The weight arrived after #58, in the orchestrator's QA-fix PR. With the feature off the weight is deleted, so sessions are unchanged.
    - Implement the `speaking` pool: gated like `typing`, it draws randomness only while the feature is on.
    - A `speak` builder for sentences: the prompt is the sentence's Persian, the `translation` is the English, and the answer graph is compiled for spoken transcripts. That means lenient: orthography variants and typo/spelling leniency, digits and punctuation ignored, no pronoun drop, no register swap.
    - `mvpTwin(speak)` = `listen_tap` on the same sentence, so a pinned speak level plays with the flag off.
