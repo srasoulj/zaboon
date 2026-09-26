@@ -16,7 +16,13 @@ export function clamp01(n: number): number {
 }
 
 /** Lesson progress: rounded track, filled bar with a highlight stripe, combo glow + badge. */
-export function ProgressBar({ value, streak = 0, streakThreshold = 3, label = 'Lesson progress', className }: ProgressBarProps) {
+export function ProgressBar({
+  value,
+  streak = 0,
+  streakThreshold = 3,
+  label = 'Lesson progress',
+  className,
+}: ProgressBarProps) {
   const pct = Math.round(clamp01(value) * 100)
   const glowing = streak >= streakThreshold
   return (

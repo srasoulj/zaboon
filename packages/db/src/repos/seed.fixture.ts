@@ -24,7 +24,11 @@ export interface SeedOptions {
 }
 
 /** Returns the id of the completed session it creates. */
-export async function seedLearner(ctx: TestContext, userId: string, opts: SeedOptions = {}): Promise<string> {
+export async function seedLearner(
+  ctx: TestContext,
+  userId: string,
+  opts: SeedOptions = {},
+): Promise<string> {
   const localDate = opts.localDate ?? '2026-09-25'
   const xp = opts.xp ?? 10
   const at = `${localDate}T10:00:00.000Z`
@@ -41,7 +45,11 @@ export async function seedLearner(ctx: TestContext, userId: string, opts: SeedOp
       expiresAt: `${localDate}T23:59:59.000Z`,
       graderVersion: 1,
     })
-    await repos.sessions.recordSessionEvent(tx, userId, { sessionId: s.id, attemptSeq: 0, challengeIndex: 0 })
+    await repos.sessions.recordSessionEvent(tx, userId, {
+      sessionId: s.id,
+      attemptSeq: 0,
+      challengeIndex: 0,
+    })
     await repos.sessions.insertSessionAnswers(tx, userId, s.id, [
       {
         idx: 0,
@@ -62,15 +70,38 @@ export async function seedLearner(ctx: TestContext, userId: string, opts: SeedOp
         ms: 1200,
       },
     ])
-    await repos.sessions.completeSession(tx, userId, s.id, { result: { sessionId: s.id }, completedAt: at })
-    await repos.progress.appendXp(tx, userId, { amount: xp, reason: 'session', sessionId: s.id, occurredAt: at, localDate })
+    await repos.sessions.completeSession(tx, userId, s.id, {
+      result: { sessionId: s.id },
+      completedAt: at,
+    })
+    await repos.progress.appendXp(tx, userId, {
+      amount: xp,
+      reason: 'session',
+      sessionId: s.id,
+      occurredAt: at,
+      localDate,
+    })
     await repos.progress.addDailyActivity(tx, userId, { localDate, xp })
-    await repos.state.saveStreak(tx, userId, { current: 1, longest: 1, lastActiveDate: localDate, freezes: 1 })
+    await repos.state.saveStreak(tx, userId, {
+      current: 1,
+      longest: 1,
+      lastActiveDate: localDate,
+      freezes: 1,
+    })
     await repos.state.saveLives(tx, userId, { policy: 'hearts', count: 4, updatedAt: at })
     await repos.state.addItem(tx, userId, 'streak_freeze', 1)
-    await repos.enrollments.ensureEnrollment(tx, userId, { courseId: 'fixture', contentVersion: 1, currentLevelId: 'u01-l1' })
+    await repos.enrollments.ensureEnrollment(tx, userId, {
+      courseId: 'fixture',
+      contentVersion: 1,
+      currentLevelId: 'u01-l1',
+    })
     await repos.enrollments.addEnrollmentXp(tx, userId, 'fixture', xp)
-    await repos.learning.recordLessonDone(tx, userId, { courseId: 'fixture', levelId: 'u01-l1', lessonsTotal: 3, at })
+    await repos.learning.recordLessonDone(tx, userId, {
+      courseId: 'fixture',
+      levelId: 'u01-l1',
+      lessonsTotal: 3,
+      at,
+    })
     await repos.memory.upsertLexemeCards(tx, userId, [
       { id: 'lx_salam', card: fixtureCard({ stability: opts.stability ?? 2 }), exposures: 1 },
     ])
@@ -80,7 +111,11 @@ export async function seedLearner(ctx: TestContext, userId: string, opts: SeedOp
     return s.id
   })
   await withUser(ctx.h.db, userId, (tx) =>
-    repos.reports.createReport(tx, userId, { itemRef: 'lexeme:lx_salam', kind: 'audio_problem', sessionId }),
+    repos.reports.createReport(tx, userId, {
+      itemRef: 'lexeme:lx_salam',
+      kind: 'audio_problem',
+      sessionId,
+    }),
   )
   return sessionId
 }

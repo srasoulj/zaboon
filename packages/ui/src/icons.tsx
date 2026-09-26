@@ -83,37 +83,86 @@ const PATHS: Record<IconName, ReactElement> = {
     />
   ),
   check: (
-    <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M5 12.5l4.5 4.5L19 7.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   ),
   cross: (
-    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <path
+      d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+    />
   ),
   close: (
-    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    <path
+      d="M6.5 6.5l11 11M17.5 6.5l-11 11"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
   ),
   flag: (
     <g fill="currentColor">
       <rect x="4.5" y="3" width="2.5" height="18" rx="1.2" />
-      <path d="M7 4h11.5l-3 4.5 3 4.5H7z" strokeLinejoin="round" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M7 4h11.5l-3 4.5 3 4.5H7z"
+        strokeLinejoin="round"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
     </g>
   ),
   lock: (
     <g fill="currentColor">
       <rect x="4.5" y="10" width="15" height="11" rx="3" />
-      <path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path
+        d="M8 10.5V8a4 4 0 018 0v2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
     </g>
   ),
   shift: (
-    <path d="M12 3.5L3.5 12.5H8v7.5h8v-7.5h4.5z" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+    <path
+      d="M12 3.5L3.5 12.5H8v7.5h8v-7.5h4.5z"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinejoin="round"
+    />
   ),
   backspace: (
-    <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <g
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M8.5 5H20a1.5 1.5 0 011.5 1.5v11A1.5 1.5 0 0120 19H8.5L2.5 12z" />
       <path d="M11.5 9l6 6M17.5 9l-6 6" />
     </g>
   ),
   enter: (
-    <path d="M19.5 5v6.5a2 2 0 01-2 2H5M9.5 9L5 13.5 9.5 18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    <path
+      d="M19.5 5v6.5a2 2 0 01-2 2H5M9.5 9L5 13.5 9.5 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   ),
 }
 

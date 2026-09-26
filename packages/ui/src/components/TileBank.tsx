@@ -31,7 +31,16 @@ export interface WordTileProps {
 const FLY = { duration: ms(tokens.motion.tileFly) / 1000, ease: [0.2, 0.8, 0.2, 1] as const }
 
 /** A whole-word tile: one button, one text node, `white-space: nowrap` (CLAUDE.md rule 5). */
-export function WordTile({ text, lang, onClick, disabled, state, layoutId, ref, ...rest }: WordTileProps) {
+export function WordTile({
+  text,
+  lang,
+  onClick,
+  disabled,
+  state,
+  layoutId,
+  ref,
+  ...rest
+}: WordTileProps) {
   const reduce = usePrefersReducedMotion()
   return (
     <motion.button
@@ -55,14 +64,23 @@ export function WordTile({ text, lang, onClick, disabled, state, layoutId, ref, 
 /** The grey slot a tile leaves in the bank; keeps the tile's width so the bank never reflows. */
 export function TilePlaceholder({ text, lang }: { text: string; lang: TileLang }) {
   return (
-    <span className="zb-tile zb-tile--placeholder" aria-hidden="true" lang={lang} dir={lang === 'fa' ? 'rtl' : 'ltr'}>
+    <span
+      className="zb-tile zb-tile--placeholder"
+      aria-hidden="true"
+      lang={lang}
+      dir={lang === 'fa' ? 'rtl' : 'ltr'}
+    >
       <span className="zb-tile__ghost">{text}</span>
     </span>
   )
 }
 
 /** The bank tile to focus after `movedId` left the bank: the next one, else the previous one. */
-export function nextBankFocus(tiles: readonly Tile[], answer: readonly string[], movedId: string): string | null {
+export function nextBankFocus(
+  tiles: readonly Tile[],
+  answer: readonly string[],
+  movedId: string,
+): string | null {
   const inAnswer = new Set(answer)
   const idx = tiles.findIndex((t) => t.id === movedId)
   const after = tiles.slice(idx + 1).find((t) => !inAnswer.has(t.id))

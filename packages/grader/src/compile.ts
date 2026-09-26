@@ -48,7 +48,8 @@ class Builder {
   }
 
   edge(from: number, to: number, t: string): void {
-    if (this.edges.length >= MAX_EDGES) throw new Error(`compile: answer graph exceeds ${MAX_EDGES} edges`)
+    if (this.edges.length >= MAX_EDGES)
+      throw new Error(`compile: answer graph exceeds ${MAX_EDGES} edges`)
     this.edges.push({ from, to, t })
   }
 
@@ -129,7 +130,11 @@ export function compile(patterns: readonly string[], opts: CompileOptions): Answ
   const start = 0
   const accept: number[] = []
   const hasRegisters = opts.formal !== undefined && lang === 'fa'
-  const build = (segs: readonly Segment[], slots: readonly (string | null)[] | null, tagAll?: Register) => {
+  const build = (
+    segs: readonly Segment[],
+    slots: readonly (string | null)[] | null,
+    tagAll?: Register,
+  ) => {
     let cur = start
     segs.forEach((seg, i) => {
       const end = b.node(tagAll)
@@ -145,7 +150,9 @@ export function compile(patterns: readonly string[], opts: CompileOptions): Answ
         b.edge(formal, end, '')
       }
       if (i === 0 && segs.length > 1 && lang === 'fa' && opts.pronounDrop !== false) {
-        const pronounSlot = seg.alts.some((a) => a.length === 1 && DROPPABLE_PRONOUNS.has(keyOf(a, lang)))
+        const pronounSlot = seg.alts.some(
+          (a) => a.length === 1 && DROPPABLE_PRONOUNS.has(keyOf(a, lang)),
+        )
         if (pronounSlot) b.edge(cur, end, '')
       }
       cur = end
@@ -158,7 +165,11 @@ export function compile(patterns: readonly string[], opts: CompileOptions): Answ
     accept.push(cur)
   }
   parsed.forEach((segs, i) =>
-    build(segs, i === formalTarget ? formalSlots : null, formalPattern && hasRegisters ? 'colloquial' : undefined),
+    build(
+      segs,
+      i === formalTarget ? formalSlots : null,
+      formalPattern && hasRegisters ? 'colloquial' : undefined,
+    ),
   )
   if (formalPattern) build(formalPattern, null, 'formal')
 
@@ -175,7 +186,10 @@ export function compile(patterns: readonly string[], opts: CompileOptions): Answ
  */
 function applyVariantSet(b: Builder, set: readonly string[], lang: Lang): void {
   const members = set
-    .map((m) => ({ words: mergeAffixWords(m.trim().split(/\s+/).filter(Boolean), lang), key: keyTokens(m, lang) }))
+    .map((m) => ({
+      words: mergeAffixWords(m.trim().split(/\s+/).filter(Boolean), lang),
+      key: keyTokens(m, lang),
+    }))
     .filter((m) => m.key.length > 0)
   if (members.length < 2) return
   const edgeKeys = b.edges.map((e) => keyTokens(e.t, lang))
@@ -204,7 +218,8 @@ function applyVariantSet(b: Builder, set: readonly string[], lang: Lang): void {
             if (pos > 0) stack.push([b.edges[ei]!.to, pos])
             continue
           }
-          if (k.every((tok, j) => m.key[pos + j] === tok)) stack.push([b.edges[ei]!.to, pos + k.length])
+          if (k.every((tok, j) => m.key[pos + j] === tok))
+            stack.push([b.edges[ei]!.to, pos + k.length])
         }
       }
     }

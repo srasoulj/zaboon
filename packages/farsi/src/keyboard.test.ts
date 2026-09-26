@@ -23,18 +23,23 @@ const typeable = (id: 'standard' | 'phonetic') => {
 }
 
 describe('keyboard layouts', () => {
-  it.each(['standard', 'phonetic'] as const)('%s: types every Persian letter, آ, digits and the half-space', (id) => {
-    const chars = typeable(id)
-    for (const letter of [...ALPHABET, 'آ']) expect(chars.has(letter), letter).toBe(true)
-    for (const d of '۰۱۲۳۴۵۶۷۸۹') expect(chars.has(d), d).toBe(true)
-    expect(chars.has(ZWNJ)).toBe(true)
-    expect(keyChar(id, HALF_SPACE_CODE, { shift: true })).toBe(ZWNJ)
-    expect(keyChar(id, HALF_SPACE_CODE)).toBe(' ')
-  })
+  it.each(['standard', 'phonetic'] as const)(
+    '%s: types every Persian letter, آ, digits and the half-space',
+    (id) => {
+      const chars = typeable(id)
+      for (const letter of [...ALPHABET, 'آ']) expect(chars.has(letter), letter).toBe(true)
+      for (const d of '۰۱۲۳۴۵۶۷۸۹') expect(chars.has(d), d).toBe(true)
+      expect(chars.has(ZWNJ)).toBe(true)
+      expect(keyChar(id, HALF_SPACE_CODE, { shift: true })).toBe(ZWNJ)
+      expect(keyChar(id, HALF_SPACE_CODE)).toBe(' ')
+    },
+  )
 
   it.each(['standard', 'phonetic'] as const)('%s: keys are KeyboardEvent.code values', (id) => {
     for (const code of Object.keys(KEYBOARD_LAYOUTS[id].keys))
-      expect(code).toMatch(/^(Key[A-Z]|Digit[0-9]|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Space)$/)
+      expect(code).toMatch(
+        /^(Key[A-Z]|Digit[0-9]|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|Semicolon|Quote|Comma|Period|Slash|Space)$/,
+      )
   })
 
   it('standard follows ISIRI 9147 on sample keys', () => {
@@ -112,7 +117,9 @@ describe('remapPhysicalKey', () => {
 
   it('Shift+Space types the half-space; Space a space', () => {
     for (const id of ['standard', 'phonetic'] as const) {
-      expect(remapPhysicalKey(id, ev({ key: ' ', code: HALF_SPACE_CODE, shiftKey: true }))).toBe(ZWNJ)
+      expect(remapPhysicalKey(id, ev({ key: ' ', code: HALF_SPACE_CODE, shiftKey: true }))).toBe(
+        ZWNJ,
+      )
       expect(remapPhysicalKey(id, ev({ key: ' ', code: HALF_SPACE_CODE }))).toBe(' ')
     }
   })

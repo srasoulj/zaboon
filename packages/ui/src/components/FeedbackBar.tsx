@@ -65,11 +65,21 @@ export function FeedbackBar({
         </div>
         <div className="zb-feedback__actions">
           {onReport && (
-            <button type="button" className="zb-feedback__report" onClick={onReport} aria-label={reportLabel}>
+            <button
+              type="button"
+              className="zb-feedback__report"
+              onClick={onReport}
+              aria-label={reportLabel}
+            >
               <Icon name="flag" size={22} />
             </button>
           )}
-          <Button3D ref={continueRef} variant={status === 'correct' ? 'primary' : 'danger'} onClick={onContinue} className="zb-feedback__continue">
+          <Button3D
+            ref={continueRef}
+            variant={status === 'correct' ? 'primary' : 'danger'}
+            onClick={onContinue}
+            className="zb-feedback__continue"
+          >
             {continueLabel}
           </Button3D>
         </div>

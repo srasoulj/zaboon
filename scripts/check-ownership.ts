@@ -72,13 +72,18 @@ function arg(name: string): string | undefined {
 }
 
 if (process.argv[1]?.endsWith('check-ownership.ts')) {
-  const own = JSON.parse(readFileSync(new URL('../ops/ownership.json', import.meta.url), 'utf8')) as Ownership
+  const own = JSON.parse(
+    readFileSync(new URL('../ops/ownership.json', import.meta.url), 'utf8'),
+  ) as Ownership
   const base = arg('base') ?? 'origin/main'
   const branch =
-    arg('branch') ?? execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { encoding: 'utf8' }).trim()
+    arg('branch') ??
+    execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { encoding: 'utf8' }).trim()
   // Diff the named branch (not HEAD), so the orchestrator can check a worker branch it hasn't checked out.
   const ref = arg('branch') ?? 'HEAD'
-  const files = execFileSync('git', ['diff', '--name-only', `${base}...${ref}`], { encoding: 'utf8' })
+  const files = execFileSync('git', ['diff', '--name-only', `${base}...${ref}`], {
+    encoding: 'utf8',
+  })
     .split('\n')
     .filter(Boolean)
   const problems = check(files, branch, own)

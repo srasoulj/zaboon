@@ -184,7 +184,9 @@ describe('feature flags (x-test-flags)', () => {
       )
     expect(() => requestFlags(req('{"leauges":true}'), configured)).toThrow(/unknown flag/)
     // A flag that exists only in app_config is known too.
-    expect(parseTestFlags('{"experiment":true}', { experiment: false })).toEqual({ experiment: true })
+    expect(parseTestFlags('{"experiment":true}', { experiment: false })).toEqual({
+      experiment: true,
+    })
   })
 
   it('is ignored in production mode, even when malformed', () => {
@@ -210,7 +212,10 @@ describe('session features from flags', () => {
       persianTyping: true,
       letterTrace: false,
     })
-    expect(sessionFeatures({ letterTrace: true })).toEqual({ persianTyping: false, letterTrace: true })
+    expect(sessionFeatures({ letterTrace: true })).toEqual({
+      persianTyping: false,
+      letterTrace: true,
+    })
   })
 })
 

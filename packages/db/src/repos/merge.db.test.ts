@@ -16,31 +16,59 @@ describe('mergeGuestIntoMember', () => {
   it('requires system scope', async () => {
     const g = await ctx.newUser()
     const m = await ctx.newUser({ anonymous: false })
-    await expect(withUser(ctx.h.db, m, (tx) => merge.mergeGuestIntoMember(tx, { guestId: g, memberId: m }))).rejects.toBeInstanceOf(
-      ScopeError,
-    )
-    await expect(withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: m, memberId: m }))).rejects.toThrow()
+    await expect(
+      withUser(ctx.h.db, m, (tx) => merge.mergeGuestIntoMember(tx, { guestId: g, memberId: m })),
+    ).rejects.toBeInstanceOf(ScopeError)
+    await expect(
+      withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: m, memberId: m })),
+    ).rejects.toThrow()
   })
 
   it("moves the guest's progress into the member and deletes the guest's rows", async () => {
     const guest = await ctx.newUser()
     const member = await ctx.newUser({ anonymous: false, email: 'member@example.test' })
     // Overlapping day (09-25) plus a guest-only day (09-24).
-    const guestSession = await seedLearner(ctx, guest, { localDate: '2026-09-25', xp: 10, stability: 9 })
+    const guestSession = await seedLearner(ctx, guest, {
+      localDate: '2026-09-25',
+      xp: 10,
+      stability: 9,
+    })
     await withUserLock(ctx.h.db, guest, async (tx) => {
       await progress.addDailyActivity(tx, guest, { localDate: '2026-09-24', xp: 7 })
-      await progress.appendXp(tx, guest, { amount: 7, reason: 'bonus', occurredAt: '2026-09-24T09:00:00Z', localDate: '2026-09-24' })
-      await memory.upsertLexemeCards(tx, guest, [{ id: 'lx_guest_only', card: fixtureCard(), exposures: 5 }])
-      await learning.setLegendary(tx, guest, { courseId: 'fixture', levelId: 'u01-l1', at: '2026-09-25T12:00:00Z' })
-      await state.saveStreak(tx, guest, { current: 2, longest: 2, lastActiveDate: '2026-09-25', freezes: 1 })
+      await progress.appendXp(tx, guest, {
+        amount: 7,
+        reason: 'bonus',
+        occurredAt: '2026-09-24T09:00:00Z',
+        localDate: '2026-09-24',
+      })
+      await memory.upsertLexemeCards(tx, guest, [
+        { id: 'lx_guest_only', card: fixtureCard(), exposures: 5 },
+      ])
+      await learning.setLegendary(tx, guest, {
+        courseId: 'fixture',
+        levelId: 'u01-l1',
+        at: '2026-09-25T12:00:00Z',
+      })
+      await state.saveStreak(tx, guest, {
+        current: 2,
+        longest: 2,
+        lastActiveDate: '2026-09-25',
+        freezes: 1,
+      })
     })
-    await withUser(ctx.h.db, guest, (tx) => reports.createReport(tx, guest, { itemRef: 'lexeme:lx_ab', kind: 'other' }))
+    await withUser(ctx.h.db, guest, (tx) =>
+      reports.createReport(tx, guest, { itemRef: 'lexeme:lx_ab', kind: 'other' }),
+    )
     await seedLearner(ctx, member, { localDate: '2026-09-25', xp: 20, stability: 1 })
     await withUserLock(ctx.h.db, member, (tx) =>
-      memory.upsertLetterCards(tx, member, [{ id: 'l_be', card: fixtureCard({ stability: 50 }), exposures: 0 }]),
+      memory.upsertLetterCards(tx, member, [
+        { id: 'l_be', card: fixtureCard({ stability: 50 }), exposures: 0 },
+      ]),
     )
 
-    const summary = await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    const summary = await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }),
+    )
     expect(summary).toEqual({ merged: true, sessionsMoved: 1, xpMoved: 17, daysMerged: 2 })
 
     await withUser(ctx.h.db, member, async (tx) => {
@@ -69,25 +97,44 @@ describe('mergeGuestIntoMember', () => {
       const [letter] = await memory.getLetterCards(tx, member)
       expect(letter!.card.stability).toBe(50)
       // Progress, enrollment, mistakes, items, streak
-      expect(await learning.getLevelProgress(tx, member, 'fixture', 'u01-l1')).toMatchObject({ lessonsDone: 1, legendary: true })
+      expect(await learning.getLevelProgress(tx, member, 'fixture', 'u01-l1')).toMatchObject({
+        lessonsDone: 1,
+        legendary: true,
+      })
       expect((await enrollments.getEnrollment(tx, member, 'fixture'))?.xpTotal).toBe(30)
-      expect((await learning.listOpenMistakes(tx, member))[0]).toMatchObject({ itemRef: 'lexeme:lx_salam', timesWrong: 2 })
+      expect((await learning.listOpenMistakes(tx, member))[0]).toMatchObject({
+        itemRef: 'lexeme:lx_salam',
+        timesWrong: 2,
+      })
       expect(await state.getItems(tx, member)).toEqual({ streak_freeze: 2 })
-      expect(await state.getStreak(tx, member)).toEqual({ current: 2, longest: 2, lastActiveDate: '2026-09-25', freezes: 1 })
+      expect(await state.getStreak(tx, member)).toEqual({
+        current: 2,
+        longest: 2,
+        lastActiveDate: '2026-09-25',
+        freezes: 1,
+      })
       expect(await state.getLives(tx, member)).toMatchObject({ count: 4 })
-      expect(await profiles.getPublicProfile(tx, member)).toMatchObject({ xpTotal: 37, streakCurrent: 2 })
+      expect(await profiles.getPublicProfile(tx, member)).toMatchObject({
+        xpTotal: 37,
+        streakCurrent: 2,
+      })
     })
 
     // Nothing of the guest's remains.
     const tables = await ctx.admin<{ table_name: string }[]>`
       SELECT table_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name = 'user_id'`
     for (const { table_name } of tables) {
-      const rows = await ctx.admin.unsafe(`SELECT count(*)::int AS n FROM public."${table_name}" WHERE user_id = $1`, [guest])
+      const rows = await ctx.admin.unsafe(
+        `SELECT count(*)::int AS n FROM public."${table_name}" WHERE user_id = $1`,
+        [guest],
+      )
       expect({ table_name, n: rows[0]!.n }).toEqual({ table_name, n: 0 })
     }
 
     // Replaying the merge is a no-op (the guest is gone).
-    const again = await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    const again = await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }),
+    )
     expect(again.merged).toBe(false)
     expect(await withUser(ctx.h.db, member, (tx) => progress.getXpTotal(tx, member))).toBe(37)
   })
@@ -101,15 +148,19 @@ describe('mergeGuestIntoMember', () => {
       (${member}, 5, 'quest', '2026-09-25:earn_xp')`
     await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 6), (${member}, 5)`
 
-    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }),
+    )
 
     const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
-    const [l] = await ctx.admin`SELECT sum(amount)::int AS total, count(*)::int AS n FROM public.coin_ledger WHERE user_id = ${member}`
+    const [l] =
+      await ctx.admin`SELECT sum(amount)::int AS total, count(*)::int AS n FROM public.coin_ledger WHERE user_id = ${member}`
     // The member's 5 plus the guest's net 6 (5 + 3 - 2): the guest's duplicate quest row is not
     // copied, its 5 comes back as one balancing `merge` row, so no coin is lost or counted twice.
     expect(w!.coins).toBe(11)
     expect(l).toEqual({ total: 11, n: 4 })
-    const [b] = await ctx.admin`SELECT amount, ref FROM public.coin_ledger WHERE user_id = ${member} AND reason = 'merge'`
+    const [b] =
+      await ctx.admin`SELECT amount, ref FROM public.coin_ledger WHERE user_id = ${member} AND reason = 'merge'`
     expect(b).toEqual({ amount: 5, ref: guest })
   })
 
@@ -119,11 +170,14 @@ describe('mergeGuestIntoMember', () => {
     await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES
       (${guest}, 4, 'quest', 'q1'), (${guest}, -4, 'refill', 'r1'), (${member}, 4, 'quest', 'q1')`
     await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 0), (${member}, 4)`
-    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }),
+    )
     // The copied rows sum to -4 (the duplicate quest is skipped); the balancing row gives back 4, so
     // the member gains the guest's net 0 and wallet = ledger.
     const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
-    const [l] = await ctx.admin`SELECT sum(amount)::int AS total FROM public.coin_ledger WHERE user_id = ${member}`
+    const [l] =
+      await ctx.admin`SELECT sum(amount)::int AS total FROM public.coin_ledger WHERE user_id = ${member}`
     expect(w!.coins).toBe(4)
     expect(l!.total).toBe(4)
 
@@ -131,7 +185,9 @@ describe('mergeGuestIntoMember', () => {
     const m2 = await ctx.newUser({ anonymous: false })
     await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES (${g2}, 7, 'signup', NULL)`
     await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${g2}, 7)`
-    await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: g2, memberId: m2 }))
+    await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: g2, memberId: m2 }),
+    )
     const [w2] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${m2}`
     expect(w2!.coins).toBe(7)
   })
@@ -140,12 +196,16 @@ describe('mergeGuestIntoMember', () => {
     const guest = await ctx.newUser()
     const member = await ctx.newUser({ anonymous: false })
     await seedLearner(ctx, guest, { xp: 12 })
-    const summary = await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
+    const summary = await withSystem(ctx.h.db, (tx) =>
+      merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }),
+    )
     expect(summary).toMatchObject({ merged: true, xpMoved: 12, daysMerged: 1 })
     await withUser(ctx.h.db, member, async (tx) => {
       expect(await progress.getXpTotal(tx, member)).toBe(12)
       expect(await state.getStreak(tx, member)).toMatchObject({ current: 1 })
-      expect((await enrollments.getEnrollment(tx, member, 'fixture'))?.currentLevelId).toBe('u01-l1')
+      expect((await enrollments.getEnrollment(tx, member, 'fixture'))?.currentLevelId).toBe(
+        'u01-l1',
+      )
     })
   })
 })

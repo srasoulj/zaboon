@@ -2,13 +2,29 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { queryKeys } from '@/lib/api-client'
 import { ProfileScreen, joinedLabel, usernameProblem } from './ProfileScreen'
-import { MEMBER_ID, apiError, fakeApi, fakeAuth, home, profile, renderWith, session } from './test-support'
+import {
+  MEMBER_ID,
+  apiError,
+  fakeApi,
+  fakeAuth,
+  home,
+  profile,
+  renderWith,
+  session,
+} from './test-support'
 
 afterEach(() => cleanup())
 
 const WORDS = {
   words: [
-    { lexemeId: 'lx_salam', fa: 'سلام', translit: 'salām', gloss: 'hello', strength: 2, dueAt: null },
+    {
+      lexemeId: 'lx_salam',
+      fa: 'سلام',
+      translit: 'salām',
+      gloss: 'hello',
+      strength: 2,
+      dueAt: null,
+    },
     { lexemeId: 'lx_ab', fa: 'آب', translit: 'āb', gloss: 'water', strength: 1, dueAt: null },
   ],
 }

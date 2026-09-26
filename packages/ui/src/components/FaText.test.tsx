@@ -37,7 +37,10 @@ describe('FaText', () => {
   it('keeps ZWNJ compounds intact and preserves the reading text', () => {
     const { container } = render(<FaText text={`من آب می${ZWNJ}خوام`} />)
     expect(container.textContent).toBe(`من آب می${ZWNJ}خوام`)
-    expect(splitWords(`  آب\u00A0 می${ZWNJ}خوام `).map((t) => t.surface)).toEqual(['آب', `می${ZWNJ}خوام`])
+    expect(splitWords(`  آب\u00A0 می${ZWNJ}خوام `).map((t) => t.surface)).toEqual([
+      'آب',
+      `می${ZWNJ}خوام`,
+    ])
   })
 
   it('shows a transliteration line under each token', () => {

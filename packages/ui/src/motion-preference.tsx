@@ -38,7 +38,9 @@ export function MotionPreferenceProvider({ reduce, children }: MotionPreferenceP
 const QUERY = '(prefers-reduced-motion: reduce)'
 
 function mediaQuery(): MediaQueryList | null {
-  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(QUERY) : null
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia(QUERY)
+    : null
 }
 
 function subscribe(onChange: () => void): () => void {

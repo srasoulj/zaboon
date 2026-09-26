@@ -5,6 +5,13 @@ coverage
 playwright-report
 test-results
 .local
-content/**/*.yaml
+# Course content (hashed, versioned media and YAML) and orchestrator state and specs: never reformatted.
+content/
+ops/
 docs/**/*.md
 packages/*/oracles/
+# The UI kit's design tokens and CSS: styles.css is generated from tokens.json and components.css
+# (packages/ui/scripts/build-tokens.ts), and tests read components.css as text.
+packages/ui/tokens.json
+packages/ui/src/styles.css
+packages/ui/src/components.css

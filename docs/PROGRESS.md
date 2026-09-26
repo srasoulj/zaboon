@@ -14,7 +14,64 @@
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
 | 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51; QA with the flags on (ws-qa-2, #57), its bugs fixed in #59 |
 | 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | ✅ prep #56 and #58; **speak** #60 with review fixes #61 and #65; **Stories** #64 with its path contract fix (#66). fa-en has three AI-composed draft stories (units 1, 2 and 4) |
-| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | 🔄 runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 (owner's session); flaky QA test #63 |
+| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ✅ runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 and release on deploy #67 (owner's session); flaky QA tests #63, #66; Lighthouse audit, formatter pass with a format gate in verify, `.env.example` sync (#68) |
+
+## Final report (2026-09-26, orchestrator)
+
+Every wave in the plan is done: the MVP, Wave 3 (engagement, typing, tracing) and the scoped-down Wave 4 (speak, Stories). Every feature is behind a flag (off by default), and `main` passes the full `pnpm verify`:
+
+- typecheck and lint;
+- the format check;
+- 2,213 unit and DOM tests and 332 DB tests (with pgTAP);
+- content validation;
+- 300 Playwright e2e tests on desktop and mobile Chromium, including the golden path through all 13 MVP challenge types;
+- the production build (no dev routes) and the secret scan.
+
+**What exists**
+
+- **Learner app** (Next.js 16, Supabase Auth only, every read and write through typed route handlers):
+  - guest start, onboarding with the 13+ gate, and the heritage track;
+  - the Duolingo-style path with units, chests, practice and reviews;
+  - the lesson player: 13 challenge types, hearts, streaks with freezes, XP and daily goals, an offline outbox, and resume;
+  - the letters track with tracing, and the Persian keyboard with typed answers;
+  - leagues, quests, coins and shop, and the practice hub;
+  - speak (microphone to a signed transcript), and Stories;
+  - profile, settings, account merge, export and deletion, admin report triage, SEO alphabet pages, and a PWA.
+- **Learning engine:**
+  - the Persian normalizer and grader (a pattern DAG with typo, variant and register handling);
+  - a deterministic session generator;
+  - FSRS spaced repetition;
+  - game rules in TypeScript, checked by 641 oracle cases.
+- **Content:**
+  - the frozen fixture course, which the e2e tests use;
+  - fa-en: text drafts for units 1–5 (Astra) and Unit 1 media (79 clips, 8 illustrations, 5 portraits);
+  - three draft stories;
+  - everything is `status: draft` until a native speaker reviews it.
+- **Operations:** the deploy runbook ([DEPLOY.md](DEPLOY.md)), and release on deploy (#67): each production build applies pending migrations and publishes changed content. Also the RLS and grants model with pgTAP isolation tests, rate limits, body caps, the anti-cheat rules, and a cron rollover.
+
+**Lighthouse** (13.5, mobile preset with simulated throttling; production build served locally; flags at their defaults):
+
+| Page | Performance | Accessibility | Best practices | SEO |
+|---|---|---|---|---|
+| `/` (landing) | 87 | 100 | 100 | 100 |
+| `/learn-persian` | 87 | 100 | 100 | 100 |
+| `/learn` (path) | 87 | 100 | 100 | 63 |
+| `/letters` | 85 | 100 | 100 | 54 |
+| `/profile` | 87 | 100 | 100 | 63 |
+
+- The signed-in pages are `noindex` on purpose, which is the SEO "is-crawlable" failure. `/letters` also has one link without descriptive text.
+- Performance is held back by about 500 ms of total blocking time (JavaScript on the main thread). First and largest contentful paint are 0.6–1.7 s.
+- Both are on the hardening backlog below. The plan's "PWA ≥ 90" check no longer exists: Lighthouse 12 removed the PWA category. The service worker and manifest are covered by e2e instead.
+
+**Budget:** AI spend is $7.72 of the $9.50 internal cap. 15 of 20 sessions were used, and the wall clock was about 25 h of 48.
+
+**The owner still needs to** (details in [DEPLOY.md](DEPLOY.md), "First deploy, in order", and tracker #4):
+
+- turn on anonymous sign-ins in Supabase;
+- enable pg_cron;
+- set the Vercel Root Directory and environment variables, including `DATABASE_URL_MIGRATE` (Production only). The production build then applies the migrations and publishes the content (#67);
+- push the `mvp` tag;
+- before turning `speak` on, set `APP_SIGNING_SECRET` and a credit-limited `OPENROUTER_API_KEY_APP`.
 
 ## Workstreams
 
@@ -157,7 +214,7 @@ on very short clips. The committed clips were normalized separately, so re-runni
 - **Grader and renderer:** agree on how punctuation is handled in cloze answers.
 - **Traces:** the server checks the thresholds on client-reported coverage and precision. Re-scoring the strokes would need a server-side glyph rasterizer. Declined traces are non-rated since #53.
 - **ws-api:** add `repos.learning.deleteLevelProgress`.
-- **Formatting:** run a repo-wide formatter pass once no workers are active. The formatter isn't part of verify.
+- **Performance:** cut about 500 ms of main-thread JavaScript on first load (Lighthouse total blocking time). Split the lesson player and animation code out of the shell, check whether supabase-js can load later, and target modern browsers to drop the 14 KiB of legacy polyfills. Also fix the one non-descriptive link on `/letters`.
 - **WebKit e2e:** needs CI runners; locally only Chromium runs.
 - **Unused Unit 1 illustrations:** only 4 of the 8 appear in Unit 1 (the `select_image` options are fixed per challenge). Water, river, mulberry and ice cream wait for later units.
 - **Path banners:** show the character portraits (the chat screen gets them in Wave 3, ws-typing).
@@ -165,7 +222,6 @@ on very short clips. The committed clips were normalized separately, so re-runni
   - wire Turnstile into guest sign-in, and add the guest-cleanup cron (ARCHITECTURE §8);
   - CSP and security headers;
   - `turbo.json` env passthrough, so `CONTENT_BASE_URL` reaches `next build` under Turborepo;
-  - `.env.example` drift: `SUPABASE_URL`, `NEXT_PUBLIC_AUTH_MODE`, and names that nothing reads yet;
   - a CD step for `supabase db push`;
   - `content_versions.min_app_version` is never read.
 - **From the Wave 5 security review (no critical or high findings). Two mediums are fixed:** bounded inputs and body caps; the course-id cache. Still open (low):

@@ -119,7 +119,9 @@ export function AdminReports() {
           {errorMessage(update.error, "We couldn't update that report.")}
         </p>
       )}
-      {(reports.isPending || !signedIn) && !reports.isError && <p className="text-stone">Loading…</p>}
+      {(reports.isPending || !signedIn) && !reports.isError && (
+        <p className="text-stone">Loading…</p>
+      )}
       {reports.isSuccess && list.length === 0 && (
         <p className="text-stone">No reports here. Nice work!</p>
       )}

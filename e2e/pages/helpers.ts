@@ -39,7 +39,8 @@ async function toUser(res: Awaited<ReturnType<APIRequestContext['post']>>): Prom
 }
 
 /** A unique marker for rows in the shared, never-reset local DB. */
-export const unique = (prefix: string) => `${prefix}${randomUUID().replaceAll('-', '').slice(0, 12)}`
+export const unique = (prefix: string) =>
+  `${prefix}${randomUUID().replaceAll('-', '').slice(0, 12)}`
 export const uniqueEmail = () => `${unique('e2e-')}@example.com`
 
 export const newGuest = async (request: APIRequestContext) =>
@@ -60,7 +61,10 @@ export async function onboard(request: APIRequestContext, user: User): Promise<v
 export async function home(request: APIRequestContext, user: User) {
   const res = await request.get('/api/home', { headers: user.headers })
   expect(res.status()).toBe(200)
-  return (await res.json()) as { xpTotal: number; user: { onboarded: boolean; isAnonymous: boolean } }
+  return (await res.json()) as {
+    xpTotal: number
+    user: { onboarded: boolean; isAnonymous: boolean }
+  }
 }
 
 /** Plays the fixture's short first lesson perfectly over HTTP; returns the XP it earned. */
@@ -111,7 +115,11 @@ export async function signInPage(page: Page, user: User, path: string): Promise<
 
 export async function storedSession(page: Page) {
   const raw = await page.evaluate((key) => window.localStorage.getItem(key), LOCAL_SESSION_KEY)
-  return JSON.parse(raw ?? 'null') as { userId: string; isAnonymous: boolean; accessToken: string } | null
+  return JSON.parse(raw ?? 'null') as {
+    userId: string
+    isAnonymous: boolean
+    accessToken: string
+  } | null
 }
 
 /** WCAG 2.2 A/AA violations inside `selector` (page content only, not the shell). */

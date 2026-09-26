@@ -101,7 +101,9 @@ describe('AdminReports', () => {
     await waitFor(() => expect(screen.getAllByTestId('report')).toHaveLength(ADMIN_PAGE_SIZE))
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
     await waitFor(() => expect(screen.getAllByTestId('report')).toHaveLength(ADMIN_PAGE_SIZE + 3))
-    expect(called('adminReports').at(-1)!.query!.before).toBe(rows(ADMIN_PAGE_SIZE)[ADMIN_PAGE_SIZE - 1]!.createdAt)
+    expect(called('adminReports').at(-1)!.query!.before).toBe(
+      rows(ADMIN_PAGE_SIZE)[ADMIN_PAGE_SIZE - 1]!.createdAt,
+    )
     expect(screen.queryByRole('button', { name: 'Load more' })).toBeNull()
   })
 })

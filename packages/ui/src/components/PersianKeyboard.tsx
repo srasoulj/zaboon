@@ -80,7 +80,8 @@ export function keyFace(ch: string): KeyFace {
   if (ch === ZWNJ) return { text: 'ZWNJ', lang: 'en', label: 'zero-width non-joiner (ZWNJ)' }
   if (ch === ZWJ) return { text: 'ZWJ', lang: 'en', label: 'zero-width joiner (ZWJ)' }
   if (ch === TATWEEL) return { text: ch, lang: 'fa', label: 'tatweel' }
-  if (/^\p{Mn}$/u.test(ch)) return { text: DOTTED_CIRCLE + ch, lang: 'fa', label: MARK_NAMES[ch] ?? 'combining mark' }
+  if (/^\p{Mn}$/u.test(ch))
+    return { text: DOTTED_CIRCLE + ch, lang: 'fa', label: MARK_NAMES[ch] ?? 'combining mark' }
   return { text: ch, lang: 'fa' }
 }
 
@@ -138,7 +139,8 @@ export function PersianKeyboard({
   useEffect(() => {
     const target = pendingFocus.current
     if (target === null) return
-    const el = target === '' ? popoverRef.current?.querySelector('button') : keyEls.current.get(target)
+    const el =
+      target === '' ? popoverRef.current?.querySelector('button') : keyEls.current.get(target)
     if (el) {
       pendingFocus.current = null
       el.focus({ preventScroll: true })
@@ -189,53 +191,58 @@ export function PersianKeyboard({
     if (ch !== null) type(ch)
   }
 
-  const onCharPointerDown = (code: string, variants: readonly string[] | undefined) => (e: ReactPointerEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    if (disabled || !variants?.length || e.button > 0) return
-    // Touch pointers are captured by the key they started on; release so the pointer can end on
-    // a variant (the release target is then whatever is under the finger).
-    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
-    if (press.current) clearTimeout(press.current.timer)
-    suppressClick.current = false
-    const p: Press = {
-      code,
-      variants,
-      long: false,
-      timer: setTimeout(() => {
-        p.long = true
-        suppressClick.current = true
-        openVariants(code, false)
-      }, LONG_PRESS_MS),
-    }
-    press.current = p
-    const end = (ev: PointerEvent) => {
-      window.removeEventListener('pointerup', end)
-      window.removeEventListener('pointercancel', end)
-      clearTimeout(p.timer)
-      if (press.current === p) press.current = null
-      if (!p.long) return
-      if (ev.type === 'pointerup') {
-        const under =
-          typeof document.elementFromPoint === 'function' ? document.elementFromPoint(ev.clientX, ev.clientY) : null
-        const hit = [under, ev.target]
-          .map((t) => (t instanceof Element ? t.closest('[data-variant-index]') : null))
-          .find((el) => el !== null && popoverRef.current?.contains(el))
-        const index = hit ? Number(hit.getAttribute('data-variant-index')) : -1
-        const v = p.variants[index]
-        if (v !== undefined) {
-          setShift(false)
-          setOpen(null)
-          onKey(v)
-        }
+  const onCharPointerDown =
+    (code: string, variants: readonly string[] | undefined) =>
+    (e: ReactPointerEvent<HTMLButtonElement>) => {
+      e.preventDefault()
+      if (disabled || !variants?.length || e.button > 0) return
+      // Touch pointers are captured by the key they started on; release so the pointer can end on
+      // a variant (the release target is then whatever is under the finger).
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId))
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      if (press.current) clearTimeout(press.current.timer)
+      suppressClick.current = false
+      const p: Press = {
+        code,
+        variants,
+        long: false,
+        timer: setTimeout(() => {
+          p.long = true
+          suppressClick.current = true
+          openVariants(code, false)
+        }, LONG_PRESS_MS),
       }
-      // Let the click that follows this release pass (and be ignored) first.
-      setTimeout(() => {
-        suppressClick.current = false
-      }, 0)
+      press.current = p
+      const end = (ev: PointerEvent) => {
+        window.removeEventListener('pointerup', end)
+        window.removeEventListener('pointercancel', end)
+        clearTimeout(p.timer)
+        if (press.current === p) press.current = null
+        if (!p.long) return
+        if (ev.type === 'pointerup') {
+          const under =
+            typeof document.elementFromPoint === 'function'
+              ? document.elementFromPoint(ev.clientX, ev.clientY)
+              : null
+          const hit = [under, ev.target]
+            .map((t) => (t instanceof Element ? t.closest('[data-variant-index]') : null))
+            .find((el) => el !== null && popoverRef.current?.contains(el))
+          const index = hit ? Number(hit.getAttribute('data-variant-index')) : -1
+          const v = p.variants[index]
+          if (v !== undefined) {
+            setShift(false)
+            setOpen(null)
+            onKey(v)
+          }
+        }
+        // Let the click that follows this release pass (and be ignored) first.
+        setTimeout(() => {
+          suppressClick.current = false
+        }, 0)
+      }
+      window.addEventListener('pointerup', end)
+      window.addEventListener('pointercancel', end)
     }
-    window.addEventListener('pointerup', end)
-    window.addEventListener('pointercancel', end)
-  }
 
   const onCharPointerLeave = () => {
     const p = press.current
@@ -245,13 +252,14 @@ export function PersianKeyboard({
     }
   }
 
-  const onCharKeyDown = (code: string, hasVariants: boolean) => (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (!hasVariants || disabled) return
-    if (e.key === 'ArrowUp' || e.key === 'ContextMenu') {
-      e.preventDefault()
-      openVariants(code, true)
+  const onCharKeyDown =
+    (code: string, hasVariants: boolean) => (e: KeyboardEvent<HTMLButtonElement>) => {
+      if (!hasVariants || disabled) return
+      if (e.key === 'ArrowUp' || e.key === 'ContextMenu') {
+        e.preventDefault()
+        openVariants(code, true)
+      }
     }
-  }
 
   const onPopoverKeyDown = (code: string) => (e: KeyboardEvent<HTMLDivElement>) => {
     const buttons = [...(popoverRef.current?.querySelectorAll('button') ?? [])]
@@ -317,7 +325,8 @@ export function PersianKeyboard({
             if (!def) return null
             const ch = shift ? (def.shift ?? def.base) : def.base
             const face = keyFace(ch)
-            const variants = layout === 'phonetic' && def.variants?.length ? def.variants : undefined
+            const variants =
+              layout === 'phonetic' && def.variants?.length ? def.variants : undefined
             const isOpen = variants !== undefined && openCode === code
             return (
               <div
@@ -342,7 +351,11 @@ export function PersianKeyboard({
                   onKeyDown={onCharKeyDown(code, variants !== undefined)}
                   onClick={() => onCharClick(code)}
                 >
-                  <span className="zb-kbd__glyph" lang={face.lang} dir={face.lang === 'fa' ? 'rtl' : 'ltr'}>
+                  <span
+                    className="zb-kbd__glyph"
+                    lang={face.lang}
+                    dir={face.lang === 'fa' ? 'rtl' : 'ltr'}
+                  >
                     {face.text}
                   </span>
                   {variants && <span className="zb-kbd__hint" aria-hidden="true" />}
@@ -369,7 +382,11 @@ export function PersianKeyboard({
                           onMouseDown={keepFocus}
                           onClick={() => onVariantClick(v)}
                         >
-                          <span className="zb-kbd__glyph" lang={vf.lang} dir={vf.lang === 'fa' ? 'rtl' : 'ltr'}>
+                          <span
+                            className="zb-kbd__glyph"
+                            lang={vf.lang}
+                            dir={vf.lang === 'fa' ? 'rtl' : 'ltr'}
+                          >
                             {vf.text}
                           </span>
                         </button>

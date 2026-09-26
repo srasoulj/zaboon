@@ -7,7 +7,10 @@ const paths = (ws: string): string[] => own.workstreams[ws].paths
 
 /** A concrete file a glob matches (`**` → a nested file, `*` → a name). */
 const sample = (glob: string) =>
-  glob.replace(/\*\*$/, 'x/sample.ts').replace(/\*\*\//g, 'x/').replace(/\*/g, 'sample')
+  glob
+    .replace(/\*\*$/, 'x/sample.ts')
+    .replace(/\*\*\//g, 'x/')
+    .replace(/\*/g, 'sample')
 
 describe('Wave 4 ownership', () => {
   const engagement = 'claude/zaboon-ws-engagement'
@@ -15,9 +18,9 @@ describe('Wave 4 ownership', () => {
 
   it('excludes `!` paths', () => {
     expect(owns('packages/db/src/repos/sessions.ts', ['packages/db/**'])).toBe(true)
-    expect(owns('packages/db/src/schema.ts', ['packages/db/**', '!packages/db/src/schema.ts'])).toBe(
-      false,
-    )
+    expect(
+      owns('packages/db/src/schema.ts', ['packages/db/**', '!packages/db/src/schema.ts']),
+    ).toBe(false)
     expect(owns('packages/db/src/index.ts', ['!packages/db/**'])).toBe(false)
   })
 
@@ -115,7 +118,9 @@ describe('check-ownership', () => {
   it('globs', () => {
     expect(globToRegExp('packages/farsi/**').test('packages/farsi/src/index.ts')).toBe(true)
     expect(globToRegExp('**/oracles/**').test('packages/grader/oracles/golden.yaml')).toBe(true)
-    expect(globToRegExp('apps/web/app/(app)/learn/**').test('apps/web/app/(app)/learn/page.tsx')).toBe(true)
+    expect(
+      globToRegExp('apps/web/app/(app)/learn/**').test('apps/web/app/(app)/learn/page.tsx'),
+    ).toBe(true)
   })
   it('maps branches to workstreams', () => {
     expect(workstreamFor('claude/zaboon-ws-db', own)).toBe('ws-db')
@@ -124,10 +129,22 @@ describe('check-ownership', () => {
   })
   it('allows owned paths and the lockfile, rejects protected and foreign paths', () => {
     // (packages/farsi/src/index.ts moved to ws-typing in Wave 3; normalize.ts stays.)
-    expect(check(['packages/farsi/src/normalize.ts', 'pnpm-lock.yaml'], 'claude/zaboon-ws-farsi-grader', own)).toEqual([])
-    expect(check(['packages/farsi/src/index.ts'], 'claude/zaboon-ws-farsi-grader', own)).toHaveLength(1)
-    expect(check(['packages/grader/oracles/golden.yaml'], 'claude/zaboon-ws-farsi-grader', own)).toHaveLength(1)
-    expect(check(['packages/db/src/index.ts'], 'claude/zaboon-ws-farsi-grader', own)).toHaveLength(1)
+    expect(
+      check(
+        ['packages/farsi/src/normalize.ts', 'pnpm-lock.yaml'],
+        'claude/zaboon-ws-farsi-grader',
+        own,
+      ),
+    ).toEqual([])
+    expect(
+      check(['packages/farsi/src/index.ts'], 'claude/zaboon-ws-farsi-grader', own),
+    ).toHaveLength(1)
+    expect(
+      check(['packages/grader/oracles/golden.yaml'], 'claude/zaboon-ws-farsi-grader', own),
+    ).toHaveLength(1)
+    expect(check(['packages/db/src/index.ts'], 'claude/zaboon-ws-farsi-grader', own)).toHaveLength(
+      1,
+    )
     expect(check(['CLAUDE.md'], 'claude/affectionate-ptolemy-b4ypuw', own)).toEqual([])
   })
 })

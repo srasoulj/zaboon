@@ -77,7 +77,11 @@ describe('TileBank', () => {
     await user.click(within(bankGroup()).getByRole('button', { name: 'من' }))
     await user.click(b!)
     expect(onChange).toHaveBeenLastCalledWith(['d', 'a', 'b'])
-    expect(within(answerGroup()).getAllByRole('button').map((x) => x.textContent)).toEqual(['آب', 'من', 'آب'])
+    expect(
+      within(answerGroup())
+        .getAllByRole('button')
+        .map((x) => x.textContent),
+    ).toEqual(['آب', 'من', 'آب'])
   })
 
   it('tapping an answer tile sends it back to its slot', async () => {
@@ -107,7 +111,9 @@ describe('TileBank', () => {
 
     await user.keyboard(' ')
     expect(onChange).toHaveBeenLastCalledWith(['a', 'b'])
-    expect(document.activeElement).toBe(within(bankGroup()).getByRole('button', { name: `می${ZWNJ}خوام` }))
+    expect(document.activeElement).toBe(
+      within(bankGroup()).getByRole('button', { name: `می${ZWNJ}خوام` }),
+    )
 
     await user.tab({ shift: true })
     expect(document.activeElement).toBe(answerTile(1))

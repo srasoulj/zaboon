@@ -6,15 +6,66 @@ import { ZWJ } from './normalize'
 
 /** The 32 letters of the Persian alphabet, in dictionary order. */
 export const ALPHABET: readonly string[] = [
-  'ا', 'ب', 'پ', 'ت', 'ث', 'ج', 'چ', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'س', 'ش',
-  'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ک', 'گ', 'ل', 'م', 'ن', 'و', 'ه', 'ی',
+  'ا',
+  'ب',
+  'پ',
+  'ت',
+  'ث',
+  'ج',
+  'چ',
+  'ح',
+  'خ',
+  'د',
+  'ذ',
+  'ر',
+  'ز',
+  'ژ',
+  'س',
+  'ش',
+  'ص',
+  'ض',
+  'ط',
+  'ظ',
+  'ع',
+  'غ',
+  'ف',
+  'ق',
+  'ک',
+  'گ',
+  'ل',
+  'م',
+  'ن',
+  'و',
+  'ه',
+  'ی',
 ]
 
 /** Letters that never connect to the following letter. */
-export const NON_CONNECTORS: ReadonlySet<string> = new Set(['ا', 'آ', 'د', 'ذ', 'ر', 'ز', 'ژ', 'و', 'أ', 'إ', 'ؤ', 'ء', 'ة', 'ۀ', 'ە'])
+export const NON_CONNECTORS: ReadonlySet<string> = new Set([
+  'ا',
+  'آ',
+  'د',
+  'ذ',
+  'ر',
+  'ز',
+  'ژ',
+  'و',
+  'أ',
+  'إ',
+  'ؤ',
+  'ء',
+  'ة',
+  'ۀ',
+  'ە',
+])
 
 /** Contextual letter forms rendered with ZWJ (§1.3). Non-connectors have no initial/medial joining. */
-export function letterForms(letter: string): { isolated: string; initial: string; medial: string; final: string } {
+export function letterForms(letter: string): {
+  isolated: string
+  initial: string
+  medial: string
+  final: string
+} {
   const joins = !NON_CONNECTORS.has(letter)
   return {
     isolated: letter,
@@ -33,7 +84,9 @@ export const SAME_SOUND_GROUPS: readonly (readonly string[])[] = [
   ['غ', 'ق'],
 ]
 
-const SOUND_REP: ReadonlyMap<string, string> = new Map(SAME_SOUND_GROUPS.flatMap((g) => g.map((ch) => [ch, g[0]!] as const)))
+const SOUND_REP: ReadonlyMap<string, string> = new Map(
+  SAME_SOUND_GROUPS.flatMap((g) => g.map((ch) => [ch, g[0]!] as const)),
+)
 
 export function sameSoundGroup(ch: string): readonly string[] | null {
   return SAME_SOUND_GROUPS.find((g) => g.includes(ch)) ?? null

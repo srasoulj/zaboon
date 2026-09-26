@@ -19,7 +19,12 @@ export function ButtonLink({
   return (
     <Link
       href={href}
-      className={clsx('btn-3d zb-btn', `zb-btn--${variant}`, fullWidth && 'zb-btn--full', className)}
+      className={clsx(
+        'btn-3d zb-btn',
+        `zb-btn--${variant}`,
+        fullWidth && 'zb-btn--full',
+        className,
+      )}
     >
       <span className="zb-btn__label">{children}</span>
     </Link>

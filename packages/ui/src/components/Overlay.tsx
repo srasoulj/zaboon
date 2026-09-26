@@ -1,7 +1,15 @@
 'use client'
 import clsx from 'clsx'
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '../icons'
 import { usePrefersReducedMotion } from '../motion-preference'
@@ -10,7 +18,9 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 function focusables(root: HTMLElement): HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => !el.hasAttribute('hidden'))
+  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (el) => !el.hasAttribute('hidden'),
+  )
 }
 
 /**
@@ -18,7 +28,12 @@ function focusables(root: HTMLElement): HTMLElement[] {
  * the first focusable), Tab is trapped, Escape closes, focus returns to the opener on close,
  * and the page behind does not scroll.
  */
-function useModalDialog(active: boolean, onClose: () => void, panel: RefObject<HTMLElement | null>, initialFocus?: RefObject<HTMLElement | null>) {
+function useModalDialog(
+  active: boolean,
+  onClose: () => void,
+  panel: RefObject<HTMLElement | null>,
+  initialFocus?: RefObject<HTMLElement | null>,
+) {
   const close = useRef(onClose)
   useEffect(() => {
     close.current = onClose
@@ -46,7 +61,10 @@ function useModalDialog(active: boolean, onClose: () => void, panel: RefObject<H
       }
       const first = items[0]!
       const last = items[items.length - 1]!
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+      if (
+        e.shiftKey &&
+        (document.activeElement === first || document.activeElement === panel.current)
+      ) {
         e.preventDefault()
         last.focus()
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -105,8 +123,14 @@ function DialogShell({ kind, ...p }: DialogBaseProps & { kind: 'modal' | 'sheet'
   const panelMotion =
     kind === 'sheet'
       ? { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } }
-      : { initial: { opacity: 0, scale: 0.94 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.94 } }
-  const transition = reduce ? { duration: 0 } : { type: 'spring' as const, duration: 0.3, bounce: 0.2 }
+      : {
+          initial: { opacity: 0, scale: 0.94 },
+          animate: { opacity: 1, scale: 1 },
+          exit: { opacity: 0, scale: 0.94 },
+        }
+  const transition = reduce
+    ? { duration: 0 }
+    : { type: 'spring' as const, duration: 0.3, bounce: 0.2 }
 
   return createPortal(
     <AnimatePresence>
@@ -135,7 +159,12 @@ function DialogShell({ kind, ...p }: DialogBaseProps & { kind: 'modal' | 'sheet'
             transition={transition}
           >
             {kind === 'sheet' && <span className="zb-sheet__handle" aria-hidden="true" />}
-            <button type="button" className="zb-dialog__close" aria-label={p.closeLabel ?? 'Close'} onClick={p.onClose}>
+            <button
+              type="button"
+              className="zb-dialog__close"
+              aria-label={p.closeLabel ?? 'Close'}
+              onClick={p.onClose}
+            >
               <Icon name="close" size={22} />
             </button>
             {p.illustration !== undefined && <div className="zb-dialog__art">{p.illustration}</div>}
@@ -184,7 +213,14 @@ export interface ToastProps {
 }
 
 /** A short, non-blocking message. Errors use role="alert", everything else role="status". */
-export function Toast({ message, tone = 'info', onDismiss, duration = 4000, closeLabel = 'Dismiss', className }: ToastProps) {
+export function Toast({
+  message,
+  tone = 'info',
+  onDismiss,
+  duration = 4000,
+  closeLabel = 'Dismiss',
+  className,
+}: ToastProps) {
   const [paused, setPaused] = useState(false)
   const dismiss = useRef(onDismiss)
   useEffect(() => {
@@ -209,7 +245,12 @@ export function Toast({ message, tone = 'info', onDismiss, duration = 4000, clos
       {icon && <Icon name={icon} size={20} className="zb-toast__icon" />}
       <div className="zb-toast__message">{message}</div>
       {onDismiss && (
-        <button type="button" className="zb-toast__close" aria-label={closeLabel} onClick={onDismiss}>
+        <button
+          type="button"
+          className="zb-toast__close"
+          aria-label={closeLabel}
+          onClick={onDismiss}
+        >
           <Icon name="close" size={18} />
         </button>
       )}

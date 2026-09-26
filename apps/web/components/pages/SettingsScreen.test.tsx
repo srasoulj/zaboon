@@ -41,8 +41,14 @@ describe('SettingsScreen', () => {
     await waitFor(() => expect(screen.getByLabelText('Regular · 20 XP a day')).toBeChecked())
     expect(within(group('Transliteration')).getByLabelText('Auto')).toBeChecked()
     expect(within(group('Vowel marks')).getByLabelText('Auto')).toBeChecked()
-    expect(screen.getByRole('switch', { name: 'Sound effects' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByRole('switch', { name: 'Reduce motion' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('switch', { name: 'Sound effects' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    expect(screen.getByRole('switch', { name: 'Reduce motion' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
     expect(screen.getByRole('link', { name: /sign-in and your data/ })).toHaveAttribute(
       'href',
       '/settings/account',
@@ -54,37 +60,65 @@ describe('SettingsScreen', () => {
     await waitFor(() => expect(screen.getByLabelText('Serious · 30 XP a day')).toBeInTheDocument())
     const changes: [() => void, Partial<Settings>][] = [
       [() => fireEvent.click(screen.getByLabelText('Serious · 30 XP a day')), { dailyGoalXp: 30 }],
-      [() => fireEvent.click(within(group('Transliteration')).getByLabelText('Off')), { transliteration: 'off' }],
-      [() => fireEvent.click(within(group('Vowel marks')).getByLabelText('On')), { vowelMarks: 'on' }],
-      [() => fireEvent.click(screen.getByRole('switch', { name: 'Sound effects' })), { sound: false }],
-      [() => fireEvent.click(screen.getByRole('switch', { name: 'Reduce motion' })), { motion: 'reduced' }],
+      [
+        () => fireEvent.click(within(group('Transliteration')).getByLabelText('Off')),
+        { transliteration: 'off' },
+      ],
+      [
+        () => fireEvent.click(within(group('Vowel marks')).getByLabelText('On')),
+        { vowelMarks: 'on' },
+      ],
+      [
+        () => fireEvent.click(screen.getByRole('switch', { name: 'Sound effects' })),
+        { sound: false },
+      ],
+      [
+        () => fireEvent.click(screen.getByRole('switch', { name: 'Reduce motion' })),
+        { motion: 'reduced' },
+      ],
     ]
     for (const [act, body] of changes) {
       queryClient.setQueryData(queryKeys.home, home())
       act()
       await waitFor(() => expect(called('updateSettings').at(-1)).toEqual({ body }))
       await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Saved.'))
-      await waitFor(() => expect(queryClient.getQueryState(queryKeys.home)?.isInvalidated).toBe(true))
+      await waitFor(() =>
+        expect(queryClient.getQueryState(queryKeys.home)?.isInvalidated).toBe(true),
+      )
     }
     expect(called('updateSettings')).toHaveLength(changes.length)
     expect(screen.getByLabelText('Serious · 30 XP a day')).toBeChecked()
-    expect(screen.getByRole('switch', { name: 'Reduce motion' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('switch', { name: 'Reduce motion' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
   it('shows the keyboard layout only behind the persianKeyboard flag', async () => {
     setup()
     await screen.findByLabelText('Regular · 20 XP a day')
-    await waitFor(() => expect(screen.queryByRole('group', { name: 'Persian keyboard' })).toBeNull())
+    await waitFor(() =>
+      expect(screen.queryByRole('group', { name: 'Persian keyboard' })).toBeNull(),
+    )
     cleanup()
     const { called } = setup({ keyboard: true })
-    fireEvent.click(within(await screen.findByRole('group', { name: 'Persian keyboard' })).getByLabelText('Phonetic'))
-    await waitFor(() => expect(called('updateSettings')).toEqual([{ body: { keyboardLayout: 'phonetic' } }]))
+    fireEvent.click(
+      within(await screen.findByRole('group', { name: 'Persian keyboard' })).getByLabelText(
+        'Phonetic',
+      ),
+    )
+    await waitFor(() =>
+      expect(called('updateSettings')).toEqual([{ body: { keyboardLayout: 'phonetic' } }]),
+    )
   })
 
   it('rolls back and explains a failed save', async () => {
     setup({ fail: true })
     fireEvent.click(await screen.findByRole('switch', { name: 'Sound effects' }))
     expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't save that change.")
-    expect(screen.getByRole('switch', { name: 'Sound effects' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('switch', { name: 'Sound effects' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 })

@@ -89,7 +89,11 @@ export interface ProfileUpdate {
   onboarded?: boolean
 }
 
-export async function updateProfile(tx: Tx, userId: string, patch: ProfileUpdate): Promise<Profile | null> {
+export async function updateProfile(
+  tx: Tx,
+  userId: string,
+  patch: ProfileUpdate,
+): Promise<Profile | null> {
   const [row] = await tx
     .update(schema.profiles)
     .set({ ...patch, updatedAt: sql`now()` })
@@ -126,12 +130,18 @@ export async function updateSettings(
 }
 
 export async function getPublicProfile(tx: Tx, userId: string): Promise<PublicProfile | null> {
-  const [row] = await tx.select().from(schema.publicProfiles).where(eq(schema.publicProfiles.userId, userId))
+  const [row] = await tx
+    .select()
+    .from(schema.publicProfiles)
+    .where(eq(schema.publicProfiles.userId, userId))
   return row ? toPublicProfile(row) : null
 }
 
 /** Public profile fields of several users (leaderboards). public_profiles are readable by design. */
-export async function listPublicProfiles(tx: Tx, userIds: readonly string[]): Promise<PublicProfile[]> {
+export async function listPublicProfiles(
+  tx: Tx,
+  userIds: readonly string[],
+): Promise<PublicProfile[]> {
   if (userIds.length === 0) return []
   const rows = await tx
     .select()
@@ -158,7 +168,12 @@ export async function updatePublicProfile(
     const [taken] = await tx
       .select({ userId: schema.publicProfiles.userId })
       .from(schema.publicProfiles)
-      .where(and(eq(schema.publicProfiles.username, patch.username), sql`${schema.publicProfiles.userId} <> ${userId}`))
+      .where(
+        and(
+          eq(schema.publicProfiles.username, patch.username),
+          sql`${schema.publicProfiles.userId} <> ${userId}`,
+        ),
+      )
     if (taken) throw new ConflictError('username is taken')
   }
   const [row] = await tx
@@ -187,12 +202,20 @@ export async function syncPublicStats(
 // ---------------------------------------------------------------------------------------------
 export type ConsentKind = 'analytics' | 'marketing'
 
-export async function getConsents(tx: Tx, userId: string): Promise<Partial<Record<ConsentKind, boolean>>> {
+export async function getConsents(
+  tx: Tx,
+  userId: string,
+): Promise<Partial<Record<ConsentKind, boolean>>> {
   const rows = await tx.select().from(schema.consents).where(eq(schema.consents.userId, userId))
   return Object.fromEntries(rows.map((r) => [r.kind, r.granted]))
 }
 
-export async function setConsent(tx: Tx, userId: string, kind: ConsentKind, granted: boolean): Promise<void> {
+export async function setConsent(
+  tx: Tx,
+  userId: string,
+  kind: ConsentKind,
+  granted: boolean,
+): Promise<void> {
   await tx
     .insert(schema.consents)
     .values({ userId, kind, granted })

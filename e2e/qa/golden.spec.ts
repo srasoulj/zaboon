@@ -312,7 +312,9 @@ async function completeViaApi(
     data: { courseId: COURSE, kind: 'lesson', levelId, tz },
   })
   if (res.status() !== 200) {
-    rec.bug(`POST /api/sessions for ${levelId} answered ${res.status()}`, { body: await res.text() })
+    rec.bug(`POST /api/sessions for ${levelId} answered ${res.status()}`, {
+      body: await res.text(),
+    })
     return null
   }
   const session = (await res.json()) as Session
@@ -352,7 +354,8 @@ async function completeViaApi(
 }
 
 // ------------------------------------------------------------------------------ player helpers
-type PlayerState = 'answering' | 'complete' | 'error' | 'expired' | 'outOfHearts' | 'left' | 'timeout'
+type PlayerState =
+  'answering' | 'complete' | 'error' | 'expired' | 'outOfHearts' | 'left' | 'timeout'
 
 /** Waits until the player shows one of its states (answering = the CHECK footer is up). */
 async function nextState(page: Page, timeout: number): Promise<PlayerState> {
@@ -455,7 +458,8 @@ async function enterAnswer(
       const bank = main.getByRole('group', { name: 'Word bank', exact: true })
       const line = main.getByRole('group', { name: 'Your answer', exact: true })
       await expect(bank.getByRole('button')).toHaveCount(c.bank.length, { timeout: UI_TIMEOUT })
-      for (const w of words) await bank.getByRole('button', { name: w, exact: true }).first().click()
+      for (const w of words)
+        await bank.getByRole('button', { name: w, exact: true }).first().click()
       await expect(line.getByRole('button')).toHaveText(words)
       return false
     }
@@ -486,7 +490,9 @@ async function enterAnswer(
       const rightKeys =
         c.type === 'match_pairs' ? c.pairs.map((p) => p.en) : c.pairs.map((p) => p.right)
       const seed = matchSeed(c)
-      const leftShown = (await buttonsIn(left)).map((b) => (isPairs ? plain(b.words || b.text) : b.text))
+      const leftShown = (await buttonsIn(left)).map((b) =>
+        isPairs ? plain(b.words || b.text) : b.text,
+      )
       const rightShown = (await buttonsIn(right)).map((b) => b.text)
       const locate = (shown: string[], keys: string[], seeded: number[], side: string) => {
         const byContent = keys.map((k) => shown.indexOf(k))
@@ -732,7 +738,14 @@ async function whichScreen(page: Page): Promise<Screen> {
   const screens: Screen[] = ['complete-summary', 'complete-streak', 'complete-goal']
   const deadline = Date.now() + 20_000
   do {
-    for (const s of screens) if (await page.getByTestId(s).isVisible().catch(() => false)) return s
+    for (const s of screens)
+      if (
+        await page
+          .getByTestId(s)
+          .isVisible()
+          .catch(() => false)
+      )
+        return s
     if (!new URL(page.url()).pathname.startsWith('/lesson')) return 'left'
     await page.waitForTimeout(200)
   } while (Date.now() < deadline)
@@ -777,7 +790,10 @@ async function stepThroughComplete(
       )
       if (result) {
         await rec.soft('summary XP', () =>
-          expect(page.getByTestId('complete-xp')).toHaveAttribute('data-value', String(result.xp.total)),
+          expect(page.getByTestId('complete-xp')).toHaveAttribute(
+            'data-value',
+            String(result.xp.total),
+          ),
         )
         await rec.soft('summary accuracy', () =>
           expect(page.getByTestId('complete-accuracy')).toHaveAttribute(
@@ -825,7 +841,9 @@ async function stepThroughComplete(
     )
   }
   if (seen.join() !== expected.join())
-    rec.bug(`complete screens: saw [${seen.join(', ')}], the server result implies [${expected.join(', ')}]`)
+    rec.bug(
+      `complete screens: saw [${seen.join(', ')}], the server result implies [${expected.join(', ')}]`,
+    )
   await rec.soft('the player did not return to the path', () =>
     expect(page).toHaveURL(/\/(learn|onboarding)(?:[?#]|$)/, { timeout: 30_000 }),
   )
@@ -896,7 +914,12 @@ async function playLevel(
   let state = await nextState(page, 180_000)
   if (state !== 'answering') {
     rec.bug(`the lesson did not start (player state: ${state})`, {
-      text: (await page.locator('body').innerText().catch(() => '')).slice(0, 1_000),
+      text: (
+        await page
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+      ).slice(0, 1_000),
     })
     await rec.shot('load-failed')
     return
@@ -946,7 +969,8 @@ async function playLevel(
       await rec.shot(`${index}-unknown`)
       return
     }
-    if (domType !== c.type) rec.bug(`the player's data-type is "${domType}", the session says ${c.type}`)
+    if (domType !== c.type)
+      rec.bug(`the player's data-type is "${domType}", the session says ${c.type}`)
     if (attempt > MAX_TRIES) {
       rec.bug(`challenge ${index} is back for try ${attempt}: giving up, the lesson cannot finish`)
       await rec.shot(`${index}-${c.type}-given-up`)
@@ -968,7 +992,12 @@ async function playLevel(
   rec.type = 'complete'
   if (state !== 'complete') {
     rec.bug(`the lesson ended in state "${state}" instead of the complete screens`, {
-      text: (await page.locator('body').innerText().catch(() => '')).slice(0, 1_000),
+      text: (
+        await page
+          .locator('body')
+          .innerText()
+          .catch(() => '')
+      ).slice(0, 1_000),
     })
     await rec.shot(`end-${state}`)
     return
@@ -985,8 +1014,7 @@ async function playLevel(
   if (!result) rec.bug('no POST /api/sessions/:id/complete response was seen for the session')
   extra.result = result
   extra.completeScreens = await test.step('complete screens', () =>
-    stepThroughComplete(page, rec, result, clean, spec.level),
-  )
+    stepThroughComplete(page, rec, result, clean, spec.level))
 
   // 5. Home: XP went up by what the lesson earned; the level is completed.
   rec.step = 'after'
@@ -1001,7 +1029,9 @@ async function playLevel(
       `xpTotal went ${homeBefore.xpTotal} -> ${homeAfter.xpTotal}, the lesson reported +${result.xp.total}`,
     )
   if (clean && homeAfter.lives.count !== homeBefore.lives.count)
-    rec.bug(`hearts changed in a perfect lesson: ${homeBefore.lives.count} -> ${homeAfter.lives.count}`)
+    rec.bug(
+      `hearts changed in a perfect lesson: ${homeBefore.lives.count} -> ${homeAfter.lives.count}`,
+    )
   const stateAfter = await levelState(request, guest, spec.level)
   extra.levelStateAfter = stateAfter
   if (stateAfter !== 'completed' && stateAfter !== 'legendary')

@@ -6,13 +6,21 @@ const Z = '‌'
 
 describe('compile', () => {
   it('keeps the authored first pattern as the canonical answer', () => {
-    const g = compile([`من آب می${Z}خوام`], { lang: 'fa', formal: `من آب می${Z}خواهم`, variants: [[`می${Z}خوام`, `می${Z}خام`]] })
+    const g = compile([`من آب می${Z}خوام`], {
+      lang: 'fa',
+      formal: `من آب می${Z}خواهم`,
+      variants: [[`می${Z}خوام`, `می${Z}خام`]],
+    })
     expect(canonical(g)).toBe(`من آب می${Z}خوام`)
     expect(() => AnswerGraph.parse(g)).not.toThrow()
   })
 
   it('merges a same-length formal sentence slot by slot and records registers per node', () => {
-    const g = compile([`من کتابا رو می${Z}خوام`], { lang: 'fa', formal: `من کتاب${Z}ها را می${Z}خواهم`, pronounDrop: false })
+    const g = compile([`من کتابا رو می${Z}خوام`], {
+      lang: 'fa',
+      formal: `من کتاب${Z}ها را می${Z}خواهم`,
+      pronounDrop: false,
+    })
     const all = enumerate(g)
     expect(all).toHaveLength(8) // 2 × 2 × 2 register choices in the three differing slots
     expect(all).toContain(`من کتاب${Z}ها رو می${Z}خوام`)
@@ -22,7 +30,11 @@ describe('compile', () => {
   })
 
   it('adds a formal sentence of another length as its own pattern (no mixing)', () => {
-    const g = compile([`مامانم خونه${Z}ست`], { lang: 'fa', formal: 'مادرم خانه است', pronounDrop: false })
+    const g = compile([`مامانم خونه${Z}ست`], {
+      lang: 'fa',
+      formal: 'مادرم خانه است',
+      pronounDrop: false,
+    })
     expect(enumerate(g).sort()).toEqual(['مادرم خانه است', `مامانم خونه${Z}ست`].sort())
     expect(Object.values(g.registers ?? {})).toContain('formal')
   })
@@ -46,9 +58,13 @@ describe('compile', () => {
   })
 
   it('merges multi-token orthography variants in both directions', () => {
-    const variants = [['اینو', 'این رو'], ['دوست دارم', 'دوس دارم']]
+    const variants = [
+      ['اینو', 'این رو'],
+      ['دوست دارم', 'دوس دارم'],
+    ]
     const g = compile(['اینو دوست دارم'], { lang: 'fa', variants })
-    for (const a of ['اینو دوست دارم', 'این رو دوست دارم', 'اینو دوس دارم', 'این رو دوس دارم']) expect(accepts(g, a, 'fa'), a).toBe(true)
+    for (const a of ['اینو دوست دارم', 'این رو دوست دارم', 'اینو دوس دارم', 'این رو دوس دارم'])
+      expect(accepts(g, a, 'fa'), a).toBe(true)
     const back = compile(['این رو دوس دارم'], { lang: 'fa', variants })
     expect(accepts(back, 'اینو دوست دارم', 'fa')).toBe(true)
   })
@@ -70,7 +86,12 @@ describe('compile', () => {
     expect(() => compile(['[a/[b]]'], { lang: 'en' })).toThrow(/nested/)
     expect(() => compile(['a ] b'], { lang: 'en' })).toThrow()
     const huge = Array.from({ length: 16 }, (_, i) => `[w${i}a/w${i}b/w${i}c/w${i}d]`).join(' ')
-    expect(() => compile(Array.from({ length: 400 }, () => huge), { lang: 'en' })).toThrow(String(MAX_EDGES))
+    expect(() =>
+      compile(
+        Array.from({ length: 400 }, () => huge),
+        { lang: 'en' },
+      ),
+    ).toThrow(String(MAX_EDGES))
   })
 
   it('supports escaped syntax characters', () => {

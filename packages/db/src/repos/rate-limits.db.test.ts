@@ -17,7 +17,8 @@ const at = (seconds: number) => new Date(Date.parse(T0) + seconds * 1000).toISOS
 describe('consumeToken (token bucket)', () => {
   it('allows a burst up to the per-minute capacity, then denies with a retry hint', async () => {
     const results = []
-    for (let i = 0; i < 4; i++) results.push(await rateLimits.consumeToken(ctx.h.db, 'burst', 3, { now: T0 }))
+    for (let i = 0; i < 4; i++)
+      results.push(await rateLimits.consumeToken(ctx.h.db, 'burst', 3, { now: T0 }))
     expect(results.map((r) => r.allowed)).toEqual([true, true, true, false])
     expect(results.map((r) => r.remaining)).toEqual([2, 1, 0, 0])
     // 3/min refills one token every 20s.
@@ -26,13 +27,18 @@ describe('consumeToken (token bucket)', () => {
 
   it('refills continuously over time, capped at capacity', async () => {
     for (let i = 0; i < 3; i++) await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: T0 })
-    expect((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(10) })).allowed).toBe(false)
+    expect((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(10) })).allowed).toBe(
+      false,
+    )
     const denied = await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(10) })
     expect(denied.retryAfterMs).toBe(10_000)
-    expect((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(20) })).allowed).toBe(true)
+    expect((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(20) })).allowed).toBe(
+      true,
+    )
     // After a long idle period the bucket is full again, never above capacity.
     const burst = []
-    for (let i = 0; i < 4; i++) burst.push((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(3600) })).allowed)
+    for (let i = 0; i < 4; i++)
+      burst.push((await rateLimits.consumeToken(ctx.h.db, 'refill', 3, { now: at(3600) })).allowed)
     expect(burst).toEqual([true, true, true, false])
   })
 
@@ -40,14 +46,22 @@ describe('consumeToken (token bucket)', () => {
     expect((await rateLimits.consumeToken(ctx.h.db, 'a', 1, { now: T0 })).allowed).toBe(true)
     expect((await rateLimits.consumeToken(ctx.h.db, 'b', 1, { now: T0 })).allowed).toBe(true)
     expect((await rateLimits.consumeToken(ctx.h.db, 'a', 1, { now: T0 })).allowed).toBe(false)
-    expect((await rateLimits.consumeToken(ctx.h.db, 'c', 10, { now: T0, cost: 8 })).remaining).toBe(2)
-    expect((await rateLimits.consumeToken(ctx.h.db, 'c', 10, { now: T0, cost: 3 })).allowed).toBe(false)
-    expect((await rateLimits.consumeToken(ctx.h.db, 'd', 2, { now: T0, cost: 3 })).allowed).toBe(false)
+    expect((await rateLimits.consumeToken(ctx.h.db, 'c', 10, { now: T0, cost: 8 })).remaining).toBe(
+      2,
+    )
+    expect((await rateLimits.consumeToken(ctx.h.db, 'c', 10, { now: T0, cost: 3 })).allowed).toBe(
+      false,
+    )
+    expect((await rateLimits.consumeToken(ctx.h.db, 'd', 2, { now: T0, cost: 3 })).allowed).toBe(
+      false,
+    )
   })
 
   it('never over-spends under concurrency', async () => {
     const results = await Promise.all(
-      Array.from({ length: 25 }, () => rateLimits.consumeToken(ctx.h.db, 'concurrent', 10, { now: T0 })),
+      Array.from({ length: 25 }, () =>
+        rateLimits.consumeToken(ctx.h.db, 'concurrent', 10, { now: T0 }),
+      ),
     )
     expect(results.filter((r) => r.allowed)).toHaveLength(10)
   })

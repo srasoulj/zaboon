@@ -8,4 +8,4 @@ onlyBuiltDependencies:
   - esbuild
   - msw
   - sharp
-  - "@swc/core"
+  - '@swc/core'

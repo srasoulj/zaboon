@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { digitsArToEn, digitsEnToFa, digitsFaToEn, wordsToNumber } from '@persian-tools/persian-tools'
+import {
+  digitsArToEn,
+  digitsEnToFa,
+  digitsFaToEn,
+  wordsToNumber,
+} from '@persian-tools/persian-tools'
 import {
   ALPHABET,
   HAZM_TRANSLATION_DST,
@@ -115,7 +120,8 @@ describe('letters', () => {
 
   it('has number words that agree with persian-tools wordsToNumber', () => {
     for (const [word, value] of PERSIAN_NUMBER_WORDS) {
-      if (['شیش', 'پونزده', 'شونزده', 'هیفده', 'هیجده', 'پونصد', 'یکصد', 'صفر'].includes(word)) continue
+      if (['شیش', 'پونزده', 'شونزده', 'هیفده', 'هیجده', 'پونصد', 'یکصد', 'صفر'].includes(word))
+        continue
       expect(wordsToNumber(word), word).toBe(value)
     }
     expect(persianNumberValue('12')).toBe(12)

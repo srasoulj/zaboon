@@ -10,7 +10,15 @@ import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 
 import { usePrefersReducedMotion } from '../motion-preference'
 import { tokens } from '../tokens'
 
-export const CHARACTER_NAMES = ['hodhod', 'maman-bozorg', 'shirin', 'dariush', 'kian', 'leila', 'babak'] as const
+export const CHARACTER_NAMES = [
+  'hodhod',
+  'maman-bozorg',
+  'shirin',
+  'dariush',
+  'kian',
+  'leila',
+  'babak',
+] as const
 export type CharacterName = (typeof CHARACTER_NAMES)[number]
 
 export const CHARACTER_DISPLAY_NAMES: Record<CharacterName, string> = {
@@ -30,7 +38,10 @@ export type CharacterMood = (typeof CHARACTER_MOODS)[number]
 export const RIVE_CONTRACT = {
   stateMachine: 'Main',
   inputs: { mood: 'mood', mouthOpen: 'mouthOpen' },
-  mood: { idle: 0, happy: 1, sad: 2, thinking: 3, celebrate: 4 } satisfies Record<CharacterMood, number>,
+  mood: { idle: 0, happy: 1, sad: 2, thinking: 3, celebrate: 4 } satisfies Record<
+    CharacterMood,
+    number
+  >,
 } as const
 
 export interface CharacterRendererProps {
@@ -94,15 +105,59 @@ function Face({ cx, cy, mood, mouthOpen }: FaceProps) {
   const my = cy + 10
   let mouth: ReactNode
   if (mouthOpen > 0.02) {
-    mouth = <ellipse data-part="mouth-open" cx={cx} cy={my} rx={5.5} ry={1.5 + mouthOpen * 5.5} fill={INK} />
+    mouth = (
+      <ellipse
+        data-part="mouth-open"
+        cx={cx}
+        cy={my}
+        rx={5.5}
+        ry={1.5 + mouthOpen * 5.5}
+        fill={INK}
+      />
+    )
   } else if (joyful) {
-    mouth = <path data-part="mouth" d={`M${cx - 7} ${my - 1} Q${cx} ${my + 7} ${cx + 7} ${my - 1}`} stroke={INK} strokeWidth={3} strokeLinecap="round" fill="none" />
+    mouth = (
+      <path
+        data-part="mouth"
+        d={`M${cx - 7} ${my - 1} Q${cx} ${my + 7} ${cx + 7} ${my - 1}`}
+        stroke={INK}
+        strokeWidth={3}
+        strokeLinecap="round"
+        fill="none"
+      />
+    )
   } else if (mood === 'sad') {
-    mouth = <path data-part="mouth" d={`M${cx - 5} ${my + 3} Q${cx} ${my - 2} ${cx + 5} ${my + 3}`} stroke={INK} strokeWidth={3} strokeLinecap="round" fill="none" />
+    mouth = (
+      <path
+        data-part="mouth"
+        d={`M${cx - 5} ${my + 3} Q${cx} ${my - 2} ${cx + 5} ${my + 3}`}
+        stroke={INK}
+        strokeWidth={3}
+        strokeLinecap="round"
+        fill="none"
+      />
+    )
   } else if (mood === 'thinking') {
-    mouth = <path data-part="mouth" d={`M${cx - 2} ${my + 1} L${cx + 5} ${my}`} stroke={INK} strokeWidth={3} strokeLinecap="round" />
+    mouth = (
+      <path
+        data-part="mouth"
+        d={`M${cx - 2} ${my + 1} L${cx + 5} ${my}`}
+        stroke={INK}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+    )
   } else {
-    mouth = <path data-part="mouth" d={`M${cx - 5} ${my} Q${cx} ${my + 4} ${cx + 5} ${my}`} stroke={INK} strokeWidth={3} strokeLinecap="round" fill="none" />
+    mouth = (
+      <path
+        data-part="mouth"
+        d={`M${cx - 5} ${my} Q${cx} ${my + 4} ${cx + 5} ${my}`}
+        stroke={INK}
+        strokeWidth={3}
+        strokeLinecap="round"
+        fill="none"
+      />
+    )
   }
   return (
     <g data-part="face">
@@ -231,8 +286,26 @@ const HUMANS: Record<Exclude<CharacterName, 'hodhod'>, HumanSpec> = {
     back: () => <circle cx={60} cy={30} r={12} fill={INK} />,
     top: (
       <g>
-        <rect x={40} y={4} width={40} height={20} rx={10} fill={WHITE} stroke={tokens.theme.light.line} strokeWidth={2} />
-        <rect x={42} y={20} width={36} height={10} rx={4} fill={WHITE} stroke={tokens.theme.light.line} strokeWidth={2} />
+        <rect
+          x={40}
+          y={4}
+          width={40}
+          height={20}
+          rx={10}
+          fill={WHITE}
+          stroke={tokens.theme.light.line}
+          strokeWidth={2}
+        />
+        <rect
+          x={42}
+          y={20}
+          width={36}
+          height={10}
+          rx={4}
+          fill={WHITE}
+          stroke={tokens.theme.light.line}
+          strokeWidth={2}
+        />
       </g>
     ),
     props: <rect x={44} y={84} width={32} height={34} rx={8} fill={WHITE} />,
@@ -261,7 +334,15 @@ const HUMANS: Record<Exclude<CharacterName, 'hodhod'>, HumanSpec> = {
   },
 }
 
-function Human({ name, mood, mouthOpen }: { name: Exclude<CharacterName, 'hodhod'>; mood: CharacterMood; mouthOpen: number }) {
+function Human({
+  name,
+  mood,
+  mouthOpen,
+}: {
+  name: Exclude<CharacterName, 'hodhod'>
+  mood: CharacterMood
+  mouthOpen: number
+}) {
   const spec = HUMANS[name]
   const arms = mood === 'celebrate'
   return (
@@ -299,10 +380,20 @@ function Hodhod({ mood, mouthOpen }: { mood: CharacterMood; mouthOpen: number })
   const beakDrop = mouthOpen * 20
   return (
     <g>
-      <g className={clsx('zb-char__crest', mood === 'thinking' && 'zb-char__crest--twitch')} data-part="crest">
+      <g
+        className={clsx('zb-char__crest', mood === 'thinking' && 'zb-char__crest--twitch')}
+        data-part="crest"
+      >
         {CREST[mood].map((a) => (
           <g key={a} transform={`rotate(${a} 66 36)`}>
-            <rect x={61.5} y={36 - crestLen} width={9} height={crestLen} rx={4.5} fill={B.zaferan['500']} />
+            <rect
+              x={61.5}
+              y={36 - crestLen}
+              width={9}
+              height={crestLen}
+              rx={4.5}
+              fill={B.zaferan['500']}
+            />
             <circle cx={66} cy={36 - crestLen + 4.5} r={4.5} fill={INK} />
           </g>
         ))}
@@ -321,7 +412,13 @@ function Hodhod({ mood, mouthOpen }: { mood: CharacterMood; mouthOpen: number })
       </g>
       <circle cx={70} cy={48} r={20} fill={CINNAMON} />
       <g data-part="beak">
-        <path d="M86 48 Q100 50 112 60" stroke={INK} strokeWidth={5} strokeLinecap="round" fill="none" />
+        <path
+          d="M86 48 Q100 50 112 60"
+          stroke={INK}
+          strokeWidth={5}
+          strokeLinecap="round"
+          fill="none"
+        />
         <path
           data-part={mouthOpen > 0.02 ? 'mouth-open' : 'mouth'}
           d="M86 52 Q98 55 108 63"
@@ -334,11 +431,24 @@ function Hodhod({ mood, mouthOpen }: { mood: CharacterMood; mouthOpen: number })
       </g>
       <g className="zb-char__eyes">
         {joyful ? (
-          <path d="M72 46 Q76 40 80 46" stroke={INK} strokeWidth={3} strokeLinecap="round" fill="none" />
+          <path
+            d="M72 46 Q76 40 80 46"
+            stroke={INK}
+            strokeWidth={3}
+            strokeLinecap="round"
+            fill="none"
+          />
         ) : (
-          <circle cx={mood === 'thinking' ? 78 : 76} cy={mood === 'thinking' ? 42 : 44} r={3.6} fill={INK} />
+          <circle
+            cx={mood === 'thinking' ? 78 : 76}
+            cy={mood === 'thinking' ? 42 : 44}
+            r={3.6}
+            fill={INK}
+          />
         )}
-        {mood === 'sad' && <path d="M71 38 L80 40" stroke={INK} strokeWidth={2.5} strokeLinecap="round" />}
+        {mood === 'sad' && (
+          <path d="M71 38 L80 40" stroke={INK} strokeWidth={2.5} strokeLinecap="round" />
+        )}
       </g>
     </g>
   )
@@ -354,11 +464,19 @@ export function SvgCharacter({ name, mood, mouthOpen, size, animate }: Character
       height={size}
       aria-hidden="true"
       focusable="false"
-      className={clsx('zb-char', animate ? 'zb-char--animate' : 'zb-char--static', `zb-char--${mood}`)}
+      className={clsx(
+        'zb-char',
+        animate ? 'zb-char--animate' : 'zb-char--static',
+        `zb-char--${mood}`,
+      )}
       data-character={name}
       data-mood={mood}
     >
-      {name === 'hodhod' ? <Hodhod mood={mood} mouthOpen={m} /> : <Human name={name} mood={mood} mouthOpen={m} />}
+      {name === 'hodhod' ? (
+        <Hodhod mood={mood} mouthOpen={m} />
+      ) : (
+        <Human name={name} mood={mood} mouthOpen={m} />
+      )}
     </svg>
   )
 }
@@ -390,7 +508,11 @@ export function Character({
   if (portrait !== null) {
     // The <img> carries the name itself (alt), so the wrapper is not a second image.
     return (
-      <div className={clsx('zb-character zb-character--portrait', className)} style={{ inlineSize: size }} data-mood={mood}>
+      <div
+        className={clsx('zb-character zb-character--portrait', className)}
+        style={{ inlineSize: size }}
+        data-mood={mood}
+      >
         <img
           ref={imgRef}
           className="zb-character__img"
@@ -410,8 +532,19 @@ export function Character({
     ? { 'aria-hidden': true as const }
     : { role: 'img', 'aria-label': label ?? `${displayName}, ${mood}` }
   return (
-    <div className={clsx('zb-character', className)} style={{ inlineSize: size }} data-mood={mood} {...a11y}>
-      <Renderer name={name} mood={mood} mouthOpen={clampMouth(mouthOpen)} size={size} animate={!reduce && !paused} />
+    <div
+      className={clsx('zb-character', className)}
+      style={{ inlineSize: size }}
+      data-mood={mood}
+      {...a11y}
+    >
+      <Renderer
+        name={name}
+        mood={mood}
+        mouthOpen={clampMouth(mouthOpen)}
+        size={size}
+        animate={!reduce && !paused}
+      />
     </div>
   )
 }

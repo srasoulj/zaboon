@@ -83,7 +83,10 @@ function theme(json: Json, name: ThemeName): Record<SemanticName, string> {
 /** Parses the W3C-format JSON into a typed, flat structure. Exported for tests. */
 export function parseTokens(json: Json): DesignTokens {
   return {
-    brand: Object.fromEntries(BRAND_NAMES.map((n) => [n, brand(json, n)])) as Record<BrandName, BrandColor>,
+    brand: Object.fromEntries(BRAND_NAMES.map((n) => [n, brand(json, n)])) as Record<
+      BrandName,
+      BrandColor
+    >,
     theme: { light: theme(json, 'light'), dark: theme(json, 'dark') },
     radius: {
       button: v(json.radius.button),

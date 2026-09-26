@@ -22,7 +22,10 @@ function animatedClasses(source: string): string[] {
 /** Covered directly, or through a `.block *` rule for BEM elements such as `.zb-char__body`. */
 function covers(block: string, cls: string): boolean {
   const root = cls.split('__')[0]!.replace(/--[\w-]+$/, '')
-  return new RegExp(`${cls.replace(/[.-]/g, '\\$&')}(?![\\w-])`).test(block) || block.includes(`${root} *`)
+  return (
+    new RegExp(`${cls.replace(/[.-]/g, '\\$&')}(?![\\w-])`).test(block) ||
+    block.includes(`${root} *`)
+  )
 }
 
 function reduceBlock(kind: 'media' | 'attr'): string {
@@ -30,7 +33,9 @@ function reduceBlock(kind: 'media' | 'attr'): string {
     const start = css.indexOf('@media (prefers-reduced-motion: reduce)')
     return css.slice(start, css.indexOf("[data-motion='reduce']", start))
   }
-  const m = /\[data-motion='reduce'\] :is\(([^)]*(?:\([^)]*\))?[^)]*)\) \{\s*animation: none;/.exec(css)
+  const m = /\[data-motion='reduce'\] :is\(([^)]*(?:\([^)]*\))?[^)]*)\) \{\s*animation: none;/.exec(
+    css,
+  )
   return m ? m[1]! : ''
 }
 
@@ -38,7 +43,14 @@ describe('reduced motion stops every CSS animation', () => {
   const animated = animatedClasses(css)
 
   it('finds the animated components', () => {
-    for (const c of ['.zb-node__start', '.zb-feedback', '.zb-progress__badge', '.zb-toast', '.zb-btn__spinner', '.zb-char']) {
+    for (const c of [
+      '.zb-node__start',
+      '.zb-feedback',
+      '.zb-progress__badge',
+      '.zb-toast',
+      '.zb-btn__spinner',
+      '.zb-char',
+    ]) {
       expect(animated.some((a) => a.startsWith(c))).toBe(true)
     }
   })
@@ -46,6 +58,7 @@ describe('reduced motion stops every CSS animation', () => {
   it.each(['media', 'attr'] as const)('%s block covers each of them', (kind) => {
     const block = reduceBlock(kind)
     expect(block.length).toBeGreaterThan(0)
-    for (const c of animated) expect(covers(block, c), `${c} missing from the ${kind} reduce rule`).toBe(true)
+    for (const c of animated)
+      expect(covers(block, c), `${c} missing from the ${kind} reduce rule`).toBe(true)
   })
 })

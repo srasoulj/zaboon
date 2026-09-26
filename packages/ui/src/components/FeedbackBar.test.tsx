@@ -11,13 +11,21 @@ describe('FeedbackBar', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Nice!')
     expect(screen.getByRole('alert').querySelector('svg[data-icon="check"]')).not.toBeNull()
     expect(screen.getByRole('button', { name: 'Continue' })).toHaveClass('zb-btn--primary')
-    expect(screen.getByRole('region', { name: 'Correct answer' })).toHaveAttribute('data-status', 'correct')
+    expect(screen.getByRole('region', { name: 'Correct answer' })).toHaveAttribute(
+      'data-status',
+      'correct',
+    )
   })
 
   it('wrong: shows the solution slot, the report flag and a danger CONTINUE', async () => {
     const onReport = vi.fn()
     render(
-      <FeedbackBar status="wrong" solution={<FaText text="من آب می‌خوام" />} onContinue={() => {}} onReport={onReport} />,
+      <FeedbackBar
+        status="wrong"
+        solution={<FaText text="من آب می‌خوام" />}
+        onContinue={() => {}}
+        onReport={onReport}
+      />,
     )
     expect(screen.getByRole('heading', { name: 'Correct solution:' })).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('من آب می‌خوام')
@@ -36,7 +44,16 @@ describe('FeedbackBar', () => {
   })
 
   it('can skip autofocus and customize copy', () => {
-    render(<FeedbackBar status="correct" title="Great job!" continueLabel="Next" autoFocus={false} detail="water" onContinue={() => {}} />)
+    render(
+      <FeedbackBar
+        status="correct"
+        title="Great job!"
+        continueLabel="Next"
+        autoFocus={false}
+        detail="water"
+        onContinue={() => {}}
+      />,
+    )
     expect(screen.getByRole('button', { name: 'Next' })).not.toHaveFocus()
     expect(screen.getByRole('alert')).toHaveTextContent('Great job!water')
     expect(screen.queryByRole('button', { name: 'Report a problem' })).toBeNull()

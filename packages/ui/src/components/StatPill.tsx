@@ -31,7 +31,14 @@ export function statLabel(kind: StatKind, value: number | 'infinite'): string {
 }
 
 /** Streak / coins / hearts counter for the stats bar, optionally opening a popover. */
-export function StatPill({ kind, value, active = true, popover, popoverLabel, className }: StatPillProps) {
+export function StatPill({
+  kind,
+  value,
+  active = true,
+  popover,
+  popoverLabel,
+  className,
+}: StatPillProps) {
   const [open, setOpen] = useState(false)
   const popId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -40,7 +47,8 @@ export function StatPill({ kind, value, active = true, popover, popoverLabel, cl
   useEffect(() => {
     if (!open) return
     const onDown = (e: PointerEvent) => {
-      if (rootRef.current && e.target instanceof Node && !rootRef.current.contains(e.target)) setOpen(false)
+      if (rootRef.current && e.target instanceof Node && !rootRef.current.contains(e.target))
+        setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -65,7 +73,11 @@ export function StatPill({ kind, value, active = true, popover, popoverLabel, cl
       </span>
     </>
   )
-  const classes = clsx('zb-stat', `zb-stat--${kind}`, kind === 'streak' && !active && 'zb-stat--inactive')
+  const classes = clsx(
+    'zb-stat',
+    `zb-stat--${kind}`,
+    kind === 'streak' && !active && 'zb-stat--inactive',
+  )
 
   if (popover === undefined) {
     return (
@@ -87,7 +99,13 @@ export function StatPill({ kind, value, active = true, popover, popoverLabel, cl
       >
         {content}
       </button>
-      <div id={popId} className="zb-popover" role="dialog" aria-label={popoverLabel ?? label} hidden={!open}>
+      <div
+        id={popId}
+        className="zb-popover"
+        role="dialog"
+        aria-label={popoverLabel ?? label}
+        hidden={!open}
+      >
         {popover}
       </div>
     </div>

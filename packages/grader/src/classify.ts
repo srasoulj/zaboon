@@ -22,7 +22,12 @@ export type TokenMatch = 'exact' | 'spelling' | 'typo' | 'wrong'
  *
  * English: exact (or equal number: 7 = seven), typo by the same length rule, lexicon hit = wrong.
  */
-export function classifyToken(answer: string, expected: string, lang: Lang, lexicon: ReadonlySet<string>): TokenMatch {
+export function classifyToken(
+  answer: string,
+  expected: string,
+  lang: Lang,
+  lexicon: ReadonlySet<string>,
+): TokenMatch {
   if (answer === expected) return 'exact'
   const numberValue = lang === 'fa' ? persianNumberValue : englishNumberValue
   const av = numberValue(answer)
@@ -33,14 +38,19 @@ export function classifyToken(answer: string, expected: string, lang: Lang, lexi
   return lexicon.has(answer) ? 'wrong' : 'typo'
 }
 
-function classifyPersian(answer: string, expected: string, lexicon: ReadonlySet<string>): TokenMatch {
+function classifyPersian(
+  answer: string,
+  expected: string,
+  lexicon: ReadonlySet<string>,
+): TokenMatch {
   if (isNegationFlip(answer, expected)) return 'wrong'
   let match: TokenMatch = 'wrong'
   if (soundKey(answer) === soundKey(expected)) match = 'spelling'
   else if (alefFold(answer) === alefFold(expected)) match = 'typo'
   else {
     const limit = typoLimit(expected)
-    if (limit > 0 && editDistance(lenientFold(answer), lenientFold(expected), limit) <= limit) match = 'typo'
+    if (limit > 0 && editDistance(lenientFold(answer), lenientFold(expected), limit) <= limit)
+      match = 'typo'
   }
   if (match !== 'wrong' && lexicon.has(answer)) return 'wrong'
   return match

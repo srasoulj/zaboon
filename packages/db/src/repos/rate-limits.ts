@@ -41,7 +41,8 @@ export async function consumeToken(
       WHERE ${refilled} >= ${cost}::float8
     RETURNING tokens`)
   const allowedRow = rows[0]
-  if (allowedRow) return { allowed: true, remaining: Math.floor(Number(allowedRow.tokens)), retryAfterMs: 0 }
+  if (allowedRow)
+    return { allowed: true, remaining: Math.floor(Number(allowedRow.tokens)), retryAfterMs: 0 }
 
   const [state] = await db.execute<{ tokens: number }>(sql`
     SELECT ${refilled} AS tokens FROM public.rate_limits r WHERE r.key = ${key}`)

@@ -23,7 +23,19 @@ const SPECIAL_CONTRACTIONS: ReadonlyMap<string, readonly string[]> = new Map([
 
 /** Words whose `'s` means "is" (elsewhere `'s` is a possessive and stays). */
 const S_IS: ReadonlySet<string> = new Set([
-  'it', 'he', 'she', 'that', 'what', 'where', 'who', 'there', 'here', 'how', 'when', 'why', 'this',
+  'it',
+  'he',
+  'she',
+  'that',
+  'what',
+  'where',
+  'who',
+  'there',
+  'here',
+  'how',
+  'when',
+  'why',
+  'this',
 ])
 
 /** Expands one lowercase token: `don't` → `do not`, `I'd` → `i would`, `it's` → `it is`. */
@@ -33,7 +45,11 @@ export function expandContraction(tok: string): readonly string[] {
   let m = /^(.+)n't$/.exec(tok)
   if (m) return [m[1]!, 'not']
   m = /^(.+)'(re|ve|ll|d)$/.exec(tok)
-  if (m) return [m[1]!, { re: 'are', ve: 'have', ll: 'will', d: 'would' }[m[2] as 're' | 've' | 'll' | 'd']]
+  if (m)
+    return [
+      m[1]!,
+      { re: 'are', ve: 'have', ll: 'will', d: 'would' }[m[2] as 're' | 've' | 'll' | 'd'],
+    ]
   m = /^(.+)'s$/.exec(tok)
   if (m && S_IS.has(m[1]!)) return [m[1]!, 'is']
   return [tok]
@@ -109,10 +125,39 @@ export function englishKeyTokens(text: string): string[] {
 }
 
 const UNITS: readonly string[] = [
-  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+  'zero',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
 ]
-const TENS: readonly string[] = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+const TENS: readonly string[] = [
+  '',
+  '',
+  'twenty',
+  'thirty',
+  'forty',
+  'fifty',
+  'sixty',
+  'seventy',
+  'eighty',
+  'ninety',
+]
 
 /** The value of a digit string or a one-token English number word (`seven`, `twenty-one`), else null. */
 export function englishNumberValue(tok: string): number | null {

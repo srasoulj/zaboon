@@ -41,8 +41,11 @@ export function assertUserId(userId: string): void {
 
 /** Throws unless the transaction runs in system scope (`withSystem`). */
 export async function assertSystemScope(tx: Tx): Promise<void> {
-  const rows = await tx.execute<{ scope: string | null }>(sql`SELECT current_setting('app.scope', true) AS scope`)
-  if (rows[0]?.scope !== 'system') throw new ScopeError('this repository function requires withSystem()')
+  const rows = await tx.execute<{ scope: string | null }>(
+    sql`SELECT current_setting('app.scope', true) AS scope`,
+  )
+  if (rows[0]?.scope !== 'system')
+    throw new ScopeError('this repository function requires withSystem()')
 }
 
 /**

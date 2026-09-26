@@ -16,7 +16,9 @@ describe('ConfettiBurst', () => {
   it('renders decorative pieces and calls onDone after the duration', () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
-    const { container } = render(<ConfettiBurst fireKey={1} count={12} duration={800} onDone={onDone} />)
+    const { container } = render(
+      <ConfettiBurst fireKey={1} count={12} duration={800} onDone={onDone} />,
+    )
     const root = container.querySelector('.zb-confetti')!
     expect(root).toHaveAttribute('aria-hidden', 'true')
     expect(root.children).toHaveLength(12)
