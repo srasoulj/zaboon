@@ -30,7 +30,7 @@ const levels = async (user: Parameters<typeof get>[3]): Promise<Level[]> => {
 }
 
 describe('fixture level u01-t1', () => {
-  it('is the last level of the path, locked until the unit review is done', async () => {
+  it('comes right after the unit review, locked until it is done', async () => {
     const alice = await h.guest()
     await play(h, alice) // u01-s0
     const path = await levels(alice)
@@ -41,8 +41,9 @@ describe('fixture level u01-t1', () => {
       'u01-p1',
       'u01-r1',
       'u01-t1',
+      'u01-v1', // Wave 4 (speaking) comes after it
     ])
-    expect(path.at(-1)).toMatchObject({ id: 'u01-t1', state: 'locked' })
+    expect(path.find((l) => l.id === 'u01-t1')).toMatchObject({ state: 'locked' })
     expect((await startRaw(h, alice, { levelId: 'u01-t1' })).status).toBe(403)
   })
 
@@ -54,7 +55,7 @@ describe('fixture level u01-t1', () => {
     await play(h, alice, { levelId: 'u01-l2' })
     await play(h, alice, { kind: 'practice', levelId: 'u01-p1' })
     await play(h, alice, { kind: 'unit_review', levelId: 'u01-r1' })
-    expect((await levels(alice)).at(-1)).toMatchObject({ id: 'u01-t1', state: 'current' })
+    expect((await levels(alice)).find((l) => l.id === 'u01-t1')).toMatchObject({ state: 'current' })
     return alice
   }
 
@@ -126,7 +127,9 @@ describe('fixture level u01-t1', () => {
 
     const result = await finish(h, alice, untrusted(s), { answers: answers(s, good) })
     expect(result).toMatchObject({ accuracy: 1, perfect: true, graderMismatches: 0 })
-    expect((await levels(alice)).at(-1)).toMatchObject({ id: 'u01-t1', state: 'completed' })
+    expect((await levels(alice)).find((l) => l.id === 'u01-t1')).toMatchObject({
+      state: 'completed',
+    })
   })
 
   it('a failed trace the client called correct is wrong on the server; a declined one passes', async () => {

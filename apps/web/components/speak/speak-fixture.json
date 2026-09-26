@@ -1,0 +1,122 @@
+[
+  {
+    "index": 0,
+    "ref": {
+      "type": "speak",
+      "items": ["s_u01_0001"]
+    },
+    "isNew": false,
+    "type": "speak",
+    "prompt": {
+      "fa": "سلام، خوبی؟",
+      "translit": "salām, khubi?",
+      "faFormal": "سلام، خوب هستی؟",
+      "faVocalized": "سَلام، خوبی؟",
+      "tokens": [
+        {
+          "surface": "سلام",
+          "lexeme": "lx_salam",
+          "translit": "salām",
+          "gloss": "hello"
+        },
+        {
+          "surface": "خوبی",
+          "lexeme": "lx_khub",
+          "translit": "khubi",
+          "gloss": "(you're) good"
+        }
+      ],
+      "audio": {
+        "normal": "/media/fixtures/audio/s_u01_0001.mp3",
+        "slow": "/media/fixtures/audio/s_u01_0001.slow.mp3",
+        "envelope": "/media/fixtures/audio/s_u01_0001.envelope.json"
+      }
+    },
+    "translation": "Hello, how are you?",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [2],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "سلام،"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "t": "خوبی؟"
+        }
+      ]
+    }
+  },
+  {
+    "index": 1,
+    "ref": {
+      "type": "speak",
+      "items": ["s_u01_0007"]
+    },
+    "isNew": false,
+    "type": "speak",
+    "prompt": {
+      "fa": "من سیب می‌خوام",
+      "translit": "man sib mikhām",
+      "faFormal": "من سیب می‌خواهم",
+      "faVocalized": "مَن سیب می‌خوام",
+      "tokens": [
+        {
+          "surface": "من",
+          "lexeme": "lx_man",
+          "translit": "man",
+          "gloss": "I"
+        },
+        {
+          "surface": "سیب",
+          "lexeme": "lx_sib",
+          "translit": "sib",
+          "gloss": "apple"
+        },
+        {
+          "surface": "می‌خوام",
+          "lexeme": "lx_mikham",
+          "translit": "mikhām",
+          "gloss": "(I) want"
+        }
+      ],
+      "audio": {
+        "normal": "/media/fixtures/audio/s_u01_0007.mp3",
+        "slow": "/media/fixtures/audio/s_u01_0007.slow.mp3",
+        "envelope": "/media/fixtures/audio/s_u01_0007.envelope.json"
+      }
+    },
+    "translation": "I want an apple",
+    "graph": {
+      "v": 1,
+      "start": 0,
+      "accept": [3],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "t": "من"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "t": "سیب"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خوام"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "t": "می‌خام"
+        }
+      ]
+    }
+  }
+]

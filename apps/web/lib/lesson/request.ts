@@ -5,7 +5,7 @@
  * `level` is omitted for practice. `mode` (practice only) reaches `createSession`. Leaving the
  * player returns to the kind's home tab.
  */
-import { PracticeMode, SessionKind } from '@zaboon/contracts'
+import { PracticeMode, SessionKind, type RouteRequest } from '@zaboon/contracts'
 
 export const PLAYER_KINDS = ['lesson', 'practice', 'letters', 'unit_review'] as const
 export type PlayerKind = (typeof PLAYER_KINDS)[number]
@@ -70,4 +70,24 @@ export function exitHref(kind: PlayerKind): string {
 export function requestKey(request: LessonRequest): string {
   const base = `${request.courseId}|${request.kind}|${request.levelId ?? ''}`
   return request.mode === undefined ? base : `${base}|${request.mode}`
+}
+
+/**
+ * The createSession body for a lesson request. `speakPaused` (P2 speak: the learner's "Can't speak
+ * now" pause is running on this device) is sent only while true: without a pause the body, and
+ * `requestKey`, are exactly what they were before Wave 4. The pause is device state, not part of
+ * the lesson's identity, so it never enters `requestKey` (a resumed snapshot stays the same lesson).
+ */
+export function createSessionBody(
+  request: LessonRequest,
+  opts: { tz: string; speakPaused?: boolean },
+): RouteRequest<'createSession'> {
+  return {
+    courseId: request.courseId,
+    kind: request.kind,
+    ...(request.levelId !== null ? { levelId: request.levelId } : {}),
+    ...(request.mode !== undefined ? { mode: request.mode } : {}),
+    tz: opts.tz,
+    ...(opts.speakPaused === true ? { speakPaused: true } : {}),
+  }
 }
