@@ -4,13 +4,15 @@
  *   export const POST = withRoute(routes.createSession, async ({ body, user, db, now, config }) => { … })
  *
  * It authenticates the caller per the route's `auth`, rejects outdated clients (426), applies the
- * route's rate-limit bucket, validates the request and the response against the zod contracts,
- * reads the time from the Clock seam and the feature flags from the flags seam (flags.ts: the
- * `x-test-flags` header in local mode only), and turns every failure into the error envelope.
+ * route's rate-limit bucket, caps and validates the request and validates the response against the
+ * zod contracts, reads the time from the Clock seam and the feature flags from the flags seam
+ * (flags.ts: the `x-test-flags` header in local mode only), and turns every failure into the error
+ * envelope.
  */
 import type { z } from 'zod'
 import {
   APP_VERSION_HEADER,
+  DEFAULT_MAX_BODY_BYTES,
   type AppConfig,
   type RouteAuth,
   type RouteDef,
@@ -88,9 +90,43 @@ async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null
   }
 }
 
-async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
+function bodyTooLarge(maxBytes: number): ApiError {
+  return new ApiError('validation', `request body is larger than ${maxBytes} bytes`)
+}
+
+/**
+ * The request body as UTF-8 text, at most `maxBytes` bytes: a bigger declared `content-length` is
+ * refused before reading, and a body that turns out bigger (no or a false `content-length`) as
+ * soon as the read passes the limit, so an oversized body is never buffered whole.
+ */
+async function readBodyText(req: Request, maxBytes: number): Promise<string> {
+  if (Number(req.headers.get('content-length')) > maxBytes) throw bodyTooLarge(maxBytes)
+  if (!req.body) return ''
+  const reader = req.body.getReader()
+  const decoder = new TextDecoder()
+  let bytes = 0
+  let text = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    bytes += value.byteLength
+    if (bytes > maxBytes) {
+      reader.cancel().catch(() => {})
+      throw bodyTooLarge(maxBytes)
+    }
+    text += decoder.decode(value, { stream: true })
+  }
+  return text + decoder.decode()
+}
+
+/** Reads (at most `maxBytes` bytes), parses and validates a JSON request body. */
+export async function readBody(
+  req: Request,
+  schema: z.ZodType,
+  maxBytes: number,
+): Promise<unknown> {
   let raw: unknown
-  const text = await req.text()
+  const text = await readBodyText(req, maxBytes)
   try {
     raw = text.length === 0 ? {} : JSON.parse(text)
   } catch {
@@ -113,7 +149,12 @@ async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
  */
 export function isGoneUserViolation(err: unknown): boolean {
   for (let e: unknown = err, depth = 0; e && depth < 3; depth++) {
-    const pg = e as { code?: unknown; constraint_name?: unknown; constraint?: unknown; cause?: unknown }
+    const pg = e as {
+      code?: unknown
+      constraint_name?: unknown
+      constraint?: unknown
+      cause?: unknown
+    }
     const constraint = String(pg.constraint_name ?? pg.constraint ?? '')
     if (pg.code === '23503' && /user_id/.test(constraint)) return true
     e = pg.cause
@@ -168,7 +209,7 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
 
       const body =
         def.request && req.method !== 'GET' && req.method !== 'HEAD'
-          ? await readBody(req, def.request)
+          ? await readBody(req, def.request, def.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES)
           : undefined
       // Static routes resolve `params` to undefined.
       const rawParams = (await next?.params) ?? {}

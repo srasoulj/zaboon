@@ -17,6 +17,9 @@ export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
 export type RouteAuth = 'none' | 'user' | 'member' | 'admin' | 'cron' | 'dev'
 export type Phase = 'mvp' | 'p2' | 'p3'
 
+/** The largest request body a route accepts unless it sets `maxBodyBytes` (256 KiB). */
+export const DEFAULT_MAX_BODY_BYTES = 262_144
+
 export interface RouteDef<
   Req extends z.ZodType | undefined = z.ZodType | undefined,
   Res extends z.ZodType = z.ZodType,
@@ -28,6 +31,11 @@ export interface RouteDef<
   phase: Phase
   /** Rate-limit bucket (AppConfig.rateLimits key). */
   bucket: string
+  /**
+   * The largest request body accepted, in bytes (default DEFAULT_MAX_BODY_BYTES). A bigger one is
+   * refused with 400 `validation` before it is parsed.
+   */
+  maxBodyBytes?: number
   request: Req
   response: Res
 }
@@ -309,6 +317,8 @@ export const routes = {
     auth: 'user',
     phase: 'p2',
     bucket: 'speech',
+    // The base64 audio alone may be 700 000 characters (TranscribeRequest).
+    maxBodyBytes: 1_048_576,
     request: c.TranscribeRequest,
     response: c.TranscribeResponse,
   }),

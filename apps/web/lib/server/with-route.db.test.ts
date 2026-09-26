@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import type { RouteDef } from '@zaboon/contracts'
+import { DEFAULT_MAX_BODY_BYTES, type RouteDef } from '@zaboon/contracts'
 import { NotFoundError, createDb, repos, withSystem } from '@zaboon/db'
 import { createTestDatabase, type TestDatabase } from '@zaboon/db/testing'
 import { signLocalToken } from './auth/local'
@@ -124,6 +124,37 @@ describe('withRoute', () => {
       async () => ({ ok: false }) as unknown as z.input<typeof Ok>,
     )
     expect((await call(liar, { headers: auth })).status).toBe(500)
+  })
+
+  it('caps request bodies: 256 KiB by default, or the route’s maxBodyBytes', async () => {
+    const auth = { authorization: await bearer() }
+    const padded = (bytes: number) => {
+      const text = JSON.stringify({ n: 1, pad: '' })
+      return JSON.stringify({ n: 1, pad: 'x'.repeat(bytes - text.length) })
+    }
+    expect((await call(echo, { headers: auth, body: padded(DEFAULT_MAX_BODY_BYTES) })).status).toBe(
+      200,
+    )
+    const big = await call(echo, { headers: auth, body: padded(DEFAULT_MAX_BODY_BYTES + 1) })
+    expect(big.status).toBe(400)
+    expect(await big.json()).toEqual({
+      error: {
+        code: 'validation',
+        message: `request body is larger than ${DEFAULT_MAX_BODY_BYTES} bytes`,
+      },
+    })
+    const declared = await call(echo, {
+      headers: { ...auth, 'content-length': String(10 * 1024 * 1024) },
+    })
+    expect(declared.status).toBe(400)
+    const roomy = withRoute({ ...def('user'), maxBodyBytes: 512 * 1024 } as const, async () => ({
+      ok: true as const,
+      user: null,
+      now: '',
+    }))
+    const body = padded(DEFAULT_MAX_BODY_BYTES + 1)
+    expect((await call(roomy, { headers: auth, body })).status).toBe(200)
+    expect((await call(roomy, { headers: auth, body: padded(512 * 1024 + 1) })).status).toBe(400)
   })
 
   it('maps repository errors and rejects outdated clients', async () => {

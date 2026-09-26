@@ -9,6 +9,7 @@ import {
   CreateReportRequest,
   CreateSessionRequest,
   DEFAULT_APP_CONFIG,
+  DEFAULT_MAX_BODY_BYTES,
   DEFAULT_SETTINGS,
   DevLinkRequest,
   DevRefreshRequest,
@@ -719,5 +720,17 @@ describe('contracts: bounded inputs', () => {
     expect(rejects(DevLinkRequest, { email })).toBe(true)
     expect(accepts(DevSignInRequest, { email: 'member-1@zaboon.test' })).toBe(true)
     expect(rejects(DevRefreshRequest, { accessToken: 'x'.repeat(4097) })).toBe(true)
+  })
+
+  it('request bodies: 256 KiB by default, 1 MiB for transcriptions', () => {
+    expect(DEFAULT_MAX_BODY_BYTES).toBe(256 * 1024)
+    const raised = Object.entries(routes).filter(([, r]) => r.maxBodyBytes !== undefined)
+    expect(raised.map(([name, r]) => [name, r.maxBodyBytes])).toEqual([['transcribe', 1_048_576]])
+    // The biggest valid transcription fits its cap.
+    const biggest = { ...transcribe, audio: 'A'.repeat(700_000), durationMs: 30_000 }
+    expect(accepts(TranscribeRequest, biggest)).toBe(true)
+    const bytes = new TextEncoder().encode(JSON.stringify(biggest)).length
+    expect(bytes).toBeLessThanOrEqual(routes.transcribe.maxBodyBytes!)
+    expect(bytes).toBeGreaterThan(DEFAULT_MAX_BODY_BYTES)
   })
 })
