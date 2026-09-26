@@ -8,7 +8,7 @@
  *   rollover) → (week, tier) placement lock (exclusive, commits only).
  * The rollover takes no user locks. A commit takes its week lock before any wallet or league write.
  */
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 import type { LeagueOutcome, LeagueTier } from '@zaboon/contracts'
 import type { Tx } from '../index'
 import * as schema from '../schema'
@@ -148,6 +148,52 @@ export async function getMembership(
   return row ? { ...row, tier: row.tier as LeagueTier } : null
 }
 
+export interface PastMembership {
+  weekId: number
+  startsAt: string
+  closedAt: string | null
+  cohortId: number
+  tier: LeagueTier
+}
+
+/**
+ * The learner's membership in their latest week that started before `startsAt`, or null. While
+ * that week is still open (the rollover hasn't closed it yet), its outcome decides the learner's
+ * next tier, not `user_league`.
+ */
+export async function latestMembershipBefore(
+  tx: Tx,
+  userId: string,
+  startsAt: string,
+): Promise<PastMembership | null> {
+  const m = schema.leagueMembers
+  const w = schema.leagueWeeks
+  const c = schema.leagueCohorts
+  const [row] = await tx
+    .select({
+      weekId: w.id,
+      startsAt: w.startsAt,
+      closedAt: w.closedAt,
+      cohortId: m.cohortId,
+      tier: c.tier,
+    })
+    .from(m)
+    .innerJoin(w, eq(w.id, m.weekId))
+    .innerJoin(c, eq(c.id, m.cohortId))
+    .where(and(eq(m.userId, userId), lt(w.startsAt, iso(startsAt))))
+    .orderBy(desc(w.startsAt))
+    .limit(1)
+  return row
+    ? {
+        weekId: row.weekId,
+        startsAt: toIso(row.startsAt),
+        closedAt: toIsoOrNull(row.closedAt),
+        cohortId: row.cohortId,
+        tier: row.tier as LeagueTier,
+      }
+    : null
+}
+
 /** Open cohorts of (week, tier) in creation order, for game-rules `placeInCohort`. */
 export async function listCohorts(
   tx: Tx,
@@ -179,15 +225,13 @@ export async function joinCohort(
   userId: string,
   j: { cohortId: number; weekId: number; weeklyXp: number; at: string },
 ): Promise<void> {
-  await tx
-    .insert(schema.leagueMembers)
-    .values({
-      cohortId: j.cohortId,
-      weekId: j.weekId,
-      userId,
-      weeklyXp: j.weeklyXp,
-      joinedAt: j.at,
-    })
+  await tx.insert(schema.leagueMembers).values({
+    cohortId: j.cohortId,
+    weekId: j.weekId,
+    userId,
+    weeklyXp: j.weeklyXp,
+    joinedAt: j.at,
+  })
   await tx
     .update(schema.leagueCohorts)
     .set({ size: sql`${schema.leagueCohorts.size} + 1` })
@@ -272,6 +316,43 @@ export async function listWeekCohorts(tx: Tx, weekId: number): Promise<CohortRow
       .filter((m) => m.cohortId === c.id)
       .map((m) => ({ userId: m.userId, weeklyXp: m.weeklyXp })),
   }))
+}
+
+/**
+ * System scope: of `userIds`, the ones whose profile still exists, each locked FOR KEY SHARE until
+ * the transaction ends, so an account deleted while the rollover runs can't turn its tier and coin
+ * writes into foreign-key violations (the deletion waits; a profile already gone is skipped).
+ */
+export async function lockLiveProfiles(tx: Tx, userIds: readonly string[]): Promise<Set<string>> {
+  await assertSystemScope(tx)
+  if (userIds.length === 0) return new Set()
+  const rows = await tx
+    .select({ userId: schema.profiles.userId })
+    .from(schema.profiles)
+    .where(inArray(schema.profiles.userId, [...userIds]))
+    .orderBy(asc(schema.profiles.userId))
+    .for('key share')
+  return new Set(rows.map((r) => r.userId))
+}
+
+/**
+ * System scope: the members of `weekId` who already joined a later week. Their tier comes from that
+ * later week (which placed them with this week's outcome), so closing this week late must not
+ * overwrite it.
+ */
+export async function membersWithLaterWeeks(tx: Tx, weekId: number): Promise<Set<string>> {
+  await assertSystemScope(tx)
+  const rows = await tx.execute<{ user_id: string }>(sql`
+    SELECT DISTINCT m.user_id
+    FROM public.league_members m
+    JOIN public.league_weeks w ON w.id = m.week_id
+    WHERE m.week_id = ${weekId}
+      AND EXISTS (
+        SELECT 1 FROM public.league_members later
+        JOIN public.league_weeks lw ON lw.id = later.week_id
+        WHERE later.user_id = m.user_id AND lw.starts_at > w.starts_at
+      )`)
+  return new Set(rows.map((r) => r.user_id))
 }
 
 /** System scope: stores a member's final rank and outcome. */

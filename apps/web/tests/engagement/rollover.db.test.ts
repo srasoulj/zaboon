@@ -194,4 +194,83 @@ describe('league rollover', () => {
       await h.sql`SELECT count(*)::int AS n FROM league_weeks WHERE closed_at IS NULL AND ends_at <= ${now}`
     expect(open!.n).toBe(0)
   })
+
+  it('a learner who joins the new week before the rollover keeps the promotion they earned', async () => {
+    const w1 = '2032-01-05T00:00:00.000Z'
+    const w2 = '2032-01-12T00:00:00.000Z'
+    const [alice, bob] = await cohort('2032-01-07T12:00:00.000Z', 'mes', [50, 10])
+    // Monday 00:00:30 UTC, before the cron: alice's first XP of the new week.
+    const early = await lesson(h, alice!, { now: '2032-01-12T00:00:30.000Z' })
+    expect(early.league).toMatchObject({ tier: 'noqreh', joinedNow: true })
+    const board = await read(h, api.leaderboard, '/api/leaderboard', bob!, {
+      now: '2032-01-12T00:00:40.000Z',
+    })
+    expect(board.body).toMatchObject({ tier: 'mes', joined: false }) // bob "stays" in mes
+
+    const res = await rollover('2032-01-12T00:01:00.000Z')
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(await standing(alice!, w1)).toMatchObject({ final_rank: 1, outcome: 'promote' })
+    // Alice's cohort this week is noqreh; the late close of last week agrees and changes nothing.
+    const [cohortTier] = await h.sql`
+      SELECT c.tier FROM league_members m JOIN league_cohorts c ON c.id = m.cohort_id
+      JOIN league_weeks w ON w.id = m.week_id WHERE m.user_id = ${alice!.id} AND w.starts_at = ${w2}`
+    expect(cohortTier!.tier).toBe('noqreh')
+    // When this week closes, her next tier follows from noqreh (alone: promoted to tala).
+    await rollover('2032-01-19T00:01:00.000Z')
+    expect(await standing(alice!, w2)).toMatchObject({ outcome: 'promote', tier: 'tala' })
+  })
+
+  it('one learner across two missed weeks: each week places them from the one before', async () => {
+    const [carol] = await cohort('2032-02-04T12:00:00.000Z', 'mes', [40]) // week of 02-02
+    const w2 = await lesson(h, carol!, { now: '2032-02-11T12:00:00.000Z' }) // 02-09, not closed
+    expect(w2.league).toMatchObject({ tier: 'noqreh', joinedNow: true })
+    const w3 = await lesson(h, carol!, { now: '2032-02-18T12:00:00.000Z' }) // 02-16, neither closed
+    expect(w3.league).toMatchObject({ tier: 'tala', joinedNow: true })
+    const res = await rollover('2032-02-18T13:00:00.000Z')
+    const closedWeeks = res.body.closed.map((c: { week: { startsAt: string } }) => c.week.startsAt)
+    expect(closedWeeks).toEqual(
+      expect.arrayContaining(['2032-02-02T00:00:00.000Z', '2032-02-09T00:00:00.000Z']),
+    )
+    expect(closedWeeks).not.toContain('2032-02-16T00:00:00.000Z')
+    const board = await read(h, api.leaderboard, '/api/leaderboard', carol!, {
+      now: '2032-02-18T14:00:00.000Z',
+    })
+    expect(board.body).toMatchObject({ tier: 'tala', joined: true })
+    await rollover('2032-02-23T00:01:00.000Z')
+    expect(await standing(carol!, '2032-02-16T00:00:00.000Z')).toMatchObject({
+      outcome: 'promote',
+      tier: 'firouzeh',
+    })
+  })
+
+  it('a week that fails to close is logged and retried; later weeks and the current week go on', async () => {
+    const [dave] = await cohort('2032-03-03T12:00:00.000Z', 'mes', [20]) // week of 03-01
+    const [erin] = await cohort('2032-03-10T12:00:00.000Z', 'mes', [20]) // week of 03-08
+    const [bad] = await h.sql`SELECT id FROM league_weeks WHERE starts_at = '2032-03-01T00:00:00Z'`
+    await h.sql.unsafe(`
+      CREATE FUNCTION public.test_fail_rollover() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'injected rollover failure'; END $$;
+      CREATE TRIGGER test_fail_rollover BEFORE UPDATE OF final_rank ON public.league_members
+        FOR EACH ROW WHEN (NEW.week_id = ${Number(bad!.id)}) EXECUTE FUNCTION public.test_fail_rollover();`)
+    try {
+      const res = await rollover('2032-03-16T00:01:00.000Z')
+      expect(res.status).toBe(500)
+      expect(res.body.error.code).toBe('internal')
+      expect(res.body.error.details.failed).toEqual(['2032-03-01T00:00:00.000Z'])
+      expect(res.body.error.details.closed).toContain('2032-03-08T00:00:00.000Z')
+      expect(await standing(erin!, '2032-03-08T00:00:00.000Z')).toMatchObject({ final_rank: 1 })
+      const [current] =
+        await h.sql`SELECT 1 FROM league_weeks WHERE starts_at = '2032-03-15T00:00:00Z'`
+      expect(current).toBeDefined()
+    } finally {
+      await h.sql.unsafe(`DROP TRIGGER test_fail_rollover ON public.league_members;
+        DROP FUNCTION public.test_fail_rollover();`)
+    }
+    const retry = await rollover('2032-03-16T00:02:00.000Z')
+    expect(retry.status).toBe(200)
+    expect(retry.body.closed.map((c: { week: { startsAt: string } }) => c.week.startsAt)).toEqual([
+      '2032-03-01T00:00:00.000Z',
+    ])
+    expect(await standing(dave!, '2032-03-01T00:00:00.000Z')).toMatchObject({ final_rank: 1 })
+  })
 })

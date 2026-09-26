@@ -1,7 +1,9 @@
 /** Daily quests: progress and auto-claim inside /complete, GET /api/quests (flags.quests), coins. */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DEFAULT_APP_CONFIG as cfg } from '@zaboon/contracts'
+import { repos, withSystem } from '@zaboon/db'
 import { dailyQuests } from '@zaboon/game-rules'
+import { resetRuntimeConfig } from '../../lib/server/config'
 import { createHarness, type Harness, type TestUser } from '../api/harness'
 import { api, coinsOf, completeRaw, lesson, read, startLesson } from './helpers'
 
@@ -155,5 +157,31 @@ describe('quests', () => {
     const rows =
       await h.sql`SELECT DISTINCT local_date::text AS d FROM user_quests WHERE user_id = ${u.id}`
     expect(rows.map((x) => x.d)).toEqual(['2031-05-07'])
+  })
+
+  it('quests.rewardCoins = 0: the quest is still claimed, nothing is paid, the commit succeeds', async () => {
+    const date = '2031-06-04'
+    const u = await userWith((id) => lessonCompletes(id, date).length > 0)
+    await withSystem(h.db.db, (tx) =>
+      repos.content.setAppConfig(tx, 'quests', { ...cfg.quests, rewardCoins: 0 }),
+    )
+    resetRuntimeConfig()
+    try {
+      const r = await lesson(h, u, { now: `${date}T10:00:00.000Z` })
+      expect(r.xp.total).toBe(15)
+      expect(r.coins).toEqual({ earned: 0, total: 0 })
+      const just = r.quests.filter((q: { justCompleted: boolean }) => q.justCompleted)
+      expect(just.length).toBeGreaterThan(0)
+      for (const q of just) expect(q.reward).toBe(0)
+      const claimed = await h.sql`
+        SELECT quest_id FROM user_quests WHERE user_id = ${u.id} AND claimed`
+      expect(claimed.map((x) => x.quest_id).sort()).toEqual(
+        just.map((q: { id: string }) => q.id).sort(),
+      )
+      expect(await coinsOf(h, u.id)).toEqual({ wallet: 0, ledger: 0 })
+    } finally {
+      await withSystem(h.db.db, (tx) => repos.content.setAppConfig(tx, 'quests', cfg.quests))
+      resetRuntimeConfig()
+    }
   })
 })

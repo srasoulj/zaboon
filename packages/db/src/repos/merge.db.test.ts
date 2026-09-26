@@ -105,21 +105,27 @@ describe('mergeGuestIntoMember', () => {
 
     const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
     const [l] = await ctx.admin`SELECT sum(amount)::int AS total, count(*)::int AS n FROM public.coin_ledger WHERE user_id = ${member}`
-    // 5 (member's quest) + 3 (bonus) - 2 (refill); the guest's duplicate quest reward is not counted twice.
-    expect(w!.coins).toBe(6)
-    expect(l).toEqual({ total: 6, n: 3 })
+    // The member's 5 plus the guest's net 6 (5 + 3 - 2): the guest's duplicate quest row is not
+    // copied, its 5 comes back as one balancing `merge` row, so no coin is lost or counted twice.
+    expect(w!.coins).toBe(11)
+    expect(l).toEqual({ total: 11, n: 4 })
+    const [b] = await ctx.admin`SELECT amount, ref FROM public.coin_ledger WHERE user_id = ${member} AND reason = 'merge'`
+    expect(b).toEqual({ amount: 5, ref: guest })
   })
 
-  it('creates the member wallet from the copied ledger and never goes negative', async () => {
+  it('creates the member wallet from the guest net coins and never goes negative', async () => {
     const guest = await ctx.newUser()
     const member = await ctx.newUser({ anonymous: false })
     await ctx.admin`INSERT INTO public.coin_ledger (user_id, amount, reason, ref) VALUES
       (${guest}, 4, 'quest', 'q1'), (${guest}, -4, 'refill', 'r1'), (${member}, 4, 'quest', 'q1')`
-    await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 0)`
+    await ctx.admin`INSERT INTO public.wallet (user_id, coins) VALUES (${guest}, 0), (${member}, 4)`
     await withSystem(ctx.h.db, (tx) => merge.mergeGuestIntoMember(tx, { guestId: guest, memberId: member }))
-    // Member had no wallet row; the copied delta is -4, clamped at zero.
+    // The copied rows sum to -4 (the duplicate quest is skipped); the balancing row gives back 4, so
+    // the member gains the guest's net 0 and wallet = ledger.
     const [w] = await ctx.admin`SELECT coins FROM public.wallet WHERE user_id = ${member}`
-    expect(w!.coins).toBe(0)
+    const [l] = await ctx.admin`SELECT sum(amount)::int AS total FROM public.coin_ledger WHERE user_id = ${member}`
+    expect(w!.coins).toBe(4)
+    expect(l!.total).toBe(4)
 
     const g2 = await ctx.newUser()
     const m2 = await ctx.newUser({ anonymous: false })

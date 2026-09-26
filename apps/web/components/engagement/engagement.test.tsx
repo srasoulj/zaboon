@@ -169,6 +169,8 @@ describe('LeaderboardScreen', () => {
       ['3', 'demote', 'false'],
     ])
     expect(rows[0]).toHaveTextContent('Bita')
+    // Names are direction-isolated (a Persian or mixed name can't reorder the row).
+    expect(within(rows[0]!).getByTestId('league-member-name').tagName).toBe('BDI')
     expect(rows[1]).toHaveTextContent('Learner (you)')
     expect(rows[1]).toHaveAttribute('aria-current', 'true')
     expect(rows[2]).toHaveTextContent('kian')

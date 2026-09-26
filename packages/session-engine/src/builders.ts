@@ -459,10 +459,20 @@ function clozeChoice(c: Ctx): ChallengeOf<'cloze_choice'> {
   }
 }
 
-/** Type what you hear (P2): listen_tap's clip and transcript, answered by typing Persian. */
+/**
+ * Type what you hear (P2): listen_tap's clip and transcript, answered by typing Persian. Dictation
+ * accepts what was said: the spoken text (the transcript) and its orthography variants, with the
+ * grader's typo and spelling leniency, but no pronoun drop, no register swap and none of the
+ * sentence's other authored wordings (its translation key accepts those).
+ */
 function listenType(c: Ctx): ChallengeOf<'listen_type'> {
-  const { item, audio, transcript } = listenItem(c)
-  return { ...c.common, type: 'listen_type', audio, transcript, graph: itemGraph(item, 'fa') }
+  const { audio, transcript } = listenItem(c)
+  const graph = compile([literalPattern(transcript.fa)], {
+    lang: 'fa',
+    pronounDrop: false,
+    variants: c.ix.view.orthographyVariants ?? [],
+  })
+  return { ...c.common, type: 'listen_type', audio, transcript, graph }
 }
 
 /**

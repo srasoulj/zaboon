@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createHarness, type Harness, type TestUser } from '../api/harness'
 import { wrongEvent } from '../api/flows'
-import { api, coinsOf, grantCoins, read, startLesson } from './helpers'
+import { api, coinsOf, grantCoins, lesson, read, startLesson } from './helpers'
 
 let h: Harness
 beforeAll(async () => {
@@ -173,5 +173,33 @@ describe('purchases', () => {
     const u = await h.guest()
     expect((await buy(u, 'streak_freeze', 'not-a-uuid')).status).toBe(400)
     expect((await buy(u, 'gems', uuid())).status).toBe(400)
+  })
+
+  it('a bought freeze never repairs a broken streak: missed days are settled first', async () => {
+    const u = await h.guest()
+    await lesson(h, u, { now: '2031-05-05T12:00:00.000Z' })
+    await h.sql`UPDATE streaks SET freezes = 0 WHERE user_id = ${u.id}`
+    await grantCoins(h, u.id, 100, 'g1')
+    // Missed 05-06; on 05-07 a freeze bought now can't cover yesterday.
+    const res = await buy(u, 'streak_freeze', uuid(), '2031-05-07T12:00:00.000Z')
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body.streak).toMatchObject({ current: 0, freezes: 1 })
+    expect(res.body.streak.status).not.toBe('frozen')
+    const [row] =
+      await h.sql`SELECT current, freezes, last_active_date FROM streaks WHERE user_id = ${u.id}`
+    expect(row).toEqual({ current: 0, freezes: 1, last_active_date: null })
+    // The next lesson starts a new streak (the freeze is kept for a future day).
+    const next = await lesson(h, u, { now: '2031-05-07T13:00:00.000Z' })
+    expect(next.streak).toMatchObject({ current: 1, freezes: 1 })
+
+    // A gap the held freeze covers is left alone: the streak survives, the new freeze adds up.
+    const v = await h.guest()
+    await lesson(h, v, { now: '2031-05-05T12:00:00.000Z' })
+    await lesson(h, v, { now: '2031-05-06T12:00:00.000Z' })
+    await grantCoins(h, v.id, 100, 'g1')
+    const ok = await buy(v, 'streak_freeze', uuid(), '2031-05-08T12:00:00.000Z')
+    expect(ok.body.streak).toMatchObject({ current: 2, status: 'frozen', freezes: 2 })
+    const kept = await lesson(h, v, { now: '2031-05-08T13:00:00.000Z' })
+    expect(kept.streak).toMatchObject({ current: 3, freezes: 1 })
   })
 })

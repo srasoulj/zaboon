@@ -13,7 +13,8 @@
  * - enrollments: XP adds up, newest content version, the member's current level unless unset;
  * - level_progress: most lessons done, legendary if either, earliest completion;
  * - mistakes and items add up; coin_ledger rows are copied unless the member already has the same
- *   (reason, ref), and the wallet gains exactly the copied amounts;
+ *   (reason, ref) (or purchaseId), plus one balancing `merge` row for what was skipped, so the
+ *   wallet gains exactly the guest's net coins and still equals the ledger sum;
  * - the member's lives, consents and league tier win;
  * - streaks: every field takes the max. The caller should then recompute the streak from the merged
  *   daily_activity with @zaboon/game-rules (the one implementation of streak math) and save it.
@@ -51,14 +52,20 @@ export async function mergeGuestIntoMember(
     return Number(rows[0]?.n ?? 0)
   }
 
-  if ((await count(sql`SELECT count(*)::int AS n FROM public.profiles WHERE user_id = ${g}`)) === 0) {
+  if (
+    (await count(sql`SELECT count(*)::int AS n FROM public.profiles WHERE user_id = ${g}`)) === 0
+  ) {
     return { merged: false, sessionsMoved: 0, xpMoved: 0, daysMerged: 0 }
   }
   await run(sql`INSERT INTO public.profiles (user_id) VALUES (${m}) ON CONFLICT DO NOTHING`)
   await run(sql`INSERT INTO public.public_profiles (user_id) VALUES (${m}) ON CONFLICT DO NOTHING`)
 
-  const xpMoved = await count(sql`SELECT coalesce(sum(amount), 0)::int AS n FROM public.xp_ledger WHERE user_id = ${g}`)
-  const daysMerged = await count(sql`SELECT count(*)::int AS n FROM public.daily_activity WHERE user_id = ${g}`)
+  const xpMoved = await count(
+    sql`SELECT coalesce(sum(amount), 0)::int AS n FROM public.xp_ledger WHERE user_id = ${g}`,
+  )
+  const daysMerged = await count(
+    sql`SELECT count(*)::int AS n FROM public.daily_activity WHERE user_id = ${g}`,
+  )
 
   // Sessions (+ events, answers, session XP, session reports via ON UPDATE CASCADE).
   const sessionsMoved = await count(sql`
@@ -164,22 +171,31 @@ export async function mergeGuestIntoMember(
 
   // P2 state.
   // Coins: copy the guest's ledger; entries the member already has (same reason + ref, e.g. a quest
-  // both claimed) are skipped, and the wallet gains exactly the copied amounts, so wallet and
-  // ledger stay consistent. The balance never goes below zero.
+  // both claimed) are skipped. The guest's net coins (their ledger sum, never negative) are never
+  // lost: whatever the skipped rows held comes back as one balancing `merge` row, so the member's
+  // wallet gains exactly the guest's net and still equals the member's ledger sum.
+  const guestNet = await count(
+    sql`SELECT coalesce(sum(amount), 0)::int AS n FROM public.coin_ledger WHERE user_id = ${g}`,
+  )
   const coinsMoved = await count(sql`
     WITH copied AS (
       INSERT INTO public.coin_ledger (user_id, amount, reason, ref, created_at)
       SELECT ${m}, amount, reason, ref, created_at FROM public.coin_ledger WHERE user_id = ${g}
       ORDER BY id
-      ON CONFLICT (user_id, reason, ref) DO NOTHING
+      ON CONFLICT DO NOTHING
       RETURNING amount
     )
     SELECT coalesce(sum(amount), 0)::int AS n FROM copied`)
+  if (guestNet !== coinsMoved)
+    await run(sql`
+      INSERT INTO public.coin_ledger (user_id, amount, reason, ref)
+      VALUES (${m}, ${guestNet - coinsMoved}::int, 'merge', ${g}::text)
+      ON CONFLICT DO NOTHING`)
   await run(sql`
     INSERT INTO public.wallet AS w (user_id, coins)
-    SELECT ${m}, greatest(0, ${coinsMoved}::int)
-    WHERE ${coinsMoved}::int <> 0 OR EXISTS (SELECT 1 FROM public.wallet WHERE user_id = ${g})
-    ON CONFLICT (user_id) DO UPDATE SET coins = greatest(0, w.coins + ${coinsMoved}::int), updated_at = now()`)
+    SELECT ${m}, ${guestNet}::int
+    WHERE ${guestNet}::int <> 0 OR EXISTS (SELECT 1 FROM public.wallet WHERE user_id = ${g})
+    ON CONFLICT (user_id) DO UPDATE SET coins = w.coins + ${guestNet}::int, updated_at = now()`)
   await run(sql`
     INSERT INTO public.entitlements AS en (user_id, entitlement, source, expires_at)
     SELECT ${m}, entitlement, source, expires_at FROM public.entitlements WHERE user_id = ${g}
