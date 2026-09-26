@@ -52,7 +52,11 @@ jobs:
 
       - name: Path ownership
         if: github.event_name == 'pull_request' && hashFiles('scripts/check-ownership.ts') != ''
-        run: pnpm ownership --base "origin/${{ github.base_ref }}" --branch "${{ github.head_ref }}"
+        # Branch names are chosen by whoever opens the PR: pass them as data, never as script text.
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: pnpm ownership --base "origin/$BASE_REF" --branch "$HEAD_REF"
 
       - name: Verify
         run: pnpm verify
