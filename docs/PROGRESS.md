@@ -12,8 +12,8 @@
 | skeleton | Server framework (`withRoute`, auth, clock, content loader), dev auth, lesson API, e2e; app shell (auth + API clients, chrome, renderer registry, fixtures) | ✅ done (#9, #12, #18) |
 | 1 | farsi+grader, session engine+srs+game rules, database, UI kit, content CLI + AI client | ✅ done (#6, #7, #10, #11, #14; review fixes #15, #16) |
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
-| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49 (the owner merged both at 23:40 UTC). 🔄 post-merge review, QA with the flags on (ws-qa-2) |
-| 4 | Stretch: speak, stories, placement, offline, energy, Plus/email/push behind flags | 🔄 prep being designed; four workers: ws-speak, ws-stories, ws-placement-offline, ws-plus |
+| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51. 🔄 QA with the flags on (ws-qa-2) |
+| 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | 🔄 prep #56 (handover, registry and engine seams) and the contracts PR; the ws-typing session builds speak, then Stories |
 | 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ⏳ |
 
 ## Workstreams
@@ -32,9 +32,9 @@
 | ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged, incl. round 2; the dropped-merge notice is mounted in the shell ([spec](../ops/prompts/ws-pages.md)) | #35, #41, #44 |
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
-| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ merged; 🔧 review fix round (tier after a late rollover, zero-coin quest grants, rollover robustness, freeze purchases, merge ledger, practice modes, declined attempts) ([spec](../ops/prompts/ws-engagement.md)) | #48 |
-| ws-typing | 3 | Persian keyboard, typed Persian, letter tracing, renderers, UI kit, session engine | ✅ merged; 🔧 review fix round (mistakes-drill length, caret insertion, keyboard focus, dots in tracing, dictation leniency) ([spec](../ops/prompts/ws-typing.md)) | #49 |
-| ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ⏳ starts after the post-merge review ([spec](../ops/prompts/ws-qa-2.md)) | |
+| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ done, including the review fixes; its paths went to ws-typing for Wave 4 ([spec](../ops/prompts/ws-engagement.md)) | #48, #53 |
+| ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak, then Stories, owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52 |
+| ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | 🔄 working; filed #54 (league seat) and #55 (rollover e2e race) ([spec](../ops/prompts/ws-qa-2.md)) | |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**
 
@@ -118,12 +118,20 @@ on very short clips. The committed clips were normalized separately, so re-runni
 - **Pending merges:** replace the stored guest token with a server-minted merge ticket (a contract change).
 - **Auth:** PKCE `flowType` in `auth-client.ts`.
 - **Grader and renderer:** agree on how punctuation is handled in cloze answers.
-- **SRS:** ignore declined letter traces. For now a declined trace grades as correct, a documented simplification.
+- **Traces:** the server checks the thresholds on client-reported coverage and precision. Re-scoring the strokes would need a server-side glyph rasterizer. Declined traces are non-rated since #53.
 - **ws-api:** add `repos.learning.deleteLevelProgress`.
 - **Formatting:** run a repo-wide formatter pass once no workers are active. The formatter isn't part of verify.
 - **WebKit e2e:** needs CI runners; locally only Chromium runs.
 - **Unused Unit 1 illustrations:** only 4 of the 8 appear in Unit 1 (the `select_image` options are fixed per challenge). Water, river, mulberry and ice cream wait for later units.
 - **Path banners:** show the character portraits (the chat screen gets them in Wave 3, ws-typing).
+- **From the deploy runbook ([docs/DEPLOY.md](DEPLOY.md), §9):**
+  - wire Turnstile into guest sign-in, and add the guest-cleanup cron (ARCHITECTURE §8);
+  - CSP and security headers;
+  - `turbo.json` env passthrough, so `CONTENT_BASE_URL` reaches `next build` under Turborepo;
+  - `.env.example` drift: `SUPABASE_URL`, `NEXT_PUBLIC_AUTH_MODE`, and names that nothing reads yet;
+  - a CD step for `supabase db push`;
+  - `content_versions.min_app_version` is never read.
+- **Deferred Wave 4 features:** Plus/Stripe and entitlements, reminders (email/Web Push), energy, the placement test, offline lessons. A file-level design exists: contracts, schemas, seams, ownership, specs.
 
 ## Human-review backlog (cannot be automated honestly)
 
