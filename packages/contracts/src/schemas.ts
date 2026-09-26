@@ -19,7 +19,13 @@ import {
   UnitId,
 } from '@zaboon/content-schema'
 
-export { ChallengeType, Direction, ItemRef, AnswerGraph, MVP_CHALLENGE_TYPES } from '@zaboon/content-schema'
+export {
+  ChallengeType,
+  Direction,
+  ItemRef,
+  AnswerGraph,
+  MVP_CHALLENGE_TYPES,
+} from '@zaboon/content-schema'
 
 // ---------------------------------------------------------------------------------------------
 // Constants
@@ -44,7 +50,14 @@ export const Uuid = z.string().uuid()
 // ---------------------------------------------------------------------------------------------
 // Config (app_config table; every number in game-rules comes from here)
 // ---------------------------------------------------------------------------------------------
-export const SessionKind = z.enum(['lesson', 'practice', 'letters', 'unit_review', 'legendary', 'jump_test'])
+export const SessionKind = z.enum([
+  'lesson',
+  'practice',
+  'letters',
+  'unit_review',
+  'legendary',
+  'jump_test',
+])
 export type SessionKind = z.infer<typeof SessionKind>
 
 export const LEAGUE_TIERS = [
@@ -86,7 +99,10 @@ export const AppConfig = z.object({
     signupFreezes: z.number().int().nonnegative(),
     freezeEveryDays: z.number().int().positive(),
   }),
-  dailyGoal: z.object({ options: z.array(z.number().int().positive()), default: z.number().int().positive() }),
+  dailyGoal: z.object({
+    options: z.array(z.number().int().positive()),
+    default: z.number().int().positive(),
+  }),
   tz: z.object({ minChangeIntervalHours: z.number().nonnegative() }),
   session: z.object({
     ttlHours: z.number().positive(),
@@ -106,8 +122,14 @@ export const AppConfig = z.object({
     maxSessionsPerHour: z.number().int().positive(),
     maxXpPerHour: z.number().int().positive(),
   }),
-  srs: z.object({ slowMs: z.number().int().positive(), strengthBars: z.array(z.number().min(0).max(1)) }),
-  translit: z.object({ newWordExposures: z.number().int().nonnegative(), letterRetrievability: z.number().min(0).max(1) }),
+  srs: z.object({
+    slowMs: z.number().int().positive(),
+    strengthBars: z.array(z.number().min(0).max(1)),
+  }),
+  translit: z.object({
+    newWordExposures: z.number().int().nonnegative(),
+    letterRetrievability: z.number().min(0).max(1),
+  }),
   leagues: z.object({
     cohortSize: z.number().int().positive().max(MAX_COHORT_SIZE),
     promote: z.number().int(),
@@ -139,14 +161,27 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   tz: { minChangeIntervalHours: 24 },
   session: {
     ttlHours: 24,
-    lengths: { lesson: 12, practice: 10, letters: 10, unit_review: 15, legendary: 15, jump_test: 15 },
+    lengths: {
+      lesson: 12,
+      practice: 10,
+      letters: 10,
+      unit_review: 15,
+      legendary: 15,
+      jump_test: 15,
+    },
     reviewShare: 0.3,
     newWordsPerLesson: 3,
   },
   // `typing` and `letterTrace` count only while their Wave 3 feature is on (see AppConfig).
   mixProfiles: {
     intro: { newWord: 0.25, recognition: 0.3, productionBank: 0.2, listening: 0.15, matching: 0.1 },
-    standard: { recognition: 0.25, productionBank: 0.35, listening: 0.25, matching: 0.15, typing: 0.15 },
+    standard: {
+      recognition: 0.25,
+      productionBank: 0.35,
+      listening: 0.25,
+      matching: 0.15,
+      typing: 0.15,
+    },
     legendary: { productionBank: 0.45, listening: 0.35, recognition: 0.2, typing: 0.2 },
     letters: {
       letterIntro: 0.2,
@@ -156,7 +191,13 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
       buildWord: 0.15,
       letterTrace: 0.15,
     },
-    practice: { recognition: 0.3, productionBank: 0.3, listening: 0.25, matching: 0.15, typing: 0.15 },
+    practice: {
+      recognition: 0.3,
+      productionBank: 0.3,
+      listening: 0.25,
+      matching: 0.15,
+      typing: 0.15,
+    },
   },
   antiCheat: { minMsPerChallenge: 800, maxSessionsPerHour: 30, maxXpPerHour: 600 },
   srs: { slowMs: 12000, strengthBars: [0.5, 0.75, 0.9] },
@@ -256,7 +297,11 @@ export type SrsRating = z.infer<typeof SrsRating>
 export const Lang = z.enum(['fa', 'en'])
 export type Lang = z.infer<typeof Lang>
 
-export const Media = z.object({ normal: z.string().optional(), slow: z.string().optional(), envelope: z.string().optional() })
+export const Media = z.object({
+  normal: z.string().optional(),
+  slow: z.string().optional(),
+  envelope: z.string().optional(),
+})
 
 export const FaTextDto = z.object({
   fa: z.string(),
@@ -294,7 +339,10 @@ export const SelectImageChallenge = z.object({
   ...base,
   type: z.literal('select_image'),
   prompt: FaTextDto,
-  choices: z.array(z.object({ lexeme: LexemeId, image: z.string(), label: z.string() })).min(2).max(4),
+  choices: z
+    .array(z.object({ lexeme: LexemeId, image: z.string(), label: z.string() }))
+    .min(2)
+    .max(4),
   answer: z.number().int().nonnegative(),
 })
 export const SelectTranslationChallenge = z.object({
@@ -325,7 +373,10 @@ export const TranslateTypeChallenge = z.object({
 export const MatchPairsChallenge = z.object({
   ...base,
   type: z.literal('match_pairs'),
-  pairs: z.array(z.object({ fa: FaTextDto, en: z.string() })).min(3).max(5),
+  pairs: z
+    .array(z.object({ fa: FaTextDto, en: z.string() }))
+    .min(3)
+    .max(5),
 })
 export const ListenTapChallenge = z.object({
   ...base,
@@ -350,7 +401,10 @@ export const CompleteChatChallenge = z.object({
   /** `image`: the character's portrait (a media URL) when the course has one; else draw the placeholder. */
   speaker: z.object({ id: z.string(), name: z.string(), image: z.string().optional() }),
   prompt: FaTextDto.extend({ en: z.string() }),
-  choices: z.array(FaTextDto.extend({ en: z.string() })).min(2).max(4),
+  choices: z
+    .array(FaTextDto.extend({ en: z.string() }))
+    .min(2)
+    .max(4),
   answer: z.number().int().nonnegative(),
 })
 export const LetterInfo = z.object({
@@ -360,7 +414,12 @@ export const LetterInfo = z.object({
   translit: z.string(),
   ipa: z.string(),
   connects: z.boolean(),
-  forms: z.object({ isolated: z.string(), initial: z.string(), medial: z.string(), final: z.string() }),
+  forms: z.object({
+    isolated: z.string(),
+    initial: z.string(),
+    medial: z.string(),
+    final: z.string(),
+  }),
   audio: z.string().optional(),
 })
 export type LetterInfo = z.infer<typeof LetterInfo>
@@ -381,7 +440,10 @@ export const LetterSoundChallenge = z.object({
 export const LetterFormsChallenge = z.object({
   ...base,
   type: z.literal('letter_forms'),
-  pairs: z.array(z.object({ left: z.string(), right: z.string() })).min(2).max(5),
+  pairs: z
+    .array(z.object({ left: z.string(), right: z.string() }))
+    .min(2)
+    .max(5),
 })
 export const ReadWordChallenge = z.object({
   ...base,
@@ -467,7 +529,10 @@ export const ChallengeResponse = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('choice'), value: z.number().int().nonnegative() }),
   z.object({ kind: z.literal('text'), value: z.string().max(500) }),
   z.object({ kind: z.literal('tiles'), value: z.array(z.string()).max(40) }),
-  z.object({ kind: z.literal('pairs'), value: z.array(z.tuple([z.number().int(), z.number().int()])).max(10) }),
+  z.object({
+    kind: z.literal('pairs'),
+    value: z.array(z.tuple([z.number().int(), z.number().int()])).max(10),
+  }),
   z.object({ kind: z.literal('none') }),
   z.object({ kind: z.literal('audio'), transcript: z.string().max(500) }),
   z.object({ kind: z.literal('skip') }),
@@ -497,7 +562,11 @@ export const MAX_ATTEMPT_SEQ = 10_000
 export const MAX_ANSWER_MS = 3_600_000
 
 export const AnswerRecord = z.object({
-  index: z.number().int().nonnegative().max(MAX_CHALLENGES - 1),
+  index: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(MAX_CHALLENGES - 1),
   attemptSeq: z.number().int().nonnegative().max(MAX_ATTEMPT_SEQ),
   response: ChallengeResponse,
   verdict: Verdict,
@@ -709,7 +778,12 @@ export const SessionResult = z.object({
     frozenDates: z.array(IsoDate),
   }),
   lives: LivesView,
-  dailyGoal: z.object({ xp: z.number().int(), goal: z.number().int(), met: z.boolean(), justMet: z.boolean() }),
+  dailyGoal: z.object({
+    xp: z.number().int(),
+    goal: z.number().int(),
+    met: z.boolean(),
+    justMet: z.boolean(),
+  }),
   level: z
     .object({
       levelId: LevelId,
@@ -783,7 +857,11 @@ export const UserSummary = z.object({
 
 export const HomeResponse = z.object({
   user: UserSummary,
-  course: z.object({ id: z.string(), contentVersion: z.number().int(), currentLevelId: LevelId.nullable() }),
+  course: z.object({
+    id: z.string(),
+    contentVersion: z.number().int(),
+    currentLevelId: LevelId.nullable(),
+  }),
   streak: StreakView,
   lives: LivesView,
   dailyGoal: z.object({ xp: z.number().int(), goal: z.number().int(), met: z.boolean() }),
@@ -847,7 +925,9 @@ export const LettersResponse = z.object({
       audio: z.string().optional(),
     }),
   ),
-  lessons: z.array(z.object({ id: LevelId, title: z.string(), letters: z.array(LetterId), state: LevelState })),
+  lessons: z.array(
+    z.object({ id: LevelId, title: z.string(), letters: z.array(LetterId), state: LevelState }),
+  ),
 })
 export type LettersResponse = z.infer<typeof LettersResponse>
 
@@ -949,7 +1029,11 @@ export type CreateSessionResponse = z.infer<typeof CreateSessionResponse>
 
 export const SessionEventRequest = z.object({
   attemptSeq: z.number().int().nonnegative().max(MAX_ATTEMPT_SEQ),
-  index: z.number().int().nonnegative().max(MAX_CHALLENGES - 1),
+  index: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(MAX_CHALLENGES - 1),
   kind: z.literal('wrong'),
 })
 export const SessionEventResponse = z.object({ lives: LivesView, duplicate: z.boolean() })
@@ -969,7 +1053,12 @@ export const DeleteAccountResponse = z.object({ deleted: z.literal(true) })
 /** GDPR export: a JSON document with every row we hold about the user. */
 export const ExportResponse = z.record(z.string(), z.unknown())
 
-export const ReportKind = z.enum(['answer_should_be_accepted', 'audio_problem', 'content_error', 'other'])
+export const ReportKind = z.enum([
+  'answer_should_be_accepted',
+  'audio_problem',
+  'content_error',
+  'other',
+])
 export const ReportStatus = z.enum(['new', 'accepted', 'rejected'])
 export const CreateReportRequest = z.object({
   itemRef: ItemRef,

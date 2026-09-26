@@ -61,7 +61,15 @@ describe('content-schema', () => {
 
   it('answer graph shape', () => {
     expect(
-      AnswerGraph.parse({ v: 1, start: 0, accept: [2], edges: [{ from: 0, to: 1, t: 'hi' }, { from: 1, to: 2, t: '' }] }),
+      AnswerGraph.parse({
+        v: 1,
+        start: 0,
+        accept: [2],
+        edges: [
+          { from: 0, to: 1, t: 'hi' },
+          { from: 1, to: 2, t: '' },
+        ],
+      }),
     ).toBeTruthy()
   })
 

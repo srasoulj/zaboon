@@ -51,7 +51,10 @@ export type Provenance = z.infer<typeof Provenance>
 /** Content-relative media path, e.g. "audio/lx_ab.mp3" (resolved under content/<course>/assets/). */
 export const MediaRef = z
   .string()
-  .regex(/^[a-z0-9_./-]+\.(mp3|m4a|webp|png|svg|json|riv)$/, 'lowercase media path with a known extension')
+  .regex(
+    /^[a-z0-9_./-]+\.(mp3|m4a|webp|png|svg|json|riv)$/,
+    'lowercase media path with a known extension',
+  )
 export type MediaRef = z.infer<typeof MediaRef>
 
 export const Register = z.enum(['colloquial', 'formal'])
@@ -415,7 +418,10 @@ export function itemRef(kind: 'lexeme' | 'sentence' | 'letter' | 'chat', id: str
   return `${kind}:${id}` as ItemRef
 }
 
-export function parseItemRef(ref: string): { kind: 'lexeme' | 'sentence' | 'letter' | 'chat'; id: string } {
+export function parseItemRef(ref: string): {
+  kind: 'lexeme' | 'sentence' | 'letter' | 'chat'
+  id: string
+} {
   const [kind, id] = ref.split(':') as [string, string]
   if (!['lexeme', 'sentence', 'letter', 'chat'].includes(kind) || !id) {
     throw new Error(`invalid item ref: ${ref}`)
