@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { isIP } from 'node:net'
+import fc from 'fast-check'
+import { afterEach, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { DEFAULT_APP_CONFIG, type AppConfig } from '@zaboon/contracts'
+import { resetServerEnv, serverEnv } from './env'
 import { ApiError } from './errors'
 import { bucketLimit, clientIp, readBody } from './with-route'
 
@@ -113,19 +116,107 @@ describe('bucketLimit', () => {
   })
 })
 
-describe('clientIp', () => {
-  const req = (headers: Record<string, string>) => new Request('http://localhost/', { headers })
+const req = (headers: Record<string, string> = {}) => new Request('http://localhost/', { headers })
+const trusted = (headers: Record<string, string> = {}) => clientIp(req(headers), true)
 
-  it('takes the first x-forwarded-for entry, else x-real-ip, else local', () => {
-    expect(clientIp(req({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }))).toBe('203.0.113.7')
-    expect(clientIp(req({ 'x-forwarded-for': '2001:db8::1' }))).toBe('2001:db8::1')
-    expect(clientIp(req({ 'x-real-ip': '198.51.100.2' }))).toBe('198.51.100.2')
-    expect(clientIp(req({}))).toBe('local')
+describe('clientIp (per-IP rate-limit keys)', () => {
+  it('takes a valid IPv4 or IPv6 address from X-Forwarded-For, trimmed', () => {
+    expect(trusted({ 'x-forwarded-for': '203.0.113.7' })).toBe('203.0.113.7')
+    expect(trusted({ 'x-forwarded-for': '  203.0.113.7  ' })).toBe('203.0.113.7')
+    expect(trusted({ 'x-forwarded-for': '2001:db8::1' })).toBe('2001:db8::1')
+    expect(trusted({ 'x-forwarded-for': '::ffff:192.0.2.128' })).toBe('::ffff:192.0.2.128')
   })
 
-  it('maps an implausible address to one shared client, so the rate-limit key stays short', () => {
-    expect(clientIp(req({ 'x-forwarded-for': '1'.repeat(300) }))).toBe('unknown')
-    expect(clientIp(req({ 'x-forwarded-for': '1.2.3.4 OR 1=1' }))).toBe('unknown')
-    expect(clientIp(req({ 'x-real-ip': '<script>' }))).toBe('unknown')
+  it('uses only the first entry of a list', () => {
+    expect(trusted({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1, 10.0.0.2' })).toBe('203.0.113.7')
+    expect(trusted({ 'x-forwarded-for': '2001:db8::1,10.0.0.1' })).toBe('2001:db8::1')
+    // An invalid first entry is not skipped in favour of a later one.
+    expect(trusted({ 'x-forwarded-for': 'garbage, 10.0.0.1' })).toBe('unknown')
+  })
+
+  it('rejects garbage', () => {
+    const garbage = ['not-an-ip', 'deadbeef', 'abc', '1.2.3.4 OR 1=1', '<script>', '1.2.3.4:80']
+    for (const bad of [...garbage, '[::1]', '01.2.3.4', '256.1.1.1', '', ' , ']) {
+      expect(trusted({ 'x-forwarded-for': bad })).toBe('unknown')
+      expect(trusted({ 'x-real-ip': bad })).toBe('unknown')
+    }
+  })
+
+  it('rejects very long values, including IPv6 zone IDs that isIP accepts at any length', () => {
+    expect(trusted({ 'x-forwarded-for': '1'.repeat(10_000) })).toBe('unknown')
+    expect(trusted({ 'x-forwarded-for': `203.0.113.7${' '.repeat(10_000)}x` })).toBe('unknown')
+    const zoned = `fe80::1%${'a'.repeat(300)}`
+    expect(isIP(zoned)).toBe(6)
+    expect(trusted({ 'x-forwarded-for': zoned })).toBe('unknown')
+    expect(trusted({ 'x-real-ip': zoned })).toBe('unknown')
+  })
+
+  it('falls back to X-Real-IP, then to "unknown"', () => {
+    expect(trusted()).toBe('unknown')
+    expect(trusted({ 'x-real-ip': '198.51.100.4' })).toBe('198.51.100.4')
+    expect(trusted({ 'x-forwarded-for': 'x'.repeat(10_000), 'x-real-ip': '2001:db8::2' })).toBe(
+      '2001:db8::2',
+    )
+    expect(trusted({ 'x-forwarded-for': '203.0.113.7', 'x-real-ip': '198.51.100.4' })).toBe(
+      '203.0.113.7',
+    )
+    expect(trusted({ 'x-real-ip': 'not-an-ip' })).toBe('unknown')
+    expect(trusted({ 'x-forwarded-for': 'nope', 'x-real-ip': 'x'.repeat(10_000) })).toBe('unknown')
+  })
+
+  it('ignores the headers when no trusted proxy sets them', () => {
+    expect(clientIp(req(), false)).toBe('local')
+    expect(clientIp(req({ 'x-forwarded-for': '203.0.113.7' }), false)).toBe('local')
+    expect(clientIp(req({ 'x-real-ip': '198.51.100.4' }), false)).toBe('local')
+    expect(clientIp(req({ 'x-forwarded-for': 'x'.repeat(10_000) }), false)).toBe('local')
+  })
+
+  it('always returns "local", "unknown" or an IP of at most 45 characters', () => {
+    fc.assert(
+      fc.property(
+        fc.option(fc.string({ maxLength: 300 }), { nil: undefined }),
+        fc.option(fc.string({ maxLength: 300 }), { nil: undefined }),
+        fc.boolean(),
+        (xff, realIp, trust) => {
+          const headers: Record<string, string> = {}
+          // Header values cannot hold control characters or non-Latin-1 text.
+          const clean = (s: string) => s.replace(/[^\x20-\x7e]/g, '')
+          if (xff !== undefined) headers['x-forwarded-for'] = clean(xff)
+          if (realIp !== undefined) headers['x-real-ip'] = clean(realIp)
+          const ip = clientIp(req(headers), trust)
+          if (!trust) return ip === 'local'
+          return ip === 'unknown' || (ip.length <= 45 && isIP(ip) !== 0)
+        },
+      ),
+    )
+  })
+})
+
+describe('serverEnv().trustProxy', () => {
+  const saved = { ...process.env }
+  afterEach(() => {
+    process.env = { ...saved }
+    resetServerEnv()
+  })
+  const trustWith = (vars: Record<string, string>) => {
+    for (const k of ['VERCEL', 'VERCEL_ENV', 'ZABOON_TRUST_PROXY']) delete process.env[k]
+    Object.assign(process.env, {
+      AUTH_MODE: 'supabase',
+      DATABASE_URL_APP_SERVER: 'postgres://app_server@db.example.test:6543/postgres',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+      ...vars,
+    })
+    resetServerEnv()
+    return serverEnv().trustProxy
+  }
+
+  it('trusts the proxy headers only on Vercel or with ZABOON_TRUST_PROXY=1', () => {
+    expect(trustWith({})).toBe(false)
+    expect(trustWith({ ZABOON_TRUST_PROXY: 'true' })).toBe(false)
+    expect(trustWith({ ZABOON_TRUST_PROXY: '1' })).toBe(true)
+    expect(trustWith({ VERCEL: '1' })).toBe(true)
+    expect(trustWith({ VERCEL_ENV: 'production' })).toBe(true)
+    const loopback = 'postgres://app_server@127.0.0.1:54322/zaboon'
+    expect(trustWith({ AUTH_MODE: 'local', DATABASE_URL_APP_SERVER: loopback })).toBe(false)
   })
 })

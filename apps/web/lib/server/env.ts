@@ -26,6 +26,15 @@ export interface ServerEnv {
    * server. Null when unset: the routes that need it answer 503 `unavailable`.
    */
   openrouterAppKey: string | null
+  /**
+   * Whether `X-Forwarded-For` / `X-Real-IP` name the caller, for per-IP rate-limit keys
+   * (with-route.ts `clientIp`). True on Vercel (VERCEL or VERCEL_ENV), whose edge overwrites
+   * `X-Forwarded-For`, or with ZABOON_TRUST_PROXY=1 behind a self-hosted proxy that likewise
+   * replaces it (nginx: `$remote_addr`, not `$proxy_add_x_forwarded_for`, which appends to what the
+   * client sent). Otherwise the headers are client-controlled (`next start` only fills them in when
+   * absent), so every unauthenticated caller shares one bucket rather than choosing its own.
+   */
+  trustProxy: boolean
 }
 
 // Local-only dev credential for the loopback database created by scripts/db-local.sh.
@@ -65,6 +74,8 @@ export function serverEnv(): ServerEnv {
     cronSecret: process.env.CRON_SECRET || null,
     signingSecret: process.env.APP_SIGNING_SECRET || null,
     openrouterAppKey: process.env.OPENROUTER_API_KEY_APP || null,
+    trustProxy:
+      !!process.env.VERCEL || !!process.env.VERCEL_ENV || process.env.ZABOON_TRUST_PROXY === '1',
   }
   return cached
 }
