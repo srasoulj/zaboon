@@ -156,7 +156,7 @@ describe('gradeResponse', () => {
     expect(gradeResponse(find('letter_intro'), { kind: 'none' })).toEqual({ verdict: 'correct' })
   })
 
-  it('later-phase types: speak grades the transcript as typed Persian', () => {
+  it('later-phase types: speak grades the transcript as typed Persian; a closing story beat takes none', () => {
     const base = buildChallenge(
       { type: 'translate_type', items: ['s_u01_0002'], direction: 'en_fa' },
       0,
@@ -185,7 +185,9 @@ describe('gradeResponse', () => {
       beats: 1,
       lines: [{ speaker: null, text: { fa: 'مرسی', translit: 'mersi' }, en: 'Thanks' }],
     }
-    expect(gradeResponse(story, { kind: 'none' }).verdict).toBe('wrong')
+    // A closing beat (no question) has nothing to answer: `none` passes, anything else is wrong.
+    expect(gradeResponse(story, { kind: 'none' }).verdict).toBe('correct')
+    expect(gradeResponse(story, { kind: 'choice', value: 0 }).verdict).toBe('wrong')
   })
 
   describe('typed Persian (P2)', () => {

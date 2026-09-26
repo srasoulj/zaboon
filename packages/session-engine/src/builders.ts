@@ -9,7 +9,7 @@
  * up to the current unit; a distractor that is an accepted variant of the answer is rejected
  * (checked with the grader's `accepts`).
  */
-import type { CompiledSentence, Letter, Lexeme } from '@zaboon/content-schema'
+import type { CompiledSentence, Letter, Lexeme, Story } from '@zaboon/content-schema'
 import type {
   AnswerGraph,
   Challenge,
@@ -20,6 +20,7 @@ import type {
 import { accepts, compile } from '@zaboon/grader'
 import {
   ContentError,
+  defined,
   acceptedTokenKeys,
   answerTiles,
   indexContent,
@@ -708,6 +709,69 @@ function buildWord(c: Ctx): ChallengeOf<'build_word'> {
   }
 }
 
+/**
+ * A story's beats (P2): each question closes a beat of the lines up to and including its `after`
+ * line; the lines after the last question are a closing beat without a question.
+ */
+export function storyBeats(
+  story: Story,
+): { lines: Story['lines']; question?: Story['questions'][number] }[] {
+  const questions = [...story.questions].sort((a, b) => a.after - b.after)
+  const beats: { lines: Story['lines']; question?: Story['questions'][number] }[] = []
+  let from = 0
+  for (const q of questions) {
+    beats.push({ lines: story.lines.slice(from, q.after), question: q })
+    from = q.after
+  }
+  if (from < story.lines.length) beats.push({ lines: story.lines.slice(from) })
+  return beats
+}
+
+/** One beat of a story (P2, flags.stories); option = the 0-based beat. */
+function storyBeat(c: Ctx): ChallengeOf<'story'> {
+  const story = c.ix.story(c.ref.items[0]!)
+  const beats = storyBeats(story)
+  const beat = beats[c.option]
+  if (!beat || beat.lines.length === 0)
+    throw new ContentError(`story ${story.id}: no beat ${c.option}`)
+  const media = (ref: string | undefined) => (ref ? c.ix.view.mediaUrl(ref) : undefined)
+  const lines = beat.lines.map((l) => ({
+    speaker:
+      l.speaker === null
+        ? null
+        : withImage(
+            { id: l.speaker, name: c.ix.characterName(l.speaker) },
+            c.ix.characterImage(l.speaker),
+          ),
+    text: defined({
+      fa: l.fa,
+      translit: l.translit,
+      faVocalized: l.faVocalized,
+      tokens: l.tokens,
+      audio: l.audio ? { normal: media(l.audio)! } : undefined,
+    }),
+    en: l.en,
+  }))
+  const q = beat.question
+  return defined({
+    ...c.common,
+    type: 'story' as const,
+    storyId: story.id,
+    title: story.title,
+    image: media(story.image),
+    beat: c.option,
+    beats: beats.length,
+    lines,
+    question: q
+      ? {
+          prompt: { lang: q.prompt.lang, text: q.prompt.text },
+          choices: q.choices.map((text) => ({ lang: q.prompt.lang, text })),
+          answer: q.answer,
+        }
+      : undefined,
+  })
+}
+
 export class NotImplementedError extends Error {}
 
 /** Builds one runtime challenge from its compact ref. Deterministic for (ref, index, content). */
@@ -754,6 +818,8 @@ export function buildChallenge(ref: ChallengeRef, index: number, content: Conten
       return letterTrace(c)
     case 'speak':
       return speak(c)
+    case 'story':
+      return storyBeat(c)
     default:
       throw new NotImplementedError(`challenge type not available yet: ${ref.type}`)
   }

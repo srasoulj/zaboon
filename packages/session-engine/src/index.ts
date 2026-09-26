@@ -15,7 +15,13 @@ export const IMPLEMENTATION: 'stub' | 'real' = 'real'
 
 export type { ContentView } from './content'
 export { ContentError } from './content'
-export { buildChallenge, NotImplementedError, rebuildChallenges, TRACE_FORMS } from './builders'
+export {
+  buildChallenge,
+  NotImplementedError,
+  rebuildChallenges,
+  storyBeats,
+  TRACE_FORMS,
+} from './builders'
 export { allocate, generateSession, mvpTwin } from './generate'
 export type { GenerateInput, GeneratedSession, LearnerState, SessionFeatures } from './generate'
 export { gradeResponse, TRACE_MIN_COVERAGE, TRACE_MIN_PRECISION } from './grade'

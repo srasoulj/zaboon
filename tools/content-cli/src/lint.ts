@@ -83,6 +83,17 @@ export function persianFields(
     s.tokens.forEach((t, i) => add(file, `sentence ${s.id} tokens[${i}].surface`, t.surface))
     patternList(s.faAccept).forEach((p, i) => add(file, `sentence ${s.id} faAccept[${i}]`, p))
   }
+  for (const st of course.stories) {
+    const file = src('story', st.id)
+    add(file, `story ${st.id} titleFa`, st.titleFa)
+    st.lines.forEach((l, i) => {
+      add(file, `story ${st.id} line ${i + 1} fa`, l.fa)
+      add(file, `story ${st.id} line ${i + 1} faVocalized`, l.faVocalized)
+      l.tokens.forEach((t, j) =>
+        add(file, `story ${st.id} line ${i + 1} tokens[${j}].surface`, t.surface),
+      )
+    })
+  }
   for (const l of course.letters?.letters ?? []) add('letters.yaml', `letter ${l.id}`, l.letter)
   for (const c of course.characters)
     add(src('character', c.id), `character ${c.id} nameFa`, c.nameFa)

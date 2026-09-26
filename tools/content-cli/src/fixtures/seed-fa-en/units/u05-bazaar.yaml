@@ -1,7 +1,7 @@
 # Stub so the path renders all of Section 1. Full content comes later.
 id: u05-bazaar
-title: "Numbers & the bazaar"
-subtitle: "Count, ask prices and bargain"
+title: 'Numbers & the bazaar'
+subtitle: 'Count, ask prices and bargain'
 register: colloquial
 color: bademjan
 characters: [dariush, leila]
@@ -9,4 +9,4 @@ levels:
   - id: u05-l1
     kind: lesson
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

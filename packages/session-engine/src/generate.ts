@@ -46,7 +46,7 @@ import type {
   SessionKind,
 } from '@zaboon/contracts'
 import { isDue } from '@zaboon/srs'
-import { buildChallenge } from './builders'
+import { buildChallenge, storyBeats } from './builders'
 import { ContentError, indexContent, kindOfId, sentenceLexemes } from './content'
 import type { ContentIndex, ContentView } from './content'
 import { seededRandom, shuffle } from './random'
@@ -820,6 +820,18 @@ function planLetters(
   return { front, rest }
 }
 
+// ---------------------------------------------------------------------------------- story plan
+/**
+ * A story session (P2, flags.stories): the level's story, one `story` challenge per beat, in
+ * order. No randomness: a story always plays the same way.
+ */
+function planStory(p: Planner, level: Level | null): ChallengeRef[] {
+  if (level?.kind !== 'story' || !level.story)
+    throw new ContentError(`story session: ${p.input.levelId ?? '(no level)'} is not a story level`)
+  const story = p.ix.story(level.story)
+  return storyBeats(story).map((_, beat) => ref('story', [story.id], { option: beat }))
+}
+
 // ------------------------------------------------------------------------------------- generate
 /** Generates a session: refs (stored) and the challenges they build (sent to the player). */
 export function generateSession(input: GenerateInput): GeneratedSession {
@@ -838,7 +850,8 @@ export function generateSession(input: GenerateInput): GeneratedSession {
     ),
   )
   let refs: ChallengeRef[]
-  if (spec?.pinnedOnly && pinned.length > 0) refs = pinned
+  if (input.kind === 'story') refs = planStory(p, level)
+  else if (spec?.pinnedOnly && pinned.length > 0) refs = pinned
   else {
     pinned.forEach((r) => p.claim(r))
     const length = spec?.length ?? input.config.session.lengths[input.kind] ?? DEFAULT_LENGTH

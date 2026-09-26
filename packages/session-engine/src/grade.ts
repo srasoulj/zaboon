@@ -116,7 +116,12 @@ export function gradeResponse(
           response.coverage >= TRACE_MIN_COVERAGE && response.precision >= TRACE_MIN_PRECISION,
         )
       case 'story':
-        return WRONG // graded elsewhere; never throw
+        // A beat with a question is a choice; the closing beat has nothing to answer.
+        if (challenge.question)
+          return response.kind === 'choice'
+            ? verdictOf(response.value === challenge.question.answer)
+            : WRONG
+        return response.kind === 'none' ? { verdict: 'correct' } : WRONG
     }
   } catch {
     return WRONG // malformed graph or response: never throw

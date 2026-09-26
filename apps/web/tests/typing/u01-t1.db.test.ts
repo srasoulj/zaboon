@@ -42,6 +42,7 @@ describe('fixture level u01-t1', () => {
       'u01-r1',
       'u01-t1',
       'u01-v1', // Wave 4 (speaking) comes after it
+      'u01-st1', // Wave 4 (stories) comes last
     ])
     expect(path.find((l) => l.id === 'u01-t1')).toMatchObject({ state: 'locked' })
     expect((await startRaw(h, alice, { levelId: 'u01-t1' })).status).toBe(403)

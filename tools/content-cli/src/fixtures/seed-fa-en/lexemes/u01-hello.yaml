@@ -12,19 +12,19 @@
   introducedIn: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_khubi
   fa: خوبی؟
   faFormal: خوب هستی؟
-  translit: "khubi?"
-  translitFormal: "khub hasti?"
+  translit: 'khubi?'
+  translitFormal: 'khub hasti?'
   pos: phrase
-  glosses: ["how are you?", "are you well?"]
+  glosses: ['how are you?', 'are you well?']
   introducedIn: u01-hello
   tags: [greeting, question]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_khub
   fa: خوب
@@ -34,7 +34,7 @@
   forms: { 1sg: خوبم, 2sg: خوبی, 3sg: خوبه, 2pl: خوبین }
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_mersi
   fa: مرسی
@@ -46,28 +46,28 @@
   status: draft
   provenance:
     author: claude-seed
-    notes: "hand-written seed; needs native review. Everyday thanks (from French merci); the written equivalent متشکرم appears in sentence faFormal."
+    notes: 'hand-written seed; needs native review. Everyday thanks (from French merci); the written equivalent متشکرم appears in sentence faFormal.'
 
 - id: lx_bale
   fa: بله
   translit: bale
   pos: interjection
-  glosses: ["yes"]
+  glosses: ['yes']
   introducedIn: u01-hello
   tags: [politeness]
   status: draft
   provenance:
     author: claude-seed
-    notes: "hand-written seed; needs native review. The polite yes; casual آره (āre) comes later."
+    notes: 'hand-written seed; needs native review. The polite yes; casual آره (āre) comes later.'
 
 - id: lx_na
   fa: نه
   translit: na
   pos: interjection
-  glosses: ["no"]
+  glosses: ['no']
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_khodahafez
   fa: خداحافظ
@@ -77,7 +77,7 @@
   introducedIn: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # --- u01-l2: good morning, you, excuse me ---------------------------------------------------------
 - id: lx_mamnun
@@ -100,7 +100,7 @@
   glosses: [very, very much, a lot]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_bebakhshid
   fa: ببخشید
@@ -110,7 +110,7 @@
   introducedIn: u01-hello
   tags: [politeness]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_man
   fa: من
@@ -119,26 +119,26 @@
   glosses: [I, me]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_to
   fa: تو
   translit: to
   pos: pronoun
-  glosses: ["you (informal)"]
+  glosses: ['you (informal)']
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_shoma
   fa: شما
   translit: shomā
   pos: pronoun
-  glosses: ["you (polite)", "you (plural)"]
+  glosses: ['you (polite)', 'you (plural)']
   introducedIn: u01-hello
   tags: [politeness]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_chetor
   fa: چطور
@@ -161,7 +161,7 @@
   introducedIn: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_shab_bekheyr
   fa: شب بخیر
@@ -171,7 +171,7 @@
   introducedIn: u01-hello
   tags: [greeting]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_maman_bozorg
   fa: مامان‌بزرگ
@@ -183,7 +183,7 @@
   status: draft
   provenance:
     author: claude-seed
-    notes: "hand-written seed; needs native review. Written word: مادربزرگ (mādarbozorg)."
+    notes: 'hand-written seed; needs native review. Written word: مادربزرگ (mādarbozorg).'
 
 # Word lexemes behind the tokens of the phrases above (not lesson focus items themselves).
 - id: lx_sobh
@@ -193,7 +193,7 @@
   glosses: [morning]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_shab
   fa: شب
@@ -202,13 +202,13 @@
   glosses: [night, evening]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_bekheyr
   fa: بخیر
   translit: bekheyr
   pos: phrase
-  glosses: ["good (in greetings)"]
+  glosses: ['good (in greetings)']
   introducedIn: u01-hello
   tags: [greeting]
   status: draft
@@ -225,7 +225,7 @@
   forms: { poss-1sg: اسمم, poss-2sg: اسمت, poss-2pl: اسمتون }
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_chi
   fa: چی
@@ -246,14 +246,14 @@
   fa: بفرمایید
   translit: befarmāyid
   pos: phrase
-  glosses: ["please, go ahead", here you are, help yourself, come in]
+  glosses: ['please, go ahead', here you are, help yourself, come in]
   forms: { informal: بفرما }
   introducedIn: u01-hello
   tags: [politeness, taarof]
   status: draft
   provenance:
     author: claude-seed
-    notes: "hand-written seed; needs native review. Fixed formula: keeps -id in speech (also heard as بفرمایین); بفرما to one friend."
+    notes: 'hand-written seed; needs native review. Fixed formula: keeps -id in speech (also heard as بفرمایین); بفرما to one friend.'
 
 - id: lx_chay
   fa: چایی
@@ -267,17 +267,17 @@
   status: draft
   provenance:
     author: claude-seed
-    notes: "hand-written seed; needs native review. Tehrani speech says چایی; the written word is چای."
+    notes: 'hand-written seed; needs native review. Tehrani speech says چایی; the written word is چای.'
 
 - id: lx_taarof_nakon
   fa: تعارف نکن
   translit: "ta'ārof nakon"
   pos: phrase
-  glosses: ["don't be shy!", "no need to be polite!"]
+  glosses: ["don't be shy!", 'no need to be polite!']
   introducedIn: u01-hello
   tags: [taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_bashe
   fa: باشه
@@ -288,7 +288,7 @@
   glosses: [okay, all right]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_khahesh_mikonam
   fa: خواهش می‌کنم
@@ -311,7 +311,7 @@
   introducedIn: u01-hello
   tags: [taarof]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_khahesh
   fa: خواهش
@@ -320,7 +320,7 @@
   glosses: [request]
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_kardan
   fa: کردن
@@ -330,13 +330,13 @@
   forms: { pres-1sg: می‌کنم, neg-imp-2sg: نکن }
   introducedIn: u01-hello
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_name_shirin
   fa: شیرین
   translit: shirin
   pos: noun
-  glosses: ["Shirin (a name)"]
+  glosses: ['Shirin (a name)']
   forms: { 3sg: شیرینه }
   introducedIn: u01-hello
   tags: [name]
@@ -349,9 +349,9 @@
   fa: لیلا
   translit: leylā
   pos: noun
-  glosses: ["Leila (a name)"]
+  glosses: ['Leila (a name)']
   forms: { 3sg: لیلاست }
   introducedIn: u01-hello
   tags: [name]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

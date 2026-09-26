@@ -15,7 +15,7 @@ letters:
     order: 1
     examples: [lx_daru, lx_baba, lx_maman]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_dal
     letter: د
@@ -27,7 +27,7 @@ letters:
     order: 10
     examples: [lx_dar, lx_daru, lx_rud]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_re
     letter: ر
@@ -39,7 +39,7 @@ letters:
     order: 12
     examples: [lx_ruz, lx_rud, lx_dar]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_ze
     letter: ز
@@ -51,7 +51,7 @@ letters:
     order: 13
     examples: [lx_zud, lx_zard, lx_ruz]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_vav
     letter: و
@@ -63,7 +63,7 @@ letters:
     order: 30
     examples: [lx_rud, lx_zud, lx_daru]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   # --- letters-2: first joining letters ----------------------------------------------------------
   - id: l_be
@@ -76,7 +76,7 @@ letters:
     order: 2
     examples: [lx_baba, lx_ab, lx_bad]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_mim
     letter: م
@@ -88,7 +88,7 @@ letters:
     order: 28
     examples: [lx_maman, lx_mard, lx_man]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_nun
     letter: ن
@@ -100,7 +100,7 @@ letters:
     order: 29
     examples: [lx_nun, lx_man, lx_maman]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   # --- letters-3: more joining letters -----------------------------------------------------------
   - id: l_ye
@@ -113,7 +113,7 @@ letters:
     order: 32
     examples: [lx_sib, lx_mersi, lx_bastani]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_te
     letter: ت
@@ -125,7 +125,7 @@ letters:
     order: 4
     examples: [lx_to, lx_dust, lx_tut]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
   - id: l_sin
     letter: س
@@ -137,7 +137,7 @@ letters:
     order: 15
     examples: [lx_sib, lx_sard, lx_dust]
     status: draft
-    provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+    provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 lessons:
   - id: letters-1

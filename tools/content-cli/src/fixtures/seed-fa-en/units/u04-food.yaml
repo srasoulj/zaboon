@@ -1,7 +1,7 @@
 # Stub so the path renders all of Section 1. Full content comes later.
 id: u04-food
-title: "Food & tea"
-subtitle: "Order, offer and politely refuse food"
+title: 'Food & tea'
+subtitle: 'Order, offer and politely refuse food'
 register: colloquial
 color: anar
 characters: [leila, maman-bozorg]
@@ -9,4 +9,4 @@ levels:
   - id: u04-l1
     kind: lesson
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

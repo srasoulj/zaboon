@@ -2,7 +2,7 @@
  * Loads a course directory (content/<course>/) into typed, schema-checked objects.
  *
  * Layout (docs/LEARNING-ENGINE.md §2):
- *   course.yaml · units/*.yaml · lexemes/*.yaml · sentences/*.yaml · chats/*.yaml
+ *   course.yaml · units/*.yaml · lexemes/*.yaml · sentences/*.yaml · chats/*.yaml · stories/*.yaml
  *   letters.yaml · characters.yaml · orthography-variants.yaml · guidebooks/*.md · assets/**
  *   path-migrations.yaml (optional: level-id moves between published versions, §2.3)
  *
@@ -22,6 +22,7 @@ import {
   OrthographyVariants,
   PathMigration,
   Sentence,
+  Story,
   Unit,
 } from '@zaboon/content-schema'
 
@@ -40,6 +41,8 @@ export interface LoadedCourse {
   lexemes: Lexeme[]
   sentences: Sentence[]
   chats: Chat[]
+  /** P2 stories (stories/*.yaml). */
+  stories: Story[]
   letters: LettersTrack | null
   characters: Character[]
   variants: OrthographyVariants
@@ -85,6 +88,7 @@ export function loadCourse(dir: string): LoadedCourse {
     lexemes: [],
     sentences: [],
     chats: [],
+    stories: [],
     letters: null,
     characters: [],
     variants: [],
@@ -181,6 +185,8 @@ export function loadCourse(dir: string): LoadedCourse {
     loaded.sentences.push(...parseList(file, Sentence, 'sentence'))
   for (const file of listFiles(join(dir, 'chats'), '.yaml'))
     loaded.chats.push(...parseList(file, Chat, 'chat'))
+  for (const file of listFiles(join(dir, 'stories'), '.yaml'))
+    loaded.stories.push(...parseList(file, Story, 'story'))
 
   const lettersFile = join(dir, 'letters.yaml')
   if (existsSync(lettersFile)) {

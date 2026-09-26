@@ -8,7 +8,7 @@
   options: [s_u01_0004, s_u01_0005, s_u01_0007]
   answer: 0
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # u01-l2. Maman Bozorg: "Good morning!" → "Good morning, Grandma!" (not "Good night!")
 - id: c_u01_002
@@ -17,7 +17,7 @@
   options: [s_u01_0014, s_u01_0015, s_u01_0010]
   answer: 1
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # u01-l3. Maman Bozorg: "Have some tea!" → "Thank you very much!"
 - id: c_u01_003
@@ -26,7 +26,7 @@
   options: [s_u01_0017, s_u01_0005, s_u01_0009]
   answer: 2
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # u01-l3. Maman Bozorg (after your polite refusal): "Don't be shy!" → "Okay, thanks!"
 - id: c_u01_004
@@ -35,7 +35,7 @@
   options: [s_u01_0025, s_u01_0013, s_u01_0018]
   answer: 0
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # u01-l3. Shirin: "What's your name?" → "My name is Leila."
 - id: c_u01_005
@@ -44,7 +44,7 @@
   options: [s_u01_0009, s_u01_0020, s_u01_0021]
   answer: 1
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # u01-l3. Shirin: "Thanks!" → "You're welcome."
 - id: c_u01_006
@@ -53,4 +53,4 @@
   options: [s_u01_0002, s_u01_0014, s_u01_0023]
   answer: 2
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

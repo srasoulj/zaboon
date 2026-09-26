@@ -1,6 +1,6 @@
 # Stub so the path renders all of Section 1. Full content comes later.
 id: u02-about-me
-title: "About me"
+title: 'About me'
 subtitle: "Say who you are and where you're from"
 register: colloquial
 color: zaferan
@@ -9,4 +9,4 @@ levels:
   - id: u02-l1
     kind: lesson
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
