@@ -288,9 +288,9 @@ changing them needs a new deployment.
 ## 6. Feature flags and app config
 
 - **Defaults:** every flag in `FLAG_DEFAULTS` is `false` (packages/contracts/src/schemas.ts). Wave 3:
-  `leagues`, `quests`, `shop`, `practiceHub`, `persianKeyboard`, `letterTrace`. Wave 4 is still
-  being built; keep `speak`, `stories`, `placement`, `offline`, `energy`, `plus`, `email` and `push`
-  off (docs/PROGRESS.md).
+  `leagues`, `quests`, `shop`, `practiceHub`, `persianKeyboard`, `letterTrace`. Wave 4: `speak` and
+  `stories`. `placement`, `offline`, `energy`, `plus`, `email` and `push` aren't built (deferred;
+  docs/PROGRESS.md): keep them off.
 - **Storage:** the `app_config` row `flags` holds `{flagName: boolean}`, merged over the defaults.
   Every other row is a top-level `AppConfig` key (`hearts`, `xp`, `rateLimits`, …) deep-merged over
   `DEFAULT_APP_CONFIG` (packages/db/src/repos/content.ts). An invalid row is silently ignored; a
@@ -305,6 +305,8 @@ changing them needs a new deployment.
 | `practiceHub` | `GET /api/practice` and practice modes in `POST /api/sessions` |
 | `persianKeyboard` | Typed-Persian challenges in sessions |
 | `letterTrace` | Letter-tracing challenges in letters sessions |
+| `speak` | `POST /api/speech/transcribe` and speak challenges in sessions (needs the §5.2 speak variables; see below) |
+| `stories` | `kind: 'story'` in `POST /api/sessions`; story nodes play (off: "Coming soon"). fa-en has three draft stories (units 1, 2 and 4) |
 
 (packages/contracts/src/routes.ts; apps/web/lib/server/engagement/flags.ts, commit.ts;
 apps/web/lib/server/sessions.ts.) Turn them on in the SQL editor, and send the same statement with

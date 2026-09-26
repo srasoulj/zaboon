@@ -1,0 +1,190 @@
+# u04-food: the unit's story (P2, flags.stories), played by level u04-st1. Composed by
+# openai/gpt-6-astra (story-compose@1) from the course's own sentences; status: draft until
+# native review.
+- id: st_u04_lunch
+  unit: u04-food
+  title: Dinner with Grandma
+  titleFa: شام با مامان‌بزرگ
+  image: img/lx_nun.webp
+  characters:
+    - maman-bozorg
+    - kian
+  lines:
+    - speaker: maman-bozorg
+      fa: چایی می‌خواین؟
+      translit: chāyi mikhāyn?
+      en: Would you like some tea?
+      tokens:
+        - surface: چایی
+          lexeme: lx_chay
+          translit: chāyi
+          gloss: tea
+        - surface: می‌خواین
+          lexeme: lx_khastan
+          translit: mikhāyn
+          gloss: do you want
+    - speaker: kian
+      fa: چایی می‌خوام.
+      translit: chāyi mikhām.
+      en: I'd like some tea
+      tokens:
+        - surface: چایی
+          lexeme: lx_chay
+          translit: chāyi
+          gloss: tea
+        - surface: می‌خوام
+          lexeme: lx_khastan
+          translit: mikhām
+          gloss: I want
+    - speaker: kian
+      fa: یه کباب با برنج، لطفا.
+      translit: ye kabāb bā berenj, lotfan.
+      en: A kebab with rice, please
+      tokens:
+        - surface: یه
+          lexeme: lx_ye
+          translit: ye
+          gloss: a
+        - surface: کباب
+          lexeme: lx_kabab
+          translit: kabāb
+          gloss: kebab
+        - surface: با
+          lexeme: lx_ba
+          translit: bā
+          gloss: with
+        - surface: برنج
+          lexeme: lx_berenj
+          translit: berenj
+          gloss: rice
+        - surface: لطفا
+          lexeme: lx_lotfan
+          translit: lotfan
+          gloss: please
+    - speaker: maman-bozorg
+      fa: بفرمایید، کباب با برنج!
+      translit: befarmāyid, kabāb bā berenj!
+      en: Here you are, a kebab with rice
+      tokens:
+        - surface: بفرمایید
+          lexeme: lx_befarmayid
+          translit: befarmāyid
+          gloss: here you are
+        - surface: کباب
+          lexeme: lx_kabab
+          translit: kabāb
+          gloss: kebab
+        - surface: با
+          lexeme: lx_ba
+          translit: bā
+          gloss: with
+        - surface: برنج
+          lexeme: lx_berenj
+          translit: berenj
+          gloss: rice
+    - speaker: maman-bozorg
+      fa: نوش جان!
+      translit: nush-e jān!
+      en: Enjoy it
+      tokens:
+        - surface: نوش
+          lexeme: lx_nush
+          translit: nush-e
+          gloss: pleasure of
+        - surface: جان
+          lexeme: lx_jan
+          translit: jān
+          gloss: the soul
+    - speaker: maman-bozorg
+      fa: بیشتر می‌خوری؟
+      translit: bishtar mikhori?
+      en: Will you eat some more?
+      tokens:
+        - surface: بیشتر
+          lexeme: lx_bishtar
+          translit: bishtar
+          gloss: more
+        - surface: می‌خوری
+          lexeme: lx_khordan
+          translit: mikhori
+          gloss: will you eat
+    - speaker: kian
+      fa: نه، مرسی، سیرم.
+      translit: na, mersi, siram.
+      en: No, thanks, I'm full
+      tokens:
+        - surface: نه
+          lexeme: lx_na
+          translit: na
+          gloss: no
+        - surface: مرسی
+          lexeme: lx_mersi
+          translit: mersi
+          gloss: thanks
+        - surface: سیرم
+          lexeme: lx_sir
+          translit: siram
+          gloss: I'm full
+    - speaker: kian
+      fa: دستتون درد نکنه، خیلی خوشمزه بود!
+      translit: dastetun dard nakone, kheyli khoshmaze bud!
+      en: Thank you for the food, it was very tasty
+      tokens:
+        - surface: دستتون
+          lexeme: lx_dast
+          translit: dastetun
+          gloss: your hands
+        - surface: درد
+          lexeme: lx_dard
+          translit: dard
+          gloss: pain
+        - surface: نکنه
+          lexeme: lx_kardan
+          translit: nakone
+          gloss: may not do
+        - surface: خیلی
+          lexeme: lx_kheyli
+          translit: kheyli
+          gloss: very
+        - surface: خوشمزه
+          lexeme: lx_khoshmaze
+          translit: khoshmaze
+          gloss: tasty
+        - surface: بود
+          lexeme: lx_budan
+          translit: bud
+          gloss: it was
+  questions:
+    - after: 2
+      prompt:
+        lang: en
+        text: What does Kian want to drink?
+      choices:
+        - Coffee with milk
+        - Tea
+        - Milk
+      answer: 1
+    - after: 4
+      prompt:
+        lang: en
+        text: What does Grandma serve Kian?
+      choices:
+        - Bread
+        - Tahdig
+        - Kebab with rice
+      answer: 2
+    - after: 7
+      prompt:
+        lang: en
+        text: Why does Kian say no to more food?
+      choices:
+        - He's full.
+        - He doesn't eat rice.
+        - He only wants bread.
+      answer: 0
+  status: draft
+  provenance:
+    model: openai/gpt-6-astra
+    prompt: story-compose@1
+    generatedAt: 2026-09-26T09:37:27.131Z
+    notes: Composed from the course's own u04-food (and earlier) sentences; needs native review.
