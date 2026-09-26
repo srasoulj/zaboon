@@ -100,7 +100,9 @@
         "!packages/db/src/repos/quests.ts",
         "!packages/db/src/repos/quests.db.test.ts",
         "!packages/db/src/repos/wallet.ts",
-        "!packages/db/src/repos/wallet.db.test.ts"
+        "!packages/db/src/repos/wallet.db.test.ts",
+        "!packages/db/src/repos/merge.db.test.ts",
+        "!packages/db/src/repos/merge.ts"
       ]
     },
     "ws-ui": {
@@ -238,6 +240,8 @@
         "packages/db/src/repos/quests.db.test.ts",
         "packages/db/src/repos/wallet.ts",
         "packages/db/src/repos/wallet.db.test.ts",
+        "packages/db/src/repos/merge.db.test.ts",
+        "packages/db/src/repos/merge.ts",
         "packages/db/src/repos/index.ts",
         "packages/db/src/schema.ts",
         "supabase/migrations/20260926000000_engagement.sql",
