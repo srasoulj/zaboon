@@ -1,20 +1,21 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-26T09:20:00Z",
+  "updatedAt": "2026-09-26T09:50:00Z",
   "wave": 4,
   "integrationPr": 2,
   "aiBudget": {
     "capUsd": 9.5,
     "keyLimitUsd": 10,
-    "keyUsageUsd": 7.5678,
-    "accountBalanceUsd": 1.1488,
-    "note": "Internal cap $9.50; $1.93 left (checked 08:55 UTC Sep 26). Only paid call since Unit 1 media: a speak format probe (< $0.0001). Units 2–5 media need a larger budget (human backlog).",
+    "keyUsageUsd": 7.7247,
+    "accountBalanceUsd": 0.9917,
+    "note": "Internal cap $9.50; $1.78 left (checked 09:50 UTC Sep 26). Paid calls since Unit 1 media: a speak format probe (< $0.0001) and three fa-en stories ($0.157). Units 2–5 media need a larger budget (human backlog).",
     "spent": {
       "textPilot": 0.0018,
       "text": 2.76,
       "art": 1.0168,
       "media": 3.7899,
-      "probes": 0.0001
+      "probes": 0.0001,
+      "stories": 0.157
     }
   },
   "limits": {
@@ -121,11 +122,12 @@
       ]
     },
     "ws-typing": {
-      "status": "Wave 4: speak merged (#60); Stories in progress (branch claude/zaboon-ws-typing-3)",
+      "status": "done: Wave 4 speak (#60) and Stories (#64) merged",
       "prs": [
         49,
         52,
-        60
+        60,
+        64
       ]
     },
     "ws-qa-2": {
@@ -263,7 +265,9 @@
     60,
     61,
     62,
-    63
+    63,
+    64,
+    65
   ],
   "routines": {
     "hourly": "active (id kept outside the repo)",
@@ -302,7 +306,9 @@
     "WebKit e2e coverage (CI runners unavailable; Chromium only locally)",
     "Only 4 of the 8 Unit 1 illustrations appear (select_image options are fixed per challenge): water, river, mulberry and ice cream wait for later units",
     "Show the character portraits on the path banners (chat gets them in Wave 3)",
-    "Speak: a global daily transcription cap in app_config (the quota is per learner; guests are free until Turnstile); benchmark gpt-audio-mini against a Gemini Flash audio model"
+    "Speak: a global daily transcription cap in app_config (the quota is per learner; guests are free until Turnstile); benchmark gpt-audio-mini against a Gemini Flash audio model",
+    "Stories: move the no-hearts rule for story sessions into @zaboon/game-rules (settleCommit, applyMistakeEvent) with oracle cases",
+    "fa-en stories: TTS for the unit 2 and 4 story lines; native review of all three"
   ],
   "mvp": {
     "gate": "passed",

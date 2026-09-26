@@ -43,6 +43,12 @@ levels:
       mix: standard
   - id: u01-p1
     kind: practice
+  # The unit's story (P2, flags.stories; stories/u01-hello.yaml). A story never blocks the
+  # path; with the flag off the node shows "Coming soon".
+  - id: u01-st1
+    kind: story
+    title: Tea with Grandma
+    story: st_u01_visit
   - id: u01-review
     kind: unit_review
 status: draft

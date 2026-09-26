@@ -1,0 +1,165 @@
+# u02-about-me: the unit's story (P2, flags.stories), played by level u02-st1. Composed by
+# openai/gpt-6-astra (story-compose@1) from the course's own sentences; status: draft until
+# native review.
+- id: st_u02_new_friend
+  unit: u02-about-me
+  title: A New Friend
+  titleFa: دوست جدید
+  characters:
+    - shirin
+    - kian
+  lines:
+    - speaker: shirin
+      fa: سلام!
+      translit: salām!
+      en: Hello
+      tokens:
+        - surface: سلام
+          lexeme: lx_salam
+          translit: salām
+          gloss: hello
+    - speaker: kian
+      fa: سلام، خوبی؟
+      translit: salām, khubi?
+      en: Hi, how are you?
+      tokens:
+        - surface: سلام
+          lexeme: lx_salam
+          translit: salām
+          gloss: hi
+        - surface: خوبی
+          lexeme: lx_khubi
+          translit: khubi
+          gloss: how are you? (lit. are you well?)
+    - speaker: shirin
+      fa: مرسی، خوبم.
+      translit: mersi, khubam.
+      en: Thanks, I'm good
+      tokens:
+        - surface: مرسی
+          lexeme: lx_mersi
+          translit: mersi
+          gloss: thanks
+        - surface: خوبم
+          lexeme: lx_khub
+          translit: khubam
+          gloss: I'm good
+    - speaker: kian
+      fa: من کیانم.
+      translit: man kiānam.
+      en: I'm Kian
+      tokens:
+        - surface: من
+          lexeme: lx_man
+          translit: man
+          gloss: I
+        - surface: کیانم
+          lexeme: lx_name_kian
+          translit: kiānam
+          gloss: am Kian
+    - speaker: shirin
+      fa: اسمم شیرینه.
+      translit: esmam shirine.
+      en: My name is Shirin
+      tokens:
+        - surface: اسمم
+          lexeme: lx_esm
+          translit: esmam
+          gloss: my name
+        - surface: شیرینه
+          lexeme: lx_name_shirin
+          translit: shirine
+          gloss: is Shirin
+    - speaker: kian
+      fa: اهل کجایی؟
+      translit: ahl-e kojāyi?
+      en: Where are you from?
+      tokens:
+        - surface: اهل
+          lexeme: lx_ahl
+          translit: ahl-e
+          gloss: from
+        - surface: کجایی
+          lexeme: lx_koja
+          translit: kojāyi
+          gloss: where are you
+    - speaker: shirin
+      fa: اهل تهرانم.
+      translit: ahl-e tehrānam.
+      en: I'm from Tehran
+      tokens:
+        - surface: اهل
+          lexeme: lx_ahl
+          translit: ahl-e
+          gloss: from
+        - surface: تهرانم
+          lexeme: lx_tehran
+          translit: tehrānam
+          gloss: Tehran (I am)
+    - speaker: shirin
+      fa: فارسی حرف می‌زنی؟
+      translit: fārsi harf mizani?
+      en: Do you speak Persian?
+      tokens:
+        - surface: فارسی
+          lexeme: lx_farsi
+          translit: fārsi
+          gloss: Persian
+        - surface: حرف
+          lexeme: lx_harf
+          translit: harf
+          gloss: talk
+        - surface: می‌زنی
+          lexeme: lx_zadan
+          translit: mizani
+          gloss: you speak
+    - speaker: kian
+      fa: یه کم فارسی حرف می‌زنم.
+      translit: ye kam fārsi harf mizanam.
+      en: I speak a little Persian
+      tokens:
+        - surface: یه
+          lexeme: lx_ye
+          translit: ye
+          gloss: a
+        - surface: کم
+          lexeme: lx_kam
+          translit: kam
+          gloss: little
+        - surface: فارسی
+          lexeme: lx_farsi
+          translit: fārsi
+          gloss: Persian
+        - surface: حرف
+          lexeme: lx_harf
+          translit: harf
+          gloss: talk
+        - surface: می‌زنم
+          lexeme: lx_zadan
+          translit: mizanam
+          gloss: I speak
+  questions:
+    - after: 7
+      prompt:
+        lang: en
+        text: Where is Shirin from?
+      choices:
+        - Los Angeles
+        - Tehran
+        - She doesn't say.
+      answer: 1
+    - after: 9
+      prompt:
+        lang: en
+        text: What does Kian say about speaking Persian?
+      choices:
+        - He doesn't speak it.
+        - He speaks it fluently.
+        - He speaks a little.
+      answer: 2
+  status: draft
+  provenance:
+    model: openai/gpt-6-astra
+    prompt: story-compose@1
+    generatedAt: 2026-09-26T09:37:15.070Z
+    notes: Composed from the course's own u02-about-me (and earlier) sentences; needs native review.
