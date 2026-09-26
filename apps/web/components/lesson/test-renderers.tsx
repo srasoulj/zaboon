@@ -8,6 +8,7 @@
 import type { Challenge, ChallengeResponse } from '@zaboon/contracts'
 import { canonical } from '@zaboon/grader'
 import type { ChallengeRenderer, ChallengeRendererProps } from '../../lib/challenge-registry'
+import { useSpeechService } from '../../lib/speech/context'
 import type { RendererResolver } from './services'
 
 export const TEST_RENDERERS_KEY = 'zaboon.testRenderers'
@@ -73,6 +74,7 @@ export function TestRenderer({
   display,
 }: ChallengeRendererProps) {
   const locked = phase !== 'answering'
+  const speech = useSpeechService()
   return (
     <div
       data-testid="test-renderer"
@@ -82,6 +84,7 @@ export function TestRenderer({
       data-response={response ? JSON.stringify(response) : ''}
       data-keyboard-layout={display.keyboardLayout ?? ''}
       data-persian-keyboard={display.persianKeyboard ? 'true' : 'false'}
+      data-speech={speech ? 'true' : 'false'}
       className="flex flex-col items-center gap-3 text-center"
     >
       <p className="font-bold">

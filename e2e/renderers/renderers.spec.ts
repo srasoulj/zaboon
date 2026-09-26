@@ -26,6 +26,9 @@ const IDS = [
   'listen_type-0',
   'cloze_type-0',
   'letter_trace-0',
+  // Wave 4 (u01-v1): speaking.
+  'speak-0',
+  'speak-1',
 ]
 const THEMES = ['light', 'dark'] as const
 const stylePath = fileURLToPath(new URL('./screenshot.css', import.meta.url))

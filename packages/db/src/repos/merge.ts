@@ -16,6 +16,7 @@
  *   (reason, ref) (or purchaseId), plus one balancing `merge` row for what was skipped, so the
  *   wallet gains exactly the guest's net coins and still equals the ledger sum;
  * - the member's lives, consents and league tier win;
+ * - speech_usage (P2 speak quota) adds up per UTC day, so a merge never resets today's quota;
  * - streaks: every field takes the max. The caller should then recompute the streak from the merged
  *   daily_activity with @zaboon/game-rules (the one implementation of streak math) and save it.
  * - finally the guest's profile is deleted, cascading to whatever was not moved.
@@ -215,6 +216,12 @@ export async function mergeGuestIntoMember(
     SELECT ${m}, tier FROM public.user_league WHERE user_id = ${g}
     ON CONFLICT (user_id) DO NOTHING`)
   await run(sql`UPDATE public.push_subscriptions SET user_id = ${m} WHERE user_id = ${g}`)
+  await run(sql`
+    INSERT INTO public.speech_usage AS su (user_id, day, count, updated_at)
+    SELECT ${m}, day, count, updated_at FROM public.speech_usage WHERE user_id = ${g}
+    ON CONFLICT (user_id, day) DO UPDATE SET
+      count = su.count + excluded.count,
+      updated_at = greatest(su.updated_at, excluded.updated_at)`)
 
   // Denormalized public stats.
   await run(sql`

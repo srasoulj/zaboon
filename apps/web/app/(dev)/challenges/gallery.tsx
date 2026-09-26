@@ -10,6 +10,8 @@ import {
   type ChallengeDisplay,
   type ChallengeRenderer,
 } from '@/lib/challenge-registry'
+import { SpeechServiceProvider } from '@/lib/speech/context'
+import type { SpeechService } from '@/lib/speech/service'
 import styles from './challenges.module.css'
 
 export interface GalleryEntry {
@@ -34,6 +36,18 @@ function useFakeAudio(): { audio: ChallengeAudio; played: string | null } {
   return { audio, played }
 }
 
+/**
+ * Stand-in for the player's speech service: "transcribes" any recording to the speak prompt (the
+ * gallery has no server), so the flow can be tried with a real or faked microphone.
+ */
+function fakeSpeech(challenge: Challenge): SpeechService | null {
+  if (challenge.type !== 'speak') return null
+  return {
+    transcribe: async () => ({ transcript: challenge.prompt.fa, token: 'gallery', remaining: 59 }),
+    pauseSpeaking: () => {},
+  }
+}
+
 /** A miniature player: holds the draft, CHECK grades it with gradeResponse, CONTINUE resets. */
 function Interactive({ challenge, display }: { challenge: Challenge; display: ChallengeDisplay }) {
   const Renderer = rendererFor(challenge.type) as ChallengeRenderer
@@ -42,6 +56,7 @@ function Interactive({ challenge, display }: { challenge: Challenge; display: Ch
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [mismatches, setMismatches] = useState(0)
   const { audio, played } = useFakeAudio()
+  const speech = useMemo(() => fakeSpeech(challenge), [challenge])
   const phase = verdict === null ? 'answering' : 'feedback'
   const check = () => {
     if (response !== null && verdict === null)
@@ -54,7 +69,7 @@ function Interactive({ challenge, display }: { challenge: Challenge; display: Ch
     setRound((r) => r + 1)
   }
   return (
-    <>
+    <SpeechServiceProvider value={speech}>
       <Renderer
         key={round}
         challenge={challenge}
@@ -85,7 +100,7 @@ function Interactive({ challenge, display }: { challenge: Challenge; display: Ch
           <Button3D onClick={reset}>Continue</Button3D>
         )}
       </div>
-    </>
+    </SpeechServiceProvider>
   )
 }
 

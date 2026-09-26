@@ -391,3 +391,18 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   keys: jsonb('keys').$type<{ p256dh: string; auth: string }>().notNull(),
   createdAt: tstz('created_at').notNull().defaultNow(),
 })
+
+// ---------------------------------------------------------------------------------------------
+// P2 speak (Wave 4) added by 20260927000000_speech_quota.sql
+// ---------------------------------------------------------------------------------------------
+/** Transcriptions per learner per UTC day (AppConfig.speech.dailyQuota). Never the audio. */
+export const speechUsage = pgTable(
+  'speech_usage',
+  {
+    userId: uuid('user_id').notNull(),
+    day: date('day', { mode: 'string' }).notNull(),
+    count: integer('count').notNull().default(0),
+    updatedAt: tstz('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
+)

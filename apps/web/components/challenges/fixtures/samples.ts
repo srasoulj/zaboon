@@ -65,6 +65,9 @@ export function correctResponse(c: Challenge): ChallengeResponse {
       return { kind: 'text', value: (solveGraph(c.graph) ?? []).join(' ') }
     case 'letter_trace':
       return { kind: 'trace', coverage: 0.95, precision: 0.97 }
+    case 'speak':
+      // The client grades the transcript; the server also needs the transcribe route's token.
+      return { kind: 'audio', transcript: (solveGraph(c.graph) ?? []).join(' ') }
     case 'match_pairs':
     case 'letter_forms':
       return { kind: 'pairs', value: c.pairs.map((_, i) => [i, i] as [number, number]) }
@@ -96,6 +99,8 @@ export function wrongResponse(c: Challenge): ChallengeResponse {
       return { kind: 'text', value: 'خداحافظ' }
     case 'letter_trace':
       return { kind: 'trace', coverage: 0.4, precision: 0.5 }
+    case 'speak':
+      return { kind: 'audio', transcript: 'خداحافظ' }
     default:
       // Matching can only produce correct pairs; letter_intro has nothing to get wrong.
       return correctResponse(c)
