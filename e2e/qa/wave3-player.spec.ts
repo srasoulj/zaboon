@@ -162,12 +162,14 @@ test('every Wave 3 flag on: u01-t1, the complete sequence, leagues, quests, shop
   )
   const expectations: Record<string, (s: Body) => void> = {
     mixed: (s) => expect((s.challenges as unknown[]).length).toBeGreaterThan(0),
+    // The drill starts with the open mistakes and is topped up to a full practice session.
     mistakes: (s) => {
-      for (const c of s.challenges as { type: string; ref: { items: string[] } }[])
-        expect(
-          c.ref.items.some((i) => mistakes.has(i)),
-          `${c.type} drills ${c.ref.items.join(',')}`,
-        ).toBe(true)
+      const [first] = s.challenges as { type: string; ref: { items: string[] } }[]
+      expect(
+        first!.ref.items.some((i) => mistakes.has(i)),
+        `${first!.type} drills ${first!.ref.items.join(',')}`,
+      ).toBe(true)
+      expect((s.challenges as unknown[]).length).toBeGreaterThan(1)
     },
     listening: (s) => {
       for (const c of s.challenges as { type: string }[])
