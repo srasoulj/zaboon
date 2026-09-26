@@ -37,11 +37,19 @@ export function kindLabel(kind: string): string {
   return Object.hasOwn(KIND_LABELS, kind) ? KIND_LABELS[kind]! : 'Lesson'
 }
 
-/** The player kind a path level starts, or null when it has no MVP session (chest, story, …). */
+/** The learner's feature flags (HomeResponse.flags); absent = every P2 feature off. */
+export type PathFlags = Readonly<Record<string, boolean>> | undefined
+
+/**
+ * The player kind a path level starts, or null when it has nothing to play (chest; a story while
+ * flags.stories is off).
+ */
 export function playerKind(
   kind: string,
-): Extract<PlayerKind, 'lesson' | 'unit_review' | 'practice'> | null {
+  flags?: PathFlags,
+): Extract<PlayerKind, 'lesson' | 'unit_review' | 'practice' | 'story'> | null {
   if (kind === 'lesson' || kind === 'unit_review' || kind === 'practice') return kind
+  if (kind === 'story' && flags?.stories === true) return kind
   return null
 }
 
@@ -82,9 +90,13 @@ export type PopoverAction =
 export const LOCKED_MESSAGE = 'Complete the levels above to unlock this'
 
 /** What the level popover offers: START / replay, the locked note, or nothing to play yet. */
-export function popoverAction(courseId: string, level: PathLevelData): PopoverAction {
+export function popoverAction(
+  courseId: string,
+  level: PathLevelData,
+  flags?: PathFlags,
+): PopoverAction {
   if (level.state === 'locked') return { type: 'locked', message: LOCKED_MESSAGE }
-  const kind = playerKind(level.kind)
+  const kind = playerKind(level.kind, flags)
   if (!kind) return { type: 'unavailable', message: 'Coming soon: nothing to play here yet.' }
   const href = lessonHref({ courseId, kind, levelId: level.id })
   const replay = level.state === 'completed' || level.state === 'legendary'

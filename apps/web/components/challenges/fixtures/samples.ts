@@ -73,6 +73,9 @@ export function correctResponse(c: Challenge): ChallengeResponse {
       return { kind: 'pairs', value: c.pairs.map((_, i) => [i, i] as [number, number]) }
     case 'letter_intro':
       return { kind: 'none' }
+    case 'story':
+      // A beat with a question is a choice; the closing beat is read through.
+      return c.question ? { kind: 'choice', value: c.question.answer } : { kind: 'none' }
     default:
       return { kind: 'skip' }
   }
@@ -101,6 +104,10 @@ export function wrongResponse(c: Challenge): ChallengeResponse {
       return { kind: 'trace', coverage: 0.4, precision: 0.5 }
     case 'speak':
       return { kind: 'audio', transcript: 'خداحافظ' }
+    case 'story':
+      return c.question
+        ? { kind: 'choice', value: (c.question.answer + 1) % c.question.choices.length }
+        : { kind: 'none' } // the closing beat cannot be wrong
     default:
       // Matching can only produce correct pairs; letter_intro has nothing to get wrong.
       return correctResponse(c)

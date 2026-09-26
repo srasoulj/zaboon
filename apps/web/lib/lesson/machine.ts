@@ -14,9 +14,11 @@
  * snapshots for resume after reload, and sounds. Grading is local and synchronous.
  */
 import {
+  type Challenge,
   type ChallengeResponse,
   type CreateSessionResponse,
   type LivesView,
+  type SessionKind,
   type SessionResult,
   type Verdict,
 } from '@zaboon/contracts'
@@ -177,6 +179,20 @@ export function snapshotOf(ctx: LessonContext): LessonSnapshot | null {
   }
 }
 
+/**
+ * P2 stories (flags.stories): a story session, or a story beat anywhere, spends no hearts (no heart
+ * loss and no wrong-attempt event), and a wrong answer is retried in place: the same challenge comes
+ * back right away (a new attemptSeq) instead of going to the back of the queue.
+ */
+export function isStoryAttempt(kind: SessionKind, challenge: Pick<Challenge, 'type'> | null) {
+  return kind === 'story' || challenge?.type === 'story'
+}
+
+/** Puts `index` back at the head of the queue (a story beat answered wrong is retried at once). */
+export function retryInPlace(p: Progress, index: number): Progress {
+  return { ...p, queue: [index, ...p.queue.filter((i) => i !== index)] }
+}
+
 export function currentChallenge(ctx: LessonContext) {
   if (!ctx.session || !ctx.progress) return null
   const i = ctx.feedback?.index ?? currentIndex(ctx.progress)
@@ -239,6 +255,7 @@ export const lessonMachine = setup({
     noHearts: ({ context }) =>
       context.hearts !== null &&
       context.session !== null &&
+      context.session.kind !== 'story' &&
       outOfHearts(context.session.kind, context.hearts),
     showStreak: ({ context }) => context.summary?.streak.extendedToday === true,
     showGoal: ({ context }) => context.summary?.dailyGoal.justMet === true,
@@ -380,10 +397,14 @@ export const lessonMachine = setup({
                 verdict: grade.verdict,
                 ms: context.now() - context.shownAt,
               })
+              const story = isStoryAttempt(session.kind, challenge)
               const heartLost =
-                countsAsWrong(grade.verdict) && costsHeart(session.kind, context.hearts!)
+                countsAsWrong(grade.verdict) && !story && costsHeart(session.kind, context.hearts!)
               return {
-                progress: recorded.progress,
+                progress:
+                  story && countsAsWrong(grade.verdict)
+                    ? retryInPlace(recorded.progress, index)
+                    : recorded.progress,
                 hearts: heartLost ? loseHeart(context.hearts!) : context.hearts,
                 lastWrongSeq: countsAsWrong(grade.verdict)
                   ? recorded.answer.attemptSeq
@@ -400,11 +421,17 @@ export const lessonMachine = setup({
             }),
             enqueueActions(({ context, enqueue }) => {
               const f = context.feedback!
-              if (countsAsWrong(f.verdict) && context.session!.kind !== 'practice')
+              const session = context.session!
+              const challenge = session.challenges.find((c) => c.index === f.index) ?? null
+              if (
+                countsAsWrong(f.verdict) &&
+                session.kind !== 'practice' &&
+                !isStoryAttempt(session.kind, challenge)
+              )
                 enqueue({
                   type: 'recordWrong',
                   params: {
-                    sessionId: context.session!.sessionId,
+                    sessionId: session.sessionId,
                     attemptSeq: f.attemptSeq,
                     index: f.index,
                   },

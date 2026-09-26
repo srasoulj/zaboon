@@ -430,7 +430,13 @@ export function LessonPlayer({
         {challenge && (
           <SpeechServiceProvider value={speech}>
             <ChallengeSlot
-              key={`${challenge.index}:${ctx.shownAt}`}
+              // A story beat answered wrong is retried in place: it keeps its renderer (the lines
+              // stay shown); every other retry starts afresh.
+              key={
+                challenge.type === 'story'
+                  ? `${challenge.index}`
+                  : `${challenge.index}:${ctx.shownAt}`
+              }
               resolve={resolveRenderer}
               props={{
                 challenge,
@@ -454,17 +460,20 @@ export function LessonPlayer({
             attemptSeq={feedback.attemptSeq}
             solution={solutionFor(challenge, feedback.grade)}
             onContinue={() => send({ type: 'CONTINUE' })}
-            onReport={() => setReportOpen(true)}
+            // Story lines have no report flag (P2 stories).
+            {...(challenge.type === 'story' ? {} : { onReport: () => setReportOpen(true) })}
+            retry={feedback.verdict === 'wrong' && challenge.type === 'story'}
           />
         ) : (
           <LessonFooter
             canCheck={ctx.draft !== null && state.matches({ playing: 'answering' })}
             onCheck={() => send({ type: 'CHECK' })}
-            onSkip={() => send({ type: 'SKIP' })}
+            // A story beat is never skipped: a wrong answer is simply tried again.
+            {...(challenge?.type === 'story' ? {} : { onSkip: () => send({ type: 'SKIP' }) })}
           />
         )}
       </div>
-      {challenge && ctx.session && (
+      {challenge && ctx.session && challenge.type !== 'story' && (
         <ReportSheet
           open={reportOpen}
           onClose={() => setReportOpen(false)}

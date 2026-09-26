@@ -2,6 +2,7 @@
 // lib/challenge-registry.ts.
 import type { RendererMap } from '@/lib/challenge-registry'
 import { Speak } from '@/components/speak'
+import { Story } from '@/components/stories'
 import { BuildWord } from './BuildWord'
 import { ClozeChoice } from './ClozeChoice'
 import { ClozeType } from './ClozeType'
@@ -39,4 +40,6 @@ export const renderers: RendererMap = {
   letter_trace: LetterTrace,
   // P2 Wave 4 (behind flags.speak): the SpeechService comes from the player's context.
   speak: Speak,
+  // P2 Wave 4 (behind flags.stories): one beat of a story per challenge.
+  story: Story,
 }

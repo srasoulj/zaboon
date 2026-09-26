@@ -8,7 +8,14 @@ import { correctResponse, wrongResponse } from '../fixtures/samples'
 
 describe('renderers', () => {
   it('has one real renderer per MVP type and per optional P2 type', () => {
-    const types = [...MVP_CHALLENGE_TYPES, 'listen_type', 'cloze_type', 'letter_trace', 'speak']
+    const types = [
+      ...MVP_CHALLENGE_TYPES,
+      'listen_type',
+      'cloze_type',
+      'letter_trace',
+      'speak',
+      'story',
+    ]
     expect(Object.keys(renderers).sort()).toEqual(types.sort())
     expect(new Set(Object.values(renderers)).size).toBe(types.length)
   })

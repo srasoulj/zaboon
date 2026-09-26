@@ -42,6 +42,25 @@ describe('path mappers', () => {
     expect(playerKind('legendary')).toBeNull()
   })
 
+  it('a story plays only while flags.stories is on (a chest never does)', () => {
+    expect(playerKind('story', { stories: false })).toBeNull()
+    expect(playerKind('story', { stories: true })).toBe('story')
+    expect(playerKind('chest', { stories: true })).toBeNull()
+    const st = level('u01-st1', { kind: 'story', state: 'available' })
+    expect(popoverAction('fixture', st)).toEqual({
+      type: 'unavailable',
+      message: 'Coming soon: nothing to play here yet.',
+    })
+    expect(popoverAction('fixture', st, { stories: true })).toEqual({
+      type: 'start',
+      label: 'Start',
+      href: '/lesson?course=fixture&kind=story&level=u01-st1',
+    })
+    expect(popoverAction('fixture', { ...st, state: 'locked' }, { stories: true }).type).toBe(
+      'locked',
+    )
+  })
+
   it('labels levels', () => {
     expect(levelTitle({ kind: 'unit_review' })).toBe('Unit review')
     expect(levelTitle({ kind: 'lesson', title: '  ' })).toBe('Lesson')
