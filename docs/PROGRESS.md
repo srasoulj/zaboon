@@ -32,8 +32,8 @@
 | ws-pages | 2 | onboarding, profile, settings, admin, marketing, PWA | ✅ merged, incl. round 2; the dropped-merge notice is mounted in the shell ([spec](../ops/prompts/ws-pages.md)) | #35, #41, #44 |
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
-| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ merged; post-merge review in progress ([spec](../ops/prompts/ws-engagement.md)) | #48 |
-| ws-typing | 3 | Persian keyboard, typed Persian, letter tracing, renderers, UI kit, session engine | ✅ merged; post-merge review in progress ([spec](../ops/prompts/ws-typing.md)) | #49 |
+| ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ merged; 🔧 review fix round (tier after a late rollover, zero-coin quest grants, rollover robustness, freeze purchases, merge ledger, practice modes, declined attempts) ([spec](../ops/prompts/ws-engagement.md)) | #48 |
+| ws-typing | 3 | Persian keyboard, typed Persian, letter tracing, renderers, UI kit, session engine | ✅ merged; 🔧 review fix round (mistakes-drill length, caret insertion, keyboard focus, dots in tracing, dictation leniency) ([spec](../ops/prompts/ws-typing.md)) | #49 |
 | ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ⏳ starts after the post-merge review ([spec](../ops/prompts/ws-qa-2.md)) | |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**

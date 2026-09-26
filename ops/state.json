@@ -1,6 +1,6 @@
 {
   "$comment": "Durable orchestrator state (survives context compaction). Updated by the orchestrator at each check-in. Session and routine ids are kept outside the repo (public) in the orchestrator container.",
-  "updatedAt": "2026-09-25T23:55:00Z",
+  "updatedAt": "2026-09-26T06:00:00Z",
   "wave": 3,
   "integrationPr": 2,
   "aiBudget": {
@@ -113,13 +113,13 @@
       ]
     },
     "ws-engagement": {
-      "status": "merged by the owner (#48, 23:39 UTC); post-merge review",
+      "status": "fix round dispatched 05:53 UTC (post-merge review of #48: 2 majors, 5 minors, 4 nits; also declined attempts non-rated, merge ledger)",
       "prs": [
         48
       ]
     },
     "ws-typing": {
-      "status": "merged by the owner (#49, 23:40 UTC); post-merge review",
+      "status": "fix round dispatched 05:53 UTC (post-merge review of #49: 1 major, 3 minors, 2 nits; trace comments)",
       "prs": [
         49
       ]
@@ -255,7 +255,8 @@
     "The user merges worker PRs quickly; always run a post-merge verify on main and a reviewer subagent on merged code.",
     "Formatter not enforced in verify (109 files unformatted); format repo-wide in Wave 5 when no workers are active.",
     "Worker specs live in ops/prompts/<ws>.md (prepended with _preamble.md); session ids only in /root/.config/zaboon/orchestrator.json.",
-    "The owner merged #48 and #49 (merge commits) at 23:40 UTC before the orchestrator's review: post-merge verify on main, the registry seam test fixed by the orchestrator, post-merge reviews."
+    "The owner merged #48 and #49 (merge commits) at 23:40 UTC before the orchestrator's review: post-merge verify on main, the registry seam test fixed by the orchestrator, post-merge reviews.",
+    "Post-merge reviews of #48/#49 (00:05 UTC) found no blockers; majors went back as fix rounds at 05:53 UTC. Decisions: traces stay client-scored (grader-window trust model), declined attempts are non-rated on the server (no SRS, no mistake resolution), a bought freeze never repairs a broken streak (streak repair is Plus)."
   ],
   "sessionsSpawned": 14,
   "goldenPath": {
