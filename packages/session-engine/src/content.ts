@@ -29,6 +29,12 @@ export interface ContentView {
   knownSentences: readonly CompiledSentence[]
   /** Resolves a content-relative media ref (e.g. "audio/lx_ab.mp3") to a URL. */
   mediaUrl(ref: string): string
+  /**
+   * The course's orthography variant sets (orthography-variants.yaml), for answer keys the engine
+   * compiles itself (listen_type dictation). Optional: bundles don't ship them yet, and without
+   * them a variant spelling still passes through the grader's typo leniency when it is close.
+   */
+  orthographyVariants?: readonly (readonly string[])[]
 }
 
 export class ContentError extends Error {}
