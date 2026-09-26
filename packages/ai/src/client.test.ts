@@ -257,4 +257,13 @@ describe('speech() and transcribe()', () => {
     expect(parts[1]).toMatchObject({ type: 'input_audio', input_audio: { format: 'mp3' } })
     expect(transport.calls[0]!.model).toBe(MODELS.app_transcribe)
   })
+
+  it('an answer with no text is an empty transcript (the model heard nothing), not an error', async () => {
+    for (const content of ['', '  \n', null]) {
+      const { ai } = client(() => chatResponse(content))
+      expect((await ai.transcribe({ bytes: MP3, format: 'mp3' })).text).toBe('')
+    }
+    const { ai } = client(() => ({ ...chatResponse('x'), choices: [] }))
+    await expect(ai.transcribe({ bytes: MP3, format: 'mp3' })).rejects.toThrow(/no choices/)
+  })
 })

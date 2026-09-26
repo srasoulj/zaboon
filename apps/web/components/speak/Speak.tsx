@@ -23,7 +23,8 @@ type Props = ChallengeRendererProps<ChallengeOf<'speak'>>
 
 /**
  * The longest recording (AppConfig.speech.maxDurationMs; the client has no AppConfig, so the
- * default). Recording stops a little before it, so the upload is never over the server's cap.
+ * default). Recording stops a little before it, and the upload is cut at it (lib/speech/convert.ts),
+ * so the server, which measures the WAV itself, never refuses one for its length.
  */
 const MAX_DURATION_MS = DEFAULT_APP_CONFIG.speech.maxDurationMs
 const AUTO_STOP_MS = MAX_DURATION_MS - 500
@@ -39,6 +40,10 @@ type State =
   | { s: 'done'; transcript: string }
   | { s: 'empty' }
   | { s: 'error'; problem: Problem }
+
+const IDLE: State = { s: 'idle' }
+/** States waiting on the microphone or the service: shown as idle once the challenge locks. */
+const PENDING: ReadonlySet<State['s']> = new Set(['starting', 'recording', 'transcribing'])
 
 /** Problems only "Can't speak now" gets past (retrying won't help right now). */
 const BLOCKING: ReadonlySet<Problem> = new Set<Problem>([
@@ -106,8 +111,8 @@ function StopIcon() {
 }
 
 /**
- * Say the sentence (P2, flags.speak). The big microphone button records (MediaRecorder, format by
- * browser), a second press (or the time limit) stops it, and the recording goes to the player's
+ * Say the sentence (P2, flags.speak). The big microphone button records (MediaRecorder, converted to
+ * a 16 kHz mono WAV), a second press (or the time limit) stops it, and the recording goes to the player's
  * SpeechService (POST /api/speech/transcribe); the audio is not kept. The transcript is shown in
  * Persian and becomes the draft `{kind: 'audio', transcript, token}`; the server re-grades it only
  * with its signed token.
@@ -121,7 +126,10 @@ export function Speak(props: Props) {
   const speech = useSpeechService()
   const locked = phase !== 'answering'
   const reduce = useReducedMotion(display)
-  const [state, setState] = useState<State>(() => initialState(response))
+  const [current, setState] = useState<State>(() => initialState(response))
+  // Locked (CHECK via SKIP, feedback) while a recording starts, runs or is being transcribed: show
+  // idle. The effect below drops the recording, and late results are ignored (lockedRef).
+  const state = locked && PENDING.has(current.s) ? IDLE : current
   const [elapsed, setElapsed] = useState(0)
   const [level, setLevel] = useState(0)
   const recording = useRef<ActiveRecording | null>(null)
@@ -182,7 +190,7 @@ export function Speak(props: Props) {
         index: challenge.index,
         blob: result.blob,
         format: result.format,
-        durationMs: Math.min(result.durationMs, MAX_DURATION_MS),
+        durationMs: result.durationMs,
       })
       if (!alive.current || lockedRef.current) return
       if (res.transcript.trim() === '') {
@@ -208,7 +216,7 @@ export function Speak(props: Props) {
     if (response !== null) onResponse(null)
     setState({ s: 'starting' })
     try {
-      const active = await startRecording()
+      const active = await startRecording({ maxDurationMs: MAX_DURATION_MS })
       if (!alive.current || lockedRef.current) {
         active.cancel()
         return

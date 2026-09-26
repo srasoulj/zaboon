@@ -12,9 +12,9 @@
 | skeleton | Server framework (`withRoute`, auth, clock, content loader), dev auth, lesson API, e2e; app shell (auth + API clients, chrome, renderer registry, fixtures) | ✅ done (#9, #12, #18) |
 | 1 | farsi+grader, session engine+srs+game rules, database, UI kit, content CLI + AI client | ✅ done (#6, #7, #10, #11, #14; review fixes #15, #16) |
 | 2 | API, pages, lesson player, 13 challenge renderers, path + letters; AI content; QA → tag `mvp` | ✅ done: the MVP gate passed on `963915d` (#38); fix rounds #37, #39–#45 |
-| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51. 🔄 QA with the flags on (ws-qa-2) |
-| 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | 🔄 prep #56 (handover, registry and engine seams) and the contracts PR; the ws-typing session builds speak, then Stories |
-| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | ⏳ |
+| 3 | Leagues, quests, coins/shop, practice hub, Persian keyboard + typing, letter tracing | ✅ merged: prep #46, ws-engagement #48, ws-typing #49, registry test #50; review fix rounds #52 and #53, and the ownership handover #51; QA with the flags on (ws-qa-2, #57), its bugs fixed in #59 |
+| 4 | Stretch: **speak** and **Stories** behind flags. Plus/Stripe, reminders and push, energy, placement and offline are deferred (the weekly usage limit) | ✅ prep #56 and #58; **speak merged (#60)**, and its review fixes went through the orchestrator (#61, this PR). 🔄 ws-typing builds Stories |
+| 5 | Hardening: security + code review, audits, docs sync, deploy runbook | 🔄 runbook ([DEPLOY.md](DEPLOY.md), #58); security review fixes #61; client-IP trust #62 (owner's session); flaky QA test #63 |
 
 ## Workstreams
 
@@ -33,7 +33,7 @@
 | ws-content-gen | 2 | `content/fa-en` (orchestrator, uses the AI key) | ✅ text drafts for units 1–5; ✅ Unit 1 media: 79 audio clips (+30 slow, 30 envelopes), 8 illustrations, 5 portraits | #20, #24, #38 |
 | ws-qa-1 | 2 | `e2e/qa`, `apps/web/tests/qa` | ✅ merged; found #27–#29 (fixed) ([spec](../ops/prompts/ws-qa.md)) | #33 |
 | ws-engagement | 3 | leagues, quests, coins/shop, practice hub, lesson player, sessions/home on the server | ✅ done, including the review fixes; its paths went to ws-typing for Wave 4 ([spec](../ops/prompts/ws-engagement.md)) | #48, #53 |
-| ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak, then Stories, owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52 |
+| ws-typing | 3, 4 | Wave 3: Persian keyboard, typed Persian, letter tracing (✅ incl. review fixes). Wave 4: speak (✅ #60), then Stories (🔄), owning the engine, player, sessions and content CLI ([Wave 3 spec](../ops/prompts/ws-typing.md), [Wave 4 spec](../ops/prompts/ws-wave4.md)) | #49, #52, #60 |
 | ws-qa-2 | 3 | `e2e/qa`, `apps/web/tests/qa`: the Wave 3 flows with the flags on | ✅ merged: 39 DB and 6 e2e tests; its bugs #54 and #55 are fixed by the orchestrator ([spec](../ops/prompts/ws-qa-2.md)) | #57 |
 
 **MVP gate, passed on `963915d` (#38, 20:03 UTC).**
@@ -78,10 +78,28 @@ Post-merge follow-ups applied by the orchestrator: the lesson outbox now replays
 idle-in-transaction and statement timeouts (a backstop for the #23 pool deadlock), the API client
 takes query strings, and the contracts gained the `guidebook` route plus letter/word audio URLs.
 
+**Speak (#60) post-merge review** (no blockers; three majors about spend on the paid key, fixed by
+the orchestrator in the Speak hardening PR):
+
+- **The format.** A live probe of `openai/gpt-audio-mini` showed it takes only `wav` and `mp3`
+  (`webm` and `m4a` get a 400), so no real recording could have been transcribed. The browser now
+  converts every recording to a 16 kHz mono 16-bit WAV (`lib/speech/convert.ts`).
+- **The duration** was only what the client declared. The server now measures the WAV itself,
+  and sends the provider a canonical copy of exactly the measured samples.
+- **The quota** was given back after answers the provider had billed, including empty
+  transcripts, so a caller sending silence could transcribe for free. Now only a provider refusal
+  (an HTTP error status) gives it back, and an empty transcript is a 200 with `""`.
+- **Signing** is checked before any quota or provider spend.
+- Smaller fixes:
+  - the transcription call gets 20 s and one retry;
+  - SKIP during a transcription no longer leaves "Checking…" on screen;
+  - the local DB-test template is rebuilt when any migration changes, not only the last one;
+  - the comments and test titles on transcripts and the trust window now say what is true.
+
 ## AI spend
 
-This project's key has used **$7.57** of the internal **$9.50** cap (checked 19:50 UTC; the key's
-own hard limit is $10):
+This project's key has used **$7.57** of the internal **$9.50** cap (checked 08:55 UTC on Sep 26;
+the key's own hard limit is $10). The only paid call since then was a format probe (under $0.0001):
 
 - text pilot: $0.002;
 - text drafts, units 1–5 (Astra): $2.76;
@@ -90,7 +108,7 @@ own hard limit is $10):
   5 cast portraits (GPT Image), plus the pilots.
 
 About **$1.93** of the cap is left. That isn't enough for Units 2–5 media, so this is on the
-human backlog. The account balance is about $1.83; other usage on the account isn't this
+human backlog. The account balance is about $1.15; other usage on the account isn't this
 project's.
 
 **Unit 1 media** (all `status: draft`):
@@ -137,6 +155,10 @@ on very short clips. The committed clips were normalized separately, so re-runni
   - **Anti-cheat:** flag a session committed sooner than `challenges × minMsPerChallenge` after it started, by the server clock. Cap league XP per week, and quest coins for guests or across merges.
   - **CI and hooks:** pin actions to commit SHAs; pin `detect-secrets` in the SessionStart hook.
   - **Headers:** when CSP lands, include `frame-ancestors 'none'`, `nosniff`, HSTS and `Referrer-Policy`. Keep Supabase "Confirm email" on.
+- **Speak:**
+  - add a global daily transcription cap in `app_config`. The quota is per learner, and guests cost nothing but Turnstile, which isn't wired yet;
+  - check the WAV conversion on real Safari (iOS and macOS), where MediaRecorder records mp4/AAC. Local e2e runs Chromium only; a browser that can't decode shows "That recording didn't work", and "Can't speak now" still goes on;
+  - benchmark `gpt-audio-mini` against a Gemini Flash audio model on real learner recordings (LEARNING-ENGINE).
 - **Deferred Wave 4 features:** Plus/Stripe and entitlements, reminders (email/Web Push), energy, the placement test, offline lessons. A file-level design exists: contracts, schemas, seams, ownership, specs.
 
 ## Human-review backlog (cannot be automated honestly)

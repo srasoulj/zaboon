@@ -146,6 +146,14 @@ describe('FetchTransport retry policy', () => {
         new Response(JSON.stringify({ error: { code: 502, message: 'provider error' } })),
     })
     await expect(t.send(req)).rejects.toThrow(/provider error/)
+    // Marked as coming inside a 2xx (it may have been billed), unlike an HTTP error status.
+    await expect(t.send(req)).rejects.toMatchObject({ status: 502, inOkResponse: true })
+    const refused = new FetchTransport({
+      apiKey: KEY,
+      maxRetries: 0,
+      fetch: async () => new Response('{"error":{"message":"bad audio"}}', { status: 400 }),
+    })
+    await expect(refused.send(req)).rejects.toMatchObject({ status: 400, inOkResponse: false })
   })
 
   it('never leaks the key into error messages', async () => {

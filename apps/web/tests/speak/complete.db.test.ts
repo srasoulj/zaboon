@@ -4,6 +4,11 @@
  * `wrong` whatever the client claims, even inside the grader trust window. A valid token grades
  * the transcript; the token is never stored. "Can't speak now" (`declined`) grades correct but is
  * non-rated: no SRS review and no mistake resolution, like a declined trace.
+ *
+ * What the token proves is that the server produced the transcript, not the verdict: inside the
+ * grader trust window (LEARNING-ENGINE §7.3) the client's verdict for a validly tokened transcript
+ * stands, as for every other challenge type. The tests below that grade a real transcript
+ * therefore run with an untrusted client (`trusted: false`).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Challenge, ChallengeResponse } from '@zaboon/contracts'
@@ -171,7 +176,7 @@ describe('speak answers on /complete', () => {
     }
   })
 
-  it('a real token for a wrong utterance grades the transcript (wrong), whatever the client says', async () => {
+  it('a real token for a wrong utterance grades the transcript (wrong) when the client is not trusted', async () => {
     const s = await startV1(h, alice)
     const tokens = await realTokens(alice, s)
     const [target] = speakIndexes(s)

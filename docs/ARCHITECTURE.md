@@ -302,7 +302,7 @@ PostgREST ([ADR 0009](adr/0009-api-first-data-access.md)).
 | `POST /api/lives/refill` · `POST /api/shop/purchase` | P2 | Spend coins |
 | `POST /api/billing/checkout` · `POST /api/billing/portal` · `POST /api/webhooks/stripe` | P2 | Zaboon Plus → `entitlements` (signature check + `webhook_events` de-duplication) |
 | `POST /api/push/subscribe` | P2 | Store a Web Push subscription |
-| `POST /api/speech/transcribe` | P2 | Transcription for `speak` challenges (OpenRouter app key) |
+| `POST /api/speech/transcribe` | P2 | Transcription for `speak` challenges (OpenRouter app key). Takes a 16 kHz mono 16-bit WAV whose duration the server measures; a daily quota per learner is given back only when the provider refuses the call |
 | `POST /api/ai/explain` · `POST /api/ai/roleplay` | P3 | OpenRouter app key; per-user quotas |
 | `/api/dev/auth/*` | **Local only** | Sign-in for `AUTH_MODE=local` (§12). Its `*.dev.ts` route files are compiled only when a build-time flag enables them; a production build returns 404 |
 

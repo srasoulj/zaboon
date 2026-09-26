@@ -1,14 +1,17 @@
 /**
  * POST /api/speech/transcribe (flags.speak) on the fixture's u01-v1: the flag gate, session and
- * challenge validation (incl. IDOR), AppConfig.speech limits, the daily quota, the provider path
- * through @zaboon/ai (MockTransport) and that the audio is never stored.
+ * challenge validation (incl. IDOR), AppConfig.speech limits (real audio is a mono 16-bit PCM WAV
+ * whose duration the server measures), the daily quota and when it is given back, the signing
+ * check before anything is spent, the provider path through @zaboon/ai (MockTransport) and that
+ * the audio is never stored.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { AiHttpError, chatResponse, MODELS, MockTransport } from '@zaboon/ai'
+import { AiHttpError, AiTimeoutError, chatResponse, MODELS, MockTransport } from '@zaboon/ai'
 import { TEST_TRANSCRIPT_PREFIX } from '@zaboon/contracts'
 import { resetServerEnv } from '../../lib/server/env'
 import { setTranscriptionTransportForTests } from '../../lib/server/speech/transcriber'
 import { verifySpeechToken } from '../../lib/server/speech/token'
+import { encodeWav, pcm16Wav } from '../../lib/speech/wav'
 import { finish, start } from '../api/flows'
 import { createHarness, type Harness, type TestUser } from '../api/harness'
 import {
@@ -280,7 +283,10 @@ describe('POST /api/speech/transcribe', () => {
 
   describe('the provider (OpenRouter through @zaboon/ai)', () => {
     const KEY = 'mock-openrouter-app-key-for-tests' // pragma: allowlist secret
-    const realAudio = Buffer.from('RIFF\u0000\u0000WAVEfmt fake-recording-bytes').toString('base64')
+    /** `ms` of a quiet tone as the browser uploads it: a 16 kHz mono 16-bit PCM WAV, base64. */
+    const wavAudio = (ms: number) =>
+      Buffer.from(encodeWav(new Float32Array(16 * ms).fill(0.1))).toString('base64')
+    const realAudio = wavAudio(1500)
 
     const withKey = (key: string | undefined) => {
       if (key === undefined) delete process.env.OPENROUTER_API_KEY_APP
@@ -303,7 +309,7 @@ describe('POST /api/speech/transcribe', () => {
         sessionId: s.sessionId,
         index,
         audio: realAudio,
-        format: 'm4a',
+        format: 'wav',
       })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.transcript).toBe('سلام، خوبی؟')
@@ -317,16 +323,17 @@ describe('POST /api/speech/transcribe', () => {
         input_audio?: unknown
       }[]
       expect(parts.find((p) => p.type === 'text')!.text).toContain('Persian (Farsi)')
+      // The canonical copy of a canonical WAV is the same bytes.
       expect(parts.find((p) => p.type === 'input_audio')!.input_audio).toEqual({
         data: realAudio,
-        format: 'm4a',
+        format: 'wav',
       })
       // A second identical upload calls the provider again (no response cache).
       await transcribeCall(h, alice, {
         sessionId: s.sessionId,
         index,
         audio: realAudio,
-        format: 'm4a',
+        format: 'wav',
       })
       expect(transport.calls).toHaveLength(2)
       // Local test audio never reaches the provider.
@@ -334,27 +341,24 @@ describe('POST /api/speech/transcribe', () => {
       expect(transport.calls).toHaveLength(2)
     })
 
-    it('a provider failure is 503 unavailable, refunds the quota and logs no audio', async () => {
+    it('a provider refusal (an HTTP error status) is 503 and gives the quota back; no audio is logged', async () => {
       withKey(KEY)
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
       const s = await startV1(h, alice)
       const index = speakIndexes(s)[0]!
       const before = await usageOf(h, alice.id)
-      for (const fail of [
-        () => {
-          throw new AiHttpError(502, `upstream echoed ${realAudio}`)
-        },
-        () => chatResponse(''), // an empty transcript
-        () => {
-          throw new Error(`network down ${realAudio}`)
-        },
-      ]) {
-        setTranscriptionTransportForTests(new MockTransport(fail))
+      for (const status of [400, 429, 502]) {
+        setTranscriptionTransportForTests(
+          new MockTransport(() => {
+            throw new AiHttpError(status, `upstream echoed ${realAudio}`)
+          }),
+        )
         const res = await transcribeCall(h, alice, {
           sessionId: s.sessionId,
           index,
           audio: realAudio,
+          format: 'wav',
         })
         expect(res.status, JSON.stringify(res.body)).toBe(503)
         expect(res.body.error.code).toBe('unavailable')
@@ -364,6 +368,152 @@ describe('POST /api/speech/transcribe', () => {
       const logged = JSON.stringify([...warn.mock.calls, ...error.mock.calls])
       expect(logged).not.toContain(realAudio)
       expect(warn).toHaveBeenCalled()
+    })
+
+    it('an answer keeps the count: an empty transcript is 200 "", and a timeout, lost connection or error inside a 200 is 503 without a refund', async () => {
+      withKey(KEY)
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const s = await startV1(h, alice)
+      const index = speakIndexes(s)[0]!
+      const before = await usageOf(h, alice.id)
+      const call = () =>
+        transcribeCall(h, alice, { sessionId: s.sessionId, index, audio: realAudio, format: 'wav' })
+
+      // Silence: the model heard nothing. The learner sees "didn't catch that" and may try again;
+      // the answer was billed, so it counts (a script can't transcribe for free with silence).
+      setTranscriptionTransportForTests(new MockTransport(() => chatResponse('')))
+      const empty = await call()
+      expect(empty.status, JSON.stringify(empty.body)).toBe(200)
+      expect(empty.body.transcript).toBe('')
+      const bound = { userId: alice.id, sessionId: s.sessionId, index, transcript: '' }
+      expect(verifySpeechToken(empty.body.token, bound, new Date())).toBe(true)
+      expect(await usageOf(h, alice.id)).toBe(before + 1)
+
+      for (const fail of [
+        () => {
+          throw new AiTimeoutError('OpenRouter request timed out after 20000 ms')
+        },
+        () => {
+          throw new Error(`network down ${realAudio}`)
+        },
+        () => {
+          throw new AiHttpError(502, 'provider failed mid-answer', true)
+        },
+      ]) {
+        setTranscriptionTransportForTests(new MockTransport(fail))
+        const res = await call()
+        expect(res.status, JSON.stringify(res.body)).toBe(503)
+        expect(res.body.error.code).toBe('unavailable')
+        expect(JSON.stringify(res.body)).not.toContain(realAudio)
+      }
+      expect(await usageOf(h, alice.id)).toBe(before + 4)
+      expect(JSON.stringify(warn.mock.calls)).not.toContain(realAudio)
+    })
+
+    it('real audio must be a mono 16-bit PCM WAV, measured by the server (400, nothing spent)', async () => {
+      withKey(KEY)
+      const transport = new MockTransport(() => chatResponse('سلام'))
+      setTranscriptionTransportForTests(transport)
+      await setSpeechConfig(h, { maxDurationMs: 2000 })
+      try {
+        const s = await startV1(h, alice)
+        const index = speakIndexes(s)[0]!
+        const before = await usageOf(h, alice.id)
+        const stereo = Buffer.from(encodeWav(new Float32Array(3200)))
+        stereo.writeUInt16LE(2, 22) // channels
+        stereo.writeUInt32LE(64_000, 28) // byte rate
+        stereo.writeUInt16LE(4, 32) // block align
+        const trailing = Buffer.concat([
+          Buffer.from(encodeWav(new Float32Array(1600))),
+          Buffer.alloc(40_000, 1), // audio the header doesn't count
+        ])
+        const b64 = (b: Uint8Array) => Buffer.from(b).toString('base64')
+        const cases: [string, Parameters<typeof transcribeCall>[2]][] = [
+          ['webm', { sessionId: s.sessionId, index, audio: wavAudio(500), format: 'webm' }],
+          ['m4a', { sessionId: s.sessionId, index, audio: wavAudio(500), format: 'm4a' }],
+          [
+            'not a wav',
+            {
+              sessionId: s.sessionId,
+              index,
+              audio: b64(Buffer.from('RIFF....WAVEfmt nope')),
+              format: 'wav',
+            },
+          ],
+          ['stereo', { sessionId: s.sessionId, index, audio: b64(stereo), format: 'wav' }],
+          [
+            'trailing bytes',
+            { sessionId: s.sessionId, index, audio: b64(trailing), format: 'wav' },
+          ],
+          [
+            'no samples',
+            {
+              sessionId: s.sessionId,
+              index,
+              audio: b64(pcm16Wav(new Uint8Array(0), 16_000)),
+              format: 'wav',
+            },
+          ],
+          // 2.5 s of audio declared as 1 s: the server measures it.
+          [
+            'longer than declared',
+            {
+              sessionId: s.sessionId,
+              index,
+              audio: wavAudio(2500),
+              format: 'wav',
+              durationMs: 1000,
+            },
+          ],
+        ]
+        for (const [name, input] of cases) {
+          const res = await transcribeCall(h, alice, input)
+          expect(res.status, name).toBe(400)
+          expect(res.body.error.code, name).toBe('validation')
+        }
+        expect(transport.calls).toHaveLength(0)
+        expect(await usageOf(h, alice.id)).toBe(before)
+        // Exactly the limit passes, whatever the client declares (it can't shorten the audio).
+        const ok = await transcribeCall(h, alice, {
+          sessionId: s.sessionId,
+          index,
+          audio: wavAudio(2000),
+          format: 'wav',
+          durationMs: 0,
+        })
+        expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+        expect(transport.calls).toHaveLength(1)
+      } finally {
+        await setSpeechConfig(h)
+      }
+    })
+
+    it('without a usable signing secret: 503 before any quota is taken or the provider is called', async () => {
+      withKey(KEY)
+      const transport = new MockTransport(() => chatResponse('سلام'))
+      setTranscriptionTransportForTests(transport)
+      const saved = process.env.APP_SIGNING_SECRET
+      process.env.APP_SIGNING_SECRET = 'too-short' // pragma: allowlist secret
+      resetServerEnv()
+      try {
+        const s = await startV1(h, alice)
+        const index = speakIndexes(s)[0]!
+        const before = await usageOf(h, alice.id)
+        for (const input of [
+          { sessionId: s.sessionId, index, audio: realAudio, format: 'wav' },
+          { sessionId: s.sessionId, index, text: 'سلام' },
+        ]) {
+          const res = await transcribeCall(h, alice, input)
+          expect(res.status, JSON.stringify(res.body)).toBe(503)
+          expect(res.body.error.code).toBe('unavailable')
+        }
+        expect(transport.calls).toHaveLength(0)
+        expect(await usageOf(h, alice.id)).toBe(before)
+      } finally {
+        if (saved === undefined) delete process.env.APP_SIGNING_SECRET
+        else process.env.APP_SIGNING_SECRET = saved
+        resetServerEnv()
+      }
     })
 
     it('without OPENROUTER_API_KEY_APP real audio is 503 unavailable and costs no quota; test audio still works', async () => {
@@ -377,6 +527,7 @@ describe('POST /api/speech/transcribe', () => {
         sessionId: s.sessionId,
         index,
         audio: realAudio,
+        format: 'wav',
       })
       expect(res.status).toBe(503)
       expect(res.body.error.code).toBe('unavailable')
