@@ -41,6 +41,10 @@ type State =
   | { s: 'empty' }
   | { s: 'error'; problem: Problem }
 
+const IDLE: State = { s: 'idle' }
+/** States waiting on the microphone or the service: shown as idle once the challenge locks. */
+const PENDING: ReadonlySet<State['s']> = new Set(['starting', 'recording', 'transcribing'])
+
 /** Problems only "Can't speak now" gets past (retrying won't help right now). */
 const BLOCKING: ReadonlySet<Problem> = new Set<Problem>([
   'unsupported',
@@ -122,7 +126,10 @@ export function Speak(props: Props) {
   const speech = useSpeechService()
   const locked = phase !== 'answering'
   const reduce = useReducedMotion(display)
-  const [state, setState] = useState<State>(() => initialState(response))
+  const [current, setState] = useState<State>(() => initialState(response))
+  // Locked (CHECK via SKIP, feedback) while a recording starts, runs or is being transcribed: show
+  // idle. The effect below drops the recording, and late results are ignored (lockedRef).
+  const state = locked && PENDING.has(current.s) ? IDLE : current
   const [elapsed, setElapsed] = useState(0)
   const [level, setLevel] = useState(0)
   const recording = useRef<ActiveRecording | null>(null)
@@ -143,18 +150,13 @@ export function Speak(props: Props) {
     }
   }, [])
 
-  // Locked (CHECK via SKIP, feedback): drop a recording in progress, and stop waiting for one that
-  // is starting or being transcribed (their results are ignored once locked: lockedRef).
+  // Locked (CHECK via SKIP, feedback): drop a recording in progress.
   useEffect(() => {
     lockedRef.current = locked
-    if (!locked) return
-    if (recording.current) {
-      recording.current.cancel()
-      recording.current = null
-    }
-    setState((s) =>
-      s.s === 'starting' || s.s === 'recording' || s.s === 'transcribing' ? { s: 'idle' } : s,
-    )
+    if (!locked || !recording.current) return
+    recording.current.cancel()
+    recording.current = null
+    setState({ s: 'idle' })
   }, [locked])
 
   useEffect(() => {
