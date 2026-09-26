@@ -15,6 +15,7 @@
  *   cloze_type) and ladder step 5 (typing the new word's translation, from the second lesson of a
  *   level on, like English typing);
  * - `letterTrace`: the `letterTrace` mix category (letter_trace) in letters sessions.
+ * Wave 4 adds `speak`: the `speaking` mix category (speak challenges), gated the same way.
  * While a feature is off its category is dropped from the weights, its pool is never built and no
  * extra randomness is drawn, so the session is exactly the MVP's
  * (packages/session-engine/oracles/mvp-sessions.golden.json). A pinned P2 ref whose feature is off
@@ -60,12 +61,14 @@ export interface LearnerState {
   exposures: Readonly<Record<string, number>>
 }
 
-/** Wave 3 features a session may use; absent or false = off (the MVP session). */
+/** P2 features a session may use; absent or false = off (the MVP session). */
 export interface SessionFeatures {
   /** flags.persianKeyboard: typed Persian (translate_type en→fa, listen_type, cloze_type). */
   persianTyping?: boolean
   /** flags.letterTrace: letter_trace. */
   letterTrace?: boolean
+  /** flags.speak (Wave 4): the `speaking` mix category (speak challenges). */
+  speak?: boolean
 }
 
 export interface GenerateInput {
@@ -250,10 +253,11 @@ function mixWeights(cfg: AppConfig, profile: string): Record<string, number> {
   return cfg.mixProfiles[profile] ?? cfg.mixProfiles.standard ?? { productionBank: 1 }
 }
 
-/** Mix categories that exist only behind a Wave 3 feature (AppConfig.mixProfiles). */
+/** Mix categories that exist only behind a P2 feature (AppConfig.mixProfiles). */
 const GATED_CATEGORIES: Readonly<Record<string, keyof SessionFeatures>> = {
   typing: 'persianTyping',
   letterTrace: 'letterTrace',
+  speaking: 'speak',
 }
 
 /**
