@@ -175,6 +175,9 @@ export const routes = {
     bucket: 'complete',
     request: c.CompleteSessionRequest,
     response: c.SessionResult,
+    // Real bodies are a few KB; the contract's own bounds (up to 1000 answers) allow more than the
+    // 256 KiB default, so a learner with many retries is never refused.
+    maxBodyBytes: 1_048_576,
   }),
 
   mergeAccount: route({

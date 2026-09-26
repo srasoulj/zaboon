@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { DEFAULT_APP_CONFIG, type AppConfig } from '@zaboon/contracts'
 import { ApiError } from './errors'
-import { bucketLimit, readBody } from './with-route'
+import { bucketLimit, clientIp, readBody } from './with-route'
 
 const Body = z.object({ n: z.number().int() })
 const LIMIT = 64
@@ -110,5 +110,22 @@ describe('bucketLimit', () => {
     expect(bucketLimit(old, 'export')).toEqual(DEFAULT_APP_CONFIG.rateLimits.export)
     expect(bucketLimit(old, 'no-such-bucket')).toEqual({ perMinute: 50 })
     expect(bucketLimit(config({}), 'no-such-bucket')).toEqual(DEFAULT_APP_CONFIG.rateLimits.default)
+  })
+})
+
+describe('clientIp', () => {
+  const req = (headers: Record<string, string>) => new Request('http://localhost/', { headers })
+
+  it('takes the first x-forwarded-for entry, else x-real-ip, else local', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1' }))).toBe('203.0.113.7')
+    expect(clientIp(req({ 'x-forwarded-for': '2001:db8::1' }))).toBe('2001:db8::1')
+    expect(clientIp(req({ 'x-real-ip': '198.51.100.2' }))).toBe('198.51.100.2')
+    expect(clientIp(req({}))).toBe('local')
+  })
+
+  it('maps an implausible address to one shared client, so the rate-limit key stays short', () => {
+    expect(clientIp(req({ 'x-forwarded-for': '1'.repeat(300) }))).toBe('unknown')
+    expect(clientIp(req({ 'x-forwarded-for': '1.2.3.4 OR 1=1' }))).toBe('unknown')
+    expect(clientIp(req({ 'x-real-ip': '<script>' }))).toBe('unknown')
   })
 })

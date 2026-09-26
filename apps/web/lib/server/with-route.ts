@@ -61,9 +61,20 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
-function clientIp(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  return forwarded?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'local'
+/** An IPv4 or IPv6 address (with an optional zone or port suffix), nothing longer. */
+const IP_RE = /^[0-9A-Fa-f:.%[\]a-z]{1,64}$/
+
+/**
+ * The client's IP for signed-out rate-limit keys: the first `x-forwarded-for` entry (Vercel sets it
+ * to the real client address), else `x-real-ip`. Anything that isn't a plausible address (too long,
+ * other characters) counts as one shared `unknown` client, so a crafted header can neither break
+ * the rate-limit key nor mint a fresh bucket per request.
+ */
+export function clientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const ip = forwarded || req.headers.get('x-real-ip')?.trim()
+  if (!ip) return 'local'
+  return IP_RE.test(ip) ? ip : 'unknown'
 }
 
 async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null> {

@@ -131,6 +131,12 @@ on very short clips. The committed clips were normalized separately, so re-runni
   - `.env.example` drift: `SUPABASE_URL`, `NEXT_PUBLIC_AUTH_MODE`, and names that nothing reads yet;
   - a CD step for `supabase db push`;
   - `content_versions.min_app_version` is never read.
+- **From the Wave 5 security review (no critical or high findings). Two mediums are fixed:** bounded inputs and body caps; the course-id cache. Still open (low):
+  - **Auth:** `flowType: 'pkce'` in `auth-client.ts`. The implicit flow accepts a session from the URL fragment, which enables login CSRF into a pending merge. Also complete a pending merge only when the signed-in email matches the one typed.
+  - **Merge:** re-check the guest with the Auth Admin API (`is_anonymous`, no identities) before merging and before deleting it, because a stale guest token can still say `is_anonymous: true`.
+  - **Anti-cheat:** flag a session committed sooner than `challenges × minMsPerChallenge` after it started, by the server clock. Cap league XP per week, and quest coins for guests or across merges.
+  - **CI and hooks:** pin actions to commit SHAs; pin `detect-secrets` in the SessionStart hook.
+  - **Headers:** when CSP lands, include `frame-ancestors 'none'`, `nosniff`, HSTS and `Referrer-Policy`. Keep Supabase "Confirm email" on.
 - **Deferred Wave 4 features:** Plus/Stripe and entitlements, reminders (email/Web Push), energy, the placement test, offline lessons. A file-level design exists: contracts, schemas, seams, ownership, specs.
 
 ## Human-review backlog (cannot be automated honestly)
