@@ -23,6 +23,7 @@ export const LetterId = z.string().regex(/^l_[a-z0-9_]+$/, 'letter id like l_be'
 export const ChatId = z.string().regex(/^c_[a-z0-9_]+$/, 'chat id like c_u01_001')
 export const CharacterId = z.string().regex(/^[a-z][a-z0-9-]*$/, 'character id like maman-bozorg')
 export const SectionId = z.string().regex(/^s\d{1,2}$/, 'section id like s1')
+export const StoryId = z.string().regex(/^st_[a-z0-9_]+$/, 'story id like st_u01_tea')
 export const CourseId = z.string().regex(/^[a-z][a-z0-9-]*$/)
 
 /** Any content item reference used in sessions, reports and stats: "<kind>:<id>". */
@@ -228,6 +229,53 @@ export const Character = z.object({
 })
 export type Character = z.infer<typeof Character>
 
+/**
+ * One line of a story (P2). `speaker` is one of the story's `characters`, or null for the
+ * narrator; `tokens` spell `fa` word by word, like a sentence's; `en` is the line's translation.
+ */
+export const StoryLine = z.object({
+  speaker: CharacterId.nullable(),
+  fa: z.string().min(1),
+  faVocalized: z.string().min(1).optional(),
+  translit: z.string().min(1),
+  en: z.string().min(1),
+  tokens: z.array(Token).min(1),
+  audio: MediaRef.optional(),
+})
+export type StoryLine = z.infer<typeof StoryLine>
+
+/**
+ * A comprehension check, asked once the first `after` lines have been read (1-based: `after: 3`
+ * follows line 3). `choices` are in the prompt's language; `answer` indexes them.
+ */
+export const StoryQuestion = z.object({
+  after: z.number().int().min(1),
+  prompt: z.object({ lang: z.enum(['fa', 'en']), text: z.string().min(1) }),
+  choices: z.array(z.string().min(1)).min(2).max(4),
+  answer: z.number().int().nonnegative(),
+})
+export type StoryQuestion = z.infer<typeof StoryQuestion>
+
+/**
+ * An illustrated story (P2, content/<course>/stories/*.yaml), played by a `kind: story` level of
+ * its unit. Its questions split the lines into beats: each beat ends with a question, and the
+ * lines after the last question are the closing beat. content-cli's validator checks what the
+ * schema cannot: speakers are in `characters`, tokens spell `fa`, questions are in range and in
+ * order, and a level has kind story exactly when it names a story of its own unit.
+ */
+export const Story = z.object({
+  id: StoryId,
+  unit: UnitId,
+  title: z.string().min(1),
+  titleFa: z.string().min(1).optional(),
+  image: MediaRef.optional(),
+  characters: z.array(CharacterId).min(1),
+  lines: z.array(StoryLine).min(2).max(40),
+  questions: z.array(StoryQuestion).min(1).max(8),
+  ...authored,
+})
+export type Story = z.infer<typeof Story>
+
 /** A hand-pinned challenge in a lesson spec (fixtures pin every type; real lessons pin few). */
 export const PinnedChallenge = z.object({
   type: ChallengeType,
@@ -265,6 +313,11 @@ export const Level = z.object({
   title: z.string().optional(),
   lessons: z.number().int().min(1).max(10).default(1),
   spec: LessonSpec.optional(),
+  /**
+   * P2: the story a `kind: story` level plays. No refine here (zod 4 cannot extend a refined
+   * object); content-cli's validator requires it exactly on story levels.
+   */
+  story: StoryId.optional(),
 })
 export type Level = z.infer<typeof Level>
 
@@ -394,6 +447,13 @@ export const UnitBundle = z.object({
   sentences: z.array(CompiledSentence),
   chats: z.array(Chat).default([]),
   guidebook: z.string().optional(),
+  /**
+   * P2: the unit's stories (media refs hashed like sentences'). A bundle built before stories
+   * existed parses to `[]`. The trailing `.optional()` keeps the key optional in the TypeScript
+   * type only, so bundles assembled in code (content-cli build, the engine's test loader) compile
+   * until they fill it; parsing always yields an array. Drop it once both set `stories`.
+   */
+  stories: z.array(Story).default([]).optional(),
 })
 export type UnitBundle = z.infer<typeof UnitBundle>
 
