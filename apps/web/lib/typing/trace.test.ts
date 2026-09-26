@@ -1,6 +1,7 @@
 import { TRACE_MIN_COVERAGE, TRACE_MIN_PRECISION } from '@zaboon/session-engine'
 import { describe, expect, it } from 'vitest'
 import {
+  components,
   distanceTransform,
   resample,
   scoreTrace,
@@ -95,12 +96,45 @@ describe('scoreTrace', () => {
     expect(tracePasses(s)).toBe(true)
   })
 
-  it('several strokes count together (bowl, then the dot)', () => {
+  it('the dots count: a bowl without its dot fails, with it passes (several strokes)', () => {
     const bowl = arc(100, 100, 60, 0, Math.PI)
-    expect(tracePasses(scoreTrace(be, [bowl]))).toBe(true)
+    const dotless = scoreTrace(be, [bowl])
+    expect(dotless.precision).toBeGreaterThan(0.95)
+    expect(dotless.coverage).toBeLessThan(TRACE_MIN_COVERAGE)
+    expect(tracePasses(dotless)).toBe(false)
     const withDot = scoreTrace(be, [bowl, [{ x: 100, y: 185 }]])
-    expect(withDot.coverage).toBeGreaterThanOrEqual(scoreTrace(be, [bowl]).coverage)
     expect(tracePasses(withDot)).toBe(true)
+  })
+
+  it('پ needs all three dots; a faithful trace with them passes', () => {
+    const dots = [
+      { x: 88, y: 180 },
+      { x: 112, y: 180 },
+      { x: 100, y: 194 },
+    ]
+    const pe = mask((x, y) => {
+      const bowl = y >= 100 && Math.abs(Math.hypot(x - 100, y - 100) - 60) <= 7
+      return bowl || dots.some((d) => Math.hypot(x - d.x, y - d.y) <= 5)
+    })
+    const bowl = arc(100, 100, 60, 0, Math.PI, 4)
+    expect(tracePasses(scoreTrace(pe, [bowl]))).toBe(false)
+    expect(tracePasses(scoreTrace(pe, [bowl, [dots[0]!], [dots[1]!]]))).toBe(false)
+    expect(tracePasses(scoreTrace(pe, [bowl, ...dots.map((d) => [d])]))).toBe(true)
+    // One stroke across the dot row reaches them all.
+    const across = [
+      { x: 86, y: 180 },
+      { x: 114, y: 180 },
+      { x: 100, y: 194 },
+    ]
+    expect(tracePasses(scoreTrace(pe, [bowl, across]))).toBe(true)
+  })
+
+  it('components: a glyph splits into its body and dots', () => {
+    const sizes = components(be)
+      .map((c) => c.length)
+      .sort((a, b) => b - a)
+    expect(sizes).toHaveLength(2)
+    expect(sizes[1]).toBeGreaterThan(100)
   })
 
   it('half a letter fails on coverage', () => {

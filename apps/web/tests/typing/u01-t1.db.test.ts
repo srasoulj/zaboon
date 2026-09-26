@@ -1,8 +1,8 @@
 /**
  * The fixture's Wave 3 level u01-t1 (typed Persian + letter tracing), end to end on the server.
  * With the flags persianKeyboard and letterTrace on, its session builds the four pinned P2
- * challenges and /complete re-grades them (typed Persian through the grader, traces against the
- * engine's thresholds). With the flags off it plays the MVP twins in place. Stored refs hold what
+ * challenges and /complete re-grades them: typed Persian through the grader; for a trace the server
+ * only checks the client-reported coverage and precision against the engine's thresholds. With the flags off it plays the MVP twins in place. Stored refs hold what
  * was built, so /complete never depends on the flags.
  */
 import type { Challenge, ChallengeResponse } from '@zaboon/contracts'
@@ -104,7 +104,7 @@ describe('fixture level u01-t1', () => {
   })
   const good = { coverage: TRACE_MIN_COVERAGE + 0.1, precision: TRACE_MIN_PRECISION + 0.1 }
 
-  it('with the flags on: builds the four P2 challenges and completes, re-graded on the server', async () => {
+  it('with the flags on: builds the four P2 challenges; /complete re-grades typed answers and checks trace scores', async () => {
     const alice = await reachT1()
     const s = await startT1(alice, { persianKeyboard: true, letterTrace: true })
     expect(s.challenges.map((c) => c.type)).toEqual([

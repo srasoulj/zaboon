@@ -6,6 +6,9 @@
  *   letter_sound  option 0 = letter_to_sound, 1 = sound_to_letter
  *   read_word     option 0 = ask translit,     1 = ask meaning
  *   cloze_choice  option 0 = engine picks the blank, n = blank the token at index n - 1
+ *   cloze_type    the same as cloze_choice
+ *   letter_trace  option 0 = isolated, 1 = initial, 2 = medial, 3 = final (TRACE_FORMS); a
+ *                 non-connector builds only 0 and 3
  */
 export interface Variant {
   isNew: boolean

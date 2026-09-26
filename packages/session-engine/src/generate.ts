@@ -22,7 +22,8 @@
  * never depends on the flags.
  *
  * Practice hub (`practiceMode`, practice sessions only): `mixed` (or absent) is the MVP practice
- * session; `mistakes` drills open mistakes only; `listening` and `typing` keep to those challenge
+ * session; `mistakes` starts with drills of the open mistakes, topped up to the session length by
+ * the mixed plan; `listening` and `typing` keep to those challenge
  * kinds. A mode with nothing to offer falls back to `mixed`, byte-identical.
  */
 import type {
@@ -590,9 +591,13 @@ function planCourse(
       (ix.view.unit?.unit.levels ?? []).flatMap((l) => (l.spec ? [l.spec] : [])),
     )
   } else pool = focusPool(ix, level?.spec ? [level.spec] : [])
+  // Practice hub: `listening` and `typing` replace the session; a `mistakes` drill comes first and
+  // the mixed practice plan tops it up to the session length (a one-mistake drill is never a
+  // one-challenge session with a full session's rewards).
+  let drill: ChallengeRef[] = []
   if (kind === 'practice') {
-    const drill = planPracticeMode(p, pool, budget)
-    if (drill.length > 0) return { front: [], rest: drill }
+    drill = planPracticeMode(p, pool, budget)
+    if (drill.length > 0 && input.practiceMode !== 'mistakes') return { front: [], rest: drill }
   }
 
   const profile = PROFILE_FOR_KIND[kind] ?? level?.spec?.mix ?? 'standard'
@@ -602,9 +607,9 @@ function planCourse(
   const allowTyping = kind !== 'lesson' || input.lessonIndex >= 1
   const persianTyping = allowTyping && input.features?.persianTyping === true
   if (!allowTyping) delete weights.typing
-  const front: ChallengeRef[] = []
+  const front: ChallengeRef[] = [...drill]
   const rest: ChallengeRef[] = []
-  let left = budget
+  let left = budget - drill.length
 
   // --- review candidates: open mistakes, then due cards (most overdue first) --------------------
   const reviewSlots = kind === 'practice' ? budget : Math.floor(budget * config.session.reviewShare)

@@ -24,6 +24,7 @@ import {
   decodeVariant,
   encodeVariant,
   generateSession,
+  gradeResponse,
   mvpTwin,
   rebuildChallenges,
   TRACE_FORMS,
@@ -867,7 +868,10 @@ describe('P2 builders (typed Persian, tracing)', () => {
     expect(lt.audio).toEqual(tap.audio)
     expect(lt.transcript).toEqual(tap.transcript)
     expect(accepts(lt.graph, 'چای می‌خوای', 'fa')).toBe(true)
-    expect(accepts(lt.graph, 'چای می‌خواهی؟', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'چای میخوای؟', 'fa')).toBe(true)
+    // Dictation: the orthography variant is what was said; the formal register is not.
+    expect(accepts(lt.graph, 'چای می‌خای', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'چای می‌خواهی؟', 'fa')).toBe(false)
     expect(accepts(lt.graph, 'نون می‌خوام', 'fa')).toBe(false)
     expect(Challenge.parse(lt)).toStrictEqual(lt)
     expect(buildChallenge(r, 3, fx)).toEqual(lt)
@@ -876,6 +880,29 @@ describe('P2 builders (typed Persian, tracing)', () => {
       of(buildChallenge({ type: 'listen_type', items: ['lx_ab'] }, 0, fx), 'listen_type').transcript
         .fa,
     ).toBe('آب')
+  })
+
+  it('listen_type: no pronoun drop, no register swap; variants only when the view has them', () => {
+    const r: ChallengeRef = { type: 'listen_type', items: ['s_u01_0007'] }
+    const lt = of(buildChallenge(r, 0, fx), 'listen_type')
+    expect(lt.transcript.fa).toBe('من سیب می‌خوام')
+    expect(accepts(lt.graph, 'من سیب می‌خوام', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'من سیب می‌خام', 'fa')).toBe(true)
+    expect(accepts(lt.graph, 'سیب می‌خوام', 'fa')).toBe(false)
+    expect(accepts(lt.graph, 'من سیب می‌خواهم', 'fa')).toBe(false)
+    // Its translation key keeps the leniency a translation deserves.
+    const tt = of(
+      buildChallenge({ ...r, type: 'translate_type', direction: 'en_fa' }, 0, fx),
+      'translate_type',
+    )
+    expect(accepts(tt.graph, 'سیب می‌خوام', 'fa')).toBe(true)
+    // A view without variants (today's bundles) still builds, deterministically.
+    const bare: ContentView = { ...fx, orthographyVariants: undefined }
+    const plain = of(buildChallenge(r, 0, bare), 'listen_type')
+    expect(accepts(plain.graph, 'من سیب می‌خام', 'fa')).toBe(false)
+    expect(buildChallenge(r, 0, bare)).toEqual(plain)
+    // …and the variant spelling is still a typo, not wrong.
+    expect(gradeResponse(plain, { kind: 'text', value: 'من سیب می‌خام' }).verdict).toBe('typo')
   })
 
   it('cloze_type: whole-word tokens around the blank, a key for the blank only', () => {
@@ -1120,21 +1147,45 @@ describe('Wave 3 seams (features, practiceMode)', () => {
             ).toEqual(practiceGen({ seed, learner: l, ...(features ? { features } : {}) }))
     })
 
-    it('mistakes drills open mistakes only; with none it is the mixed session', () => {
+    it('mistakes starts with the open mistakes; with none it is the mixed session', () => {
       const ix = indexContent(fx)
+      const aboutMistake = (r: ChallengeRef) => {
+        const id = r.items[0]!
+        return (
+          id === 's_u01_0005' ||
+          id === 'lx_sib' ||
+          (id.startsWith('s_') && ix.sentence(id).tokens.some((t) => t.lexeme === 'lx_sib'))
+        )
+      }
       for (const seed of SEEDS.slice(0, 4)) {
         const out = practiceGen({ seed, learner: withMistakes, practiceMode: 'mistakes' })
-        expect(out.refs.length).toBeGreaterThan(1)
-        for (const r of out.refs) {
-          const id = r.items[0]!
-          const aboutMistake =
-            id === 's_u01_0005' ||
-            id === 'lx_sib' ||
-            (id.startsWith('s_') && ix.sentence(id).tokens.some((t) => t.lexeme === 'lx_sib'))
-          expect(aboutMistake, JSON.stringify(r)).toBe(true)
-        }
+        expect(out.refs).toHaveLength(cfg.session.lengths.practice!)
+        expect(aboutMistake(out.refs[0]!)).toBe(true)
+        expect(aboutMistake(out.refs[1]!)).toBe(true)
+        expect(new Set(out.refs.map((r) => JSON.stringify(r))).size).toBe(out.refs.length)
         expect(rebuildChallenges(out.refs, fx)).toEqual(out.challenges)
+        expect(practiceGen({ seed, learner: withMistakes, practiceMode: 'mistakes' })).toEqual(out)
         expect(practiceGen({ seed, practiceMode: 'mistakes' })).toEqual(practiceGen({ seed }))
+      }
+    })
+
+    it('a one-mistake drill is topped up to the normal practice length, mistake first', () => {
+      for (const mistakes of [['chat:c_u01_001'], ['sentence:s_u01_0005']]) {
+        const item = mistakes[0]!.slice(mistakes[0]!.indexOf(':') + 1)
+        for (const seed of SEEDS.slice(0, 4)) {
+          const out = practiceGen({
+            seed,
+            learner: { ...learner, mistakes },
+            practiceMode: 'mistakes',
+          })
+          expect(out.refs).toHaveLength(cfg.session.lengths.practice!)
+          expect(out.refs[0]!.items).toEqual([item])
+          // The drill (≤ 4 exercises of a sentence, 1 of a chat) leads; the mixed plan follows.
+          const drill = out.refs.findIndex((r) => r.items[0] !== item)
+          expect(drill).toBeGreaterThan(0)
+          expect(drill).toBeLessThanOrEqual(4)
+          expect(rebuildChallenges(out.refs, fx)).toEqual(out.challenges)
+        }
       }
     })
 

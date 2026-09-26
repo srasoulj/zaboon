@@ -159,6 +159,7 @@ export function loadCourse(course: string): LoadedCourse {
         knownLexemes: uniq(bundles.flatMap((b) => b.lexemes)),
         knownSentences: uniq(bundles.flatMap((b) => b.sentences)),
         mediaUrl: (ref) => `/media/${course}/${ref}`,
+        orthographyVariants: variants,
       }
     },
   }
