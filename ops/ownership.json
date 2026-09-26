@@ -32,7 +32,16 @@
     "packages/content-schema/**",
     "packages/ui/tokens.json",
     "**/oracles/**",
-    "content/**",
+    "content/fa-en/**",
+    "content/fixtures/assets/**",
+    "content/fixtures/characters.yaml",
+    "content/fixtures/chats/**",
+    "content/fixtures/course.yaml",
+    "content/fixtures/guidebooks/**",
+    "content/fixtures/letters.yaml",
+    "content/fixtures/lexemes/**",
+    "content/fixtures/orthography-variants.yaml",
+    "content/fixtures/sentences/**",
     "apps/web/next.config.ts",
     "apps/web/proxy.ts",
     "apps/web/app/layout.tsx",
@@ -62,7 +71,9 @@
     "apps/web/lib/challenge-registry.test.tsx",
     "apps/web/vercel.json",
     "apps/web/vercel.test.ts",
-    "apps/web/tests/api/harness.ts"
+    "apps/web/tests/api/harness.ts",
+    "apps/web/lib/server/signing.ts",
+    "apps/web/lib/server/signing.test.ts"
   ],
   "workstreams": {
     "ws-farsi-grader": {
@@ -102,7 +113,11 @@
         "!packages/db/src/repos/wallet.ts",
         "!packages/db/src/repos/wallet.db.test.ts",
         "!packages/db/src/repos/merge.db.test.ts",
-        "!packages/db/src/repos/merge.ts"
+        "!packages/db/src/repos/merge.ts",
+        "!packages/db/src/repos/speech.ts",
+        "!packages/db/src/repos/speech.db.test.ts",
+        "!supabase/migrations/20260927*",
+        "!supabase/tests/006_*"
       ]
     },
     "ws-ui": {
@@ -117,10 +132,7 @@
     },
     "ws-content-cli": {
       "wave": 1,
-      "paths": [
-        "packages/ai/**",
-        "tools/content-cli/**"
-      ]
+      "paths": []
     },
     "ws-api": {
       "wave": 2,
@@ -141,7 +153,10 @@
         "!apps/web/lib/server/guidebook.ts",
         "!apps/web/lib/server/guidebook.test.ts",
         "apps/web/tests/api/**",
-        "!apps/web/tests/api/guidebook.db.test.ts"
+        "!apps/web/tests/api/guidebook.db.test.ts",
+        "!apps/web/app/api/speech/**",
+        "!apps/web/lib/server/speech/**",
+        "!apps/web/lib/server/stories/**"
       ]
     },
     "ws-pages": {
@@ -169,19 +184,7 @@
     },
     "ws-player": {
       "wave": 2,
-      "paths": [
-        "apps/web/lib/lesson/**",
-        "!apps/web/lib/lesson/machine.ts",
-        "!apps/web/lib/lesson/machine.test.ts",
-        "!apps/web/lib/lesson/summary.ts",
-        "!apps/web/lib/lesson/request.ts",
-        "!apps/web/lib/lesson/pure.test.ts",
-        "!apps/web/lib/lesson/grading.ts",
-        "!apps/web/lib/lesson/grading.test.ts",
-        "apps/web/app/lesson/**",
-        "apps/web/public/sounds/**",
-        "e2e/lesson/**"
-      ]
+      "paths": []
     },
     "ws-renderers": {
       "wave": 2,
@@ -190,15 +193,12 @@
     "ws-path-letters": {
       "wave": 2,
       "paths": [
-        "apps/web/app/(app)/learn/**",
         "apps/web/app/(app)/letters/**",
-        "apps/web/components/path/**",
         "apps/web/components/letters/**",
         "apps/web/app/api/guidebooks/**",
         "apps/web/lib/server/guidebook.ts",
         "apps/web/lib/server/guidebook.test.ts",
-        "apps/web/tests/api/guidebook.db.test.ts",
-        "e2e/path/**"
+        "apps/web/tests/api/guidebook.db.test.ts"
       ]
     },
     "ws-qa": {
@@ -210,7 +210,24 @@
     },
     "ws-engagement": {
       "wave": 3,
+      "paths": []
+    },
+    "ws-typing": {
+      "wave": 4,
       "paths": [
+        "packages/farsi/src/keyboard.ts",
+        "packages/farsi/src/keyboard.test.ts",
+        "packages/farsi/src/index.ts",
+        "packages/ui/src/**",
+        "apps/web/app/(dev)/gallery/**",
+        "e2e/ui/**",
+        "packages/session-engine/src/**",
+        "apps/web/components/challenges/**",
+        "apps/web/app/(dev)/challenges/**",
+        "e2e/renderers/**",
+        "apps/web/lib/typing/**",
+        "apps/web/tests/typing/**",
+        "e2e/typing/**",
         "apps/web/app/(app)/leaderboard/**",
         "apps/web/app/(app)/quests/**",
         "apps/web/app/(app)/shop/**",
@@ -228,11 +245,6 @@
         "apps/web/lib/server/home.ts",
         "apps/web/lib/server/sessions.ts",
         "apps/web/components/lesson/**",
-        "apps/web/lib/lesson/machine.ts",
-        "apps/web/lib/lesson/machine.test.ts",
-        "apps/web/lib/lesson/summary.ts",
-        "apps/web/lib/lesson/request.ts",
-        "apps/web/lib/lesson/pure.test.ts",
         "packages/game-rules/src/**",
         "packages/db/src/repos/leagues.ts",
         "packages/db/src/repos/leagues.db.test.ts",
@@ -247,27 +259,34 @@
         "supabase/migrations/20260926000000_engagement.sql",
         "supabase/tests/005_engagement.sql",
         "apps/web/tests/engagement/**",
-        "e2e/engagement/**"
-      ]
-    },
-    "ws-typing": {
-      "wave": 3,
-      "paths": [
-        "packages/farsi/src/keyboard.ts",
-        "packages/farsi/src/keyboard.test.ts",
-        "packages/farsi/src/index.ts",
-        "packages/ui/src/**",
-        "apps/web/app/(dev)/gallery/**",
-        "e2e/ui/**",
-        "packages/session-engine/src/**",
-        "apps/web/components/challenges/**",
-        "apps/web/app/(dev)/challenges/**",
-        "e2e/renderers/**",
-        "apps/web/lib/lesson/grading.ts",
-        "apps/web/lib/lesson/grading.test.ts",
-        "apps/web/lib/typing/**",
-        "apps/web/tests/typing/**",
-        "e2e/typing/**"
+        "e2e/engagement/**",
+        "apps/web/lib/lesson/**",
+        "apps/web/app/lesson/**",
+        "apps/web/public/sounds/**",
+        "e2e/lesson/**",
+        "packages/ai/**",
+        "!packages/ai/ai.models.yaml",
+        "tools/content-cli/**",
+        "apps/web/app/api/speech/**",
+        "apps/web/lib/server/speech/**",
+        "apps/web/lib/speech/**",
+        "apps/web/components/speak/**",
+        "apps/web/components/stories/**",
+        "apps/web/lib/server/stories/**",
+        "packages/db/src/repos/speech.ts",
+        "packages/db/src/repos/speech.db.test.ts",
+        "supabase/migrations/20260927*",
+        "supabase/tests/006_*",
+        "apps/web/components/path/**",
+        "apps/web/app/(app)/learn/**",
+        "e2e/path/**",
+        "apps/web/tests/speak/**",
+        "apps/web/tests/stories/**",
+        "e2e/speak/**",
+        "e2e/stories/**",
+        "content/fixtures/units/u01-fixture.yaml",
+        "content/fixtures/stories/**",
+        "content/fixtures/README.md"
       ]
     }
   }

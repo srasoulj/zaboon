@@ -9,9 +9,9 @@ const paths = (ws: string): string[] => own.workstreams[ws].paths
 const sample = (glob: string) =>
   glob.replace(/\*\*$/, 'x/sample.ts').replace(/\*\*\//g, 'x/').replace(/\*/g, 'sample')
 
-describe('Wave 3 ownership', () => {
+describe('Wave 4 ownership', () => {
   const engagement = 'claude/zaboon-ws-engagement'
-  const typing = 'claude/zaboon-ws-typing'
+  const typing = 'claude/zaboon-ws-typing-2'
 
   it('excludes `!` paths', () => {
     expect(owns('packages/db/src/repos/sessions.ts', ['packages/db/**'])).toBe(true)
@@ -21,68 +21,88 @@ describe('Wave 3 ownership', () => {
     expect(owns('packages/db/src/index.ts', ['!packages/db/**'])).toBe(false)
   })
 
-  it('routes the engagement and typing files to their workstreams', () => {
-    const toEngagement = [
+  it('routes the Wave 3 files and the Wave 4 (speak, stories) files to ws-typing', () => {
+    const toTyping = [
+      // Wave 3, formerly ws-engagement (done)
       'apps/web/app/(app)/leaderboard/page.tsx',
-      'apps/web/app/(app)/practice/page.tsx',
       'apps/web/app/api/cron/league-rollover/route.ts',
-      'apps/web/app/api/lives/refill/route.ts',
       'apps/web/app/api/sessions/[id]/complete/route.ts',
       'apps/web/lib/server/sessions.ts',
       'apps/web/lib/server/engagement/leagues.ts',
-      'apps/web/components/engagement/Rail.tsx',
       'apps/web/components/lesson/CompleteScreens.tsx',
       'apps/web/lib/lesson/machine.ts',
       'packages/game-rules/src/engagement.ts',
       'packages/db/src/repos/wallet.ts',
       'packages/db/src/schema.ts',
       'supabase/migrations/20260926000000_engagement.sql',
-      'apps/web/tests/engagement/shop.db.test.ts',
-      'e2e/engagement/leaderboard.spec.ts',
-    ]
-    const toTyping = [
+      // Wave 3, ws-typing
       'packages/farsi/src/keyboard.ts',
       'packages/ui/src/components/PersianKeyboard.tsx',
       'packages/session-engine/src/builders.ts',
       'apps/web/components/challenges/LetterTrace.tsx',
-      'apps/web/app/(dev)/challenges/page.tsx',
       'apps/web/lib/lesson/grading.ts',
-      'apps/web/lib/typing/trace-score.ts',
-      'apps/web/tests/typing/u01-t1.db.test.ts',
       'e2e/typing/keyboard.spec.ts',
-      'e2e/renderers/renderers.spec.ts',
+      // the lesson player (formerly ws-player) and the path UI (formerly ws-path-letters)
+      'apps/web/lib/lesson/outbox.ts',
+      'apps/web/app/lesson/page.tsx',
+      'apps/web/components/path/path-model.ts',
+      'apps/web/app/(app)/learn/page.tsx',
+      'e2e/path/path.spec.ts',
+      // Wave 4
+      'apps/web/app/api/speech/transcribe/route.ts',
+      'apps/web/lib/server/speech/verify.ts',
+      'apps/web/lib/speech/service.ts',
+      'apps/web/components/speak/Speak.tsx',
+      'apps/web/components/stories/Story.tsx',
+      'apps/web/lib/server/stories/plan.ts',
+      'packages/ai/src/transcribe.ts',
+      'tools/content-cli/src/validate.ts',
+      'packages/db/src/repos/speech.ts',
+      'supabase/migrations/20260927000100_speech.sql',
+      'supabase/tests/006_speech.sql',
+      'content/fixtures/units/u01-fixture.yaml',
+      'content/fixtures/stories/u01-fixture.yaml',
+      'apps/web/tests/stories/u01-st1.db.test.ts',
+      'e2e/speak/speak.spec.ts',
     ]
-    expect(check(toEngagement, engagement, own)).toEqual([])
     expect(check(toTyping, typing, own)).toEqual([])
-    expect(check(toEngagement, typing, own)).toHaveLength(toEngagement.length)
+    // ws-engagement is done: it owns nothing any more.
     expect(check(toTyping, engagement, own)).toHaveLength(toTyping.length)
   })
 
-  it('keeps the Wave 3 seams and oracles protected', () => {
+  it('keeps the seams, oracles, frozen fixture content and fa-en content protected', () => {
     const seams = [
       'packages/contracts/src/schemas.ts',
+      'packages/content-schema/src/index.ts',
       'packages/game-rules/oracles/engagement.yaml',
       'packages/session-engine/oracles/mvp-sessions.golden.json',
+      'packages/ai/ai.models.yaml',
       'apps/web/components/shell/AppShell.tsx',
       'apps/web/lib/challenge-registry.ts',
       'apps/web/lib/server/with-route.ts',
-      'apps/web/lib/server/flags.ts',
+      'apps/web/lib/server/signing.ts',
       'apps/web/tests/api/harness.ts',
       'apps/web/vercel.json',
-      'content/fixtures/units/u01-fixture.yaml',
-      'e2e/fixtures/cron.ts',
+      'content/fixtures/lexemes/u01-fixture.yaml',
+      'content/fixtures/sentences/u01-fixture.yaml',
+      'content/fixtures/assets/audio/s_u01_0001.mp3',
+      'content/fixtures/course.yaml',
+      'content/fa-en/units/u01-hello.yaml',
+      'e2e/fixtures/browser-fakes.ts',
       'playwright.config.ts',
     ]
-    for (const branch of [engagement, typing])
-      expect(check(seams, branch, own).every((p) => p.endsWith('protected (orchestrator-owned)'))).toBe(
-        true,
-      )
+    const problems = check(seams, typing, own)
+    expect(problems).toHaveLength(seams.length)
+    // ai.models.yaml is not protected, it is excluded from ws-typing's packages/ai/**.
+    expect(problems.filter((p) => !p.endsWith('protected (orchestrator-owned)'))).toEqual([
+      'packages/ai/ai.models.yaml: outside ws-typing paths',
+    ])
   })
 
-  it('no two workstreams of Waves 1-3 own the same path (ws-qa is cross-cutting)', () => {
+  it('no two workstreams own the same path (ws-qa is cross-cutting)', () => {
     const active = Object.keys(own.workstreams).filter((ws) => ws !== 'ws-qa')
-    for (const a of ['ws-engagement', 'ws-typing'])
-      for (const glob of paths(a)) {
+    for (const a of active)
+      for (const glob of paths(a).filter((g) => !g.startsWith('!'))) {
         const file = sample(glob)
         expect(owns(file, paths(a)), `${a} owns ${file}`).toBe(true)
         for (const b of active.filter((ws) => ws !== a))
