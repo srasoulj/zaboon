@@ -18,8 +18,10 @@ beforeAll(async () => {
     DATABASE_URL_APP_SERVER: tdb.appUrl,
     ZABOON_DEV_AUTH_SECRET: 'db-test-secret-db-test-secret-db', // pragma: allowlist secret
   })
+  delete process.env.VERCEL
   delete process.env.VERCEL_ENV
   delete process.env.ZABOON_DEV_AUTH
+  delete process.env.ZABOON_TRUST_PROXY
   resetServerEnv()
   const h = createDb(tdb.appUrl, { max: 1 })
   await withSystem(h.db, (tx) =>
@@ -182,6 +184,56 @@ describe('withRoute', () => {
     const limited = await call(tiny, { headers: auth })
     expect(limited.status).toBe(429)
     expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(0)
+  })
+
+  it('keys anonymous rate limits on a valid client IP, never on a raw X-Forwarded-For', async () => {
+    const open = withRoute(
+      {
+        method: 'GET',
+        path: '/api/open-test',
+        auth: 'none',
+        phase: 'mvp',
+        bucket: 'tiny',
+        request: undefined,
+        response: Ok,
+      } as const,
+      async ({ user }) => ({ ok: true as const, user: user?.id ?? null, now: '' }),
+    )
+    const get = async (xff: string, testNow: string) => {
+      const res = await call(open, {
+        method: 'GET',
+        body: undefined,
+        headers: { 'x-forwarded-for': xff, 'x-test-now': testNow },
+      })
+      expect(res.status, await res.clone().text()).not.toBe(500)
+      return res
+    }
+    const long = `${'9'.repeat(999)},` // 1 000 characters, over the 200-character key limit
+
+    // No trusted proxy (local mode, no ZABOON_TRUST_PROXY): the header is the client's to choose,
+    // so every anonymous caller shares one bucket and rotating it does not buy a fresh one.
+    const t1 = '2032-01-01T00:00:00Z'
+    expect((await get(long, t1)).status).toBe(200)
+    expect((await get('203.0.113.1', t1)).status).toBe(200)
+    const rotated = await get('203.0.113.2', t1)
+    expect(rotated.status).toBe(429)
+    expect(Number(rotated.headers.get('retry-after'))).toBeGreaterThan(0)
+
+    // Behind a trusted proxy: a valid address gets its own bucket; garbage shares "unknown".
+    try {
+      process.env.ZABOON_TRUST_PROXY = '1'
+      resetServerEnv()
+      const t2 = '2032-01-02T00:00:00Z'
+      expect((await get(long, t2)).status).toBe(200)
+      expect((await get(long, t2)).status).toBe(200)
+      expect((await get('not-an-ip', t2)).status).toBe(429)
+      expect((await get('203.0.113.9', t2)).status).toBe(200)
+      expect((await get('203.0.113.9, 10.0.0.1', t2)).status).toBe(200)
+      expect((await get('203.0.113.9', t2)).status).toBe(429)
+    } finally {
+      delete process.env.ZABOON_TRUST_PROXY
+      resetServerEnv()
+    }
   })
 
   it('authenticates cron routes with the secret and fails closed without one', async () => {
