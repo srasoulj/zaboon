@@ -30,6 +30,7 @@ import { fixture } from '@/components/challenges/testing'
 import { rendererFor } from '@/lib/challenge-registry'
 import { correctResponse, resolveTestRenderer, wrongResponse } from './test-renderers'
 import speakFixture from '@/components/speak/speak-fixture.json'
+import storyFixture from '@/components/stories/story-fixture.json'
 import { useSpeechService } from '@/lib/speech/context'
 import { speakPauseKey } from '@/lib/speech/pause'
 import type { SpeechService } from '@/lib/speech/service'
@@ -837,5 +838,40 @@ describe('LessonPlayer and speaking (P2)', () => {
     expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
     expect(calls.some((c) => c.name === 'sessionEvent')).toBe(false)
     expect(Date.parse(localStorage.getItem(pauseKey)!)).toBeGreaterThan(Date.now())
+  })
+})
+
+describe('LessonPlayer and stories (P2)', () => {
+  const beats = (storyFixture as unknown[]).map((c) => Challenge.parse(c) as ChallengeOf<'story'>)
+  const storySession = () => testSession({ kind: 'story', levelId: 'u01-st1', challenges: beats })
+  const request: LessonRequest = { courseId: 'fixture', kind: 'story', levelId: 'u01-st1' }
+
+  it('a wrong answer keeps every heart, has no report flag and is retried in place', async () => {
+    const { calls } = renderPlayer({ session: storySession(), resolve: rendererFor, request })
+    await screen.findByRole('heading', { name: 'A cup of tea' })
+    // No SKIP on a story beat; CHECK waits for the lines and the answer.
+    expect(screen.queryByTestId('lesson-skip')).toBeNull()
+    fireEvent.keyDown(document.body, { key: 'Enter' }) // reveals line 2, never CHECKs
+    expect(screen.getAllByTestId('story-line')).toHaveLength(2)
+    expect(screen.queryByTestId('lesson-feedback')).toBeNull()
+    fireEvent.keyDown(document.body, { key: '2' }) // "tired": wrong
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    const feedback = await screen.findByTestId('lesson-feedback')
+    expect(feedback).toHaveAttribute('data-verdict', 'wrong')
+    expect(within(feedback).getByText('Try again.')).toBeInTheDocument()
+    expect(within(feedback).queryByRole('button', { name: 'Report a problem' })).toBeNull()
+    expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
+    fireEvent.click(within(feedback).getByRole('button', { name: 'Continue' }))
+    // The same beat again, its lines still shown, the answer cleared.
+    await waitFor(() => expect(screen.queryByTestId('lesson-feedback')).toBeNull())
+    expect(screen.getByText('Part 1 of 3')).toBeInTheDocument()
+    expect(screen.getAllByTestId('story-line')).toHaveLength(2)
+    expect(screen.getByTestId('lesson-challenge')).toHaveAttribute('data-attempt', '1')
+    fireEvent.keyDown(document.body, { key: '1' })
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
+    expect(calls.some((c) => c.name === 'sessionEvent')).toBe(false)
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    expect(await screen.findByText('Part 2 of 3')).toBeInTheDocument()
   })
 })

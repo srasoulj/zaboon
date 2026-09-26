@@ -111,5 +111,11 @@ levels:
         - { type: speak, items: [s_u01_0001] }
         - { type: speak, items: [s_u01_0007] }
         - { type: listen_tap, items: [s_u01_0005] }
+  # Wave 4 (P2): the unit's story (content/fixtures/stories/u01-fixture.yaml). Appended last; a
+  # story never blocks the path. With flags.stories off the node shows "Coming soon".
+  - id: u01-st1
+    kind: story
+    title: A cup of tea
+    story: st_u01_tea
 status: approved
 provenance: { author: fixtures }

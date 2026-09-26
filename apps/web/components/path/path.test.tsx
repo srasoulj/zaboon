@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { LearnPath, PathView } from './LearnPath'
 import { LOCKED_MESSAGE, type LevelState } from './path-model'
-import { FIXTURE_PATH, level, renderWithServices, testPath } from './test-support'
+import { FIXTURE_PATH, level, renderWithServices, testHome, testPath } from './test-support'
 
 const push = vi.fn()
 vi.mock('next/navigation', () => ({
@@ -289,10 +289,12 @@ describe('LearnPath', () => {
       Element.prototype.scrollIntoView = original
     })
     const { calls, container } = renderWithServices(<LearnPath />, {
-      handlers: { path: () => FIXTURE_PATH },
+      handlers: { path: () => FIXTURE_PATH, home: () => testHome() },
     })
     await waitFor(() => expect(container.querySelector('[data-level="u01-l1"]')).not.toBeNull())
-    expect(calls).toEqual([{ name: 'path', opts: undefined }])
+    // The path, plus home for the feature flags (the shell's cached query in the app).
+    expect(calls).toContainEqual({ name: 'path', opts: undefined })
+    expect(calls.filter((c) => c.name !== 'home')).toEqual([{ name: 'path', opts: undefined }])
     expect(screen.getByRole('heading', { level: 1, name: 'Learning path' })).toBeInTheDocument()
     await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1))
     expect(scroll.mock.contexts[0]).toBe(container.querySelector('[data-level="u01-l1"]'))
@@ -312,5 +314,74 @@ describe('LearnPath', () => {
     fail = false
     await userEvent.click(within(alert).getByRole('button', { name: 'Try again' }))
     expect(await screen.findByTestId('learn-path')).toBeInTheDocument()
+  })
+})
+
+describe('story nodes (P2, flags.stories)', () => {
+  const storyPath = (state: LevelState) =>
+    testPath([
+      {
+        id: 'u01-fixture',
+        levels: [
+          level('u01-s0', { title: 'First steps', state: 'completed', lessonsDone: 1 }),
+          level('u01-st1', { kind: 'story', title: 'A cup of tea', state, lessonsTotal: 0 }),
+        ],
+      },
+    ])
+
+  it('shows "Coming soon" (nothing to play) while the flag is off', async () => {
+    for (const flags of [undefined, { stories: false }]) {
+      const { container, unmount } = renderWithServices(
+        <PathView path={storyPath('available')} flags={flags} />,
+      )
+      await userEvent.click(nodeButton(container, 'u01-st1'))
+      const dialog = screen.getByRole('dialog', { name: 'A cup of tea' })
+      expect(dialog).toHaveTextContent(/Coming soon/)
+      expect(within(dialog).queryByRole('link')).toBeNull()
+      unmount()
+    }
+  })
+
+  it('plays in the lesson player (kind story, its level) while the flag is on', async () => {
+    const { container } = renderWithServices(
+      <PathView path={storyPath('available')} flags={{ stories: true }} />,
+    )
+    await userEvent.click(nodeButton(container, 'u01-st1'))
+    const dialog = screen.getByRole('dialog', { name: 'A cup of tea' })
+    expect(within(dialog).getByRole('link', { name: 'Start' })).toHaveAttribute(
+      'href',
+      '/lesson?course=fixture&kind=story&level=u01-st1',
+    )
+  })
+
+  it('a completed story shows completed and can be replayed', async () => {
+    const { container } = renderWithServices(
+      <PathView path={storyPath('completed')} flags={{ stories: true }} />,
+    )
+    expect(container.querySelector('[data-level="u01-st1"]')).toHaveAttribute(
+      'data-state',
+      'completed',
+    )
+    await userEvent.click(nodeButton(container, 'u01-st1'))
+    expect(screen.getByRole('link', { name: 'Replay' })).toHaveAttribute(
+      'href',
+      '/lesson?course=fixture&kind=story&level=u01-st1',
+    )
+  })
+
+  it('LearnPath takes the flags from home', async () => {
+    const path = storyPath('available')
+    const { container } = renderWithServices(<LearnPath />, {
+      handlers: {
+        path: () => path,
+        home: () => ({ ...testHome(), flags: { ...testHome().flags, stories: true } }),
+      },
+    })
+    await waitFor(() => expect(container.querySelector('[data-level="u01-st1"]')).not.toBeNull())
+    await userEvent.click(nodeButton(container, 'u01-st1'))
+    expect(await screen.findByRole('link', { name: 'Start' })).toHaveAttribute(
+      'href',
+      '/lesson?course=fixture&kind=story&level=u01-st1',
+    )
   })
 })

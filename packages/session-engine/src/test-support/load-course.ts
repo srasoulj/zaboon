@@ -16,6 +16,7 @@ import {
   Lexeme,
   OrthographyVariants,
   Sentence,
+  Story,
   Unit,
   patternList,
 } from '@zaboon/content-schema'
@@ -84,6 +85,14 @@ export function loadCourse(course: string): LoadedCourse {
     })
   })
   const chats = list(join(dir, 'chats'), (v) => Chat.parse(v))
+  const stories = list(join(dir, 'stories'), (v) => {
+    const st = Story.parse(v)
+    return strip({
+      ...st,
+      image: media(st.image),
+      lines: st.lines.map((l) => strip({ ...l, audio: media(l.audio) })),
+    })
+  })
   const lettersRaw = readYaml(join(dir, 'letters.yaml'))
   const track = LettersTrack.parse(lettersRaw)
   track.letters = track.letters.map((l) => strip({ ...l, audio: media(l.audio) }))
@@ -139,6 +148,9 @@ export function loadCourse(course: string): LoadedCourse {
       lexemes: lexemes.filter((l) => lx.has(l.id)),
       sentences: sentences.filter((s) => st.has(s.id)),
       chats: chats.filter((c) => ch.has(c.id)),
+      ...(stories.some((x) => x.unit === u.id)
+        ? { stories: stories.filter((x) => x.unit === u.id) }
+        : {}),
     }
   }
 

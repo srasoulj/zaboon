@@ -15,7 +15,10 @@ export interface LessonFeedbackProps {
   attemptSeq: number
   solution: Solution | null
   onContinue: () => void
-  onReport: () => void
+  /** Absent: no report flag (story lines). */
+  onReport?: () => void
+  /** P2 stories: a wrong answer is tried again in place ("Try again"), never solved for you. */
+  retry?: boolean
 }
 
 /**
@@ -43,6 +46,7 @@ export function LessonFeedback({
   solution,
   onContinue,
   onReport,
+  retry = false,
 }: LessonFeedbackProps) {
   const correct = verdict === 'correct' || verdict === 'typo' || verdict === 'spelling'
   if (correct) {
@@ -71,7 +75,9 @@ export function LessonFeedback({
         status="wrong"
         title={solution ? 'Correct solution:' : verdict === 'skipped' ? 'Skipped' : 'Not quite'}
         solution={solution ? <SolutionText solution={solution} /> : undefined}
-        detail={verdict === 'skipped' ? "We'll come back to this one." : undefined}
+        detail={
+          retry ? 'Try again.' : verdict === 'skipped' ? "We'll come back to this one." : undefined
+        }
         onContinue={onContinue}
         onReport={onReport}
       />

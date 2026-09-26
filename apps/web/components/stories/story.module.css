@@ -1,0 +1,144 @@
+/* The story renderer (P2, flags.stories): layout only; colors come from the theme tokens. */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cover,
+.coverPlaceholder {
+  flex: none;
+  inline-size: 88px;
+  block-size: 88px;
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  object-fit: cover;
+}
+
+.coverPlaceholder {
+  display: grid;
+  place-items: center;
+  color: var(--color-lajvard-500);
+}
+
+.part {
+  margin: 0;
+  color: var(--color-stone);
+  font: 700 15px / 1.4 var(--font-latin);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.line[data-animate='true'] {
+  animation: line-in 250ms ease-out;
+}
+
+@keyframes line-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line[data-animate='true'] {
+    animation: none;
+  }
+}
+
+.portrait {
+  flex: none;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-inline-size: 0;
+  padding: 12px 16px;
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-card);
+  /* The page background: stone (speaker names, transliteration) keeps its AA contrast on it. */
+  background: var(--color-bg);
+}
+
+.line[data-narrator='true'] .bubble {
+  border-style: dashed;
+}
+
+.speaker {
+  margin: 0;
+  color: var(--color-stone);
+  font: 800 15px / 1.3 var(--font-latin);
+}
+
+.textRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fa {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  font-size: 22px;
+}
+
+.translit {
+  display: block;
+  color: var(--color-stone);
+  font: 600 15px / 1.4 var(--font-latin);
+}
+
+.enToggle {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--color-lajvard-500);
+  font: 800 15px / 1.3 var(--font-latin);
+  cursor: pointer;
+}
+
+.enToggle:focus-visible {
+  outline: 3px solid var(--color-selected-border);
+  outline-offset: 2px;
+}
+
+.en {
+  margin: 0;
+  color: var(--color-ink);
+  font: 600 17px / 1.4 var(--font-latin);
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.questionPrompt {
+  margin: 0;
+  font: 800 20px / 1.3 var(--font-latin);
+}

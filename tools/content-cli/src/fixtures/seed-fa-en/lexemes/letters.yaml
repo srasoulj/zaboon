@@ -11,7 +11,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_rud
   fa: رود
@@ -21,7 +21,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_ruz
   fa: روز
@@ -31,7 +31,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_zud
   fa: زود
@@ -41,7 +41,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_zard
   fa: زرد
@@ -51,7 +51,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_daru
   fa: دارو
@@ -61,7 +61,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # --- letters-2: + ب م ن --------------------------------------------------------------------------
 - id: lx_ab
@@ -72,7 +72,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_baba
   fa: بابا
@@ -82,7 +82,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_maman
   fa: مامان
@@ -92,7 +92,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_bad
   fa: بد
@@ -102,7 +102,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_mard
   fa: مرد
@@ -112,7 +112,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_nun
   fa: نون
@@ -124,7 +124,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 # --- letters-3: + ی ت س --------------------------------------------------------------------------
 - id: lx_sib
@@ -135,7 +135,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_sard
   fa: سرد
@@ -145,7 +145,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_dust
   fa: دوست
@@ -155,7 +155,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_tut
   fa: توت
@@ -165,7 +165,7 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }
 
 - id: lx_bastani
   fa: بستنی
@@ -175,4 +175,4 @@
   introducedIn: u01-hello
   tags: [letters]
   status: draft
-  provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+  provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

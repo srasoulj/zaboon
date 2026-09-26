@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createActor, fromPromise, waitFor } from 'xstate'
-import { MAX_ANSWERS, type SessionResult } from '@zaboon/contracts'
+import { Challenge, MAX_ANSWERS, type SessionResult } from '@zaboon/contracts'
 import {
   currentChallenge,
   lessonMachine,
@@ -760,5 +760,133 @@ describe('lesson machine: failed completion', () => {
     actor.send({ type: 'CONTINUE' })
     await waitFor(actor, (s) => s.matches('complete'))
     expect(actor.getSnapshot().context.summary!.source).toBe('local')
+  })
+})
+
+describe('lesson machine: stories (P2) spend no hearts and retry in place', () => {
+  const beat = (index: number, question: boolean) =>
+    Challenge.parse({
+      index,
+      ref: { type: 'story', items: ['st_u01_tea'], variant: index },
+      type: 'story',
+      storyId: 'st_u01_tea',
+      title: 'A cup of tea',
+      beat: index,
+      beats: 3,
+      lines: [{ speaker: null, text: { fa: 'سلام', translit: 'salām' }, en: 'Hello' }],
+      ...(question
+        ? {
+            question: {
+              prompt: { lang: 'en', text: 'Who?' },
+              choices: [
+                { lang: 'en', text: 'Leila' },
+                { lang: 'en', text: 'Hodhod' },
+              ],
+              answer: 0,
+            },
+          }
+        : {}),
+    })
+  const storySession = (over: Partial<ReturnType<typeof testSession>> = {}) =>
+    testSession({
+      kind: 'story',
+      levelId: 'u01-st1',
+      challenges: [beat(0, true), beat(1, true), beat(2, false)],
+      ...over,
+    })
+  const story = (over: Partial<ReturnType<typeof testSession>> = {}) =>
+    run({
+      start: async () => ({ session: storySession(over), resume: null }),
+      input: { request: { courseId: 'fixture', kind: 'story', levelId: 'u01-st1' } },
+    })
+
+  it('a wrong answer costs no heart, sends no event and comes back right away (new attemptSeq)', async () => {
+    const { actor, calls } = story()
+    await ready(actor)
+    actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 1 } })
+    actor.send({ type: 'CHECK' })
+    const f = actor.getSnapshot().context
+    expect(f.feedback).toMatchObject({
+      index: 0,
+      attemptSeq: 0,
+      verdict: 'wrong',
+      heartLost: false,
+    })
+    expect(f.hearts!.count).toBe(5)
+    expect(f.progress!.queue).toEqual([0, 1, 2])
+    expect(calls.wrong).toEqual([])
+    expect(calls.sounds).toEqual(['wrong'])
+    actor.send({ type: 'CONTINUE' })
+    expect(idx(actor)).toBe(0)
+    expect(actor.getSnapshot().context.draft).toBeNull()
+    actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 0 } })
+    actor.send({ type: 'CHECK' })
+    expect(actor.getSnapshot().context.feedback).toMatchObject({
+      index: 0,
+      attemptSeq: 1,
+      verdict: 'correct',
+    })
+    actor.send({ type: 'CONTINUE' })
+    expect(idx(actor)).toBe(1)
+  })
+
+  it('plays every beat in order (the closing beat is read through) and completes', async () => {
+    const { actor, calls } = story()
+    await ready(actor)
+    for (const [i, response] of [
+      [0, { kind: 'choice', value: 1 }],
+      [0, { kind: 'choice', value: 0 }],
+      [1, { kind: 'choice', value: 0 }],
+      [2, { kind: 'none' }],
+    ] as const) {
+      expect(idx(actor)).toBe(i)
+      actor.send({ type: 'RESPONSE', response })
+      actor.send({ type: 'CHECK' })
+      actor.send({ type: 'CONTINUE' })
+    }
+    await waitFor(actor, (s) => s.matches('complete'))
+    expect(
+      calls.completed[0]!.progress.answers.map((a) => [a.index, a.attemptSeq, a.verdict]),
+    ).toEqual([
+      [0, 0, 'wrong'],
+      [0, 1, 'correct'],
+      [1, 2, 'correct'],
+      [2, 3, 'correct'],
+    ])
+    expect(calls.wrong).toEqual([])
+  })
+
+  it('never runs out of hearts: no hearts left still plays and a wrong answer is retried', async () => {
+    const { actor } = story({ lives: lives(0) })
+    await ready(actor)
+    actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 1 } })
+    actor.send({ type: 'CHECK' })
+    actor.send({ type: 'CONTINUE' })
+    expect(actor.getSnapshot().matches({ playing: 'answering' })).toBe(true)
+    expect(idx(actor)).toBe(0)
+  })
+
+  it('a story beat inside another session kind follows the same rule', async () => {
+    const { actor, calls } = run({
+      start: async () => ({
+        session: testSession({ challenges: [beat(0, true), ...testSession().challenges.slice(1)] }),
+        resume: null,
+      }),
+    })
+    await ready(actor)
+    actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 1 } })
+    actor.send({ type: 'CHECK' })
+    expect(actor.getSnapshot().context.feedback?.heartLost).toBe(false)
+    expect(actor.getSnapshot().context.progress!.queue[0]).toBe(0)
+    expect(calls.wrong).toEqual([])
+    // The other challenges keep the MVP rules.
+    actor.send({ type: 'CONTINUE' })
+    actor.send({ type: 'RESPONSE', response: { kind: 'choice', value: 0 } })
+    actor.send({ type: 'CHECK' })
+    actor.send({ type: 'CONTINUE' })
+    answerWrong(actor)
+    expect(actor.getSnapshot().context.feedback).toMatchObject({ index: 1, heartLost: true })
+    expect(actor.getSnapshot().context.progress!.queue).toEqual([2, 1])
+    expect(calls.wrong).toHaveLength(1)
   })
 })

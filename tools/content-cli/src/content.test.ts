@@ -39,6 +39,7 @@ describe('fixture course', () => {
       'u01-r1',
       'u01-t1',
       'u01-v1',
+      'u01-st1',
     ])
   })
 })
@@ -235,5 +236,100 @@ describe('validate', () => {
     expect(issues).toContainEqual(
       expect.objectContaining({ file: 'letters.yaml', message: 'missing letters.yaml' }),
     )
+  })
+})
+
+describe('stories (P2)', () => {
+  it('the fixture story loads, validates and builds into its unit bundle with hashed media', () => {
+    expect(fixtures.stories.map((st) => st.id)).toEqual(['st_u01_tea'])
+    const built = buildCourse(fixtures, { allowDrafts: false, version: 1 })
+    const unitFile = [...built.files.keys()].find((k) => k.endsWith('units/u01-fixture.json'))!
+    const bundle = UnitBundle.parse(JSON.parse(built.files.get(unitFile)!.toString('utf8')))
+    const story = bundle.stories?.[0]
+    expect(story?.id).toBe('st_u01_tea')
+    expect(story?.image).toMatch(/^img\/tea\.[0-9a-f]+\.svg$/)
+    expect(story?.lines[0]!.audio).toMatch(/^audio\/s_u01_0001\.[0-9a-f]+\.mp3$/)
+    expect(story?.lines[1]!.audio).toBeUndefined()
+  })
+
+  it('rejects a broken story', () => {
+    const c = clone()
+    const st = c.stories[0]!
+    st.characters = ['leila', 'nobody']
+    st.lines[1]!.speaker = 'shirin'
+    st.lines[0]!.tokens = [st.lines[0]!.tokens[0]!]
+    st.lines[2]!.tokens[0]!.lexeme = 'lx_nope'
+    st.lines[3]!.audio = 'audio/missing.mp3'
+    st.questions[0]!.answer = 5
+    st.questions[1]!.after = 9
+    const e = errors(c)
+    const expected = [
+      /unknown character nobody/,
+      /line 2: speaker shirin is not one of the story's characters/,
+      /line 1: tokens .* do not spell fa/,
+      /line 3: unknown lexeme lx_nope/,
+      /media not found: assets\/audio\/missing\.mp3/,
+      /question 1: answer 5 is out of range/,
+      /question 2: after 9 is past the last line/,
+    ]
+    for (const re of expected)
+      expect(
+        e.some((m) => re.test(m)),
+        String(re),
+      ).toBe(true)
+  })
+
+  it('a lexeme from a later unit is rejected; questions must be in order', () => {
+    const c = clone()
+    c.lexemes.find((l) => l.id === 'lx_chay')!.introducedIn = 'u99-later'
+    c.units.push({ ...c.units[0]!, id: 'u99-later', levels: [] })
+    c.course!.sections[0]!.units.push('u99-later')
+    const st = c.stories[0]!
+    st.questions = [st.questions[1]!, st.questions[0]!]
+    const e = errors(c)
+    expect(
+      e.some((m) => /lexeme lx_chay is introduced in u99-later, after u01-fixture/.test(m)),
+    ).toBe(true)
+    expect(e.some((m) => /questions must follow each other/.test(m))).toBe(true)
+  })
+
+  it('a level has kind story exactly when it names an existing story of its own unit', () => {
+    const levels = () => clone().units[0]!.levels
+    const withLevels = (mutate: (ls: LoadedCourse['units'][number]['levels']) => void) => {
+      const c = clone()
+      mutate(c.units[0]!.levels)
+      return errors(c)
+    }
+    expect(levels().find((l) => l.id === 'u01-st1')).toMatchObject({
+      kind: 'story',
+      story: 'st_u01_tea',
+    })
+    expect(
+      withLevels((ls) => {
+        delete ls.find((l) => l.id === 'u01-st1')!.story
+      }).some((m) => /a story level must name its story/.test(m)),
+    ).toBe(true)
+    expect(
+      withLevels((ls) => {
+        ls.find((l) => l.id === 'u01-st1')!.story = 'st_nope'
+      }).some((m) => /unknown story st_nope/.test(m)),
+    ).toBe(true)
+    expect(
+      withLevels((ls) => {
+        ls.find((l) => l.id === 'u01-p1')!.story = 'st_u01_tea'
+      }).some((m) => /only a kind: story level can name a story/.test(m)),
+    ).toBe(true)
+    const other = clone()
+    other.stories[0]!.unit = 'u02-other'
+    expect(errors(other).some((m) => /unknown unit u02-other/.test(m))).toBe(true)
+    expect(errors(other).some((m) => /belongs to unit u02-other, not u01-fixture/.test(m))).toBe(
+      true,
+    )
+  })
+
+  it('story lines go through the Persian lint', () => {
+    const c = clone()
+    c.stories[0]!.lines[0]!.fa = 'سلام, خوبي?'
+    expect(errors(c).some((m) => /story st_u01_tea line 1 fa/.test(m))).toBe(true)
   })
 })

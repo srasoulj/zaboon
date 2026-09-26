@@ -10,6 +10,7 @@ import type {
   LettersBundle,
   Lexeme,
   Manifest,
+  Story,
   UnitBundle,
 } from '@zaboon/content-schema'
 import type { AnswerGraph, FaTextDto, LetterInfo } from '@zaboon/contracts'
@@ -45,6 +46,8 @@ export interface ContentIndex {
   sentences: ReadonlyMap<string, CompiledSentence>
   chats: ReadonlyMap<string, Chat>
   letters: ReadonlyMap<string, Letter>
+  /** P2: the unit's stories. */
+  stories: ReadonlyMap<string, Story>
   /** Lexemes in a stable order: known lexemes, then unit, then letter examples (deduplicated). */
   lexemeList: readonly Lexeme[]
   sentenceList: readonly CompiledSentence[]
@@ -56,6 +59,7 @@ export interface ContentIndex {
   sentence(id: string): CompiledSentence
   chat(id: string): Chat
   letter(id: string): Letter
+  story(id: string): Story
 }
 
 const cache = new WeakMap<ContentView, ContentIndex>()
@@ -75,6 +79,7 @@ export function indexContent(view: ContentView): ContentIndex {
   const st = byId<CompiledSentence>([view.knownSentences, view.unit?.sentences ?? []])
   const ch = byId<Chat>([view.unit?.chats ?? []])
   const le = byId<Letter>([[...view.letters.track.letters].sort((a, b) => a.order - b.order)])
+  const sto = byId<Story>([view.unit?.stories ?? []])
   const names = new Map(view.characters.characters.map((c) => [c.id, c.name]))
   const images = new Map(
     view.characters.characters.flatMap((c) => (c.image ? [[c.id, c.image] as const] : [])),
@@ -92,6 +97,7 @@ export function indexContent(view: ContentView): ContentIndex {
     sentences: st.map,
     chats: ch.map,
     letters: le.map,
+    stories: sto.map,
     lexemeList: lx.list,
     sentenceList: st.list,
     letterList: le.list,
@@ -104,6 +110,7 @@ export function indexContent(view: ContentView): ContentIndex {
     sentence: need(st.map, 'sentence'),
     chat: need(ch.map, 'chat'),
     letter: need(le.map, 'letter'),
+    story: need(sto.map, 'story'),
   }
   cache.set(view, index)
   return index

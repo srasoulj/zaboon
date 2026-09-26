@@ -1,7 +1,7 @@
 # Stub so the path renders all of Section 1. Full content comes later.
 id: u03-family
-title: "Family"
-subtitle: "Talk about the people closest to you"
+title: 'Family'
+subtitle: 'Talk about the people closest to you'
 register: colloquial
 color: lajvard
 characters: [maman-bozorg, kian]
@@ -9,4 +9,4 @@ levels:
   - id: u03-l1
     kind: lesson
 status: draft
-provenance: { author: claude-seed, notes: "hand-written seed; needs native review" }
+provenance: { author: claude-seed, notes: 'hand-written seed; needs native review' }

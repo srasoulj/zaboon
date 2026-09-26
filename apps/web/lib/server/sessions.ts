@@ -6,6 +6,12 @@
  * are spent per wrong-attempt event and reconciled at commit; practice never costs hearts and earns
  * one back. The client's XP is never trusted: XP comes from the server's own count of wrong
  * attempts, and implausible sessions (anticheat.ts) earn none.
+ *
+ * P2 stories (`story`, flags.stories): a story level plays as one session of story beats. A story
+ * session needs no hearts to start and never spends any (wrong events are recorded, not charged),
+ * and it is not rated: its answers are comprehension checks, so it applies no SRS rating and opens
+ * or clears no mistakes. Otherwise it commits like any session: XP (xp.base.story, plus the perfect
+ * bonus every kind gets), streak, daily goal, engagement, and it completes its path level.
  */
 import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
@@ -106,6 +112,23 @@ const MVP_KINDS: ReadonlySet<SessionKind> = new Set([
   'unit_review',
 ])
 
+/** Whether this request may start a session of `kind` (P2 kinds only while their flag is on). */
+export function kindAvailable(
+  kind: SessionKind,
+  flags: Readonly<Record<string, boolean>> = {},
+): boolean {
+  return MVP_KINDS.has(kind) || (kind === 'story' && flags.stories === true)
+}
+
+/** Kinds that never cost hearts: practice (which earns one back) and stories. */
+const spendsHearts = (kind: SessionKind): boolean => kind !== 'practice' && kind !== 'story'
+
+/**
+ * Rated kinds apply SRS ratings and open/clear mistakes. A story's questions check comprehension
+ * of the story, not recall of its words, so story sessions are not rated.
+ */
+const isRated = (kind: SessionKind): boolean => kind !== 'story'
+
 async function livesState(
   tx: Tx,
   userId: string,
@@ -182,7 +205,8 @@ async function resolveTarget(
     return { levelId, engineLevelId: null, unitIndex: loc.unitIndex, lessonIndex: 0 }
   }
 
-  // lesson | unit_review: a level of that kind
+  // lesson | unit_review | story: a level of that kind. A story level is `available` once the
+  // path has reached it (stories never block the path; path.ts) and `locked` after `current`.
   if (!requested) throw new ApiError('validation', `levelId is required for ${kind} sessions`)
   const loc = findLevel(bundle, requested)
   if (!loc) throw new ApiError('not_found', `unknown level ${requested}`)
@@ -211,7 +235,7 @@ export async function createSession(
     speakPaused?: boolean | undefined
   },
 ): Promise<CreateSessionResponse> {
-  if (!MVP_KINDS.has(input.kind))
+  if (!kindAvailable(input.kind, ctx.flags))
     throw new ApiError('validation', `session kind ${input.kind} is not available yet`)
   const cv = await requireCurrentVersion(ctx.db, input.courseId)
   const bundle = await loadBundle(cv)
@@ -223,7 +247,7 @@ export async function createSession(
     await enrollAtCurrent(tx, userId, bundle)
     const lives = await livesState(tx, userId, now, config)
     const livesView = livesViewOf(lives, now, config)
-    if (input.kind !== 'practice' && livesView.count === 0)
+    if (spendsHearts(input.kind) && livesView.count === 0)
       throw new ApiError('out_of_lives', 'no hearts left')
 
     const target = await resolveTarget(tx, userId, bundle, input.kind, input.levelId)
@@ -249,6 +273,9 @@ export async function createSession(
         throw new ApiError('validation', `this level is not available yet (${e.message})`)
       throw e
     }
+    // A story session is exactly its story's beats; anything else means the story isn't playable.
+    if (input.kind === 'story' && generated.refs.some((r) => r.type !== 'story'))
+      throw new ApiError('validation', `story level ${target.levelId} is not available yet`)
     const expiresAt = new Date(now.getTime() + config.session.ttlHours * 3_600_000)
     const session = await repos.sessions.createSession(tx, userId, {
       courseId: cv.courseId,
@@ -319,7 +346,7 @@ export async function recordWrongAttempt(
       createdAt: now.toISOString(),
     })
     let lives = await livesState(tx, userId, now, config)
-    if (!duplicate) {
+    if (!duplicate && spendsHearts(session.kind)) {
       // The insert above already decided "duplicate", so nothing else is recorded yet.
       lives = applyMistakeEvent({
         state: lives,
@@ -549,16 +576,20 @@ export async function completeSession(
     await repos.progress.markFreezeUsed(tx, userId, streak.frozenDates)
 
     // --- hearts: charge wrong answers whose events never arrived; practice earns one back ------
-    const events = await repos.sessions.listSessionEvents(tx, userId, sessionId)
-    const settled = settleCommit({
-      state: await livesState(tx, userId, now, config),
-      kind: session.kind,
-      serverWrong: wrongAttempts,
-      recordedEvents: events.length,
-      now,
-      cfg: config,
-    })
-    await repos.state.saveLives(tx, userId, settled.state)
+    // (a story session neither costs nor earns hearts)
+    const livesBefore = await livesState(tx, userId, now, config)
+    const settled =
+      session.kind === 'story'
+        ? { state: livesBefore }
+        : settleCommit({
+            state: livesBefore,
+            kind: session.kind,
+            serverWrong: wrongAttempts,
+            recordedEvents: (await repos.sessions.listSessionEvents(tx, userId, sessionId)).length,
+            now,
+            cfg: config,
+          })
+    if (session.kind !== 'story') await repos.state.saveLives(tx, userId, settled.state)
 
     // --- progress, mistakes, memory --------------------------------------------------------
     const current = await loadBundle(await requireCurrentVersion(tx, session.courseId))
@@ -569,13 +600,16 @@ export async function completeSession(
     await migrateEnrollment(tx, userId, current)
     const level = await recordLevelProgress(tx, userId, session, current, at)
 
-    const mistakes = [...new Set([...wrongIndexes].flatMap((i) => refItems(challenges[i]!.ref)))]
+    const rates = isRated(session.kind)
+    const mistakes = rates
+      ? [...new Set([...wrongIndexes].flatMap((i) => refItems(challenges[i]!.ref)))]
+      : []
     // Per item, like the SRS rating: an item is cleared only when a challenge that exercised it
     // passed and no challenge in this session got it wrong (an item often appears in several).
     const wrongItems = new Set(mistakes)
     // A declined attempt ("Can't trace now") passes for hearts and re-queue, but it is not a
     // review: it applies no SRS rating and never resolves an open mistake.
-    const rated = graded.filter((a) => !isDeclined(a.response))
+    const rated = rates ? graded.filter((a) => !isDeclined(a.response)) : []
     const answeredOk = new Set(rated.filter((a) => passes(a.verdict)).map((a) => a.index))
     const cleared = [
       ...new Set([...answeredOk].flatMap((i) => refItems(challenges[i]!.ref))),

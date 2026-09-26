@@ -1,7 +1,14 @@
 /** The createSession body (P2 speak: `speakPaused` only while the pause runs). */
 import { describe, expect, it } from 'vitest'
 import { CreateSessionRequest } from '@zaboon/contracts'
-import { createSessionBody, requestKey, type LessonRequest } from './request'
+import {
+  createSessionBody,
+  exitHref,
+  lessonHref,
+  parseLessonRequest,
+  requestKey,
+  type LessonRequest,
+} from './request'
 
 const lesson: LessonRequest = { courseId: 'fixture', kind: 'lesson', levelId: 'u01-v1' }
 const practice: LessonRequest = {
@@ -48,5 +55,31 @@ describe('createSessionBody', () => {
     createSessionBody(lesson, { tz: 'UTC', speakPaused: true })
     expect(requestKey(lesson)).toBe('fixture|lesson|u01-v1')
     expect(lesson).toEqual({ courseId: 'fixture', kind: 'lesson', levelId: 'u01-v1' })
+  })
+})
+
+describe('story requests (P2, flags.stories)', () => {
+  const q = (s: string) => new URLSearchParams(s)
+  it('a story level opens in the player and keeps its own identity', () => {
+    const parsed = parseLessonRequest(q('course=fixture&kind=story&level=u01-st1'))
+    expect(parsed).toEqual({
+      ok: true,
+      request: { courseId: 'fixture', kind: 'story', levelId: 'u01-st1' },
+    })
+    const story = { courseId: 'fixture', kind: 'story', levelId: 'u01-st1' } as const
+    expect(lessonHref(story)).toBe('/lesson?course=fixture&kind=story&level=u01-st1')
+    expect(requestKey(story)).toBe('fixture|story|u01-st1')
+    expect(exitHref('story')).toBe('/learn')
+    expect(CreateSessionRequest.parse(createSessionBody(story, { tz: 'UTC' }))).toMatchObject({
+      kind: 'story',
+      levelId: 'u01-st1',
+    })
+  })
+
+  it('a story needs a level and takes no practice mode', () => {
+    expect(parseLessonRequest(q('course=fixture&kind=story')).ok).toBe(false)
+    expect(parseLessonRequest(q('course=fixture&kind=story&level=u01-st1&mode=mixed')).ok).toBe(
+      false,
+    )
   })
 })

@@ -1,0 +1,51 @@
+# Frozen e2e fixture: READ-ONLY for workers except append-only additions (see content/fixtures/README.md).
+# Wave 4 (P2): the fixture unit's story, played by level u01-st1. Only existing lexemes,
+# characters and media. Beats: lines 1–2 + question 1, line 3 + question 2, line 4 (closing).
+- id: st_u01_tea
+  unit: u01-fixture
+  title: A cup of tea
+  titleFa: یه چای
+  image: img/tea.svg
+  characters: [leila, hodhod]
+  lines:
+    - speaker: leila
+      fa: سلام، خوبی؟
+      faVocalized: سَلام، خوبی؟
+      translit: "salām, khubi?"
+      en: Hello, how are you?
+      tokens:
+        - { surface: سلام, lexeme: lx_salam, translit: salām, gloss: hello }
+        - { surface: خوبی, lexeme: lx_khub, translit: khubi, gloss: "(you're) good" }
+      audio: audio/s_u01_0001.mp3
+    - speaker: hodhod
+      fa: خوبم، مرسی
+      translit: khubam, mersi
+      en: I'm good, thanks.
+      tokens:
+        - { surface: خوبم, lexeme: lx_khub, translit: khubam, gloss: "(I'm) good" }
+        - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: thanks }
+    - speaker: leila
+      fa: چای می‌خوای؟
+      translit: "chāy mikhāy?"
+      en: Do you want some tea?
+      tokens:
+        - { surface: چای, lexeme: lx_chay, translit: chāy, gloss: tea }
+        - { surface: می‌خوای, lexeme: lx_mikham, translit: mikhāy, gloss: "(you) want" }
+      audio: audio/s_u01_0005.mp3
+    - speaker: hodhod
+      fa: مرسی
+      translit: mersi
+      en: Thanks!
+      tokens:
+        - { surface: مرسی, lexeme: lx_mersi, translit: mersi, gloss: thanks }
+  questions:
+    - after: 2
+      prompt: { lang: en, text: How is Hodhod? }
+      choices: [good, tired, hungry]
+      answer: 0
+    - after: 3
+      prompt: { lang: en, text: What does Leila offer? }
+      choices: [tea, water, bread]
+      answer: 0
+  status: approved
+  provenance: { author: fixtures }

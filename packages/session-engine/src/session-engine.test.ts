@@ -18,7 +18,6 @@ import { newCard, review } from '@zaboon/srs'
 import {
   ContentError,
   IMPLEMENTATION,
-  NotImplementedError,
   allocate,
   buildChallenge,
   decodeVariant,
@@ -27,6 +26,7 @@ import {
   gradeResponse,
   mvpTwin,
   rebuildChallenges,
+  storyBeats,
   TRACE_FORMS,
 } from './index'
 import type { ContentView, GenerateInput, LearnerState, SessionFeatures } from './index'
@@ -485,11 +485,9 @@ describe('session-engine', () => {
       expect(() =>
         buildChallenge({ type: 'select_translation', items: ['s_nope'] }, 0, fx),
       ).toThrow(ContentError)
+      // Every challenge type builds now; a ref to an unknown story is a content error.
       expect(() => buildChallenge({ type: 'story', items: ['s_u01_0001'] }, 0, fx)).toThrow(
-        NotImplementedError,
-      )
-      expect(() => buildChallenge({ type: 'story', items: ['s_u01_0001'] }, 0, fx)).toThrow(
-        /not available yet/,
+        ContentError,
       )
       expect(() =>
         buildChallenge({ type: 'match_pairs', items: ['lx_ab', 'lx_nun'] }, 0, fx),
@@ -1413,5 +1411,79 @@ describe('speak (Wave 4, flags.speak)', () => {
       for (const c of out.challenges) expect(Challenge.safeParse(c).success).toBe(true)
       expect(rebuildChallenges(out.refs, view)).toEqual(out.challenges)
     }
+  })
+})
+
+describe('stories (Wave 4, flags.stories)', () => {
+  const story = (beat: number) =>
+    of(
+      buildChallenge(
+        {
+          type: 'story',
+          items: ['st_u01_tea'],
+          ...(beat ? { variant: encodeVariant({ option: beat }) } : {}),
+        },
+        beat,
+        fx,
+      ),
+      'story',
+    )
+
+  it('splits a story into beats: lines up to each question, then a closing beat', () => {
+    const st = indexContent(fx).story('st_u01_tea')
+    expect(storyBeats(st).map((b) => [b.lines.length, b.question?.after ?? null])).toEqual([
+      [2, 2],
+      [1, 3],
+      [1, null],
+    ])
+  })
+
+  it('builds each beat: header, speakers, Persian lines, the question', () => {
+    const b0 = story(0)
+    expect(b0).toMatchObject({ storyId: 'st_u01_tea', title: 'A cup of tea', beat: 0, beats: 3 })
+    expect(b0.image).toBe('/media/fixtures/img/tea.svg')
+    expect(b0.lines.map((l) => [l.speaker?.id ?? null, l.text.fa])).toEqual([
+      ['leila', 'سلام، خوبی؟'],
+      ['hodhod', 'خوبم، مرسی'],
+    ])
+    expect(b0.lines[0]!.speaker).toEqual({ id: 'leila', name: 'Leila' })
+    expect(b0.lines[0]!.text.audio).toEqual({ normal: '/media/fixtures/audio/s_u01_0001.mp3' })
+    expect(b0.lines[1]!.text.audio).toBeUndefined()
+    expect(b0.lines[0]!.text.tokens?.map((t) => t.surface)).toEqual(['سلام', 'خوبی'])
+    expect(b0.question).toEqual({
+      prompt: { lang: 'en', text: 'How is Hodhod?' },
+      choices: ['good', 'tired', 'hungry'].map((text) => ({ lang: 'en', text })),
+      answer: 0,
+    })
+    expect(story(2).question).toBeUndefined()
+    for (const b of [0, 1, 2]) {
+      expect(Challenge.parse(story(b))).toStrictEqual(story(b))
+      expect(story(b)).toEqual(story(b)) // deterministic
+    }
+    expect(() => story(3)).toThrow(ContentError)
+  })
+
+  it('a story session: one challenge per beat, in order, rebuildable; the same for any seed', () => {
+    const s = gen(fx, { kind: 'story', levelId: 'u01-st1' })
+    expect(s.challenges.map((c) => (c as ChallengeOf<'story'>).beat)).toEqual([0, 1, 2])
+    expect(s.refs).toEqual([
+      { type: 'story', items: ['st_u01_tea'] },
+      { type: 'story', items: ['st_u01_tea'], variant: encodeVariant({ option: 1 }) },
+      { type: 'story', items: ['st_u01_tea'], variant: encodeVariant({ option: 2 }) },
+    ])
+    expect(rebuildChallenges(s.refs, fx)).toEqual(s.challenges)
+    expect(gen(fx, { kind: 'story', levelId: 'u01-st1', seed: 'other' })).toEqual(s)
+    expect(() => gen(fx, { kind: 'story', levelId: 'u01-s0' })).toThrow(ContentError)
+    expect(() => gen(fx, { kind: 'story', levelId: null })).toThrow(ContentError)
+  })
+
+  it('grades: the choice index for a question beat; none for the closing beat', () => {
+    expect(gradeResponse(story(0), { kind: 'choice', value: 0 }).verdict).toBe('correct')
+    expect(gradeResponse(story(0), { kind: 'choice', value: 1 }).verdict).toBe('wrong')
+    expect(gradeResponse(story(0), { kind: 'none' }).verdict).toBe('wrong')
+    expect(gradeResponse(story(1), { kind: 'choice', value: 0 }).verdict).toBe('correct')
+    expect(gradeResponse(story(2), { kind: 'none' }).verdict).toBe('correct')
+    expect(gradeResponse(story(2), { kind: 'choice', value: 0 }).verdict).toBe('wrong')
+    expect(gradeResponse(story(2), { kind: 'skip' }).verdict).toBe('skipped')
   })
 })

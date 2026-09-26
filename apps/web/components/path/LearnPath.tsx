@@ -34,7 +34,7 @@ import {
   type PathNodeType,
 } from '@zaboon/ui'
 import { queryKeys } from '@/lib/api-client'
-import { useApi, useSession } from '@/lib/app-services'
+import { useApi, useHome, useSession } from '@/lib/app-services'
 import {
   currentLevelId,
   levelProgress,
@@ -45,6 +45,7 @@ import {
   popoverAction,
   unitBrand,
   unitPositions,
+  type PathFlags,
   type PathLevelData,
   type PathUnitData,
 } from './path-model'
@@ -82,13 +83,17 @@ export function usePath() {
 
 export function LearnPath() {
   const path = usePath()
+  // Feature flags come with GET /api/home (shared with the shell's query): flags.stories makes
+  // story nodes playable.
+  const session = useSession()
+  const home = useHome(session.status === 'signed_in')
   return (
     <section aria-labelledby="learn-title">
       <h1 id="learn-title" className="sr-only">
         Learning path
       </h1>
       {path.data ? (
-        <PathView path={path.data} />
+        <PathView path={path.data} flags={home.data?.flags} />
       ) : path.isError ? (
         <div className={styles.status} role="alert">
           <p>We couldn&apos;t load your path.</p>
@@ -109,7 +114,7 @@ export function LearnPath() {
   )
 }
 
-export function PathView({ path }: { path: PathResponse }) {
+export function PathView({ path, flags }: { path: PathResponse; flags?: PathFlags }) {
   const router = useRouter()
   const reduceMotion = usePrefersReducedMotion()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -128,7 +133,7 @@ export function PathView({ path }: { path: PathResponse }) {
   const close = useCallback(() => setOpenId(null), [])
 
   return (
-    <div className="zb-path" ref={rootRef} data-testid="learn-path">
+    <div className={clsx('zb-path', styles.path)} ref={rootRef} data-testid="learn-path">
       {path.sections.flatMap((section) =>
         section.units.map((unit) => {
           const pos = positions.get(unit.id)!
@@ -137,6 +142,7 @@ export function PathView({ path }: { path: PathResponse }) {
               key={unit.id}
               unit={unit}
               courseId={path.courseId}
+              flags={flags}
               section={pos.sectionNumber}
               number={pos.unitNumber}
               character={PATH_CHARACTERS[pos.pathIndex % PATH_CHARACTERS.length]!}
@@ -162,6 +168,7 @@ export function PathView({ path }: { path: PathResponse }) {
 interface UnitViewProps {
   unit: PathUnitData
   courseId: string
+  flags: PathFlags
   section: number
   number: number
   character: CharacterName
@@ -174,6 +181,7 @@ interface UnitViewProps {
 function UnitView({
   unit,
   courseId,
+  flags,
   section,
   number,
   character,
@@ -208,6 +216,7 @@ function UnitView({
             index={i}
             color={color}
             courseId={courseId}
+            flags={flags}
             open={openId === level.id}
             onToggle={() => onToggle(level.id)}
             onClose={onClose}
@@ -224,6 +233,7 @@ interface LevelRowProps {
   index: number
   color: BrandName
   courseId: string
+  flags: PathFlags
   open: boolean
   onToggle(): void
   onClose(): void
@@ -235,6 +245,7 @@ function LevelRow({
   index,
   color,
   courseId,
+  flags,
   open,
   onToggle,
   onClose,
@@ -304,6 +315,7 @@ function LevelRow({
           id={popoverId}
           level={level}
           courseId={courseId}
+          flags={flags}
           offset={offset}
           anchor={slotRef}
           onClose={closeAndFocus}
@@ -371,6 +383,7 @@ interface LevelPopoverProps {
   id: string
   level: PathLevelData
   courseId: string
+  flags: PathFlags
   offset: number
   anchor: RefObject<HTMLDivElement | null>
   /** Escape from inside the popover: close and give focus back to the node. */
@@ -383,6 +396,7 @@ function LevelPopover({
   id,
   level,
   courseId,
+  flags,
   offset,
   anchor,
   onClose,
@@ -390,7 +404,7 @@ function LevelPopover({
 }: LevelPopoverProps) {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
-  const action = popoverAction(courseId, level)
+  const action = popoverAction(courseId, level, flags)
   const counter = lessonCounter(level)
 
   useEffect(() => {
@@ -398,6 +412,8 @@ function LevelPopover({
     if (!el) return
     const first = el.querySelector<HTMLElement>('a[href], button')
     ;(first ?? el).focus()
+    // The last nodes' popovers open near the bottom: bring the whole popover into view.
+    el.scrollIntoView?.({ block: 'nearest' })
   }, [])
 
   useEffect(() => {

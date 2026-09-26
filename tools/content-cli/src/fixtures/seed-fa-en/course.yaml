@@ -6,6 +6,6 @@ fromLang: en
 learningLang: fa
 sections:
   - id: s1
-    title: "Section 1: First steps"
+    title: 'Section 1: First steps'
     cefr: A1
     units: [u01-hello, u02-about-me, u03-family, u04-food, u05-bazaar]

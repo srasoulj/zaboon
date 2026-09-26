@@ -65,8 +65,15 @@
   pointer-events: none;
 }
 
+/* Room under the last node for its popover (it opens below the node, above the mobile tab bar). */
+.path {
+  padding-block-end: 200px;
+}
+
 .popover {
   position: absolute;
+  /* Scrolled into view on open, clear of the fixed mobile tab bar. */
+  scroll-margin-block-end: 96px;
   z-index: 5;
   inset-block-start: calc(100% + 14px);
   inset-inline-start: 50%;

@@ -3,7 +3,7 @@
  * ADR 0005). Output layout, relative to the course output root:
  *
  *   v<N>/manifest.json        Manifest (sections, level list, bundle paths)
- *   v<N>/units/<unit>.json    UnitBundle (unit spec, lexemes, sentences + answer graphs, chats, guidebook)
+ *   v<N>/units/<unit>.json    UnitBundle (unit spec, lexemes, sentences + answer graphs, chats, stories, guidebook)
  *   v<N>/letters.json         LettersBundle
  *   v<N>/characters.json      CharactersBundle
  *   v<N>/build-info.json      { contentHash, includesDrafts } (publish uses it to skip no-op releases)
@@ -25,6 +25,7 @@ import {
   type Lexeme,
   type ManifestUnit,
   type Sentence,
+  type Story,
   type Unit,
 } from '@zaboon/content-schema'
 import type { ContentIssue, LoadedCourse } from './load'
@@ -111,6 +112,12 @@ export function buildCourse(course: LoadedCourse, opts: BuildOptions): BuiltBund
   const letter = (l: Letter): Letter => defined({ ...l, audio: m(l.audio) })
   const character = (c: Character): Character =>
     defined({ ...c, image: m(c.image), rive: m(c.rive) })
+  const story = (st: Story): Story =>
+    defined({
+      ...st,
+      image: m(st.image),
+      lines: st.lines.map((l) => defined({ ...l, audio: m(l.audio) })),
+    })
 
   const sentences = new Map(course.sentences.map((s) => [s.id, s]))
   const chats = new Map(course.chats.map((c) => [c.id, c]))
@@ -140,6 +147,9 @@ export function buildCourse(course: LoadedCourse, opts: BuildOptions): BuiltBund
       ;[c.prompt, ...c.options].forEach((sid) => st.add(sid))
     }
     for (const id of st) for (const t of sentences.get(id)!.tokens) if (t.lexeme) lx.add(t.lexeme)
+    const stories = course.stories.filter((x) => x.unit === u.id)
+    for (const x of stories)
+      for (const l of x.lines) for (const t of l.tokens) if (t.lexeme) lx.add(t.lexeme)
 
     const bundle: UnitBundle = {
       schema: CONTENT_SCHEMA_VERSION,
@@ -147,6 +157,7 @@ export function buildCourse(course: LoadedCourse, opts: BuildOptions): BuiltBund
       lexemes: course.lexemes.filter((l) => lx.has(l.id)).map(lexeme),
       sentences: course.sentences.filter((s) => st.has(s.id)).map(sentence),
       chats: course.chats.filter((c) => ch.has(c.id)),
+      ...(stories.length > 0 ? { stories: stories.map(story) } : {}),
       ...(u.guidebook ? { guidebook: course.guidebooks.get(u.guidebook) } : {}),
     }
     unitBundles.set(u.id, UnitBundle.parse(bundle))
@@ -183,6 +194,7 @@ export function buildCourse(course: LoadedCourse, opts: BuildOptions): BuiltBund
     ...course.lexemes,
     ...course.sentences,
     ...course.chats,
+    ...course.stories,
     ...letterTrack.letters,
     ...course.characters,
   ].some((i) => i.status === 'draft')

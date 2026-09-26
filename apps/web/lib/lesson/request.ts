@@ -1,13 +1,14 @@
 /**
  * The lesson URL contract (other workstreams link here):
- *   /lesson?course=<courseId>&kind=<lesson|practice|letters|unit_review>&level=<levelId>
+ *   /lesson?course=<courseId>&kind=<lesson|practice|letters|unit_review|story>&level=<levelId>
  *   /lesson?course=<courseId>&kind=practice&mode=<mixed|mistakes|listening|typing>  (practice hub)
  * `level` is omitted for practice. `mode` (practice only) reaches `createSession`. Leaving the
  * player returns to the kind's home tab.
  */
 import { PracticeMode, SessionKind, type RouteRequest } from '@zaboon/contracts'
 
-export const PLAYER_KINDS = ['lesson', 'practice', 'letters', 'unit_review'] as const
+/** `story` (P2, flags.stories) plays a unit's story level; the server refuses it while the flag is off. */
+export const PLAYER_KINDS = ['lesson', 'practice', 'letters', 'unit_review', 'story'] as const
 export type PlayerKind = (typeof PLAYER_KINDS)[number]
 
 export interface LessonRequest {
@@ -41,7 +42,10 @@ export function parseLessonRequest(params: ParamReader): ParsedLessonRequest {
   if (level !== null && level !== '' && !LEVEL_ID.test(level))
     return { ok: false, reason: 'invalid level' }
   const levelId = level ? level : null
-  if (levelId === null && (playerKind === 'lesson' || playerKind === 'unit_review'))
+  if (
+    levelId === null &&
+    (playerKind === 'lesson' || playerKind === 'unit_review' || playerKind === 'story')
+  )
     return { ok: false, reason: `a ${playerKind} needs a level` }
   const modeRaw = params.get('mode')
   if (modeRaw === null || modeRaw === '')

@@ -91,6 +91,10 @@ export function mediaRefs(
     add(s.audio?.formal, `sentence ${s.id}`, s.status)
   }
   for (const l of course.letters?.letters ?? []) add(l.audio, `letter ${l.id}`, l.status)
+  for (const st of course.stories) {
+    add(st.image, `story ${st.id}`, st.status)
+    st.lines.forEach((l, i) => add(l.audio, `story ${st.id} line ${i + 1}`, st.status))
+  }
   for (const c of course.characters) {
     add(c.image, `character ${c.id}`, c.status)
     add(c.rive, `character ${c.id}`, c.status)
@@ -291,6 +295,60 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
     if (new Set(c.options).size !== c.options.length) err(file, `chat ${c.id}: duplicate options`)
   }
 
+  // --- stories (P2) --------------------------------------------------------------------------
+  for (const u of course.units)
+    for (const level of u.levels) {
+      const file = src('unit', u.id)
+      if (level.kind === 'story' && !level.story)
+        err(file, `level ${level.id}: a story level must name its story`)
+      if (level.story !== undefined && level.kind !== 'story')
+        err(file, `level ${level.id}: only a kind: story level can name a story`)
+      if (level.kind !== 'story' || !level.story) continue
+      const story = course.stories.find((st) => st.id === level.story)
+      if (!story) err(file, `level ${level.id}: unknown story ${level.story}`)
+      else if (story.unit !== u.id)
+        err(file, `level ${level.id}: story ${story.id} belongs to unit ${story.unit}, not ${u.id}`)
+    }
+  for (const st of course.stories) {
+    const file = src('story', st.id)
+    const where = `story ${st.id}`
+    if (!units.has(st.unit)) err(file, `${where}: unknown unit ${st.unit}`)
+    for (const c of st.characters)
+      if (!characters.has(c)) err(file, `${where}: unknown character ${c} (not in characters.yaml)`)
+    const cast = new Set(st.characters)
+    const storyUnit = order.get(st.unit)
+    st.lines.forEach((l, i) => {
+      const at = `${where} line ${i + 1}`
+      if (l.speaker !== null && !cast.has(l.speaker))
+        err(file, `${at}: speaker ${l.speaker} is not one of the story's characters`)
+      const tokenText = l.tokens.map((t) => t.surface).join(' ')
+      if (normalize(tokenText) !== normalize(l.fa))
+        err(file, `${at}: tokens "${tokenText}" do not spell fa "${l.fa}"`)
+      for (const t of l.tokens) {
+        if (!t.lexeme) continue
+        const lx = lexemes.get(t.lexeme)
+        if (!lx) {
+          err(file, `${at}: unknown lexeme ${t.lexeme}`)
+          continue
+        }
+        const introduced = order.get(lx.introducedIn)
+        if (introduced !== undefined && storyUnit !== undefined && introduced > storyUnit)
+          err(file, `${at}: lexeme ${lx.id} is introduced in ${lx.introducedIn}, after ${st.unit}`)
+      }
+    })
+    let previous = 0
+    st.questions.forEach((q, i) => {
+      const at = `${where} question ${i + 1}`
+      if (q.after > st.lines.length)
+        err(file, `${at}: after ${q.after} is past the last line (${st.lines.length})`)
+      if (q.after <= previous)
+        err(file, `${at}: questions must follow each other (after ${q.after})`)
+      previous = q.after
+      if (q.answer >= q.choices.length) err(file, `${at}: answer ${q.answer} is out of range`)
+      if (new Set(q.choices).size !== q.choices.length) err(file, `${at}: duplicate choices`)
+    })
+  }
+
   // --- letters track --------------------------------------------------------------------------
   if (!course.letters && !course.issues.some((i) => i.file === 'letters.yaml'))
     err('letters.yaml', 'missing letters.yaml')
@@ -433,6 +491,7 @@ export function validateCourse(course: LoadedCourse, opts: ValidateOptions): Con
   collect('lexeme', course.lexemes)
   collect('sentence', course.sentences)
   collect('chat', course.chats)
+  collect('story', course.stories)
   collect('letter', course.letters?.letters ?? [])
   collect('character', course.characters)
   // --- unused items (warnings) -----------------------------------------------------------------
