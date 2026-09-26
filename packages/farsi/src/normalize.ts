@@ -72,8 +72,8 @@ const LETTER_MAP_RE = new RegExp(`[${[...LETTER_MAP.keys()].join('')}]`, 'g')
  * Removed before whitespace is collapsed, so a BOM inside a word never becomes a space (n038).
  */
 // Each code point is stripped on its own; the class is not meant to match joined sequences.
-// eslint-disable-next-line no-misleading-character-class
 const STRIP_RE =
+  // eslint-disable-next-line no-misleading-character-class
   /[\u200B\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\u061C\uFEFF\u00AD\u0640\u064B-\u0652\u0670]/g
 
 /** Arabic presentation forms (copied from old PDFs): folded to base letters with NFKC. */
