@@ -141,6 +141,14 @@ describe('content-schema', () => {
     expect(parseItemRef(itemRef('lexeme', 'lx_ab'))).toEqual({ kind: 'lexeme', id: 'lx_ab' })
     expect(() => parseItemRef('nope')).toThrow()
   })
+
+  it('item refs are at most 100 characters', () => {
+    const ref = (length: number) => `lexeme:lx_${'a'.repeat(length - 'lexeme:lx_'.length)}`
+    expect(ItemRef.safeParse('lexeme:lx_dastetun_dard_nakone').success).toBe(true)
+    expect(ItemRef.safeParse(ref(100)).success).toBe(true)
+    expect(ItemRef.safeParse(ref(101)).success).toBe(false)
+    expect(ItemRef.safeParse(ref(100_000)).success).toBe(false)
+  })
 })
 
 describe('content-schema: stories (P2)', () => {

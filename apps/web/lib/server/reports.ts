@@ -12,22 +12,13 @@ import { ApiError } from './errors'
 
 type NewReport = z.output<typeof CreateReportRequest>
 
-const same = (a: NewReport, b: z.output<typeof ReportDto>) =>
-  a.itemRef === b.itemRef &&
-  a.kind === b.kind &&
-  a.sessionId === b.sessionId &&
-  a.answer === b.answer &&
-  a.text === b.text
-
 /**
  * Files a report. Idempotent: an identical report of the caller's that is still `new` (e.g. an
  * outbox retry) returns the existing id instead of a duplicate.
  */
 export function createReport(db: Db, userId: string, input: NewReport): Promise<{ id: string }> {
   return withUser(db, userId, async (tx) => {
-    const open = (await repos.reports.listReportsForUser(tx, userId)).find(
-      (r) => r.status === 'new' && same(input, r),
-    )
+    const open = await repos.reports.findOpenReport(tx, userId, input)
     if (open) return { id: open.id }
     return repos.reports.createReport(tx, userId, input)
   })

@@ -26,8 +26,14 @@ export const SectionId = z.string().regex(/^s\d{1,2}$/, 'section id like s1')
 export const StoryId = z.string().regex(/^st_[a-z0-9_]+$/, 'story id like st_u01_tea')
 export const CourseId = z.string().regex(/^[a-z][a-z0-9-]*$/)
 
-/** Any content item reference used in sessions, reports and stats: "<kind>:<id>". */
-export const ItemRef = z.string().regex(/^(lexeme|sentence|letter|chat):[a-z0-9_-]+$/)
+/**
+ * Any content item reference used in sessions, reports and stats: "<kind>:<id>". At most 100
+ * characters (the longest real one is 30; the database caps item_ref columns at 120).
+ */
+export const ItemRef = z
+  .string()
+  .max(100)
+  .regex(/^(lexeme|sentence|letter|chat):[a-z0-9_-]+$/)
 export type ItemRef = z.infer<typeof ItemRef>
 
 // ---------------------------------------------------------------------------------------------

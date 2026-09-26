@@ -58,7 +58,13 @@ afterAll(async () => {
 
 async function databaseShapes(): Promise<Record<string, TableShape>> {
   const rows = await admin<
-    { table_name: string; column_name: string; is_nullable: 'YES' | 'NO'; sql_type: string; is_pk: boolean }[]
+    {
+      table_name: string
+      column_name: string
+      is_nullable: 'YES' | 'NO'
+      sql_type: string
+      is_pk: boolean
+    }[]
   >`
     SELECT c.table_name, c.column_name, c.is_nullable,
            format_type(a.atttypid, a.atttypmod) AS sql_type,
@@ -79,7 +85,11 @@ async function databaseShapes(): Promise<Record<string, TableShape>> {
   const out: Record<string, TableShape> = {}
   for (const r of rows) {
     const table = (out[r.table_name] ??= {})
-    table[r.column_name] = { type: r.sql_type, notNull: r.is_nullable === 'NO', primaryKey: r.is_pk }
+    table[r.column_name] = {
+      type: r.sql_type,
+      notNull: r.is_nullable === 'NO',
+      primaryKey: r.is_pk,
+    }
   }
   return out
 }
@@ -102,12 +112,40 @@ describe('Drizzle schema ↔ migrated database', () => {
     const db = await databaseShapes()
     const expected = [
       // MVP
-      'profiles', 'public_profiles', 'consents', 'enrollments', 'level_progress', 'sessions', 'session_events',
-      'session_answers', 'daily_activity', 'streaks', 'xp_ledger', 'lives', 'user_items', 'lexeme_memory',
-      'letter_memory', 'mistakes', 'content_versions', 'app_config', 'reports', 'item_stats', 'rate_limits',
+      'profiles',
+      'public_profiles',
+      'consents',
+      'enrollments',
+      'level_progress',
+      'sessions',
+      'session_events',
+      'session_answers',
+      'daily_activity',
+      'streaks',
+      'xp_ledger',
+      'lives',
+      'user_items',
+      'lexeme_memory',
+      'letter_memory',
+      'mistakes',
+      'content_versions',
+      'app_config',
+      'reports',
+      'item_stats',
+      'rate_limits',
       // P2
-      'wallet', 'coin_ledger', 'league_weeks', 'league_cohorts', 'league_members', 'user_league', 'quest_defs',
-      'user_quests', 'entitlements', 'webhook_events', 'push_subscriptions',
+      'wallet',
+      'coin_ledger',
+      'league_weeks',
+      'league_cohorts',
+      'league_members',
+      'user_league',
+      'quest_defs',
+      'user_quests',
+      'entitlements',
+      'webhook_events',
+      'push_subscriptions',
+      'speech_usage',
     ]
     expect(Object.keys(db).sort()).toEqual([...expected].sort())
   })

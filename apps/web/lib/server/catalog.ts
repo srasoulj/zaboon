@@ -4,6 +4,7 @@
  * migration (§10.4); nothing else is written.
  */
 import {
+  CourseIdParam,
   DEFAULT_COURSE_ID,
   type AppConfig,
   type FsrsCard,
@@ -29,8 +30,6 @@ import {
   progressMap,
 } from './path'
 
-const COURSE_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/
-
 /** The active course: the most recently used enrollment, else the default course. */
 export async function activeCourseId(tx: Tx, userId: string): Promise<string> {
   const enrollments = await repos.enrollments.listEnrollments(tx, userId)
@@ -42,7 +41,7 @@ export async function activeCourseId(tx: Tx, userId: string): Promise<string> {
 export function courseParam(req: Request): string | null {
   const value = new URL(req.url).searchParams.get('courseId')
   if (value === null) return null
-  if (!COURSE_ID_RE.test(value)) throw new ApiError('validation', 'invalid courseId')
+  if (!CourseIdParam.safeParse(value).success) throw new ApiError('validation', 'invalid courseId')
   return value
 }
 

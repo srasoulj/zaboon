@@ -34,7 +34,8 @@ export interface LoadedBundle extends CourseVersion {
 
 const CURRENT_TTL_MS = 10_000
 // Resolved values only: a lookup made on one request's transaction never becomes another's promise.
-const currentCache = new Map<string, { at: number; value: CourseVersion | null }>()
+// Published courses only: a miss is not cached, so made-up course ids can't grow the map.
+const currentCache = new Map<string, { at: number; value: CourseVersion }>()
 const bundleCache = new Map<string, Promise<LoadedBundle>>()
 
 /**
@@ -51,7 +52,11 @@ export async function currentVersion(
   const hit = currentCache.get(courseId)
   if (hit && Date.now() - hit.at < CURRENT_TTL_MS) return hit.value
   const cv = await repos.content.getCurrentContentVersion(q, courseId)
-  const value = cv ? { courseId, version: cv.version, bundlePath: cv.bundlePath } : null
+  if (!cv) {
+    currentCache.delete(courseId)
+    return null
+  }
+  const value = { courseId, version: cv.version, bundlePath: cv.bundlePath }
   currentCache.set(courseId, { at: Date.now(), value })
   return value
 }
@@ -59,6 +64,11 @@ export async function currentVersion(
 /** Tests only: forget cached current-version pointers (after publishing a new version). */
 export function resetContentCache(): void {
   currentCache.clear()
+}
+
+/** Tests only: how many current-version pointers are cached. */
+export function contentCacheSize(): number {
+  return currentCache.size
 }
 
 export async function requireCurrentVersion(

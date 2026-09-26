@@ -1,6 +1,8 @@
 /** POST /api/account/merge, GET /api/account/export and DELETE /api/account. */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { DEFAULT_APP_CONFIG } from '@zaboon/contracts'
 import { repos, withSystem } from '@zaboon/db'
+import { resetRuntimeConfig } from '../../lib/server/config'
 import { api, get, play } from './flows'
 import { createHarness, type Harness, type TestUser } from './harness'
 
@@ -177,6 +179,34 @@ describe('GET /api/account/export', () => {
       'session_answers',
     ])
       expect(tables[t]!.length, t).toBeGreaterThan(0)
+  })
+
+  it('has its own rate limit: 3 exports a minute per learner', async () => {
+    // The harness raises every bucket; give `export` its default back for this test.
+    const raised = Object.fromEntries(
+      Object.keys(DEFAULT_APP_CONFIG.rateLimits).map((k) => [k, { perMinute: 100_000 }]),
+    )
+    const setLimits = async (limits: Record<string, { perMinute: number }>) => {
+      await withSystem(h.db.db, (tx) => repos.content.setAppConfig(tx, 'rateLimits', limits))
+      resetRuntimeConfig()
+    }
+    await setLimits({ ...raised, export: DEFAULT_APP_CONFIG.rateLimits.export! })
+    try {
+      const alice = await h.guest()
+      const bob = await h.guest()
+      const t0 = '2031-06-01T12:00:00.000Z'
+      const exportAt = (user: TestUser, now: string) =>
+        get(h, api.exportAccount, '/api/account/export', user, now)
+      for (let i = 0; i < 3; i++) expect((await exportAt(alice, t0)).status).toBe(200)
+      const limited = await exportAt(alice, t0)
+      expect(limited.status).toBe(429)
+      expect(limited.body).toMatchObject({ error: { code: 'rate_limited' } })
+      // Per learner: others still export, and alice can again once a token has refilled (20 s).
+      expect((await exportAt(bob, t0)).status).toBe(200)
+      expect((await exportAt(alice, '2031-06-01T12:00:21.000Z')).status).toBe(200)
+    } finally {
+      await setLimits(raised)
+    }
   })
 })
 

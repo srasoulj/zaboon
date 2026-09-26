@@ -50,8 +50,18 @@ export const APP_VERSION_HEADER = 'x-zaboon-app-version'
 export const DEFAULT_COURSE_ID = 'fa-en'
 export const FIXTURE_COURSE_ID = 'fixture'
 
+/**
+ * A course id sent by a client (`?courseId=` on the GET routes, CreateSessionRequest): lowercase
+ * letters, digits and dashes, at most 40 characters.
+ */
+export const CourseIdParam = z
+  .string()
+  .max(40)
+  .regex(/^[a-z0-9][a-z0-9-]{0,39}$/, 'course id like fa-en')
+
 export const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD')
-export const IsoDateTime = z.iso.datetime({ offset: true })
+/** Capped: the ISO format itself allows any number of fractional-second digits. */
+export const IsoDateTime = z.iso.datetime({ offset: true }).max(64)
 export const Uuid = z.string().uuid()
 
 // ---------------------------------------------------------------------------------------------
@@ -259,6 +269,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     shop: { perMinute: 20 },
     cron: { perMinute: 10 },
     speech: { perMinute: 20 },
+    /** GET /api/account/export reads every row of the learner's. */
+    export: { perMinute: 3 },
   },
   speech: { dailyQuota: 60, maxAudioBytes: 512_000, maxDurationMs: 15_000, pauseMinutes: 60 },
 }
@@ -605,10 +617,20 @@ export type Verdict = z.infer<typeof Verdict>
 /** Verdicts that count as a correct answer. */
 export const PASSING_VERDICTS: readonly Verdict[] = ['correct', 'typo', 'spelling']
 
+/**
+ * A tiles answer: at most MAX_TILES tiles (word-bank words or letters) of at most MAX_TILE_LENGTH
+ * characters. These bounds keep the largest stored response under the 8 KiB session_answers CHECK.
+ */
+export const MAX_TILES = 40
+export const MAX_TILE_LENGTH = 64
+
 export const ChallengeResponse = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('choice'), value: z.number().int().nonnegative() }),
   z.object({ kind: z.literal('text'), value: z.string().max(500) }),
-  z.object({ kind: z.literal('tiles'), value: z.array(z.string()).max(40) }),
+  z.object({
+    kind: z.literal('tiles'),
+    value: z.array(z.string().max(MAX_TILE_LENGTH)).max(MAX_TILES),
+  }),
   z.object({
     kind: z.literal('pairs'),
     value: z.array(z.tuple([z.number().int(), z.number().int()])).max(10),
@@ -1108,6 +1130,7 @@ export const ProfilePatch = z
     displayName: z.string().trim().min(1).max(40).optional(),
     username: z
       .string()
+      .max(20)
       .regex(/^[a-z0-9_]{3,20}$/)
       .optional(),
     avatar: z.record(z.string(), z.unknown()).optional(),
@@ -1121,7 +1144,7 @@ export const OnboardingRequest = z.object({
   selfLevel: SelfLevel,
   dailyGoalXp: z.number().int().positive(),
   ageConfirmed: z.literal(true),
-  tz: z.string().min(1),
+  tz: z.string().min(1).max(64),
 })
 
 // ---------------------------------------------------------------------------------------------
@@ -1129,11 +1152,11 @@ export const OnboardingRequest = z.object({
 // ---------------------------------------------------------------------------------------------
 export const CreateSessionRequest = z
   .object({
-    courseId: z.string().default(DEFAULT_COURSE_ID),
+    courseId: CourseIdParam.default(DEFAULT_COURSE_ID),
     kind: SessionKind,
-    levelId: LevelId.optional(),
+    levelId: LevelId.max(40).optional(),
     /** The browser's IANA timezone; accepted at most once per AppConfig.tz.minChangeIntervalHours. */
-    tz: z.string().min(1),
+    tz: z.string().min(1).max(64),
     /** P2 practice hub (flags.practiceHub): which practice to build. Practice sessions only. */
     mode: PracticeMode.optional(),
     /**
@@ -1178,7 +1201,7 @@ export const CompleteSessionRequest = z.object({
 // ---------------------------------------------------------------------------------------------
 // Account, reports, admin, meta
 // ---------------------------------------------------------------------------------------------
-export const MergeRequest = z.object({ guestToken: z.string().min(20) })
+export const MergeRequest = z.object({ guestToken: z.string().min(20).max(4096) })
 export const MergeResponse = z.object({ merged: z.boolean(), home: HomeResponse })
 export const DeleteAccountResponse = z.object({ deleted: z.literal(true) })
 /** GDPR export: a JSON document with every row we hold about the user. */
@@ -1222,10 +1245,10 @@ export const DevTokenResponse = z.object({
   expiresAt: IsoDateTime,
   user: z.object({ id: Uuid, isAnonymous: z.boolean(), email: z.string().nullable() }),
 })
-export const DevSignInRequest = z.object({ email: z.string().email() })
+export const DevSignInRequest = z.object({ email: z.string().email().max(254) })
 /** Local stand-in for Supabase's refresh token: re-issues a token for a recently expired one. */
-export const DevRefreshRequest = z.object({ accessToken: z.string().min(20) })
-export const DevLinkRequest = z.object({ email: z.string().email() })
+export const DevRefreshRequest = z.object({ accessToken: z.string().min(20).max(4096) })
+export const DevLinkRequest = z.object({ email: z.string().email().max(254) })
 
 // ---------------------------------------------------------------------------------------------
 // Errors

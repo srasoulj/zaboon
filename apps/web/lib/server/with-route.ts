@@ -4,13 +4,16 @@
  *   export const POST = withRoute(routes.createSession, async ({ body, user, db, now, config }) => { … })
  *
  * It authenticates the caller per the route's `auth`, rejects outdated clients (426), applies the
- * route's rate-limit bucket, validates the request and the response against the zod contracts,
- * reads the time from the Clock seam and the feature flags from the flags seam (flags.ts: the
- * `x-test-flags` header in local mode only), and turns every failure into the error envelope.
+ * route's rate-limit bucket, caps and validates the request and validates the response against the
+ * zod contracts, reads the time from the Clock seam and the feature flags from the flags seam
+ * (flags.ts: the `x-test-flags` header in local mode only), and turns every failure into the error
+ * envelope.
  */
 import type { z } from 'zod'
 import {
   APP_VERSION_HEADER,
+  DEFAULT_APP_CONFIG,
+  DEFAULT_MAX_BODY_BYTES,
   type AppConfig,
   type RouteAuth,
   type RouteDef,
@@ -58,9 +61,20 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
-function clientIp(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  return forwarded?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'local'
+/** An IPv4 or IPv6 address (with an optional zone or port suffix), nothing longer. */
+const IP_RE = /^[0-9A-Fa-f:.%[\]a-z]{1,64}$/
+
+/**
+ * The client's IP for signed-out rate-limit keys: the first `x-forwarded-for` entry (Vercel sets it
+ * to the real client address), else `x-real-ip`. Anything that isn't a plausible address (too long,
+ * other characters) counts as one shared `unknown` client, so a crafted header can neither break
+ * the rate-limit key nor mint a fresh bucket per request.
+ */
+export function clientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const ip = forwarded || req.headers.get('x-real-ip')?.trim()
+  if (!ip) return 'local'
+  return IP_RE.test(ip) ? ip : 'unknown'
 }
 
 async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null> {
@@ -88,9 +102,57 @@ async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null
   }
 }
 
-async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
+/**
+ * The rate limit of a route's bucket: its configured entry, else the built-in one for that bucket,
+ * else the `default` bucket's. A config without an entry for the bucket (an app_config row written
+ * before the bucket existed, say) neither crashes the route nor leaves it unmetered.
+ */
+export function bucketLimit(config: AppConfig, bucket: string): { perMinute: number } {
+  return (
+    config.rateLimits[bucket] ??
+    DEFAULT_APP_CONFIG.rateLimits[bucket] ??
+    config.rateLimits.default ??
+    DEFAULT_APP_CONFIG.rateLimits.default!
+  )
+}
+
+function bodyTooLarge(maxBytes: number): ApiError {
+  return new ApiError('validation', `request body is larger than ${maxBytes} bytes`)
+}
+
+/**
+ * The request body as UTF-8 text, at most `maxBytes` bytes: a bigger declared `content-length` is
+ * refused before reading, and a body that turns out bigger (no or a false `content-length`) as
+ * soon as the read passes the limit, so an oversized body is never buffered whole.
+ */
+async function readBodyText(req: Request, maxBytes: number): Promise<string> {
+  if (Number(req.headers.get('content-length')) > maxBytes) throw bodyTooLarge(maxBytes)
+  if (!req.body) return ''
+  const reader = req.body.getReader()
+  const decoder = new TextDecoder()
+  let bytes = 0
+  let text = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    bytes += value.byteLength
+    if (bytes > maxBytes) {
+      reader.cancel().catch(() => {})
+      throw bodyTooLarge(maxBytes)
+    }
+    text += decoder.decode(value, { stream: true })
+  }
+  return text + decoder.decode()
+}
+
+/** Reads (at most `maxBytes` bytes), parses and validates a JSON request body. */
+export async function readBody(
+  req: Request,
+  schema: z.ZodType,
+  maxBytes: number,
+): Promise<unknown> {
   let raw: unknown
-  const text = await req.text()
+  const text = await readBodyText(req, maxBytes)
   try {
     raw = text.length === 0 ? {} : JSON.parse(text)
   } catch {
@@ -113,7 +175,12 @@ async function readBody(req: Request, schema: z.ZodType): Promise<unknown> {
  */
 export function isGoneUserViolation(err: unknown): boolean {
   for (let e: unknown = err, depth = 0; e && depth < 3; depth++) {
-    const pg = e as { code?: unknown; constraint_name?: unknown; constraint?: unknown; cause?: unknown }
+    const pg = e as {
+      code?: unknown
+      constraint_name?: unknown
+      constraint?: unknown
+      cause?: unknown
+    }
     const constraint = String(pg.constraint_name ?? pg.constraint ?? '')
     if (pg.code === '23503' && /user_id/.test(constraint)) return true
     e = pg.cause
@@ -149,26 +216,22 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
 
       // Dev auth emulates Supabase Auth, which has its own limits; everything else is metered.
       if (def.auth !== 'dev') {
-        const limit = config.rateLimits[def.bucket] ?? config.rateLimits.default
-        if (limit) {
-          const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req)}`}`
-          const r = await repos.rateLimits.consumeToken(db, key, limit.perMinute, {
-            now: now.toISOString(),
+        const limit = bucketLimit(config, def.bucket)
+        const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req)}`}`
+        const r = await repos.rateLimits.consumeToken(db, key, limit.perMinute, {
+          now: now.toISOString(),
+        })
+        if (!r.allowed) {
+          const retryAfter = Number.isFinite(r.retryAfterMs) ? Math.ceil(r.retryAfterMs / 1000) : 60
+          throw new ApiError('rate_limited', 'too many requests', undefined, {
+            'retry-after': String(retryAfter),
           })
-          if (!r.allowed) {
-            const retryAfter = Number.isFinite(r.retryAfterMs)
-              ? Math.ceil(r.retryAfterMs / 1000)
-              : 60
-            throw new ApiError('rate_limited', 'too many requests', undefined, {
-              'retry-after': String(retryAfter),
-            })
-          }
         }
       }
 
       const body =
         def.request && req.method !== 'GET' && req.method !== 'HEAD'
-          ? await readBody(req, def.request)
+          ? await readBody(req, def.request, def.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES)
           : undefined
       // Static routes resolve `params` to undefined.
       const rawParams = (await next?.params) ?? {}
