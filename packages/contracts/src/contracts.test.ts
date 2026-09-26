@@ -733,4 +733,9 @@ describe('contracts: bounded inputs', () => {
     expect(bytes).toBeLessThanOrEqual(routes.transcribe.maxBodyBytes!)
     expect(bytes).toBeGreaterThan(DEFAULT_MAX_BODY_BYTES)
   })
+
+  it('the account export has its own rate-limit bucket: 3 a minute', () => {
+    expect(routes.exportAccount.bucket).toBe('export')
+    expect(AppConfig.parse(DEFAULT_APP_CONFIG).rateLimits.export).toEqual({ perMinute: 3 })
+  })
 })

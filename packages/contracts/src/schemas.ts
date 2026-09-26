@@ -269,6 +269,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     shop: { perMinute: 20 },
     cron: { perMinute: 10 },
     speech: { perMinute: 20 },
+    /** GET /api/account/export reads every row of the learner's. */
+    export: { perMinute: 3 },
   },
   speech: { dailyQuota: 60, maxAudioBytes: 512_000, maxDurationMs: 15_000, pauseMinutes: 60 },
 }

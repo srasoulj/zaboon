@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
+import { DEFAULT_APP_CONFIG, type AppConfig } from '@zaboon/contracts'
 import { ApiError } from './errors'
-import { readBody } from './with-route'
+import { bucketLimit, readBody } from './with-route'
 
 const Body = z.object({ n: z.number().int() })
 const LIMIT = 64
@@ -90,5 +91,24 @@ describe('readBody: the request body cap', () => {
       code: 'validation',
       details: [{ path: 'n' }],
     })
+  })
+})
+
+describe('bucketLimit', () => {
+  const config = (rateLimits: AppConfig['rateLimits']): AppConfig => ({
+    ...DEFAULT_APP_CONFIG,
+    rateLimits,
+  })
+
+  it('uses the configured entry of the bucket', () => {
+    expect(bucketLimit(DEFAULT_APP_CONFIG, 'export')).toEqual({ perMinute: 3 })
+    expect(bucketLimit(config({ export: { perMinute: 1 } }), 'export')).toEqual({ perMinute: 1 })
+  })
+
+  it('falls back to the built-in bucket, then to the default bucket, never to no limit', () => {
+    const old = config({ default: { perMinute: 50 } }) // a config from before the bucket existed
+    expect(bucketLimit(old, 'export')).toEqual(DEFAULT_APP_CONFIG.rateLimits.export)
+    expect(bucketLimit(old, 'no-such-bucket')).toEqual({ perMinute: 50 })
+    expect(bucketLimit(config({}), 'no-such-bucket')).toEqual(DEFAULT_APP_CONFIG.rateLimits.default)
   })
 })

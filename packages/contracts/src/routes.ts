@@ -186,12 +186,13 @@ export const routes = {
     request: c.MergeRequest,
     response: c.MergeResponse,
   }),
+  /** Reads every row of the learner's: its own, much smaller rate-limit bucket. */
   exportAccount: route({
     method: 'GET',
     path: '/api/account/export',
     auth: 'user',
     phase: 'mvp',
-    bucket: 'default',
+    bucket: 'export',
     request: undefined,
     response: c.ExportResponse,
   }),

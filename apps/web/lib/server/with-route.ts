@@ -12,6 +12,7 @@
 import type { z } from 'zod'
 import {
   APP_VERSION_HEADER,
+  DEFAULT_APP_CONFIG,
   DEFAULT_MAX_BODY_BYTES,
   type AppConfig,
   type RouteAuth,
@@ -88,6 +89,20 @@ async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null
       return user
     }
   }
+}
+
+/**
+ * The rate limit of a route's bucket: its configured entry, else the built-in one for that bucket,
+ * else the `default` bucket's. A config without an entry for the bucket (an app_config row written
+ * before the bucket existed, say) neither crashes the route nor leaves it unmetered.
+ */
+export function bucketLimit(config: AppConfig, bucket: string): { perMinute: number } {
+  return (
+    config.rateLimits[bucket] ??
+    DEFAULT_APP_CONFIG.rateLimits[bucket] ??
+    config.rateLimits.default ??
+    DEFAULT_APP_CONFIG.rateLimits.default!
+  )
 }
 
 function bodyTooLarge(maxBytes: number): ApiError {
@@ -190,20 +205,16 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
 
       // Dev auth emulates Supabase Auth, which has its own limits; everything else is metered.
       if (def.auth !== 'dev') {
-        const limit = config.rateLimits[def.bucket] ?? config.rateLimits.default
-        if (limit) {
-          const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req)}`}`
-          const r = await repos.rateLimits.consumeToken(db, key, limit.perMinute, {
-            now: now.toISOString(),
+        const limit = bucketLimit(config, def.bucket)
+        const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req)}`}`
+        const r = await repos.rateLimits.consumeToken(db, key, limit.perMinute, {
+          now: now.toISOString(),
+        })
+        if (!r.allowed) {
+          const retryAfter = Number.isFinite(r.retryAfterMs) ? Math.ceil(r.retryAfterMs / 1000) : 60
+          throw new ApiError('rate_limited', 'too many requests', undefined, {
+            'retry-after': String(retryAfter),
           })
-          if (!r.allowed) {
-            const retryAfter = Number.isFinite(r.retryAfterMs)
-              ? Math.ceil(r.retryAfterMs / 1000)
-              : 60
-            throw new ApiError('rate_limited', 'too many requests', undefined, {
-              'retry-after': String(retryAfter),
-            })
-          }
         }
       }
 
