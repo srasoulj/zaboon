@@ -9,6 +9,7 @@
  * (flags.ts: the `x-test-flags` header in local mode only), and turns every failure into the error
  * envelope.
  */
+import { isIP } from 'node:net'
 import type { z } from 'zod'
 import {
   APP_VERSION_HEADER,
@@ -61,20 +62,28 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
-/** An IPv4 or IPv6 address (with an optional zone or port suffix), nothing longer. */
-const IP_RE = /^[0-9A-Fa-f:.%[\]a-z]{1,64}$/
+/** The longest textual IP (IPv4-mapped IPv6); also bounds zone IDs, which isIP accepts at any length. */
+const MAX_IP_LENGTH = 45
+
+function validIp(value: string | null | undefined): string | null {
+  const ip = value?.trim()
+  return ip && ip.length <= MAX_IP_LENGTH && isIP(ip) !== 0 ? ip : null
+}
 
 /**
- * The client's IP for signed-out rate-limit keys: the first `x-forwarded-for` entry (Vercel sets it
- * to the real client address), else `x-real-ip`. Anything that isn't a plausible address (too long,
- * other characters) counts as one shared `unknown` client, so a crafted header can neither break
- * the rate-limit key nor mint a fresh bucket per request.
+ * The caller's address for signed-out rate-limit keys (`rate_limits.key` is at most 200
+ * characters): the first `x-forwarded-for` entry, else `x-real-ip`, when that is a valid IPv4 or
+ * IPv6 address, else one shared `unknown` client. Only when a proxy sets those headers
+ * (`trustProxy`: Vercel, or ZABOON_TRUST_PROXY=1; env.ts). Otherwise they are the client's to
+ * choose, so every signed-out caller shares `local` and no header can mint a fresh bucket.
  */
-export function clientIp(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const ip = forwarded || req.headers.get('x-real-ip')?.trim()
-  if (!ip) return 'local'
-  return IP_RE.test(ip) ? ip : 'unknown'
+export function clientIp(req: Request, trustProxy: boolean): string {
+  if (!trustProxy) return 'local'
+  return (
+    validIp(req.headers.get('x-forwarded-for')?.split(',', 1)[0]) ??
+    validIp(req.headers.get('x-real-ip')) ??
+    'unknown'
+  )
 }
 
 async function authorize(auth: RouteAuth, req: Request): Promise<AuthUser | null> {
@@ -217,7 +226,7 @@ export function withRoute<R extends RouteDef>(def: R, handler: RouteHandler<R>) 
       // Dev auth emulates Supabase Auth, which has its own limits; everything else is metered.
       if (def.auth !== 'dev') {
         const limit = bucketLimit(config, def.bucket)
-        const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req)}`}`
+        const key = `${def.bucket}:${user ? `u:${user.id}` : `ip:${clientIp(req, serverEnv().trustProxy)}`}`
         const r = await repos.rateLimits.consumeToken(db, key, limit.perMinute, {
           now: now.toISOString(),
         })
