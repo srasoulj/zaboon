@@ -64,7 +64,8 @@ variables (names in `.env.example`; list in #34). Deploy runbook notes:
 - The Vercel project's Root Directory must be `apps/web`. `apps/web/vercel.json` holds the Monday 00:00 UTC league-rollover cron.
 - Set `CRON_SECRET`, or the cron route refuses every call.
 - The rollover route exists since #48. It is idempotent and closes missed weeks oldest first.
-- `CONTENT_BASE_URL` must be set at build time and at runtime. The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
+- `CONTENT_BASE_URL` is optional since the release on deploy: unset, the app uses the Supabase project's public `content` bucket (apps/web/lib/content-base-url.ts). The browser's media allowlist and the service worker's cache rules are inlined when the app is built.
+- Every production build applies pending migrations and publishes changed content before `next build` (scripts/release.ts, `DATABASE_URL_MIGRATE`; [DEPLOY.md](DEPLOY.md) §3.2, §4, §8), so merging to `main` is the whole release.
 
 **Golden path (15:55 UTC):** the fixture lessons u01-s0, u01-l1 and u01-l2 play end to end through
 the real renderers, the lesson player, the API and Postgres on desktop and mobile Chromium: all 13 MVP

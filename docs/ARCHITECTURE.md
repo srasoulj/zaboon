@@ -646,7 +646,7 @@ pinned family (for example a newer GPT Image), so upgrades are deliberate.
   - Playwright (Chromium + WebKit) on the frozen fixture course, against a local-mode build;
   - a production build, which must reject local tokens and return 404 for `/api/dev/*`;
   - secret scanning (`scripts/secret-scan.sh`: pattern scan + detect-secrets).
-- **CD:** merging to `main` runs `supabase db push` (forward-only, expand/contract) and then promotes the Vercel deploy. Content releases have their own workflow ([Learning engine §4.4](LEARNING-ENGINE.md#44-release-process)).
+- **CD:** merging to `main` starts the Vercel production build, which applies pending migrations (forward-only, expand/contract) and publishes changed content before `next build` (scripts/release.ts; [DEPLOY.md §8](DEPLOY.md#8-operations)), so a failed migration or content build never deploys. The staged content workflow of [Learning engine §4.4](LEARNING-ENGINE.md#44-release-process) is a later refinement.
 - **Secrets:**
 
   | Where | Secrets |

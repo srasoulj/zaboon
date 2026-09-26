@@ -8,8 +8,10 @@ import {
   contentVersionInsertSql,
   IMMUTABLE_CACHE,
   MemoryUploader,
+  PartialUploadError,
   publishToStorage,
   SupabaseStorageUploader,
+  VersionExistsError,
 } from './storage'
 
 const fixtures = loadCourse(join(repoRoot(), 'content/fixtures'))
@@ -71,6 +73,24 @@ describe('publish --target storage', () => {
     await expect(
       publishToStorage({ course: fixtures, uploader, version: 1, allowDrafts: false }),
     ).rejects.toThrow(/partial upload/)
+  })
+
+  it('names a published or half-uploaded version with a typed error, and reads objects back', async () => {
+    const uploader = new MemoryUploader()
+    await publishToStorage({ course: fixtures, uploader, version: 1, allowDrafts: false })
+    await expect(
+      publishToStorage({ course: fixtures, uploader, version: 1, allowDrafts: false }),
+    ).rejects.toBeInstanceOf(VersionExistsError)
+    await uploader.upload('fixture/v2/letters.json', Buffer.from('{}'), {
+      contentType: 'application/json',
+      cacheControl: IMMUTABLE_CACHE,
+    })
+    await expect(
+      publishToStorage({ course: fixtures, uploader, version: 2, allowDrafts: false }),
+    ).rejects.toBeInstanceOf(PartialUploadError)
+    const info = JSON.parse((await uploader.read('fixture/v1/build-info.json'))!.toString())
+    expect(info).toMatchObject({ contentHash: expect.any(String), includesDrafts: false })
+    expect(await uploader.read('fixture/v9/build-info.json')).toBeNull()
   })
 
   it('never publishes content with errors', async () => {
@@ -161,5 +181,36 @@ describe('SupabaseStorageUploader', () => {
         cacheControl: IMMUTABLE_CACHE,
       }),
     ).rejects.toThrow(/HTTP 409/)
+  })
+
+  it('reads an object with GET, null for a missing one, and surfaces other failures', async () => {
+    const seen: { url: string; method: string; auth: string | null }[] = []
+    const uploader = new SupabaseStorageUploader({
+      url: 'https://proj.supabase.co',
+      key: 'test-upload',
+      bucket: 'content',
+      fetch: async (url, init = {}) => {
+        seen.push({
+          url,
+          method: init.method ?? 'GET',
+          auth: new Headers(init.headers).get('authorization'),
+        })
+        if (url.endsWith('/v1/build-info.json'))
+          return new Response('{"contentHash":"abc","includesDrafts":true}', { status: 200 })
+        if (url.endsWith('/v2/build-info.json'))
+          return new Response('{"error":"not found"}', { status: 400 })
+        return new Response('boom', { status: 500 })
+      },
+    })
+    expect((await uploader.read('fa-en/v1/build-info.json'))?.toString()).toBe(
+      '{"contentHash":"abc","includesDrafts":true}',
+    )
+    expect(await uploader.read('fa-en/v2/build-info.json')).toBeNull()
+    await expect(uploader.read('fa-en/v3/build-info.json')).rejects.toThrow(/GET .*HTTP 500/)
+    expect(seen[0]).toEqual({
+      url: 'https://proj.supabase.co/storage/v1/object/content/fa-en/v1/build-info.json',
+      method: 'GET',
+      auth: 'Bearer test-upload',
+    })
   })
 })

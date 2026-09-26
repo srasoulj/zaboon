@@ -1,12 +1,14 @@
 /**
  * `publish --target storage` (LEARNING-ENGINE §4.3–§4.4): uploads an immutable `v<N>/` and any
  * new content-hashed assets through an `Uploader`, then prints the `content_versions` INSERT for
- * the release runbook. It never makes the version current: that is a separate, approved step.
+ * the release runbook. The command never makes the version current (a separate step in the
+ * runbook); the release on deploy does, through the same function (scripts/release.ts).
  *
  * Upload order: assets first (skipped when present: their names are content hashes), then the
  * version's files, and `manifest.json` last, so a version counts as published only once its
  * manifest exists. Version files are never overwritten: a failed run leaves a partial `v<N>/`
- * that must be removed (or a new version picked) before retrying.
+ * that must be removed (or a new version picked) before retrying; the typed errors below let the
+ * release pick the next version by itself.
  */
 import { buildCourse, type BuiltBundle } from './build'
 import type { LoadedCourse } from './load'
@@ -19,8 +21,28 @@ export interface UploadOptions {
 export interface Uploader {
   /** True when an object exists at `path` (relative to the bucket root). */
   exists(path: string): Promise<boolean>
+  /** The object's bytes, or null when there is none at `path`. */
+  read(path: string): Promise<Buffer | null>
   /** Creates the object; must fail rather than overwrite an existing one. */
   upload(path: string, bytes: Buffer, opts: UploadOptions): Promise<void>
+}
+
+/** `v<N>/manifest.json` already exists: that version is published and immutable. */
+export class VersionExistsError extends Error {
+  constructor(bundlePath: string) {
+    super(`${bundlePath} is already published; versions are immutable (pick a new --version)`)
+    this.name = 'VersionExistsError'
+  }
+}
+
+/** A `v<N>/` file exists without the manifest: a failed run's leftovers, never overwritten. */
+export class PartialUploadError extends Error {
+  constructor(path: string, bundlePath: string) {
+    super(
+      `${path} exists but ${bundlePath} has no manifest: a partial upload from a failed run. Remove ${bundlePath}/ from the bucket or pick a new --version.`,
+    )
+    this.name = 'PartialUploadError'
+  }
 }
 
 export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable'
@@ -47,6 +69,9 @@ export class MemoryUploader implements Uploader {
   readonly log: string[] = []
   async exists(path: string): Promise<boolean> {
     return this.objects.has(path)
+  }
+  async read(path: string): Promise<Buffer | null> {
+    return this.objects.get(path)?.bytes ?? null
   }
   async upload(path: string, bytes: Buffer, opts: UploadOptions): Promise<void> {
     if (this.objects.has(path)) throw new Error(`object already exists: ${path}`)
@@ -101,6 +126,13 @@ export class SupabaseStorageUploader implements Uploader {
     if (res.ok) return true
     if (res.status === 400 || res.status === 404) return false
     throw new Error(`storage HEAD ${path}: HTTP ${res.status}`)
+  }
+
+  async read(path: string): Promise<Buffer | null> {
+    const res = await this.fetchImpl(this.objectUrl(path), { headers: this.headers() })
+    if (res.ok) return Buffer.from(await res.arrayBuffer())
+    if (res.status === 400 || res.status === 404) return null
+    throw new Error(`storage GET ${path}: HTTP ${res.status}`)
   }
 
   async upload(path: string, bytes: Buffer, opts: UploadOptions): Promise<void> {
@@ -166,9 +198,7 @@ export async function publishToStorage(opts: StoragePublishOptions): Promise<Sto
   const courseId = bundle.courseId
   const bundlePath = `${courseId}/v${bundle.version}`
   if (await opts.uploader.exists(`${bundlePath}/manifest.json`))
-    throw new Error(
-      `${bundlePath} is already published; versions are immutable (pick a new --version)`,
-    )
+    throw new VersionExistsError(bundlePath)
 
   const uploaded: string[] = []
   const skipped: string[] = []
@@ -193,9 +223,7 @@ export async function publishToStorage(opts: StoragePublishOptions): Promise<Sto
   for (const [rel, bytes] of entries) {
     if (rel.startsWith('assets/') || rel === manifest) continue
     if (await opts.uploader.exists(`${courseId}/${rel}`))
-      throw new Error(
-        `${courseId}/${rel} exists but ${bundlePath} has no manifest: a partial upload from a failed run. Remove ${bundlePath}/ from the bucket or pick a new --version.`,
-      )
+      throw new PartialUploadError(`${courseId}/${rel}`, bundlePath)
     await put(rel, bytes, false)
   }
   await put(manifest, bundle.files.get(manifest)!, false)

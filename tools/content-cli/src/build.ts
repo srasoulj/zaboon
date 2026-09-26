@@ -329,21 +329,34 @@ export function compareBundle(bundle: BuiltBundle, outRoot: string): BundleDiffe
   return diffs.sort((a, b) => a.path.localeCompare(b.path))
 }
 
-/** Reads `build-info.json` of a written version, or null when absent/unreadable. */
-export function readBuildInfo(
-  dir: string,
-): { contentHash: string; includesDrafts: boolean } | null {
+export interface BuildInfo {
+  contentHash: string
+  includesDrafts: boolean
+}
+
+/** The contents of a `build-info.json` (from disk or a bucket), or null when absent/unreadable. */
+export function parseBuildInfo(text: string | Buffer | null | undefined): BuildInfo | null {
+  if (text === null || text === undefined) return null
   try {
-    const info = JSON.parse(readFileSync(join(dir, 'build-info.json'), 'utf8')) as unknown
+    const info = JSON.parse(text.toString('utf8')) as unknown
     if (
       info &&
       typeof info === 'object' &&
       'contentHash' in info &&
       typeof info.contentHash === 'string'
     ) {
-      return info as { contentHash: string; includesDrafts: boolean }
+      return info as BuildInfo
     }
     return null
+  } catch {
+    return null
+  }
+}
+
+/** Reads `build-info.json` of a written version, or null when absent/unreadable. */
+export function readBuildInfo(dir: string): BuildInfo | null {
+  try {
+    return parseBuildInfo(readFileSync(join(dir, 'build-info.json'), 'utf8'))
   } catch {
     return null
   }

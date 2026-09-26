@@ -22,6 +22,7 @@
     "db:stop": "bash scripts/db-local.sh stop",
     "db:status": "bash scripts/db-local.sh status",
     "db:migrate": "tsx scripts/migrate.ts",
+    "release": "tsx scripts/release.ts",
     "content": "pnpm --filter @zaboon/content-cli run cli",
     "ownership": "tsx scripts/check-ownership.ts",
     "secrets:scan": "bash scripts/secret-scan.sh",

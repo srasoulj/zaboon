@@ -1,4 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm run vercel-build",
   "crons": [{ "path": "/api/cron/league-rollover", "schedule": "0 0 * * 1" }]
 }
