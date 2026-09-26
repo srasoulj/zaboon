@@ -33,6 +33,7 @@ import {
   ShopItemId,
   ShopResponse,
   SpeechAudioFormat,
+  StoryLineDto,
   TEST_FLAGS_HEADER,
   TEST_NOW_HEADER,
   TEST_TRANSCRIPT_PREFIX,
@@ -405,8 +406,33 @@ const speak = {
   prompt: { fa: 'سلام', translit: 'salām' },
   graph,
 }
+const leila = { id: 'leila', name: 'Leila', image: '/content/fixture/assets/img/leila.svg' }
+const en = (text: string) => ({ lang: 'en' as const, text })
+const storyBeat = {
+  index: 0,
+  ref: { type: 'story' as const, items: ['st_u01_tea'] },
+  type: 'story' as const,
+  storyId: 'st_u01_tea',
+  title: 'Tea with Leila',
+  image: '/content/fixture/assets/img/tea.svg',
+  beat: 0,
+  beats: 3,
+  lines: [
+    {
+      speaker: leila,
+      text: { fa: 'سلام، خوبی؟', translit: 'salām, khubi?' },
+      en: 'Hello, how are you?',
+    },
+    { speaker: null, text: { fa: 'مرسی', translit: 'mersi' }, en: 'Thanks' },
+  ],
+  question: {
+    prompt: en('What does Leila offer?'),
+    choices: [en('tea'), en('water'), en('bread')],
+    answer: 0,
+  },
+}
 
-describe('contracts: Wave 4 speak (P2)', () => {
+describe('contracts: Wave 4 speak and stories (P2)', () => {
   it('registers the transcribe route with its method, auth and rate-limit bucket', () => {
     const p2 = Object.fromEntries(
       Object.entries(routes)
@@ -433,8 +459,10 @@ describe('contracts: Wave 4 speak (P2)', () => {
     expect(FLAG_DEFAULTS.stories).toBe(false)
   })
 
-  it('config defaults: speech caps and the speech rate limit', () => {
+  it('config defaults: story XP and length, speech caps and the speech rate limit', () => {
     const cfg = AppConfig.parse(DEFAULT_APP_CONFIG)
+    expect(cfg.xp.base.story).toBe(15)
+    expect(cfg.session.lengths.story).toBe(8)
     expect(cfg.speech).toEqual({
       dailyQuota: 60,
       maxAudioBytes: 512_000,
@@ -452,9 +480,18 @@ describe('contracts: Wave 4 speak (P2)', () => {
       const speech = { ...DEFAULT_APP_CONFIG.speech, ...bad }
       expect(AppConfig.shape.speech.safeParse(speech).success, JSON.stringify(bad)).toBe(false)
     }
+    // XP is priced for every kind, story included.
+    const { story: _story, ...unpriced } = DEFAULT_APP_CONFIG.xp.base
+    const xp = { ...DEFAULT_APP_CONFIG.xp, base: unpriced }
+    expect(AppConfig.safeParse({ ...DEFAULT_APP_CONFIG, xp }).success).toBe(false)
   })
 
-  it('payloads from before Wave 4 still parse', () => {
+  it('story is a session kind; payloads from before Wave 4 still parse', () => {
+    expect(SessionKind.options).toContain('story')
+    const story = { courseId: 'fixture', kind: 'story', levelId: 'u01-st1', tz: 'UTC' }
+    expect(CreateSessionRequest.parse(story).kind).toBe('story')
+    expect(SessionResult.parse({ ...storedMvpResult, kind: 'story' }).kind).toBe('story')
+    // Backward compatibility: stored results, home and MVP requests and answers.
     expect(SessionResult.parse(storedMvpResult)).toEqual(storedMvpResult)
     expect(HomeResponse.parse(home)).toEqual(home)
     expect(Settings.parse(DEFAULT_SETTINGS)).toEqual(DEFAULT_SETTINGS)
@@ -525,6 +562,37 @@ describe('contracts: Wave 4 speak (P2)', () => {
     const long = { ...res, transcript: 'x'.repeat(501) }
     expect(TranscribeResponse.safeParse(long).success).toBe(false)
     expect(TranscribeResponse.safeParse({ transcript: 'سلام', remaining: 1 }).success).toBe(false)
+  })
+
+  it('story challenges: a beat of lines (null speaker = narrator) and an optional question', () => {
+    expect(Challenge.parse(storyBeat)).toMatchObject({ type: 'story', beat: 0, beats: 3 })
+    expect(StoryLineDto.parse(storyBeat.lines[1]).speaker).toBeNull()
+    // The closing beat has no question (it is answered {kind: 'none'}).
+    const { question: _question, ...closing } = { ...storyBeat, beat: 2 }
+    expect(Challenge.parse(closing)).not.toHaveProperty('question')
+    const line = storyBeat.lines[0]!
+    const q = storyBeat.question
+    const invalid: Record<string, unknown> = {
+      'no lines': { ...storyBeat, lines: [] },
+      '31 lines': { ...storyBeat, lines: Array.from({ length: 31 }, () => line) },
+      'no beats': { ...storyBeat, beats: 0 },
+      'negative beat': { ...storyBeat, beat: -1 },
+      'no title': { ...storyBeat, title: undefined },
+      'speaker without a name': { ...storyBeat, lines: [{ ...line, speaker: { id: 'leila' } }] },
+      'text without translit': { ...storyBeat, lines: [{ ...line, text: { fa: 'سلام' } }] },
+      'line without translation': { ...storyBeat, lines: [{ ...line, en: undefined }] },
+      'one choice': { ...storyBeat, question: { ...q, choices: [en('tea')] } },
+      'five choices': { ...storyBeat, question: { ...q, choices: 'abcde'.split('').map(en) } },
+      'negative answer': { ...storyBeat, question: { ...q, answer: -1 } },
+    }
+    for (const [name, value] of Object.entries(invalid))
+      expect(Challenge.safeParse(value).success, name).toBe(false)
+    // The placeholder shape reserved in Wave 0 (no build path ever emitted it) no longer parses.
+    const placeholder = { index: 0, ref: storyBeat.ref, type: 'story', storyId: 'st_u01_tea' }
+    expect(Challenge.safeParse(placeholder).success).toBe(false)
+    // Beats answer with a choice, or `none` for the closing beat.
+    for (const response of [{ kind: 'choice', value: 0 }, { kind: 'none' }])
+      expect(ChallengeResponse.safeParse(response).success).toBe(true)
   })
 
   it('error codes: quota_exceeded is a 429 and unavailable a 503', () => {

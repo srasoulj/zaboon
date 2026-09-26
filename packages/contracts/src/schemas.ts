@@ -57,6 +57,10 @@ export const Uuid = z.string().uuid()
 // ---------------------------------------------------------------------------------------------
 // Config (app_config table; every number in game-rules comes from here)
 // ---------------------------------------------------------------------------------------------
+/**
+ * `story` (P2, flags.stories) plays a unit's story level. The server answers 400 `validation` for
+ * a kind it cannot generate (yet, or with its flag off).
+ */
 export const SessionKind = z.enum([
   'lesson',
   'practice',
@@ -64,6 +68,7 @@ export const SessionKind = z.enum([
   'unit_review',
   'legendary',
   'jump_test',
+  'story',
 ])
 export type SessionKind = z.infer<typeof SessionKind>
 
@@ -173,7 +178,15 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   minAppVersion: '0.1.0',
   graderWindow: 3,
   xp: {
-    base: { lesson: 10, practice: 10, letters: 10, unit_review: 20, legendary: 40, jump_test: 20 },
+    base: {
+      lesson: 10,
+      practice: 10,
+      letters: 10,
+      unit_review: 20,
+      legendary: 40,
+      jump_test: 20,
+      story: 15,
+    },
     perfectBonus: 5,
   },
   hearts: { max: 5, regenMinutes: 240, practiceReward: 1 },
@@ -189,6 +202,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
       unit_review: 15,
       legendary: 15,
       jump_test: 15,
+      story: 8,
     },
     reviewShare: 0.3,
     newWordsPerLesson: 3,
@@ -517,10 +531,38 @@ export const SpeakChallenge = z.object({
   /** The prompt's English meaning, shown under it. */
   translation: z.string().optional(),
 })
+
+const StorySpeaker = z.object({ id: z.string(), name: z.string(), image: z.string().optional() })
+/** One line of a story beat; `speaker` null = the narrator. */
+export const StoryLineDto = z.object({
+  speaker: StorySpeaker.nullable(),
+  text: FaTextDto,
+  en: z.string(),
+})
+export type StoryLineDto = z.infer<typeof StoryLineDto>
+
+/**
+ * story (P2, flags.stories): one beat of a story; a story session has one challenge per beat, in
+ * order. `beat` is 0-based (< `beats`); `image` is the story's cover (a media URL). A beat with a
+ * `question` is answered `{kind: 'choice'}`; the closing beat has none and is answered
+ * `{kind: 'none'}`. A wrong answer costs no heart and is retried in place.
+ */
 export const StoryChallenge = z.object({
   ...base,
   type: z.literal('story'),
   storyId: z.string(),
+  title: z.string(),
+  image: z.string().optional(),
+  beat: z.number().int().nonnegative(),
+  beats: z.number().int().positive(),
+  lines: z.array(StoryLineDto).min(1).max(30),
+  question: z
+    .object({
+      prompt: PromptText,
+      choices: z.array(PromptText).min(2).max(4),
+      answer: z.number().int().nonnegative(),
+    })
+    .optional(),
 })
 
 export const Challenge = z.discriminatedUnion('type', [
@@ -802,7 +844,8 @@ export const LeagueRolloverResponse = z.object({
 export type LeagueRolloverResponse = z.infer<typeof LeagueRolloverResponse>
 
 // ---------------------------------------------------------------------------------------------
-// P2 (Wave 4): speak (flags.speak).
+// P2 (Wave 4): speak (flags.speak) and stories (flags.stories). Stories add no route: a story
+// level plays through createSession / completeSession (SessionKind `story`, StoryChallenge).
 // ---------------------------------------------------------------------------------------------
 /** Recording formats `AiClient.transcribe` accepts (iOS Safari records m4a). */
 export const SPEECH_AUDIO_FORMATS = ['webm', 'm4a', 'wav', 'mp3'] as const
