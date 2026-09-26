@@ -192,7 +192,7 @@ function MemberRow({ m, zoneStart }: { m: LeaderboardEntry; zoneStart: boolean }
         {m.rank}
       </span>
       <span className="flex-1 truncate font-extrabold">
-        {name}
+        <bdi data-testid="league-member-name">{name}</bdi>
         {/* On the selected tint, stone text is below 4.5:1: the "you" row stays ink. */}
         {m.isMe && <span> (you)</span>}
       </span>

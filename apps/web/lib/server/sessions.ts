@@ -14,6 +14,7 @@ import {
   SessionResult,
   type AppConfig,
   type ChallengeRef,
+  type ChallengeResponse,
   type CompleteSessionRequest,
   type CreateSessionResponse,
   type LivesState,
@@ -338,6 +339,10 @@ function refItems(ref: ChallengeRef): string[] {
 
 const passes = (v: Verdict) => PASSING_VERDICTS.includes(v)
 
+/** A response the learner declined (today a letter trace; later speak): graded, never rated. */
+export const isDeclined = (r: ChallengeResponse): boolean =>
+  r.kind === 'trace' && r.declined === true
+
 /**
  * Records one finished lesson of the session's level, if the level still exists at the current
  * content version (its id mapped through the path migrations) and matches the session kind.
@@ -517,13 +522,16 @@ export async function completeSession(
     // Per item, like the SRS rating: an item is cleared only when a challenge that exercised it
     // passed and no challenge in this session got it wrong (an item often appears in several).
     const wrongItems = new Set(mistakes)
-    const answeredOk = new Set(graded.filter((a) => passes(a.verdict)).map((a) => a.index))
+    // A declined attempt ("Can't trace now") passes for hearts and re-queue, but it is not a
+    // review: it applies no SRS rating and never resolves an open mistake.
+    const rated = graded.filter((a) => !isDeclined(a.response))
+    const answeredOk = new Set(rated.filter((a) => passes(a.verdict)).map((a) => a.index))
     const cleared = [
       ...new Set([...answeredOk].flatMap((i) => refItems(challenges[i]!.ref))),
     ].filter((item) => !wrongItems.has(item))
     await repos.learning.recordMistakes(tx, userId, mistakes, at)
     await repos.learning.resolveMistakes(tx, userId, cleared, at)
-    await applySrs(tx, userId, { attempts: graded, challenges, view, now, config })
+    await applySrs(tx, userId, { attempts: rated, challenges, view, now, config })
     await repos.sessions.insertSessionAnswers(
       tx,
       userId,

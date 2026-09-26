@@ -9,6 +9,7 @@
 import type { AppConfig, LeagueRolloverResponse } from '@zaboon/contracts'
 import { repos, withSystem, type Db } from '@zaboon/db'
 import { leagueGrant, rolloverCohort, rolloverPlan, weekOf } from '@zaboon/game-rules'
+import { ApiError } from '../errors'
 
 type Closed = LeagueRolloverResponse['closed'][number]
 
@@ -25,9 +26,18 @@ async function closeWeek(
     if (!week || week.closedAt !== null) return null // closed meanwhile by another run
     const bounds = weekOf(week.startsAt)
     const summary: Closed = { week: bounds, cohorts: 0, members: 0, promoted: 0, demoted: 0 }
-    for (const cohort of await repos.leagues.listWeekCohorts(tx, week.id)) {
+    const cohorts = await repos.leagues.listWeekCohorts(tx, week.id)
+    // Accounts deleted meanwhile drop out (their rows cascade away); the rest can't be deleted
+    // until this transaction ends, so tier and coin writes never hit a missing profile.
+    const live = await repos.leagues.lockLiveProfiles(
+      tx,
+      cohorts.flatMap((c) => c.members.map((m) => m.userId)),
+    )
+    const movedOn = await repos.leagues.membersWithLaterWeeks(tx, week.id)
+    for (const cohort of cohorts) {
       summary.cohorts++
-      for (const r of rolloverCohort(cohort.members, cohort.tier, cfg)) {
+      const members = cohort.members.filter((m) => live.has(m.userId))
+      for (const r of rolloverCohort(members, cohort.tier, cfg)) {
         summary.members++
         if (r.outcome === 'promote') summary.promoted++
         if (r.outcome === 'demote') summary.demoted++
@@ -37,7 +47,8 @@ async function closeWeek(
           rank: r.rank,
           outcome: r.outcome,
         })
-        await repos.leagues.setTier(tx, r.userId, r.nextTier, at)
+        // A learner who already joined a later week got this outcome's tier there (tierFor).
+        if (!movedOn.has(r.userId)) await repos.leagues.setTier(tx, r.userId, r.nextTier, at)
         const grant = leagueGrant(bounds, r.rank, cfg)
         if (grant) await repos.wallet.creditCoins(tx, r.userId, [grant], at)
       }
@@ -47,6 +58,11 @@ async function closeWeek(
   })
 }
 
+/**
+ * Closes every ended open week (each in its own transaction; a week that fails is logged and left
+ * open for the next run, and later weeks still close), then opens the current week. Any failure
+ * answers 500 after the rest has run, so the cron shows it (never a 401).
+ */
 export async function runRollover(
   db: Db,
   now: Date,
@@ -58,11 +74,22 @@ export async function runRollover(
     now,
   )
   const closed: Closed[] = []
+  const failed: string[] = []
   for (const startsAt of plan.close) {
-    const c = await closeWeek(db, startsAt, now, cfg)
-    if (c) closed.push(c)
+    try {
+      const c = await closeWeek(db, startsAt, now, cfg)
+      if (c) closed.push(c)
+    } catch (e) {
+      failed.push(startsAt)
+      console.error('[cron] league rollover: closing a week failed', { week: startsAt, error: e })
+    }
   }
   // Open the current week, so the first commit of the week finds it.
   await withSystem(db, (tx) => repos.leagues.ensureWeek(tx, plan.current))
+  if (failed.length > 0)
+    throw new ApiError('internal', `league rollover failed for ${failed.length} week(s)`, {
+      failed,
+      closed: closed.map((c) => c.week.startsAt),
+    })
   return { closed, current: plan.current }
 }

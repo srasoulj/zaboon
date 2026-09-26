@@ -7,8 +7,13 @@ import {
   leagueWeek,
   nextLocalMidnight,
   purchase,
+  settleStreak,
+  replayStreak,
+  applyActivity,
+  initialStreak,
   shopItems,
   tierAfter,
+  streakView,
   unavailable,
   weekOf,
   type ShopState,
@@ -45,6 +50,75 @@ describe('league weeks', () => {
       startsAt: '2026-09-21T00:00:00.000Z',
       endsAt: '2026-09-28T00:00:00.000Z',
     })
+  })
+})
+
+describe('settleStreak', () => {
+  const streak = (lastActiveDate: string | null, freezes: number) => ({
+    current: 6,
+    longest: 9,
+    lastActiveDate,
+    freezes,
+  })
+  it('changes nothing today, after yesterday, or when held freezes cover the gap', () => {
+    for (const s of [
+      streak('2026-09-25', 0),
+      streak('2026-09-24', 0),
+      streak('2026-09-22', 2),
+      streak(null, 0),
+    ])
+      expect(settleStreak(s, '2026-09-25')).toEqual({ state: s, broken: false, frozenDates: [] })
+  })
+  it('breaks a streak whose gap the held freezes cannot cover, consuming them', () => {
+    const r = settleStreak(streak('2026-09-21', 1), '2026-09-25')
+    expect(r).toEqual({
+      state: { current: 0, longest: 9, lastActiveDate: null, freezes: 0 },
+      broken: true,
+      frozenDates: ['2026-09-22'],
+    })
+    expect(streakView(r.state, '2026-09-25')).toMatchObject({ current: 0, status: 'none' })
+  })
+  it('missed yesterday with no freeze: a freeze bought now does not repair it', () => {
+    const settled = settleStreak(streak('2026-09-23', 0), '2026-09-25').state
+    const bought = purchase(
+      {
+        coins: 100,
+        streak: settled,
+        lives: { policy: 'hearts', count: 5, updatedAt: noon.toISOString() },
+        purchases: [],
+      },
+      { item: 'streak_freeze', purchaseId: 'p' },
+      noon,
+      cfg,
+    )
+    if (!bought.ok) throw new Error('refused')
+    expect(bought.state.streak).toMatchObject({ current: 0, freezes: 1, lastActiveDate: null })
+  })
+})
+
+describe('replayStreak', () => {
+  it('without purchases is replaying applyActivity from initialStreak', () => {
+    const days = ['2026-09-20', '2026-09-21', '2026-09-23', '2026-09-24']
+    let s = initialStreak(cfg)
+    const frozen: string[] = []
+    for (const d of days) {
+      const r = applyActivity(s, d, cfg)
+      s = r.state
+      frozen.push(...r.frozenDates)
+    }
+    expect(replayStreak(days, [], cfg)).toEqual({ state: s, frozenDates: frozen })
+  })
+  it('keeps bought freezes (an account merge must not lose them)', () => {
+    // signup freeze 1 + bought 1 = 2; two missed days later are both covered.
+    const r = replayStreak(['2026-09-20', '2026-09-21', '2026-09-24'], ['2026-09-21'], cfg)
+    expect(r.state).toMatchObject({ current: 3, freezes: 0 })
+    expect(r.frozenDates).toEqual(['2026-09-22', '2026-09-23'])
+    const unused = replayStreak(['2026-09-20'], ['2026-09-20'], cfg)
+    expect(unused.state.freezes).toBe(2)
+  })
+  it('a freeze bought after an uncovered gap does not repair the streak', () => {
+    const r = replayStreak(['2026-09-10', '2026-09-11', '2026-09-20'], ['2026-09-15'], cfg)
+    expect(r.state).toMatchObject({ current: 1, freezes: 1 })
   })
 })
 

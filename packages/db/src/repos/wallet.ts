@@ -6,11 +6,11 @@
  *
  * User-scoped (`withUserLock`) except that the league rollover grants coins in system scope.
  */
-import { and, eq, inArray, sql, sum } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql, sum } from 'drizzle-orm'
 import type { ShopItemId } from '@zaboon/contracts'
 import type { Tx } from '../index'
 import * as schema from '../schema'
-import { ConflictError } from './shared'
+import { ConflictError, toIso } from './shared'
 
 /** Ledger reasons that are shop purchases (the item id); coin_ledger_purchase_ref_uniq covers them. */
 export const PURCHASE_REASONS: readonly ShopItemId[] = ['streak_freeze', 'heart_refill']
@@ -131,4 +131,18 @@ export async function debitPurchase(
   // The UPDATE above already ran: throwing rolls the whole transaction back.
   if (rows.length !== 1) throw new ConflictError('purchase id already used')
   return { coins: w.coins }
+}
+
+/** When the learner bought `item` (coin_ledger debits), oldest first (e.g. to replay a streak). */
+export async function listPurchaseTimes(
+  tx: Tx,
+  userId: string,
+  item: ShopItemId,
+): Promise<string[]> {
+  const rows = await tx
+    .select({ createdAt: schema.coinLedger.createdAt })
+    .from(schema.coinLedger)
+    .where(and(eq(schema.coinLedger.userId, userId), eq(schema.coinLedger.reason, item)))
+    .orderBy(asc(schema.coinLedger.createdAt), asc(schema.coinLedger.id))
+  return rows.map((r) => toIso(r.createdAt))
 }

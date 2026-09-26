@@ -44,6 +44,36 @@ export function rankCohort(
   }))
 }
 
+/**
+ * The tier the learner plays in `week`. Normally `user_league`, which the rollover writes; but
+ * while the learner's latest earlier week is still open (the Monday cron hasn't closed it yet),
+ * that week's outcome decides: its XP can't change any more, so `tierAfter(tier, zone)` is exactly
+ * what the rollover will write, and the rollover and this placement agree (nothing is applied
+ * twice). `lock` (commits) takes that week's shared lock first, so a rollover closing it right now
+ * finishes before we read, and then `user_league` is already current.
+ */
+export async function tierFor(
+  tx: Tx,
+  userId: string,
+  week: LeagueWeekBounds,
+  cfg: AppConfig,
+  opts: { lock: boolean },
+): Promise<LeagueTier> {
+  const last = await repos.leagues.latestMembershipBefore(tx, userId, week.startsAt)
+  if (last === null || last.closedAt !== null) return repos.leagues.getTier(tx, userId)
+  if (opts.lock) {
+    await repos.leagues.lockWeekShared(tx, last.startsAt)
+    const now = await repos.leagues.getWeek(tx, last.startsAt)
+    if (now === null || now.closedAt !== null) return repos.leagues.getTier(tx, userId)
+  }
+  const me = rankCohort(
+    await repos.leagues.listMyCohort(tx, userId, last.weekId),
+    last.tier,
+    cfg,
+  ).find((r) => r.userId === userId)
+  return me ? tierAfter(last.tier, me.zone) : repos.leagues.getTier(tx, userId)
+}
+
 export interface LeagueStanding {
   week: LeagueWeekBounds
   weekId: number | null
@@ -63,7 +93,7 @@ export async function readStanding(
   const week = leagueWeek(now)
   const row = await repos.leagues.getWeek(tx, week.startsAt)
   const membership = row ? await repos.leagues.getMembership(tx, userId, row.id) : null
-  const tier = membership?.tier ?? (await repos.leagues.getTier(tx, userId))
+  const tier = membership?.tier ?? (await tierFor(tx, userId, week, cfg, { lock: false }))
   const ranked =
     row && membership
       ? rankCohort(await repos.leagues.listMyCohort(tx, userId, row.id), tier, cfg)
