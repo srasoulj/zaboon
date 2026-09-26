@@ -1,6 +1,6 @@
 /**
  * The database's size caps (20260926100000_hardening.sql, tested on their own in
- * supabase/tests/006_hardening.sql) never refuse what the API contract accepts: the largest valid
+ * supabase/tests/007_hardening.sql) never refuse what the API contract accepts: the largest valid
  * answer responses and item ref are stored.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'

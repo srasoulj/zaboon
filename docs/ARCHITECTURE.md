@@ -234,6 +234,7 @@ directly: route handlers do both, as `app_server`.
 | `entitlements` | (`user_id`, `entitlement`) PK, `source`, `expires_at` | Fed by Stripe, later RevenueCat |
 | `webhook_events` | `event_id` PK, `type`, `received_at` | Stripe webhook de-duplication |
 | `push_subscriptions` | `id`, `user_id`, `endpoint`, `keys`, `created_at` | Web Push |
+| `speech_usage` | (`user_id`, `day`) PK, `count`, `updated_at` | P2 speak: transcriptions per learner per UTC day (`AppConfig.speech.dailyQuota`); never audio or transcripts |
 
 ---
 

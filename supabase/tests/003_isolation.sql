@@ -50,6 +50,7 @@ BEGIN
   INSERT INTO public.entitlements (user_id, entitlement, source) VALUES (u, 'plus', 'grant');
   INSERT INTO public.push_subscriptions (user_id, endpoint, keys)
     VALUES (u, 'https://push.example.test/' || u, '{"p256dh":"k","auth":"a"}');
+  INSERT INTO public.speech_usage (user_id, day, count) VALUES (u, '2026-09-25', 1);
 END
 $$;
 -- alice and carol share cohort 1; bob is alone in cohort 2.
