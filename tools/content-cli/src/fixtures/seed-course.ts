@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { repoRoot } from '../paths'
 
 const SEED = fileURLToPath(new URL('./seed-fa-en', import.meta.url))
-const TEXT_DIRS = ['units', 'lexemes', 'sentences', 'chats', 'guidebooks', 'suggestions']
+const TEXT_DIRS = ['units', 'lexemes', 'sentences', 'chats', 'guidebooks', 'suggestions', 'stories']
 
 /** Where `tts`, `audio` and `art` write generated media (assets/audio, assets/img): never copied. */
 const GENERATED_MEDIA = new Set(['audio', 'img'])
