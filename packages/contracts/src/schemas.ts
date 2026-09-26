@@ -38,6 +38,13 @@ export const TEST_NOW_HEADER = 'x-test-now'
  * Wave 3 feature on without touching app_config. Production ignores it.
  */
 export const TEST_FLAGS_HEADER = 'x-test-flags'
+/**
+ * Transcript prefix honored ONLY in AUTH_MODE=local (P2 speak): when the decoded `audio` of a
+ * POST /api/speech/transcribe starts with these UTF-8 bytes, the server calls no provider and
+ * the rest of the bytes is the transcript, so tests can "say" anything (e2e/fixtures
+ * `fakeMicrophone`). Production ignores it: the audio goes to the provider like any other.
+ */
+export const TEST_TRANSCRIPT_PREFIX = 'zaboon-test-transcript:'
 /** Client app version header; the API answers 426 below AppConfig.minAppVersion. */
 export const APP_VERSION_HEADER = 'x-zaboon-app-version'
 export const DEFAULT_COURSE_ID = 'fa-en'
@@ -145,6 +152,20 @@ export const AppConfig = z.object({
   /** P2 shop: coin prices (every item priced). */
   shop: z.object({ prices: z.record(ShopItemId, z.number().int().positive()) }),
   rateLimits: z.record(z.string(), z.object({ perMinute: z.number().int().positive() })),
+  /**
+   * P2 speak (flags.speak): transcription caps and the "Can't speak now" pause. Like every key, it
+   * has a default, and an app_config row overrides it as a whole top-level key.
+   */
+  speech: z.object({
+    /** Transcriptions per learner per UTC day (POST /api/speech/transcribe; 429 quota_exceeded). */
+    dailyQuota: z.number().int().positive(),
+    /** Largest decoded upload the server accepts (400 above it). */
+    maxAudioBytes: z.number().int().positive(),
+    /** Longest recording the server accepts (400 above it). */
+    maxDurationMs: z.number().int().positive(),
+    /** How long "Can't speak now" leaves speak challenges out of new sessions. */
+    pauseMinutes: z.number().int().positive(),
+  }),
 })
 export type AppConfig = z.infer<typeof AppConfig>
 
@@ -214,7 +235,9 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     auth: { perMinute: 10 },
     shop: { perMinute: 20 },
     cron: { perMinute: 10 },
+    speech: { perMinute: 20 },
   },
+  speech: { dailyQuota: 60, maxAudioBytes: 512_000, maxDurationMs: 15_000, pauseMinutes: 60 },
 }
 
 /** Feature flags (flag registry). Server-evaluated; exposed via /api/meta. */
@@ -482,11 +505,17 @@ export const LetterTraceChallenge = z.object({
   letter: LetterInfo,
   form: z.enum(['isolated', 'initial', 'medial', 'final']),
 })
+/**
+ * speak (P2, flags.speak): say `prompt` aloud. The recording goes to POST /api/speech/transcribe;
+ * the answer is `{kind: 'audio', transcript, token}` (see ChallengeResponse).
+ */
 export const SpeakChallenge = z.object({
   ...base,
   type: z.literal('speak'),
   prompt: FaTextDto,
   graph: AnswerGraph,
+  /** The prompt's English meaning, shown under it. */
+  translation: z.string().optional(),
 })
 export const StoryChallenge = z.object({
   ...base,
@@ -534,7 +563,19 @@ export const ChallengeResponse = z.discriminatedUnion('kind', [
     value: z.array(z.tuple([z.number().int(), z.number().int()])).max(10),
   }),
   z.object({ kind: z.literal('none') }),
-  z.object({ kind: z.literal('audio'), transcript: z.string().max(500) }),
+  /**
+   * speak (P2): `transcript` and `token` are what POST /api/speech/transcribe answered for this
+   * challenge. The server re-grades only a transcript whose signed token verifies (bound to the
+   * user, session, index and transcript); a missing or mismatched token grades wrong. `declined` =
+   * "Can't speak now" (send an empty transcript and no token): it grades correct, costs no heart
+   * and starts the speak pause (AppConfig.speech.pauseMinutes).
+   */
+  z.object({
+    kind: z.literal('audio'),
+    transcript: z.string().max(500),
+    token: z.string().max(400).optional(),
+    declined: z.literal(true).optional(),
+  }),
   z.object({ kind: z.literal('skip') }),
   /**
    * letter_trace (P2): the stroke is scored on the client; the response carries the scores.
@@ -759,6 +800,39 @@ export const LeagueRolloverResponse = z.object({
   current: LeagueWeek,
 })
 export type LeagueRolloverResponse = z.infer<typeof LeagueRolloverResponse>
+
+// ---------------------------------------------------------------------------------------------
+// P2 (Wave 4): speak (flags.speak).
+// ---------------------------------------------------------------------------------------------
+/** Recording formats `AiClient.transcribe` accepts (iOS Safari records m4a). */
+export const SPEECH_AUDIO_FORMATS = ['webm', 'm4a', 'wav', 'mp3'] as const
+export const SpeechAudioFormat = z.enum(SPEECH_AUDIO_FORMATS)
+export type SpeechAudioFormat = z.infer<typeof SpeechAudioFormat>
+
+/**
+ * POST /api/speech/transcribe (flags.speak): one recording for the speak challenge at `index` of
+ * the caller's open session. `audio` is standard base64 (padded); the server also enforces
+ * AppConfig.speech (maxAudioBytes, maxDurationMs, dailyQuota). The audio is never stored.
+ */
+export const TranscribeRequest = z.object({
+  sessionId: Uuid,
+  index: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(MAX_CHALLENGES - 1),
+  format: SpeechAudioFormat,
+  audio: z.base64().min(1).max(700_000),
+  durationMs: z.number().int().nonnegative().max(30_000),
+})
+export const TranscribeResponse = z.object({
+  transcript: z.string().max(500),
+  /** Signed transcript token: send it back in the answer (`{kind: 'audio', transcript, token}`). */
+  token: z.string().max(400),
+  /** Transcriptions left today (AppConfig.speech.dailyQuota). */
+  remaining: z.number().int().nonnegative(),
+})
+export type TranscribeResponse = z.infer<typeof TranscribeResponse>
 
 // ---------------------------------------------------------------------------------------------
 // Session result (returned by /complete; stored verbatim in sessions.result)
@@ -1010,6 +1084,11 @@ export const CreateSessionRequest = z
     tz: z.string().min(1),
     /** P2 practice hub (flags.practiceHub): which practice to build. Practice sessions only. */
     mode: PracticeMode.optional(),
+    /**
+     * P2 speak (flags.speak): the learner's "Can't speak now" pause is running on this device, so
+     * the session carries no speak challenges.
+     */
+    speakPaused: z.boolean().optional(),
   })
   .refine((r) => r.mode === undefined || r.kind === 'practice', {
     message: 'mode is only allowed for practice sessions',
@@ -1112,7 +1191,14 @@ export const ErrorCode = z.enum([
   'out_of_lives',
   /** P2 shop: the balance can't pay for the item (409, like out_of_lives). */
   'insufficient_coins',
+  /** P2 speak: today's transcription quota (AppConfig.speech.dailyQuota) is used up (429). */
+  'quota_exceeded',
   'internal',
+  /**
+   * P2: a dependency is not configured or not reachable (a missing APP_SIGNING_SECRET or
+   * OPENROUTER_API_KEY_APP, the transcription provider down): 503, retry later.
+   */
+  'unavailable',
 ])
 export type ErrorCode = z.infer<typeof ErrorCode>
 export const ErrorEnvelope = z.object({
@@ -1132,5 +1218,7 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   validation: 400,
   out_of_lives: 409,
   insufficient_coins: 409,
+  quota_exceeded: 429,
   internal: 500,
+  unavailable: 503,
 }

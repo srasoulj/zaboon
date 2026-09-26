@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   AnswerRecord,
   AppConfig,
@@ -9,11 +9,13 @@ import {
   DEFAULT_SETTINGS,
   ERROR_STATUS,
   ErrorCode,
+  ErrorEnvelope,
   FLAG_DEFAULTS,
   HomeResponse,
   LeaderboardEntry,
   LeaderboardResponse,
   LeagueRolloverResponse,
+  MAX_CHALLENGES,
   MAX_COHORT_SIZE,
   MVP_CHALLENGE_TYPES,
   PracticeMode,
@@ -24,18 +26,24 @@ import {
   QuestMetric,
   QuestsResponse,
   RefillLivesRequest,
+  SPEECH_AUDIO_FORMATS,
   SessionKind,
   SessionResult,
   Settings,
   ShopItemId,
   ShopResponse,
+  SpeechAudioFormat,
   TEST_FLAGS_HEADER,
   TEST_NOW_HEADER,
+  TEST_TRANSCRIPT_PREFIX,
+  TranscribeRequest,
+  TranscribeResponse,
   buildPath,
   routes,
   CompleteSessionRequest,
   MAX_ANSWERS,
 } from './index'
+import type { RouteResponse } from './index'
 
 describe('contracts', () => {
   it('default app config satisfies its schema and covers every session kind', () => {
@@ -165,7 +173,8 @@ describe('contracts: Wave 3 engagement and typing (P2)', () => {
         .filter(([, r]) => r.phase === 'p2')
         .map(([name, r]) => [name, `${r.method} ${r.path} ${r.auth} ${r.bucket}`]),
     )
-    expect(p2).toEqual({
+    // Wave 4 adds more P2 routes; its block below checks the complete P2 set.
+    expect(p2).toMatchObject({
       leaderboard: 'GET /api/leaderboard member default',
       quests: 'GET /api/quests user default',
       shop: 'GET /api/shop user default',
@@ -382,5 +391,146 @@ describe('contracts: Wave 3 engagement and typing (P2)', () => {
   it('names the local-mode test headers', () => {
     expect(TEST_NOW_HEADER).toBe('x-test-now')
     expect(TEST_FLAGS_HEADER).toBe('x-test-flags')
+  })
+})
+
+// ------------------------------------------------------------------------------ Wave 4 (P2)
+const audioB64 = Buffer.from(`${TEST_TRANSCRIPT_PREFIX}سلام`, 'utf8').toString('base64')
+const transcribe = { sessionId: UUID, index: 3, format: 'webm', audio: audioB64, durationMs: 2400 }
+const graph = { v: 1 as const, start: 0, accept: [1], edges: [{ from: 0, to: 1, t: 'سلام' }] }
+const speak = {
+  index: 0,
+  ref: { type: 'speak' as const, items: ['s_u01_0001'] },
+  type: 'speak' as const,
+  prompt: { fa: 'سلام', translit: 'salām' },
+  graph,
+}
+
+describe('contracts: Wave 4 speak (P2)', () => {
+  it('registers the transcribe route with its method, auth and rate-limit bucket', () => {
+    const p2 = Object.fromEntries(
+      Object.entries(routes)
+        .filter(([, r]) => r.phase === 'p2')
+        .map(([name, r]) => [name, `${r.method} ${r.path} ${r.auth} ${r.bucket}`]),
+    )
+    expect(p2).toEqual({
+      leaderboard: 'GET /api/leaderboard member default',
+      quests: 'GET /api/quests user default',
+      shop: 'GET /api/shop user default',
+      purchase: 'POST /api/shop/purchase user shop',
+      refillLives: 'POST /api/lives/refill user shop',
+      practice: 'GET /api/practice user default',
+      leagueRollover: 'GET /api/cron/league-rollover cron cron',
+      transcribe: 'POST /api/speech/transcribe user speech',
+    })
+    expect(routes.transcribe.request).toBe(TranscribeRequest)
+    expect(routes.transcribe.response).toBe(TranscribeResponse)
+    expectTypeOf<RouteResponse<'transcribe'>>().toEqualTypeOf<TranscribeResponse>()
+  })
+
+  it('the speak and stories flags exist and default to off', () => {
+    expect(FLAG_DEFAULTS.speak).toBe(false)
+    expect(FLAG_DEFAULTS.stories).toBe(false)
+  })
+
+  it('config defaults: speech caps and the speech rate limit', () => {
+    const cfg = AppConfig.parse(DEFAULT_APP_CONFIG)
+    expect(cfg.speech).toEqual({
+      dailyQuota: 60,
+      maxAudioBytes: 512_000,
+      maxDurationMs: 15_000,
+      pauseMinutes: 60,
+    })
+    expect(cfg.rateLimits.speech).toEqual({ perMinute: 20 })
+    // The base64 cap on uploads fits the decoded audio cap (4 characters per 3 bytes).
+    expect(Math.ceil(cfg.speech.maxAudioBytes / 3) * 4).toBeLessThanOrEqual(700_000)
+    // Mix profiles are unchanged: the gated speaking weight comes with the engine seam.
+    for (const profile of Object.values(cfg.mixProfiles))
+      expect(profile).not.toHaveProperty('speaking')
+    // Each top-level key validates on its own (repos/content.ts loadAppConfig).
+    for (const bad of [{ dailyQuota: 0 }, { maxAudioBytes: -1 }, { pauseMinutes: 1.5 }]) {
+      const speech = { ...DEFAULT_APP_CONFIG.speech, ...bad }
+      expect(AppConfig.shape.speech.safeParse(speech).success, JSON.stringify(bad)).toBe(false)
+    }
+  })
+
+  it('payloads from before Wave 4 still parse', () => {
+    expect(SessionResult.parse(storedMvpResult)).toEqual(storedMvpResult)
+    expect(HomeResponse.parse(home)).toEqual(home)
+    expect(Settings.parse(DEFAULT_SETTINGS)).toEqual(DEFAULT_SETTINGS)
+    const lesson = { courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0', tz: 'UTC' }
+    expect(CreateSessionRequest.parse(lesson).speakPaused).toBeUndefined()
+    const audio = { kind: 'audio', transcript: 'سلام' }
+    expect(ChallengeResponse.parse(audio)).toEqual(audio)
+    expect(Challenge.parse(speak)).toMatchObject({ type: 'speak', isNew: false })
+  })
+
+  it('session requests: speakPaused is an optional boolean', () => {
+    const req = { courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0', tz: 'UTC' }
+    expect(CreateSessionRequest.parse({ ...req, speakPaused: true }).speakPaused).toBe(true)
+    expect(CreateSessionRequest.parse({ ...req, speakPaused: false }).speakPaused).toBe(false)
+    expect(CreateSessionRequest.safeParse({ ...req, speakPaused: 'yes' }).success).toBe(false)
+    // The Wave 3 rule still holds next to the new field.
+    const withMode = { ...req, mode: 'mixed', speakPaused: true }
+    expect(CreateSessionRequest.safeParse(withMode).success).toBe(false)
+  })
+
+  it('speak: audio answers carry the transcript token or decline; speak shows a translation', () => {
+    const answer = { kind: 'audio', transcript: 'سلام', token: 'v1.payload.signature' }
+    expect(ChallengeResponse.parse(answer)).toEqual(answer)
+    const declined = { kind: 'audio', transcript: '', declined: true }
+    expect(ChallengeResponse.parse(declined)).toEqual(declined)
+    expect(ChallengeResponse.safeParse({ ...answer, declined: false }).success).toBe(false)
+    expect(ChallengeResponse.safeParse({ ...answer, token: 'x'.repeat(401) }).success).toBe(false)
+    expect(ChallengeResponse.safeParse({ ...answer, token: 42 }).success).toBe(false)
+    const long = { ...answer, transcript: 'x'.repeat(501) }
+    expect(ChallengeResponse.safeParse(long).success).toBe(false)
+    const record = { index: 0, attemptSeq: 0, response: answer, verdict: 'correct', ms: 900 }
+    expect(AnswerRecord.safeParse(record).success).toBe(true)
+    expect(Challenge.parse({ ...speak, translation: 'Hello' })).toMatchObject({
+      translation: 'Hello',
+    })
+    expect(Challenge.safeParse({ ...speak, translation: 7 }).success).toBe(false)
+  })
+
+  it('transcribe: request caps and response shape', () => {
+    expect(TEST_TRANSCRIPT_PREFIX).toBe('zaboon-test-transcript:')
+    expect(SPEECH_AUDIO_FORMATS).toEqual(['webm', 'm4a', 'wav', 'mp3'])
+    expect(SpeechAudioFormat.options).toEqual([...SPEECH_AUDIO_FORMATS])
+    expect(TranscribeRequest.parse(transcribe)).toEqual(transcribe)
+    for (const format of SPEECH_AUDIO_FORMATS)
+      expect(TranscribeRequest.safeParse({ ...transcribe, format }).success).toBe(true)
+    const invalid = [
+      { sessionId: 'not-a-uuid' },
+      { index: -1 },
+      { index: MAX_CHALLENGES },
+      { index: 1.5 },
+      { format: 'ogg' },
+      { audio: '' },
+      { audio: 'not base64!' },
+      { audio: 'A'.repeat(700_004) },
+      { durationMs: -1 },
+      { durationMs: 30_001 },
+    ]
+    for (const patch of invalid) {
+      const label = JSON.stringify(patch).slice(0, 60)
+      expect(TranscribeRequest.safeParse({ ...transcribe, ...patch }).success, label).toBe(false)
+    }
+    const biggest = { ...transcribe, audio: 'A'.repeat(700_000) }
+    expect(TranscribeRequest.safeParse(biggest).success).toBe(true)
+    const res = { transcript: 'سلام', token: 'v1.payload.signature', remaining: 59 }
+    expect(TranscribeResponse.parse(res)).toEqual(res)
+    expect(TranscribeResponse.safeParse({ ...res, remaining: -1 }).success).toBe(false)
+    expect(TranscribeResponse.safeParse({ ...res, token: 'x'.repeat(401) }).success).toBe(false)
+    const long = { ...res, transcript: 'x'.repeat(501) }
+    expect(TranscribeResponse.safeParse(long).success).toBe(false)
+    expect(TranscribeResponse.safeParse({ transcript: 'سلام', remaining: 1 }).success).toBe(false)
+  })
+
+  it('error codes: quota_exceeded is a 429 and unavailable a 503', () => {
+    expect(ERROR_STATUS.quota_exceeded).toBe(429)
+    expect(ERROR_STATUS.unavailable).toBe(503)
+    for (const code of ['quota_exceeded', 'unavailable'] as const)
+      expect(ErrorEnvelope.parse({ error: { code, message: 'x' } }).error.code).toBe(code)
   })
 })
