@@ -7,7 +7,8 @@
  *    role, each in its own transaction, recording them in supabase_migrations.schema_migrations
  *    exactly like the Supabase CLI.
  * 3. Gives the local `app_server` role a local-only password.
- * 4. Rebuilds the `<db>_template` database used by parallel DB tests when migrations changed.
+ * 4. Rebuilds the `<db>_template` database used by parallel DB tests when any migration or the
+ *    shim changed (scripts/migrate-key.ts), an earlier-dated migration merged later included.
  *
  * Env: ZABOON_DB_PORT (54322), ZABOON_DB_NAME (zaboon). Flags: --no-template
  */
@@ -15,6 +16,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import postgres from 'postgres'
+import { templateKey } from './migrate-key'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const HOST = '127.0.0.1'
@@ -90,7 +92,7 @@ async function applyAll(database: string, migrations: Migration[]): Promise<numb
   return applied
 }
 
-/** The template refuses connections, so its migration version lives in a database comment. */
+/** The template refuses connections, so its build key lives in a database comment. */
 async function templateVersion(admin: postgres.Sql): Promise<string | null> {
   const rows = await admin`SELECT shobj_description(oid, 'pg_database') AS c FROM pg_database WHERE datname = ${TEMPLATE}`
   const comment = (rows[0]?.c as string | null) ?? null
@@ -98,7 +100,7 @@ async function templateVersion(admin: postgres.Sql): Promise<string | null> {
 }
 
 async function rebuildTemplate(migrations: Migration[]) {
-  const wanted = migrations.at(-1)?.version ?? null
+  const wanted = templateKey(migrations, SHIM)
   const admin = connect('supabase_admin', 'postgres')
   try {
     const exists =
@@ -115,7 +117,7 @@ async function rebuildTemplate(migrations: Migration[]) {
   await applyAll(TEMPLATE, migrations)
   const admin2 = connect('supabase_admin', 'postgres')
   try {
-    await admin2.unsafe(`COMMENT ON DATABASE "${TEMPLATE}" IS 'migrations:${wanted ?? 'none'}'`)
+    await admin2.unsafe(`COMMENT ON DATABASE "${TEMPLATE}" IS 'migrations:${wanted}'`)
     await admin2.unsafe(`ALTER DATABASE "${TEMPLATE}" IS_TEMPLATE true ALLOW_CONNECTIONS false`)
   } finally {
     await admin2.end()

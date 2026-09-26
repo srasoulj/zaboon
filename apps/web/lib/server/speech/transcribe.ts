@@ -1,17 +1,26 @@
 /**
  * POST /api/speech/transcribe (P2 speak, flags.speak; ARCHITECTURE §7, §12).
  *
- * Order of checks: the flag (404), the upload against AppConfig.speech (400), the provider's
- * configuration (503), then in one short locked transaction the session (404 not the caller's,
- * 409 completed, 410 expired), the index (400 out of range or not a speak challenge, rebuilt from
- * the stored ref like /complete does) and the daily quota (429 `quota_exceeded`). The provider is
- * called after that transaction, so no database lock is held while it works.
+ * Order of checks (nothing is spent before the last one):
+ * 1. the flag (404);
+ * 2. the upload against AppConfig.speech (400). Real audio must be a mono 16-bit PCM WAV
+ *    (lib/speech/wav.ts, the one format the model takes that the server can measure), and its
+ *    duration is measured here: the client's `durationMs` is checked too but never trusted;
+ * 3. the provider's configuration and the token signing (503), so a missing key or signing secret
+ *    answers before any quota is taken or any paid call is made;
+ * 4. in one short locked transaction: the session (404 not the caller's, 409 completed, 410
+ *    expired), the index (400 out of range or not a speak challenge, rebuilt from the stored ref
+ *    like /complete does) and the daily quota (429 `quota_exceeded`).
+ * The provider is called after that transaction, so no database lock is held while it works.
  *
  * Quota decision: a transcription is counted before the provider is called (so concurrent
- * requests can't overspend it) and given back when the provider or the token signing fails, so a
- * learner only ever pays for transcripts they received.
+ * requests can't overspend it). It is given back only when the provider refused the request (an
+ * HTTP error status: nothing was billed). An answer (an empty transcript included), a timeout or a
+ * lost connection keeps the count, because the provider may have billed it; otherwise a caller who
+ * reliably gets empty answers (silence) could transcribe for free.
  *
- * The audio is decoded into memory for this request only: never stored, logged or cached.
+ * The audio is decoded into memory for this request only: never stored, logged or cached. The
+ * provider gets a canonical copy of exactly the measured samples (`pcm16Wav`).
  */
 import type { AppConfig, TranscribeRequest, TranscribeResponse } from '@zaboon/contracts'
 import { repos, withUserLock, type Db } from '@zaboon/db'
@@ -20,8 +29,15 @@ import type { z } from 'zod'
 import type { AuthUser } from '../auth'
 import { contentView, findLevel, loadBundle, versionOf } from '../content'
 import { ApiError } from '../errors'
+import { assertSigningAvailable } from '../signing'
+import { parseWav, pcm16Wav } from '../../speech/wav'
 import { speechToken } from './token'
-import { assertTranscriberAvailable, transcribeAudio } from './transcriber'
+import {
+  assertTranscriberAvailable,
+  localTestTranscript,
+  transcribeAudio,
+  TranscriptionUnavailableError,
+} from './transcriber'
 
 export interface TranscribeCtx {
   db: Db
@@ -48,9 +64,19 @@ export async function transcribe(
   if (bytes.length === 0) throw new ApiError('validation', 'the recording is empty')
   if (bytes.length > limits.maxAudioBytes)
     throw new ApiError('validation', `the recording is larger than ${limits.maxAudioBytes} bytes`)
-  if (body.durationMs > limits.maxDurationMs)
-    throw new ApiError('validation', `the recording is longer than ${limits.maxDurationMs} ms`)
-  assertTranscriberAvailable(bytes)
+  const tooLong = `the recording is longer than ${limits.maxDurationMs} ms`
+  if (body.durationMs > limits.maxDurationMs) throw new ApiError('validation', tooLong)
+  let upload = bytes
+  // Local test audio (AUTH_MODE=local only) is a scripted transcript, not audio.
+  if (localTestTranscript(bytes) === null) {
+    const wav = body.format === 'wav' ? parseWav(bytes) : null
+    if (!wav) throw new ApiError('validation', 'the recording must be a mono 16-bit PCM WAV')
+    if (wav.pcm.length === 0) throw new ApiError('validation', 'the recording is empty')
+    if (wav.durationMs > limits.maxDurationMs) throw new ApiError('validation', tooLong)
+    assertTranscriberAvailable()
+    upload = Buffer.from(pcm16Wav(wav.pcm, wav.sampleRate))
+  }
+  assertSigningAvailable()
 
   // --- session, challenge and quota (one short transaction) -------------------------------------
   const day = quotaDay(now)
@@ -83,21 +109,23 @@ export async function transcribe(
   })
 
   // --- transcription (no transaction open) -----------------------------------------------------
+  let transcript: string
   try {
-    const transcript = await transcribeAudio({ bytes, format: body.format })
-    const token = speechToken({
-      userId,
-      sessionId: body.sessionId,
-      index: body.index,
-      transcript,
-      expiresAt,
-    })
-    return { transcript, token, remaining: Math.max(0, limits.dailyQuota - used) }
+    transcript = await transcribeAudio({ bytes: upload })
   } catch (e) {
-    // Nothing was transcribed for the learner: give the quota back.
-    await withUserLock(db, userId, (tx) =>
-      repos.speech.refundSpeechQuota(tx, userId, { day, now: at }),
-    )
+    // The provider refused the request, so nothing was billed: give the quota back.
+    if (e instanceof TranscriptionUnavailableError && e.refundable)
+      await withUserLock(db, userId, (tx) =>
+        repos.speech.refundSpeechQuota(tx, userId, { day, now: at }),
+      )
     throw e
   }
+  const token = speechToken({
+    userId,
+    sessionId: body.sessionId,
+    index: body.index,
+    transcript,
+    expiresAt,
+  })
+  return { transcript, token, remaining: Math.max(0, limits.dailyQuota - used) }
 }

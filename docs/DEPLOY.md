@@ -17,7 +17,7 @@ variables, deploy (§5) → smoke test (§7) → feature flags when wanted (§6)
 | Auth | Supabase Auth | The browser uses supabase-js for Auth only; the server verifies JWTs locally against the project's JWKS (apps/web/lib/server/auth/supabase.ts) |
 | Content | Supabase Storage bucket `content` (public) | Immutable `fa-en/v<N>/` bundles plus hashed `fa-en/assets/` (tools/content-cli/src/build.ts); the current version is a row in `content_versions` (docs/adr/0005) |
 | Scheduled jobs | pg_cron (pure SQL) and Vercel Cron (Node) | docs/ARCHITECTURE.md §8 |
-| AI | OpenRouter | The deployed app makes no AI calls yet: `apps/web` never imports `@zaboon/ai` and no code reads `OPENROUTER_API_KEY_APP` |
+| AI | OpenRouter | The app's only AI call is speech transcription for the `speak` flag (`POST /api/speech/transcribe`, `OPENROUTER_API_KEY_APP`, model `app_transcribe`; apps/web/lib/server/speech/transcriber.ts). With the flag off it makes none |
 
 There is no `apps/web/proxy.ts` (or middleware): every API route authenticates, rate-limits and
 validates itself through `withRoute` (apps/web/lib/server/with-route.ts).
@@ -240,7 +240,9 @@ The required set matches PR #34's list. Set each variable for Production and for
 | `DATABASE_URL_APP_SERVER` | runtime | yes | apps/web/lib/server/env.ts | §3.2 step 4. Missing: every API route answers 500. Each server instance opens up to 10 connections (apps/web/lib/server/db.ts) |
 | `SUPABASE_SECRET_KEY` | runtime | yes | apps/web/lib/server/auth/admin.ts | Admin API user deletion for `DELETE /api/account` and guest merges (apps/web/lib/server/account.ts). Server only |
 | `CRON_SECRET` | runtime | yes | apps/web/lib/server/env.ts, auth/cron.ts | Without it the cron route answers 401 to every call |
-| `OPENROUTER_API_KEY_APP` | runtime | not yet | no code reads it | P2+ runtime AI, with its own credit limit (docs/adr/0008) |
+| `OPENROUTER_API_KEY_APP` | runtime | for `speak` | apps/web/lib/server/speech/transcriber.ts | Runtime AI, with its own credit limit set on the key in OpenRouter (docs/adr/0008). Missing: `POST /api/speech/transcribe` answers 503 without spending quota |
+| `APP_SIGNING_SECRET` | runtime | for `speak` | apps/web/lib/server/signing.ts | At least 32 random characters (`openssl rand -base64 48`). Signs speak transcript tokens. Missing or short: transcribe answers 503 before any quota or AI spend, and `/complete` grades every speak answer wrong |
+| `ZABOON_TRUST_PROXY` | runtime | no | apps/web/lib/server/env.ts | Self-hosting only: `1` behind a proxy that overwrites `X-Forwarded-For`. Vercel is detected, so leave it unset there |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | – | not yet | no code reads them | Turnstile isn't wired (§3.1) |
 | `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_AMPLITUDE_API_KEY` | – | not yet | no code reads them | No Sentry or Amplitude code yet |
 | `EMAIL_API_KEY` | – | not yet | no code reads it | Auth email goes through Supabase's SMTP settings (§3.1) |
@@ -317,6 +319,18 @@ ON CONFLICT (key) DO UPDATE SET value = public.app_config.value || EXCLUDED.valu
 
 - **Owner:** turn Wave 3 on only after its QA with the flags on (ws-qa-2) has finished; it hasn't
   started yet (docs/PROGRESS.md).
+- **Turning on `speak`** (`{"speak": true}` in the same row):
+  - First set `APP_SIGNING_SECRET` and `OPENROUTER_API_KEY_APP` (§5.2), and give the key a credit
+    limit in OpenRouter: it is the only thing bounding total spend.
+  - The model (`openai/gpt-audio-mini`) takes `wav` or `mp3` input only; a live probe on 2026-09-26
+    refused `webm` and `m4a` with a 400. The browser therefore converts every recording to a 16 kHz
+    mono 16-bit WAV (apps/web/lib/speech/convert.ts). The server refuses anything else and measures
+    the duration itself (apps/web/lib/speech/wav.ts). In the probe a 2 s clip cost about $0.00004,
+    and it transcribed "سلام، خوبی؟" exactly.
+  - Each learner gets `speech.dailyQuota` (60) transcriptions per UTC day of at most
+    `speech.maxDurationMs` (15 s). A transcription counts before the call and is given back only
+    when the provider refuses the request. Guests are learners too, so there is no global daily cap
+    yet (backlog).
 - Clients send `x-zaboon-app-version: 0.1.0` (apps/web/lib/api-client.ts). Raising `minAppVersion`
   above that answers 426 to every current client (with-route.ts).
 

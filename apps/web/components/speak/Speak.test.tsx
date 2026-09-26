@@ -1,7 +1,8 @@
 /**
  * The speak renderer with a fake SpeechService and a fake microphone (getUserMedia +
- * MediaRecorder): recording, transcription, grading of the draft, "Can't speak now", and the
- * microphone/quota/outage fallbacks.
+ * MediaRecorder, and an OfflineAudioContext that decodes every recording to 1 s of audio):
+ * recording, conversion to the WAV upload, transcription, grading of the draft, "Can't speak now",
+ * and the microphone/quota/outage fallbacks.
  */
 import { act, screen, waitFor } from '@testing-library/react'
 import { Challenge, type ChallengeOf, type TranscribeResponse } from '@zaboon/contracts'
@@ -53,6 +54,23 @@ class FakeRecorder extends EventTarget {
   }
 }
 
+/** Web Audio's decoder: every recording is 1 s of a quiet tone at the context's rate. */
+class FakeOfflineContext {
+  constructor(
+    readonly channels: number,
+    readonly length: number,
+    readonly sampleRate: number,
+  ) {}
+  decodeAudioData(): Promise<AudioBuffer> {
+    const samples = new Float32Array(this.sampleRate).fill(0.25)
+    return Promise.resolve({
+      numberOfChannels: 1,
+      length: samples.length,
+      getChannelData: () => samples,
+    } as unknown as AudioBuffer)
+  }
+}
+
 function installMicrophone(getUserMedia: () => Promise<MediaStream>) {
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -62,6 +80,11 @@ function installMicrophone(getUserMedia: () => Promise<MediaStream>) {
     configurable: true,
     writable: true,
     value: FakeRecorder,
+  })
+  Object.defineProperty(globalThis, 'OfflineAudioContext', {
+    configurable: true,
+    writable: true,
+    value: FakeOfflineContext,
   })
 }
 
@@ -126,10 +149,12 @@ describe('speak', () => {
     expect(h.verdict()).toBe('correct')
     expect(s.transcribe).toHaveBeenCalledTimes(1)
     const input = s.transcribe.mock.calls[0]![0]
-    expect(input).toMatchObject({ index: c.index, format: 'webm' })
-    expect(input.blob.size).toBeGreaterThan(0)
-    expect(input.durationMs).toBeGreaterThanOrEqual(0)
+    // MediaRecorder records webm/opus; the upload is always the converted 16 kHz mono WAV, and its
+    // duration is the audio's own length.
     expect(recorders[0]!.mimeType).toBe('audio/webm;codecs=opus')
+    expect(input).toMatchObject({ index: c.index, format: 'wav', durationMs: 1000 })
+    expect(input.blob.type).toBe('audio/wav')
+    expect(input.blob.size).toBe(44 + 16_000 * 2)
     // The microphone is released once the recording ends.
     expect(trackStop).toHaveBeenCalled()
     expect(h.onSubmit).not.toHaveBeenCalled()
@@ -306,6 +331,39 @@ describe('speak', () => {
     })
     expect(screen.getByTestId('speak-transcript')).toHaveAttribute('data-state', 'wrong')
     expect(screen.queryByTestId('speak-mic')).toBeNull()
+  })
+
+  it('SKIP while a recording is being transcribed: no stuck "Checking…", and the late result is ignored', async () => {
+    let answer: (r: TranscribeResponse) => void = () => {}
+    fakeService(() => new Promise((resolve) => (answer = resolve)))
+    const h = renderChallenge(c)
+    await record(h)
+    await waitFor(() => expect(status()).toHaveAttribute('data-state', 'transcribing'))
+    h.check()
+    await waitFor(() =>
+      expect(screen.queryByTestId('speak-status')).not.toHaveAttribute(
+        'data-state',
+        'transcribing',
+      ),
+    )
+    expect(screen.getByTestId('speak-mic')).not.toHaveAttribute('aria-busy')
+    const before = h.onResponse.mock.calls.length
+    await act(async () => answer({ transcript: SAID, token: `token:${SAID}`, remaining: 9 }))
+    expect(h.onResponse.mock.calls.length).toBe(before)
+    expect(screen.queryByTestId('speak-transcript')).toBeNull()
+  })
+
+  it('a browser without Web Audio (no OfflineAudioContext) gets the "cannot record" fallback', async () => {
+    Object.defineProperty(globalThis, 'OfflineAudioContext', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    })
+    says(SAID)
+    const h = renderChallenge(c)
+    await h.user.click(mic())
+    await waitFor(() => expect(status()).toHaveAttribute('data-state', 'unsupported'))
+    expect(decline()).toHaveFocus()
   })
 
   it('unmounting while recording releases the microphone and sends nothing', async () => {

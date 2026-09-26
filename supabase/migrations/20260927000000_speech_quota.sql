@@ -1,7 +1,8 @@
 -- P2 speak (Wave 4, ws-typing): the per-learner daily transcription quota of
 -- POST /api/speech/transcribe (AppConfig.speech.dailyQuota, 429 quota_exceeded).
 -- Expand-only: one new user-owned table. It holds a counter per learner per UTC day and nothing
--- else: speech audio and transcripts are never stored (ARCHITECTURE §12).
+-- else. Speech audio is never stored (ARCHITECTURE §12); a transcript is kept only as the answer's
+-- response in session_answers, like any typed answer.
 
 CREATE TABLE public.speech_usage (
   user_id     uuid NOT NULL REFERENCES public.profiles (user_id) ON DELETE CASCADE,

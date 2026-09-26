@@ -1,10 +1,13 @@
 /**
  * Microphone recording for the speak renderer: getUserMedia + MediaRecorder, with an optional
- * level meter (Web Audio AnalyserNode). The format follows what the browser can record: webm/opus
- * (Chrome, Firefox), else mp4/AAC → 'm4a' (Safari), else wav or mp3. Every track is stopped when
- * the recording ends or is cancelled; the recorded chunks are handed over once and not kept.
+ * level meter (Web Audio AnalyserNode). MediaRecorder records what the browser can (webm/opus in
+ * Chrome and Firefox, else mp4/AAC in Safari, else wav or mp3), and `stop()` converts it to the
+ * upload format: a 16 kHz mono 16-bit PCM WAV cut at the time limit (lib/speech/convert.ts). Every
+ * track is stopped when the recording ends or is cancelled; the recorded chunks are handed over
+ * once and not kept.
  */
-import type { SpeechAudioFormat } from '@zaboon/contracts'
+import { DEFAULT_APP_CONFIG, type SpeechAudioFormat } from '@zaboon/contracts'
+import { offlineContextCtor, toUploadWav } from './convert'
 
 /** Why recording could not start. */
 export type MicrophoneProblem = 'unsupported' | 'denied' | 'unavailable'
@@ -30,7 +33,7 @@ export const RECORDING_TYPES: readonly (readonly [string, SpeechAudioFormat])[] 
   ['audio/mpeg', 'mp3'],
 ]
 
-/** The upload format of a recorder's actual MIME type (empty/unknown → webm, the common case). */
+/** The container a recorder's actual MIME type records (empty/unknown → webm, the common case). */
 export function formatOfMime(mime: string): SpeechAudioFormat {
   const m = mime.toLowerCase()
   if (m.includes('mp4') || m.includes('aac') || m.includes('m4a')) return 'm4a'
@@ -57,18 +60,24 @@ export function pickRecordingType(
   return null
 }
 
-/** True when this browser can record at all (it may still refuse the permission). */
+/**
+ * True when this browser can record at all (it may still refuse the permission): the microphone,
+ * MediaRecorder, and Web Audio to convert the recording.
+ */
 export function canRecord(): boolean {
   return (
     typeof navigator !== 'undefined' &&
     typeof navigator.mediaDevices?.getUserMedia === 'function' &&
-    typeof globalThis.MediaRecorder === 'function'
+    typeof globalThis.MediaRecorder === 'function' &&
+    offlineContextCtor() !== null
   )
 }
 
 export interface Recording {
+  /** The upload: a 16 kHz mono WAV (empty when the browser could not decode the recording). */
   blob: Blob
   format: SpeechAudioFormat
+  /** The upload's own length (at most `maxDurationMs`). */
   durationMs: number
 }
 
@@ -136,9 +145,10 @@ function stopTracks(stream: MediaStream): void {
 
 /** Asks for the microphone and starts recording. Throws a `MicrophoneError`. */
 export async function startRecording(
-  opts: { now?: () => number; meter?: boolean } = {},
+  opts: { now?: () => number; meter?: boolean; maxDurationMs?: number } = {},
 ): Promise<ActiveRecording> {
   const now = opts.now ?? (() => performance.now())
+  const maxDurationMs = opts.maxDurationMs ?? DEFAULT_APP_CONFIG.speech.maxDurationMs
   if (!canRecord()) throw new MicrophoneError('unsupported', 'This browser cannot record audio')
   let stream: MediaStream
   try {
@@ -187,7 +197,7 @@ export async function startRecording(
     async stop() {
       if (ended) throw new MicrophoneError('unavailable', 'recording already ended')
       ended = true
-      const durationMs = Math.max(0, now() - startedAt)
+      const timerMs = Math.max(0, now() - startedAt)
       try {
         if (recorder.state !== 'inactive') recorder.stop()
         await stopped
@@ -195,9 +205,10 @@ export async function startRecording(
         release()
       }
       const mime = recorder.mimeType || picked?.mimeType || chunks[0]?.type || ''
-      const blob = new Blob(chunks, mime ? { type: mime } : undefined)
+      const recorded = new Blob(chunks, mime ? { type: mime } : undefined)
       chunks = []
-      return { blob, format: formatOfMime(mime), durationMs }
+      const upload = await toUploadWav(recorded, { maxDurationMs, timerMs })
+      return { blob: upload.blob, format: 'wav', durationMs: upload.durationMs }
     },
     cancel() {
       if (ended) return

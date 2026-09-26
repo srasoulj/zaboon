@@ -1,18 +1,24 @@
 /**
- * Speech helpers without a database: the transcript token (speech/token.ts) and the transcriber's
- * local-only test audio and transcript cleanup (speech/transcriber.ts).
+ * Speech helpers without a database: the transcript token (speech/token.ts), signing availability,
+ * and the transcriber's local-only test audio, transcript cleanup, timeout/retry settings and
+ * which failures give the quota back (speech/transcriber.ts).
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TEST_TRANSCRIPT_PREFIX } from '@zaboon/contracts'
 import { resetServerEnv } from '../../lib/server/env'
-import { sign } from '../../lib/server/signing'
+import { assertSigningAvailable, sign } from '../../lib/server/signing'
 import { speechToken, transcriptDigest, verifySpeechToken } from '../../lib/server/speech/token'
 import {
   assertTranscriberAvailable,
   cleanTranscript,
   localTestTranscript,
   MAX_TRANSCRIPT_LENGTH,
+  setTranscriptionFetchForTests,
+  transcribeAudio,
+  TRANSCRIBE_MAX_RETRIES,
+  TRANSCRIBE_TIMEOUT_MS,
 } from '../../lib/server/speech/transcriber'
+import { encodeWav } from '../../lib/speech/wav'
 
 const ENV_KEYS = [
   'AUTH_MODE',
@@ -111,6 +117,17 @@ describe('speech tokens', () => {
     expect(verifySpeechToken(token, bound, NOW)).toBe(false)
     expect(() => speechToken({ ...bound, expiresAt: EXPIRES })).toThrow()
   })
+
+  it('assertSigningAvailable answers 503 without a usable secret, before anything is spent', () => {
+    local()
+    expect(() => assertSigningAvailable()).not.toThrow()
+    production()
+    expect(() => assertSigningAvailable()).toThrow(expect.objectContaining({ code: 'unavailable' }))
+    production({ APP_SIGNING_SECRET: 'too-short' }) // pragma: allowlist secret
+    expect(() => assertSigningAvailable()).toThrow(expect.objectContaining({ code: 'unavailable' }))
+    production({ APP_SIGNING_SECRET: 'x'.repeat(32) })
+    expect(() => assertSigningAvailable()).not.toThrow()
+  })
 })
 
 describe('transcriber', () => {
@@ -126,18 +143,62 @@ describe('transcriber', () => {
     expect(localTestTranscript(upload('سلام'))).toBeNull()
   })
 
-  it('needs the app key for real audio (and in production for test audio too)', () => {
+  it('needs the app key for real audio; a missing key is refundable (nothing was sent)', () => {
     local()
-    expect(() => assertTranscriberAvailable(upload('سلام'))).not.toThrow()
-    expect(() => assertTranscriberAvailable(Buffer.from('RIFF'))).toThrow(
-      expect.objectContaining({ code: 'unavailable' }),
+    expect(() => assertTranscriberAvailable()).toThrow(
+      expect.objectContaining({ code: 'unavailable', refundable: true }),
     )
     production()
-    expect(() => assertTranscriberAvailable(upload('سلام'))).toThrow(
+    expect(() => assertTranscriberAvailable()).toThrow(
       expect.objectContaining({ code: 'unavailable' }),
     )
     production({ OPENROUTER_API_KEY_APP: 'mock-key' }) // pragma: allowlist secret
-    expect(() => assertTranscriberAvailable(Buffer.from('RIFF'))).not.toThrow()
+    expect(() => assertTranscriberAvailable()).not.toThrow()
+  })
+
+  describe('the real transport', () => {
+    const wav = Buffer.from(encodeWav(new Float32Array(1600).fill(0.25)))
+    afterEach(() => setTranscriptionFetchForTests(null))
+
+    it('gives a learner-facing request a short leash: 20 s per attempt, one retry', async () => {
+      expect(TRANSCRIBE_TIMEOUT_MS).toBe(20_000)
+      expect(TRANSCRIBE_MAX_RETRIES).toBe(1)
+      production({ OPENROUTER_API_KEY_APP: 'mock-key' }) // pragma: allowlist secret
+      let attempts = 0
+      setTranscriptionFetchForTests(async () => {
+        attempts += 1
+        return new Response('{"error":{"message":"overloaded"}}', { status: 503 })
+      })
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        // An HTTP error status: the provider refused it and billed nothing.
+        await expect(transcribeAudio({ bytes: wav })).rejects.toMatchObject({
+          code: 'unavailable',
+          refundable: true,
+        })
+        expect(attempts).toBe(1 + TRANSCRIBE_MAX_RETRIES)
+      } finally {
+        warn.mockRestore()
+      }
+    })
+
+    it('an answer is never refundable: an empty one is a transcript, an error inside a 200 is not', async () => {
+      production({ OPENROUTER_API_KEY_APP: 'mock-key' }) // pragma: allowlist secret
+      const answer = (body: unknown) =>
+        setTranscriptionFetchForTests(async () => Response.json(body))
+      answer({ choices: [{ message: { role: 'assistant', content: '' } }], usage: { cost: 0 } })
+      await expect(transcribeAudio({ bytes: wav })).resolves.toBe('')
+      answer({ error: { code: 502, message: 'provider failed mid-answer' } })
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        await expect(transcribeAudio({ bytes: wav })).rejects.toMatchObject({
+          code: 'unavailable',
+          refundable: false,
+        })
+      } finally {
+        warn.mockRestore()
+      }
+    })
   })
 
   it('trims and caps transcripts without splitting a surrogate pair', () => {

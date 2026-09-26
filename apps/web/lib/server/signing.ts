@@ -65,6 +65,15 @@ function signature(purpose: string, signed: string): string {
   return createHmac('sha256', key).update(signed).digest('base64url')
 }
 
+/**
+ * Throws `SigningUnavailableError` (503) when tokens can't be signed right now. A route whose
+ * answer includes a token checks this before it spends anything (quota, a paid provider call), so
+ * a missing secret costs nothing.
+ */
+export function assertSigningAvailable(): void {
+  secret()
+}
+
 /** Signs `payload` for `purpose` until `expiresAt` (normally the session's `expiresAt`). */
 export function sign(purpose: string, payload: SignedPayload, opts: { expiresAt: Date }): string {
   assertPurpose(purpose)

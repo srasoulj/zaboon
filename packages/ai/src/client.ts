@@ -397,9 +397,12 @@ export class AiClient {
     }
   }
 
-  /** Speech → text. */
+  /**
+   * Speech → text. The audio-input models take `wav` or `mp3` only (a live probe on 2026-09-26:
+   * `webm` and `m4a` are refused with a 400). An empty `text` means the model heard nothing.
+   */
   async transcribe(
-    audio: { bytes: Buffer; format: 'mp3' | 'wav' | 'webm' | 'm4a' },
+    audio: { bytes: Buffer; format: 'wav' | 'mp3' },
     opts: TranscribeOptions = {},
   ): Promise<{ text: string; model: string; costUsd: number; cached: boolean }> {
     const model = opts.model ?? MODELS.app_transcribe
@@ -423,10 +426,11 @@ export class AiClient {
         },
       ],
     }
+    // No text is an empty transcript (silence or noise: the model heard nothing), not a failure;
+    // the call was answered and billed like any other.
     const extract = (r: ChatResponse) => {
-      const text = r.choices[0]?.message.content?.trim()
-      if (!text) throw new AiResponseError('empty transcript')
-      return text
+      if (!r.choices?.length) throw new AiResponseError('no choices in the answer')
+      return r.choices[0]!.message.content?.trim() ?? ''
     }
     const res = await this.call(req, opts, (r) => void extract(r))
     return {

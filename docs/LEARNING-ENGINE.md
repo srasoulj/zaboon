@@ -427,7 +427,7 @@ type never touches the player. **The MVP has 13 types: 8 course types and 5 lett
 | `roleplay` · `explain_my_answer` | Chat with a character; get an explanation of a mistake | free text | — | P3 |
 
 **`speak` (P2):**
-- Speech is transcribed through OpenRouter with the **app key**.
+- Speech is transcribed through OpenRouter with the **app key**. The browser uploads a 16 kHz mono 16-bit WAV (the model takes only `wav` or `mp3`), and the server measures its duration against `speech.maxDurationMs`.
 - No service scores Persian pronunciation (Azure's Pronunciation Assessment doesn't support fa-IR), so grading is by transcript.
 - Start with `openai/gpt-audio-mini` and benchmark it against a Gemini Flash audio model on real learner recordings.
 - Speech audio is processed transiently and not stored.

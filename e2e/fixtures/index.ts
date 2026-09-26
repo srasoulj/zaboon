@@ -14,7 +14,8 @@
  *   Vercel Cron (the local e2e server runs with that fake secret).
  * - `fakeMicrophone(page, transcript)` / `denyMicrophone(page)`: speak tests; every recording
  *   "says" `transcript` (read by the local-mode transcribe route), or the microphone is refused
- *   (browser-fakes.ts). Call before navigating.
+ *   (browser-fakes.ts). `fakeMicrophoneTone(page)` records real audio (a tone) instead, for the
+ *   app's own WAV conversion. Call before navigating.
  */
 import { test as base, expect, type Page } from '@playwright/test'
 
@@ -96,5 +97,10 @@ export function flagsHeader(flags: Record<string, boolean>): Record<string, stri
 }
 
 export { cronHeaders, E2E_CRON_SECRET } from './cron'
-export { denyMicrophone, fakeMicrophone, TEST_TRANSCRIPT_PREFIX } from './browser-fakes'
+export {
+  denyMicrophone,
+  fakeMicrophone,
+  fakeMicrophoneTone,
+  TEST_TRANSCRIPT_PREFIX,
+} from './browser-fakes'
 export { expect }

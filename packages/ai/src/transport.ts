@@ -145,7 +145,7 @@ export class FetchTransport implements AiTransport {
       error?: { message?: string; code?: number }
     }
     // OpenRouter can answer 200 with an error object (e.g. a provider failure mid-stream).
-    if (json.error) throw new AiHttpError(json.error.code ?? 502, JSON.stringify(json.error))
+    if (json.error) throw new AiHttpError(json.error.code ?? 502, JSON.stringify(json.error), true)
     return json
   }
 
@@ -195,9 +195,10 @@ export function assembleChatStream(sse: string): ChatResponse {
     try {
       chunk = JSON.parse(data) as ChatChunk
     } catch {
-      throw new AiHttpError(502, `unreadable stream event: ${data}`)
+      throw new AiHttpError(502, `unreadable stream event: ${data}`, true)
     }
-    if (chunk.error) throw new AiHttpError(chunk.error.code ?? 502, JSON.stringify(chunk.error))
+    if (chunk.error)
+      throw new AiHttpError(chunk.error.code ?? 502, JSON.stringify(chunk.error), true)
     id ||= chunk.id ?? ''
     model ||= chunk.model ?? ''
     if (chunk.usage) usage = chunk.usage

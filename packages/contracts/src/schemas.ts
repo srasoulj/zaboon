@@ -174,9 +174,9 @@ export const AppConfig = z.object({
   speech: z.object({
     /** Transcriptions per learner per UTC day (POST /api/speech/transcribe; 429 quota_exceeded). */
     dailyQuota: z.number().int().positive(),
-    /** Largest decoded upload the server accepts (400 above it). */
+    /** Largest decoded upload the server accepts (400 above it). 15 s of 16 kHz WAV is 480 044. */
     maxAudioBytes: z.number().int().positive(),
-    /** Longest recording the server accepts (400 above it). */
+    /** Longest recording the server accepts, measured from the WAV itself (400 above it). */
     maxDurationMs: z.number().int().positive(),
     /** How long "Can't speak now" leaves speak challenges out of new sessions. */
     pauseMinutes: z.number().int().positive(),
@@ -878,7 +878,12 @@ export type LeagueRolloverResponse = z.infer<typeof LeagueRolloverResponse>
 // P2 (Wave 4): speak (flags.speak) and stories (flags.stories). Stories add no route: a story
 // level plays through createSession / completeSession (SessionKind `story`, StoryChallenge).
 // ---------------------------------------------------------------------------------------------
-/** Recording formats `AiClient.transcribe` accepts (iOS Safari records m4a). */
+/**
+ * Upload formats the contract admits. The server transcribes only `wav` (mono 16-bit PCM, whose
+ * duration it measures). The model refuses `webm` and `m4a`, so the browser converts every
+ * recording (apps/web/lib/speech/convert.ts). Local test audio (TEST_TRANSCRIPT_PREFIX) may declare
+ * any of them.
+ */
 export const SPEECH_AUDIO_FORMATS = ['webm', 'm4a', 'wav', 'mp3'] as const
 export const SpeechAudioFormat = z.enum(SPEECH_AUDIO_FORMATS)
 export type SpeechAudioFormat = z.infer<typeof SpeechAudioFormat>
