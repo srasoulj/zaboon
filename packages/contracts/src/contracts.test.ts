@@ -472,9 +472,12 @@ describe('contracts: Wave 4 speak and stories (P2)', () => {
     expect(cfg.rateLimits.speech).toEqual({ perMinute: 20 })
     // The base64 cap on uploads fits the decoded audio cap (4 characters per 3 bytes).
     expect(Math.ceil(cfg.speech.maxAudioBytes / 3) * 4).toBeLessThanOrEqual(700_000)
-    // Mix profiles are unchanged: the gated speaking weight comes with the engine seam.
-    for (const profile of Object.values(cfg.mixProfiles))
-      expect(profile).not.toHaveProperty('speaking')
+    // The gated speaking weight: in the sentence profiles, never in intro or letters (the engine
+    // drops it while speak is off, so sessions are unchanged).
+    for (const name of ['standard', 'practice', 'legendary'])
+      expect(cfg.mixProfiles[name], name).toHaveProperty('speaking', 0.1)
+    for (const name of ['intro', 'letters'])
+      expect(cfg.mixProfiles[name], name).not.toHaveProperty('speaking')
     // Each top-level key validates on its own (repos/content.ts loadAppConfig).
     for (const bad of [{ dailyQuota: 0 }, { maxAudioBytes: -1 }, { pauseMinutes: 1.5 }]) {
       const speech = { ...DEFAULT_APP_CONFIG.speech, ...bad }

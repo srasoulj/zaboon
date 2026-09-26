@@ -23,8 +23,11 @@ async function userTables(tx: Tx): Promise<string[]> {
 export async function exportAccount(tx: Tx, userId: string): Promise<Record<string, unknown[]>> {
   assertUserId(userId)
   // Some tables (public_profiles) are readable across users, so also require a matching scope.
-  const [scope] = await tx.execute<{ ok: boolean }>(sql`SELECT rls.can_access(${userId}::uuid) AS ok`)
-  if (!scope?.ok) throw new ScopeError('exportAccount must run in the same user scope (or withSystem)')
+  const [scope] = await tx.execute<{ ok: boolean }>(
+    sql`SELECT rls.can_access(${userId}::uuid) AS ok`,
+  )
+  if (!scope?.ok)
+    throw new ScopeError('exportAccount must run in the same user scope (or withSystem)')
   const out: Record<string, unknown[]> = {}
   for (const table of await userTables(tx)) {
     const rows = await tx.execute<{ rows: unknown[] }>(sql`
@@ -43,6 +46,12 @@ export async function exportAccount(tx: Tx, userId: string): Promise<Record<stri
  */
 export async function deleteAccount(tx: Tx, userId: string): Promise<boolean> {
   assertUserId(userId)
+  // Free the learner's league seats first: the profile cascade removes their league_members rows
+  // but not the cohorts' `size` counters, and placement fills the fullest cohort under 30 by that
+  // counter (#54). Cohorts hold no personal data; a user-scoped transaction may update them.
+  await tx.execute(sql`
+    UPDATE public.league_cohorts SET size = greatest(size - 1, 0)
+    WHERE id IN (SELECT cohort_id FROM public.league_members WHERE user_id = ${userId})`)
   const rows = await tx
     .delete(schema.profiles)
     .where(eq(schema.profiles.userId, userId))
