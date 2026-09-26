@@ -31,7 +31,7 @@ function token(el: Element, name: string, fallback: string): string {
  * Trace the letter (P2): the letter form is drawn with the app's Persian font as a guide on a
  * pointer canvas (Pointer Events, `touch-action: none`), and every finished stroke re-scores the
  * whole trace on the client (lib/typing/trace.ts). The draft is `{kind: 'trace', coverage,
- * precision}`; the server re-grades those scores with the same thresholds.
+ * precision}`; the server only checks those client-reported scores against the same thresholds.
  *
  * "Can't trace now" reports a declined trace and submits it (it grades correct: no heart lost),
  * which is also the path for learners who can't use a pointer. Clear starts over.

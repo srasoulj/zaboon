@@ -114,11 +114,22 @@ describe('translate_type en→fa (typed Persian)', () => {
     expect(h.onSubmit).toHaveBeenCalledTimes(2)
   })
 
-  it('keyboard-only: Tab reaches the keys and Enter on a key types it', async () => {
+  it('keyboard-only: Tab reaches the keys; Enter/Space type and focus stays on the keys', async () => {
     const h = renderChallenge(c, { display: ON })
     await tabTo(h.user, key('ن'))
     await h.user.keyboard('{Enter}')
     expect(box()).toHaveValue('ن')
+    expect(key('ن')).toHaveFocus() // the next key is a Tab or two away, not ~45
+    await h.user.keyboard('{Enter}')
+    await h.user.tab()
+    await h.user.keyboard(' ')
+    expect(box()).toHaveValue('نن' + document.activeElement!.textContent)
+    expect(within(keyboard()).getAllByRole('button')).toContain(document.activeElement)
+    await tabTo(h.user, key('backspace'))
+    await h.user.keyboard('{Enter}')
+    expect(box()).toHaveValue('نن')
+    expect(key('backspace')).toHaveFocus()
+    expect(h.last()).toEqual({ kind: 'text', value: 'نن' })
     expect(key('half-space')).toHaveAccessibleName('half-space')
   })
 

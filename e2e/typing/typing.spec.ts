@@ -2,8 +2,9 @@
  * The fixture's P2 level u01-t1 in the real lesson player with the flags persianKeyboard and
  * letterTrace on: typed Persian with the on-screen keyboard (translate_type en→fa) and with
  * physical keys remapped to the standard layout (listen_type), the inline cloze blank, and a
- * letter trace declined with "Can't trace now", which keeps every heart. The server re-grades the
- * session on /complete.
+ * letter trace declined with "Can't trace now", which keeps every heart. On /complete the server
+ * re-grades the typed answers with the grader; for the trace it can only check the client-reported
+ * coverage and precision against the thresholds (it never sees the strokes).
  */
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, setTestFlags, test, type Guest } from '../fixtures'
@@ -121,6 +122,28 @@ test('a wrong typed answer costs a heart and is re-queued', async ({
   await page.getByTestId('lesson-check').click()
   await feedbackThenContinue(page, 'wrong')
   await expect(page.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '4')
+
+  // The rest of the lesson, then the wrong challenge comes back at the end.
+  await expectType(page, 'listen_type')
+  await challenge(page)
+    .getByRole('textbox', { name: 'What you hear, in Persian' })
+    .fill('چای میخوای')
+  await page.getByTestId('lesson-check').click()
+  await feedbackThenContinue(page, 'correct')
+  await expectType(page, 'cloze_type')
+  await challenge(page).getByRole('textbox', { name: 'The missing word' }).fill('میخوام')
+  await page.getByTestId('lesson-check').click()
+  await feedbackThenContinue(page, 'correct')
+  await expectType(page, 'letter_trace')
+  await challenge(page).getByRole('button', { name: "Can't trace now" }).click()
+  await feedbackThenContinue(page, 'correct')
+
+  await expectType(page, 'translate_type')
+  await expect(challenge(page)).toHaveAttribute('data-index', '0')
+  await challenge(page).getByRole('textbox', { name: 'Your answer in Persian' }).fill('نون میخوام')
+  await page.getByTestId('lesson-check').click()
+  await feedbackThenContinue(page, 'correct')
+  await expect(page.getByTestId('complete-summary')).toBeVisible()
 })
 
 test('with the flags off, u01-t1 plays the MVP twins and shows no keyboard', async ({

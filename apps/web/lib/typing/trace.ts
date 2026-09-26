@@ -7,7 +7,8 @@
  * - precision = share of the stroke's points (resampled every pixel) that lie inside the glyph
  *   dilated by `tolerance` px: did the learner stay on the letter?
  *
- * The server re-grades the two numbers against the same thresholds (`gradeResponse`).
+ * The server does not see the strokes: `gradeResponse` on /complete checks these two client-reported
+ * numbers against the same thresholds (the grader-window trust model, LEARNING-ENGINE §7.3).
  */
 import { TRACE_MIN_COVERAGE, TRACE_MIN_PRECISION } from '@zaboon/session-engine'
 
@@ -156,20 +157,63 @@ export function scoreTrace(
     return i >= 0 && toGlyph[i]! <= tolerance
   }).length
 
-  // Coverage: skeleton pixels within `tolerance` of the stroke.
+  // Coverage, per connected part of the glyph (the body, each dot): the share of the part's
+  // skeleton within `tolerance` of the stroke. The letter's coverage is its worst part, so پ, ت
+  // and ث need their dots; a dot is covered once the stroke reaches it.
   const ink = new Uint8Array(w * h)
   for (const p of points) {
     const i = cell(p)
     if (i >= 0) ink[i] = 1
   }
   const toInk = distanceTransform({ width: w, height: h, data: ink })
-  let covered = 0
-  for (let i = 0; i < spine.data.length; i++) if (spine.data[i] && toInk[i]! <= tolerance) covered++
+  const near = (i: number) => toInk[i]! <= tolerance
+  let coverage = 1
+  for (const part of components(glyph)) {
+    if (part.length < MIN_PART_PX) continue // anti-aliasing specks
+    const spinePx = part.filter((i) => spine.data[i])
+    const probe = spinePx.length > 0 ? spinePx : part
+    coverage = Math.min(coverage, probe.filter(near).length / probe.length)
+  }
 
-  return { coverage: round3(covered / spineCount), precision: round3(inside / points.length) }
+  return { coverage: round3(coverage), precision: round3(inside / points.length) }
 }
 
-/** Whether a score passes (the server re-grades with the same thresholds). */
+/** Parts smaller than this (px) are rendering noise, not a dot. A dot at the guide's size is ~100. */
+const MIN_PART_PX = 12
+
+/** The glyph's 8-connected parts, as lists of pixel indexes. */
+export function components(mask: Mask): number[][] {
+  const { width: w, height: h, data } = mask
+  const seen = new Uint8Array(w * h)
+  const parts: number[][] = []
+  for (let start = 0; start < data.length; start++) {
+    if (!data[start] || seen[start]) continue
+    const part: number[] = []
+    const stack = [start]
+    seen[start] = 1
+    while (stack.length > 0) {
+      const i = stack.pop()!
+      part.push(i)
+      const x = i % w
+      const y = (i - x) / w
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx
+          const ny = y + dy
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue
+          const j = ny * w + nx
+          if (data[j] && !seen[j]) {
+            seen[j] = 1
+            stack.push(j)
+          }
+        }
+    }
+    parts.push(part)
+  }
+  return parts
+}
+
+/** Whether a score passes (the server checks the reported scores against the same thresholds). */
 export function tracePasses(score: TraceScore): boolean {
   return score.coverage >= TRACE_MIN_COVERAGE && score.precision >= TRACE_MIN_PRECISION
 }
