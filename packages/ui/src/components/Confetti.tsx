@@ -50,7 +50,13 @@ export function confettiPieces(count: number, seed = 1): ConfettiPiece[] {
  * Celebration confetti (lesson complete, streak). Decorative (`aria-hidden`), pointer-transparent,
  * and skipped entirely under reduced motion (§8).
  */
-export function ConfettiBurst({ fireKey, count = 36, duration = 1200, onDone, className }: ConfettiBurstProps) {
+export function ConfettiBurst({
+  fireKey,
+  count = 36,
+  duration = 1200,
+  onDone,
+  className,
+}: ConfettiBurstProps) {
   const reduce = usePrefersReducedMotion()
   const done = useRef(onDone)
   useEffect(() => {

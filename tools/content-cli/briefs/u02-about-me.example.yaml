@@ -3,9 +3,9 @@
 unit: u02-about-me
 theme: Say who you are, where you're from and what you do
 grammar:
-  - "copula endings after consonants and vowels: -am, -i, -e / -st (STYLE.md §2.2)"
-  - "possessive clitics on nouns: esmam, esmet, esmesh"
-  - "اهل + place: man ahl-e irānam"
+  - 'copula endings after consonants and vowels: -am, -i, -e / -st (STYLE.md §2.2)'
+  - 'possessive clitics on nouns: esmam, esmet, esmesh'
+  - 'اهل + place: man ahl-e irānam'
 vocabulary:
   # Omit `existing` to allow everything introduced before this unit.
   new: [from (a place), Iran, where, student, teacher, city, Tehran]

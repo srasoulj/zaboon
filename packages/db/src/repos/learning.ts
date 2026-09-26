@@ -24,7 +24,12 @@ function toMistake(r: typeof schema.mistakes.$inferSelect): Mistake {
 }
 
 /** Counts a wrong answer for each item and re-opens resolved ones. */
-export async function recordMistakes(tx: Tx, userId: string, itemRefs: readonly string[], at: string): Promise<void> {
+export async function recordMistakes(
+  tx: Tx,
+  userId: string,
+  itemRefs: readonly string[],
+  at: string,
+): Promise<void> {
   const unique = [...new Set(itemRefs)]
   if (unique.length === 0) return
   const t = schema.mistakes
@@ -42,7 +47,12 @@ export async function recordMistakes(tx: Tx, userId: string, itemRefs: readonly 
 }
 
 /** Marks open mistakes on these items resolved (answered correctly in practice). */
-export async function resolveMistakes(tx: Tx, userId: string, itemRefs: readonly string[], at: string): Promise<number> {
+export async function resolveMistakes(
+  tx: Tx,
+  userId: string,
+  itemRefs: readonly string[],
+  at: string,
+): Promise<number> {
   if (itemRefs.length === 0) return 0
   const t = schema.mistakes
   const rows = await tx
@@ -102,7 +112,11 @@ export async function getLevelProgress(
   return row ? toLevel(row) : null
 }
 
-export async function listLevelProgress(tx: Tx, userId: string, courseId: string): Promise<LevelProgress[]> {
+export async function listLevelProgress(
+  tx: Tx,
+  userId: string,
+  courseId: string,
+): Promise<LevelProgress[]> {
   const t = schema.levelProgress
   const rows = await tx
     .select()
@@ -154,7 +168,13 @@ export async function setLegendary(
   const t = schema.levelProgress
   const [row] = await tx
     .insert(t)
-    .values({ userId, courseId: input.courseId, levelId: input.levelId, legendary: true, updatedAt: input.at })
+    .values({
+      userId,
+      courseId: input.courseId,
+      levelId: input.levelId,
+      legendary: true,
+      updatedAt: input.at,
+    })
     .onConflictDoUpdate({
       target: [t.userId, t.courseId, t.levelId],
       set: { legendary: true, updatedAt: sql`excluded.updated_at` },

@@ -11,7 +11,12 @@ import { toIso } from './shared'
 export async function getStreak(tx: Tx, userId: string): Promise<StreakState | null> {
   const [row] = await tx.select().from(schema.streaks).where(eq(schema.streaks.userId, userId))
   return row
-    ? { current: row.current, longest: row.longest, lastActiveDate: row.lastActiveDate, freezes: row.freezes }
+    ? {
+        current: row.current,
+        longest: row.longest,
+        lastActiveDate: row.lastActiveDate,
+        freezes: row.freezes,
+      }
     : null
 }
 
@@ -25,7 +30,10 @@ export async function saveStreak(tx: Tx, userId: string, state: StreakState): Pr
   await tx
     .insert(schema.streaks)
     .values({ userId, ...values })
-    .onConflictDoUpdate({ target: schema.streaks.userId, set: { ...values, updatedAt: sql`now()` } })
+    .onConflictDoUpdate({
+      target: schema.streaks.userId,
+      set: { ...values, updatedAt: sql`now()` },
+    })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -33,7 +41,13 @@ export async function saveStreak(tx: Tx, userId: string, state: StreakState): Pr
 // ---------------------------------------------------------------------------------------------
 export async function getLives(tx: Tx, userId: string): Promise<LivesState | null> {
   const [row] = await tx.select().from(schema.lives).where(eq(schema.lives.userId, userId))
-  return row ? { policy: row.policy as LivesState['policy'], count: row.count, updatedAt: toIso(row.updatedAt) } : null
+  return row
+    ? {
+        policy: row.policy as LivesState['policy'],
+        count: row.count,
+        updatedAt: toIso(row.updatedAt),
+      }
+    : null
 }
 
 export async function saveLives(tx: Tx, userId: string, state: LivesState): Promise<void> {
@@ -56,7 +70,12 @@ export async function getItems(tx: Tx, userId: string): Promise<Record<string, n
  * Adds `delta` (may be negative) to an item's quantity. Returns the new quantity, or null when a
  * negative delta would take it below zero (nothing changes then).
  */
-export async function addItem(tx: Tx, userId: string, item: string, delta: number): Promise<number | null> {
+export async function addItem(
+  tx: Tx,
+  userId: string,
+  item: string,
+  delta: number,
+): Promise<number | null> {
   const t = schema.userItems
   if (delta < 0) {
     const [row] = await tx
@@ -69,7 +88,10 @@ export async function addItem(tx: Tx, userId: string, item: string, delta: numbe
   const [row] = await tx
     .insert(t)
     .values({ userId, item, qty: delta })
-    .onConflictDoUpdate({ target: [t.userId, t.item], set: { qty: sql`${t.qty} + ${delta}`, updatedAt: sql`now()` } })
+    .onConflictDoUpdate({
+      target: [t.userId, t.item],
+      set: { qty: sql`${t.qty} + ${delta}`, updatedAt: sql`now()` },
+    })
     .returning({ qty: t.qty })
   return row!.qty
 }

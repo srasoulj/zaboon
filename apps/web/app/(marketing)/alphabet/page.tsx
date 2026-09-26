@@ -17,9 +17,9 @@ export default function AlphabetPage() {
       <header className="flex flex-col gap-3">
         <h1 className="text-4xl font-black tracking-tight">The Persian alphabet</h1>
         <p className="max-w-3xl text-lg text-stone">
-          Persian (Farsi) is written from right to left with 32 letters. Most letters join the letter
-          after them and change shape as they do; seven never join the next letter. Pick a letter to
-          see its sound, its four forms and an example word.
+          Persian (Farsi) is written from right to left with 32 letters. Most letters join the
+          letter after them and change shape as they do; seven never join the next letter. Pick a
+          letter to see its sound, its four forms and an example word.
         </p>
       </header>
       <ul className="grid grid-cols-3 gap-3 tablet:grid-cols-6 desktop:grid-cols-8" dir="rtl">

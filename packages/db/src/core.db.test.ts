@@ -16,7 +16,9 @@ beforeAll(async () => {
   bob = await createAuthUser(tdb.adminUrl)
   // The auth.users trigger creates profiles; an explicit insert must stay harmless.
   for (const id of [alice, bob]) {
-    await withUser(h.db, id, (tx) => tx.insert(schema.profiles).values({ userId: id }).onConflictDoNothing())
+    await withUser(h.db, id, (tx) =>
+      tx.insert(schema.profiles).values({ userId: id }).onConflictDoNothing(),
+    )
   }
 })
 
@@ -64,12 +66,17 @@ describe('db isolation (ADR 0009)', () => {
   })
 
   it('withUserLock serializes concurrent writers for one user', async () => {
-    await withUserLock(h.db, alice, (tx) => tx.insert(schema.streaks).values({ userId: alice, freezes: 1 }))
+    await withUserLock(h.db, alice, (tx) =>
+      tx.insert(schema.streaks).values({ userId: alice, freezes: 1 }),
+    )
     const bump = () =>
       withUserLock(h.db, alice, async (tx) => {
         const [row] = await tx.select().from(schema.streaks).where(eq(schema.streaks.userId, alice))
         await new Promise((r) => setTimeout(r, 20))
-        await tx.update(schema.streaks).set({ current: row!.current + 1 }).where(eq(schema.streaks.userId, alice))
+        await tx
+          .update(schema.streaks)
+          .set({ current: row!.current + 1 })
+          .where(eq(schema.streaks.userId, alice))
       })
     await Promise.all(Array.from({ length: 5 }, bump))
     const [row] = await withUser(h.db, alice, (tx) => tx.select().from(schema.streaks))

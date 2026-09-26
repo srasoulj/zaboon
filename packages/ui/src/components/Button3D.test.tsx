@@ -13,19 +13,22 @@ describe('Button3D', () => {
     expect(btn).not.toHaveAttribute('aria-disabled')
   })
 
-  it.each(['primary', 'secondary', 'danger', 'ghost'] as const)('%s calls onClick on click, Enter and Space', async (variant) => {
-    const onClick = vi.fn()
-    render(
-      <Button3D variant={variant} onClick={onClick}>
-        Check
-      </Button3D>,
-    )
-    const user = userEvent.setup()
-    await user.click(screen.getByRole('button'))
-    await user.keyboard('{Enter}')
-    await user.keyboard(' ')
-    expect(onClick).toHaveBeenCalledTimes(3)
-  })
+  it.each(['primary', 'secondary', 'danger', 'ghost'] as const)(
+    '%s calls onClick on click, Enter and Space',
+    async (variant) => {
+      const onClick = vi.fn()
+      render(
+        <Button3D variant={variant} onClick={onClick}>
+          Check
+        </Button3D>,
+      )
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button'))
+      await user.keyboard('{Enter}')
+      await user.keyboard(' ')
+      expect(onClick).toHaveBeenCalledTimes(3)
+    },
+  )
 
   it('locked is aria-disabled, focusable and ignores clicks', async () => {
     const onClick = vi.fn()

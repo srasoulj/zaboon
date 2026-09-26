@@ -5,6 +5,8 @@ coverage
 playwright-report
 test-results
 .local
-content/**/*.yaml
+# Course content (hashed, versioned media and YAML) and orchestrator state and specs: never reformatted.
+content/
+ops/
 docs/**/*.md
 packages/*/oracles/

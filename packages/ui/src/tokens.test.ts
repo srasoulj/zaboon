@@ -50,7 +50,7 @@ describe('styles.css', () => {
     expect(css).toContain('box-shadow: 0 var(--lip-button) 0 var(--lip);')
     expect(css).toContain('.btn-3d:active {')
     expect(css).toContain('.btn-3d:disabled {')
-    expect(css).toContain('.card-3d[aria-pressed=\'true\'] {')
+    expect(css).toContain(".card-3d[aria-pressed='true'] {")
     expect(css).toContain('--lip-button: 4px;')
     expect(css).toContain('--radius-button: 12px;')
   })

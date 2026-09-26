@@ -64,7 +64,11 @@ export default function LearnPersianPage() {
           </li>
           <li>
             <strong>The alphabet, step by step</strong>, starting with the letters that never join
-            the next letter. <Link href="/alphabet" className="font-bold text-lajvard-500 underline dark:text-ink">See all 32 letters</Link>.
+            the next letter.{' '}
+            <Link href="/alphabet" className="font-bold text-lajvard-500 underline dark:text-ink">
+              See all 32 letters
+            </Link>
+            .
           </li>
           <li>
             <strong>Transliteration and vowel marks</strong> while a word is new, fading out as you

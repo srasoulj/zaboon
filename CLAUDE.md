@@ -10,16 +10,17 @@ The project is built by parallel sessions coordinated by an orchestrator session
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `pnpm install` | Install dependencies (the SessionStart hook does this for web sessions) |
-| `pnpm db:ensure` | Start/migrate the local Postgres (idempotent; never resets data). Port 54322 |
-| `pnpm dev` | Local DB + Next.js dev server on :3000 |
-| `pnpm verify` | **The gate**: typecheck, lint, unit+dom tests, DB tests, content validate, e2e, production build (`next build`, no dev routes), secret scan |
-| `pnpm verify --fast` | Same without e2e and the production build |
-| `pnpm test` / `pnpm test:db` / `pnpm e2e` | Unit+dom tests / DB tests (`*.db.test.ts`) / Playwright |
-| `pnpm content <cmd>` | Content pipeline CLI (`validate`, `build`, …) |
-| `pnpm ownership --base origin/main` | Checks your branch only touches paths you own |
+| Command                                   | What it does                                                                                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install`                            | Install dependencies (the SessionStart hook does this for web sessions)                                                                                   |
+| `pnpm db:ensure`                          | Start/migrate the local Postgres (idempotent; never resets data). Port 54322                                                                              |
+| `pnpm dev`                                | Local DB + Next.js dev server on :3000                                                                                                                    |
+| `pnpm verify`                             | **The gate**: typecheck, lint, format check, unit+dom tests, DB tests, content validate, e2e, production build (`next build`, no dev routes), secret scan |
+| `pnpm format`                             | Prettier over the repo (`.prettierignore` skips `content/`, `ops/`, `docs/**/*.md` and the oracles)                                                       |
+| `pnpm verify --fast`                      | Same without e2e and the production build                                                                                                                 |
+| `pnpm test` / `pnpm test:db` / `pnpm e2e` | Unit+dom tests / DB tests (`*.db.test.ts`) / Playwright                                                                                                   |
+| `pnpm content <cmd>`                      | Content pipeline CLI (`validate`, `build`, …)                                                                                                             |
+| `pnpm ownership --base origin/main`       | Checks your branch only touches paths you own                                                                                                             |
 
 Local DB: native Postgres 16 (no Docker), superuser `supabase_admin`, migration role `postgres`
 (not a superuser, like Supabase), app role `app_server`. DB tests use

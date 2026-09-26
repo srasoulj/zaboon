@@ -78,18 +78,39 @@ export function PathNode({
   className,
 }: PathNodeProps) {
   const p = clamp01(progress)
-  const name = [label, STATE_TEXT[state], state === 'current' ? `${Math.round(p * 100)}% complete` : null]
+  const name = [
+    label,
+    STATE_TEXT[state],
+    state === 'current' ? `${Math.round(p * 100)}% complete` : null,
+  ]
     .filter(Boolean)
     .join(', ')
   return (
-    <div className={clsx('zb-node', `zb-node--${state}`, className)} style={brandVars(color)} data-state={state}>
+    <div
+      className={clsx('zb-node', `zb-node--${state}`, className)}
+      style={brandVars(color)}
+      data-state={state}
+    >
       {state === 'current' && (
         <>
           <span className="zb-node__start" aria-hidden="true">
             {startLabel}
           </span>
-          <svg className="zb-node__ring" width={RING_SIZE} height={RING_SIZE} aria-hidden="true" focusable="false">
-            <circle className="zb-node__ring-track" cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_R} strokeWidth={RING_STROKE} fill="none" />
+          <svg
+            className="zb-node__ring"
+            width={RING_SIZE}
+            height={RING_SIZE}
+            aria-hidden="true"
+            focusable="false"
+          >
+            <circle
+              className="zb-node__ring-track"
+              cx={RING_SIZE / 2}
+              cy={RING_SIZE / 2}
+              r={RING_R}
+              strokeWidth={RING_STROKE}
+              fill="none"
+            />
             <circle
               className="zb-node__ring-fill"
               cx={RING_SIZE / 2}
@@ -132,7 +153,16 @@ export interface UnitBannerProps {
 }
 
 /** The colored unit header. All text on the fill is ≥19px/800 (WCAG large; §4.1). */
-export function UnitBanner({ section, unit, title, color, onGuidebook, guidebookLabel = 'Guidebook', titleId, className }: UnitBannerProps) {
+export function UnitBanner({
+  section,
+  unit,
+  title,
+  color,
+  onGuidebook,
+  guidebookLabel = 'Guidebook',
+  titleId,
+  className,
+}: UnitBannerProps) {
   return (
     <header className={clsx('zb-unit', className)} style={brandVars(color)} data-color={color}>
       <div className="zb-unit__text">

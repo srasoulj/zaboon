@@ -13,7 +13,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestDatabase, type TestDatabase } from './testing'
 
 const run = promisify(execFile)
-const TESTS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'supabase', 'tests')
+const TESTS_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  'supabase',
+  'tests',
+)
 const files = readdirSync(TESTS_DIR)
   .filter((f) => f.endsWith('.sql'))
   .sort()
@@ -53,10 +60,29 @@ describe('pgTAP', () => {
     const url = new URL(tdb.adminUrl)
     const { stdout, stderr } = await run(
       'psql',
-      ['-X', '-q', '-t', '-A', '-v', 'ON_ERROR_STOP=1', '-h', url.hostname, '-p', url.port, '-U', url.username, '-d', tdb.name, '-f', join(TESTS_DIR, file)],
+      [
+        '-X',
+        '-q',
+        '-t',
+        '-A',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-h',
+        url.hostname,
+        '-p',
+        url.port,
+        '-U',
+        url.username,
+        '-d',
+        tdb.name,
+        '-f',
+        join(TESTS_DIR, file),
+      ],
       { env: { ...process.env, PGOPTIONS: '--client-min-messages=warning' } },
     ).catch((err: { stdout?: string; stderr?: string; message: string }) => {
-      throw new Error(`psql failed for ${file}: ${err.message}\n${err.stdout ?? ''}\n${err.stderr ?? ''}`)
+      throw new Error(
+        `psql failed for ${file}: ${err.message}\n${err.stdout ?? ''}\n${err.stderr ?? ''}`,
+      )
     })
     const tap = parseTap(stdout)
     const report = [...tap.failed, ...tap.diagnostics, stderr].filter(Boolean).join('\n')

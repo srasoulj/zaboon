@@ -152,7 +152,18 @@ const LETTER_ROWS: readonly (readonly string[])[] = [
   ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote'],
   ['KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Comma', 'Period', 'Slash'],
 ]
-const DIGITS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0']
+const DIGITS = [
+  'Digit1',
+  'Digit2',
+  'Digit3',
+  'Digit4',
+  'Digit5',
+  'Digit6',
+  'Digit7',
+  'Digit8',
+  'Digit9',
+  'Digit0',
+]
 
 /**
  * Drawing order of the keys (`KeyboardEvent.code`s) per row, top to bottom, in physical (left to
@@ -167,7 +178,13 @@ export const KEYBOARD_ROWS: Readonly<Record<LayoutId, readonly (readonly string[
     LETTER_ROWS[2]!,
     ['Space'],
   ],
-  phonetic: [['Backquote', ...DIGITS], LETTER_ROWS[0]!, LETTER_ROWS[1]!, LETTER_ROWS[2]!, ['Space']],
+  phonetic: [
+    ['Backquote', ...DIGITS],
+    LETTER_ROWS[0]!,
+    LETTER_ROWS[1]!,
+    LETTER_ROWS[2]!,
+    ['Space'],
+  ],
 }
 
 /** The parts of a `KeyboardEvent` the physical-key remap looks at (DOM-free). */

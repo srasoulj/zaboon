@@ -103,8 +103,8 @@
   border-radius: var(--radius-tile);
   background: var(--color-bg);
   color: var(--color-ink);
-  font: 500 calc(var(--font-body-size) * var(--font-persian-scale)) / var(--font-persian-line-height)
-    var(--font-persian);
+  font: 500 calc(var(--font-body-size) * var(--font-persian-scale)) /
+    var(--font-persian-line-height) var(--font-persian);
   resize: vertical;
 }
 

@@ -27,7 +27,10 @@ function toVersion(r: typeof schema.contentVersions.$inferSelect): ContentVersio
   return { ...r, publishedAt: toIso(r.publishedAt) }
 }
 
-export async function getCurrentContentVersion(db: Queryable, courseId: string): Promise<ContentVersion | null> {
+export async function getCurrentContentVersion(
+  db: Queryable,
+  courseId: string,
+): Promise<ContentVersion | null> {
   const t = schema.contentVersions
   const [row] = await db
     .select()
@@ -36,7 +39,11 @@ export async function getCurrentContentVersion(db: Queryable, courseId: string):
   return row ? toVersion(row) : null
 }
 
-export async function getContentVersion(db: Queryable, courseId: string, version: number): Promise<ContentVersion | null> {
+export async function getContentVersion(
+  db: Queryable,
+  courseId: string,
+  version: number,
+): Promise<ContentVersion | null> {
   const t = schema.contentVersions
   const [row] = await db
     .select()
@@ -45,7 +52,10 @@ export async function getContentVersion(db: Queryable, courseId: string, version
   return row ? toVersion(row) : null
 }
 
-export async function listContentVersions(db: Queryable, courseId: string): Promise<ContentVersion[]> {
+export async function listContentVersions(
+  db: Queryable,
+  courseId: string,
+): Promise<ContentVersion[]> {
   const t = schema.contentVersions
   const rows = await db.select().from(t).where(eq(t.courseId, courseId)).orderBy(desc(t.version))
   return rows.map(toVersion)
@@ -54,14 +64,24 @@ export async function listContentVersions(db: Queryable, courseId: string): Prom
 /** Registers a published bundle (not current yet). Idempotent: an existing version is left as is. */
 export async function publishContentVersion(
   tx: Tx,
-  input: { courseId: string; version: number; bundlePath: string; minAppVersion?: string; includesDrafts?: boolean },
+  input: {
+    courseId: string
+    version: number
+    bundlePath: string
+    minAppVersion?: string
+    includesDrafts?: boolean
+  },
 ): Promise<void> {
   await assertSystemScope(tx)
   await tx.insert(schema.contentVersions).values(input).onConflictDoNothing()
 }
 
 /** Makes `version` the course's current version (exactly one current per course). */
-export async function setCurrentContentVersion(tx: Tx, courseId: string, version: number): Promise<boolean> {
+export async function setCurrentContentVersion(
+  tx: Tx,
+  courseId: string,
+  version: number,
+): Promise<boolean> {
   await assertSystemScope(tx)
   const t = schema.contentVersions
   const [exists] = await tx

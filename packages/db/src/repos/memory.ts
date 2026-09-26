@@ -99,7 +99,11 @@ function lastPerId(entries: readonly MemoryUpsert[]): MemoryUpsert[] {
 // Lexemes
 // ---------------------------------------------------------------------------------------------
 /** The learner's lexeme cards; all of them, or only `ids` when given. */
-export async function getLexemeCards(tx: Tx, userId: string, ids?: readonly string[]): Promise<MemoryEntry[]> {
+export async function getLexemeCards(
+  tx: Tx,
+  userId: string,
+  ids?: readonly string[],
+): Promise<MemoryEntry[]> {
   if (ids && ids.length === 0) return []
   const t = schema.lexemeMemory
   const rows = await tx
@@ -111,7 +115,12 @@ export async function getLexemeCards(tx: Tx, userId: string, ids?: readonly stri
 }
 
 /** Lexeme cards due at `now`, most overdue first. */
-export async function listDueLexemes(tx: Tx, userId: string, now: string, limit = 50): Promise<MemoryEntry[]> {
+export async function listDueLexemes(
+  tx: Tx,
+  userId: string,
+  now: string,
+  limit = 50,
+): Promise<MemoryEntry[]> {
   const t = schema.lexemeMemory
   const rows = await tx
     .select()
@@ -122,7 +131,11 @@ export async function listDueLexemes(tx: Tx, userId: string, now: string, limit 
   return rows.map((r) => ({ id: r.lexemeId, card: toCard(r), exposures: r.exposures }))
 }
 
-export async function upsertLexemeCards(tx: Tx, userId: string, entries: readonly MemoryUpsert[]): Promise<void> {
+export async function upsertLexemeCards(
+  tx: Tx,
+  userId: string,
+  entries: readonly MemoryUpsert[],
+): Promise<void> {
   const t = schema.lexemeMemory
   const unique = lastPerId(entries)
   for (const withExposures of [true, false]) {
@@ -130,7 +143,14 @@ export async function upsertLexemeCards(tx: Tx, userId: string, entries: readonl
     if (batch.length === 0) continue
     await tx
       .insert(t)
-      .values(batch.map((e) => ({ userId, lexemeId: e.id, ...cardColumns(e.card), exposures: e.exposures ?? 0 })))
+      .values(
+        batch.map((e) => ({
+          userId,
+          lexemeId: e.id,
+          ...cardColumns(e.card),
+          exposures: e.exposures ?? 0,
+        })),
+      )
       .onConflictDoUpdate({ target: [t.userId, t.lexemeId], set: upsertSet(withExposures) })
   }
 }
@@ -138,7 +158,11 @@ export async function upsertLexemeCards(tx: Tx, userId: string, entries: readonl
 // ---------------------------------------------------------------------------------------------
 // Letters
 // ---------------------------------------------------------------------------------------------
-export async function getLetterCards(tx: Tx, userId: string, ids?: readonly string[]): Promise<MemoryEntry[]> {
+export async function getLetterCards(
+  tx: Tx,
+  userId: string,
+  ids?: readonly string[],
+): Promise<MemoryEntry[]> {
   if (ids && ids.length === 0) return []
   const t = schema.letterMemory
   const rows = await tx
@@ -149,7 +173,12 @@ export async function getLetterCards(tx: Tx, userId: string, ids?: readonly stri
   return rows.map((r) => ({ id: r.letterId, card: toCard(r), exposures: r.exposures }))
 }
 
-export async function listDueLetters(tx: Tx, userId: string, now: string, limit = 50): Promise<MemoryEntry[]> {
+export async function listDueLetters(
+  tx: Tx,
+  userId: string,
+  now: string,
+  limit = 50,
+): Promise<MemoryEntry[]> {
   const t = schema.letterMemory
   const rows = await tx
     .select()
@@ -160,7 +189,11 @@ export async function listDueLetters(tx: Tx, userId: string, now: string, limit 
   return rows.map((r) => ({ id: r.letterId, card: toCard(r), exposures: r.exposures }))
 }
 
-export async function upsertLetterCards(tx: Tx, userId: string, entries: readonly MemoryUpsert[]): Promise<void> {
+export async function upsertLetterCards(
+  tx: Tx,
+  userId: string,
+  entries: readonly MemoryUpsert[],
+): Promise<void> {
   const t = schema.letterMemory
   const unique = lastPerId(entries)
   for (const withExposures of [true, false]) {
@@ -168,7 +201,14 @@ export async function upsertLetterCards(tx: Tx, userId: string, entries: readonl
     if (batch.length === 0) continue
     await tx
       .insert(t)
-      .values(batch.map((e) => ({ userId, letterId: e.id, ...cardColumns(e.card), exposures: e.exposures ?? 0 })))
+      .values(
+        batch.map((e) => ({
+          userId,
+          letterId: e.id,
+          ...cardColumns(e.card),
+          exposures: e.exposures ?? 0,
+        })),
+      )
       .onConflictDoUpdate({ target: [t.userId, t.letterId], set: upsertSet(withExposures) })
   }
 }

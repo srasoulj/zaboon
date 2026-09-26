@@ -3,7 +3,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ButtonLink } from '@/components/pages/ButtonLink'
 import { Persian } from '@/components/pages/Persian'
-import { PERSIAN_ALPHABET, letterByChar, letterBySlug, neighbors } from '@/components/pages/alphabet'
+import {
+  PERSIAN_ALPHABET,
+  letterByChar,
+  letterBySlug,
+  neighbors,
+} from '@/components/pages/alphabet'
 
 // One static page per letter; anything else is a 404.
 export const dynamicParams = false

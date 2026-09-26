@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import type { AnswerGraph } from '@zaboon/content-schema'
-import { classifyToken, compile, editDistance, englishKeyTokens, englishNumberValue, grade, GRADER_VERSION, MAX_CELLS } from './index'
+import {
+  classifyToken,
+  compile,
+  editDistance,
+  englishKeyTokens,
+  englishNumberValue,
+  grade,
+  GRADER_VERSION,
+  MAX_CELLS,
+} from './index'
 
 const Z = '‌'
-const fa = (accept: string[], opts: Partial<Parameters<typeof compile>[1]> = {}) => compile(accept, { lang: 'fa', ...opts })
+const fa = (accept: string[], opts: Partial<Parameters<typeof compile>[1]> = {}) =>
+  compile(accept, { lang: 'fa', ...opts })
 const en = (accept: string[]) => compile(accept, { lang: 'en' })
 const typed = { lang: 'fa', mode: 'typed' } as const
 const typedEn = { lang: 'en', mode: 'typed' } as const
@@ -36,7 +46,9 @@ describe('grade: closest solution and diff', () => {
   it('renders the closest solution in the register the learner used', () => {
     const g = fa([`من کتابا رو می${Z}خوام`], { formal: `من کتاب${Z}ها را می${Z}خواهم` })
     // Wrong last word: the tie between registers is broken by the learner's formal کتاب‌ها and را.
-    expect(grade(g, 'من کتاب‌ها را نان', typed).closestSolution).toBe(`من کتاب${Z}ها را می${Z}خواهم`)
+    expect(grade(g, 'من کتاب‌ها را نان', typed).closestSolution).toBe(
+      `من کتاب${Z}ها را می${Z}خواهم`,
+    )
     expect(grade(g, 'من کتابا رو نان', typed).closestSolution).toBe(`من کتابا رو می${Z}خوام`)
   })
 
@@ -45,19 +57,26 @@ describe('grade: closest solution and diff', () => {
     const r = grade(g, ['صلام'], { lang: 'fa', mode: 'bank' })
     expect(r.verdict).toBe('wrong')
     expect(r.diff).toEqual([{ text: 'سلام', status: 'wrong' }])
-    expect(grade(g, ['صلام'], { lang: 'fa', mode: 'bank', lexicon: [] }).graderVersion).toBe(GRADER_VERSION)
+    expect(grade(g, ['صلام'], { lang: 'fa', mode: 'bank', lexicon: [] }).graderVersion).toBe(
+      GRADER_VERSION,
+    )
   })
 
   it('grades an empty answer wrong with the canonical solution', () => {
     const r = grade(fa(['سلام']), '   ', typed)
-    expect(r).toMatchObject({ verdict: 'wrong', closestSolution: 'سلام', diff: [{ text: 'سلام', status: 'missing' }] })
+    expect(r).toMatchObject({
+      verdict: 'wrong',
+      closestSolution: 'سلام',
+      diff: [{ text: 'سلام', status: 'missing' }],
+    })
   })
 })
 
 describe('grade: Persian rules', () => {
   it('never treats negation as a typo, with or without a space or ZWNJ', () => {
     const g = fa(['من نمی‌دونم'])
-    for (const a of ['من میدونم', 'من می دونم', 'من می‌دونم']) expect(grade(g, a, typed).verdict, a).toBe('wrong')
+    for (const a of ['من میدونم', 'من می دونم', 'من می‌دونم'])
+      expect(grade(g, a, typed).verdict, a).toBe('wrong')
     expect(grade(fa(['ندارم']), 'دارم', typed).verdict).toBe('wrong')
     // A genuine first-letter typo on a word starting with ن is still a typo.
     expect(grade(fa(['نارنجی']), 'مارنجی', typed).verdict).toBe('typo')
@@ -95,8 +114,31 @@ describe('grade: Persian rules', () => {
 
 describe('grade: English rules', () => {
   it('expands contractions and maps UK spellings', () => {
-    expect(englishKeyTokens("I’d say it's what’s-up? They're here, we've gone, she'll go, isn't it, won't")).toEqual([
-      'i', 'would', 'say', 'it', 'is', "what’s-up".replace('’', "'"), 'they', 'are', 'here', 'we', 'have', 'gone', 'she', 'will', 'go', 'is', 'not', 'it', 'will', 'not',
+    expect(
+      englishKeyTokens(
+        "I’d say it's what’s-up? They're here, we've gone, she'll go, isn't it, won't",
+      ),
+    ).toEqual([
+      'i',
+      'would',
+      'say',
+      'it',
+      'is',
+      'what’s-up'.replace('’', "'"),
+      'they',
+      'are',
+      'here',
+      'we',
+      'have',
+      'gone',
+      'she',
+      'will',
+      'go',
+      'is',
+      'not',
+      'it',
+      'will',
+      'not',
     ])
     expect(englishKeyTokens('My favourite colours')).toEqual(['my', 'favorite', 'colors'])
     expect(englishKeyTokens("Sara's book")).toEqual(["sara's", 'book'])
@@ -108,7 +150,9 @@ describe('grade: English rules', () => {
     expect(englishNumberValue('seven')).toBe(7)
     expect(englishNumberValue('07')).toBe(7)
     expect(englishNumberValue('sevens')).toBeNull()
-    expect(grade(en(['I have twenty-one books']), 'I have 21 books', typedEn).verdict).toBe('correct')
+    expect(grade(en(['I have twenty-one books']), 'I have 21 books', typedEn).verdict).toBe(
+      'correct',
+    )
     expect(grade(en(['I am seventeen']), 'I am seventen', typedEn).verdict).toBe('typo')
   })
 })
@@ -132,7 +176,16 @@ describe('classifyToken and editDistance', () => {
 
 describe('grade: guards', () => {
   it('rejects a cyclic graph', () => {
-    const g: AnswerGraph = { v: 1, start: 0, accept: [2], edges: [{ from: 0, to: 1, t: 'a' }, { from: 1, to: 0, t: 'b' }, { from: 1, to: 2, t: 'c' }] }
+    const g: AnswerGraph = {
+      v: 1,
+      start: 0,
+      accept: [2],
+      edges: [
+        { from: 0, to: 1, t: 'a' },
+        { from: 1, to: 0, t: 'b' },
+        { from: 1, to: 2, t: 'c' },
+      ],
+    }
     expect(() => grade(g, 'a c', typedEn)).toThrow(/cycle/)
   })
 

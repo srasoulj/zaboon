@@ -4,7 +4,12 @@ import userEvent from '@testing-library/user-event'
 import { HALF_SPACE_CODE, KEYBOARD_LAYOUTS, KEYBOARD_ROWS, ZWJ, ZWNJ } from '@zaboon/farsi'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MotionPreferenceProvider } from '../motion-preference'
-import { keyFace, LONG_PRESS_MS, PersianKeyboard, type PersianKeyboardLayout } from './PersianKeyboard'
+import {
+  keyFace,
+  LONG_PRESS_MS,
+  PersianKeyboard,
+  type PersianKeyboardLayout,
+} from './PersianKeyboard'
 
 const LAYOUTS: PersianKeyboardLayout[] = ['standard', 'phonetic']
 
@@ -13,7 +18,13 @@ function setup(layout: PersianKeyboardLayout = 'phonetic', extra: { disabled?: b
   const onBackspace = vi.fn()
   const onEnter = vi.fn()
   const utils = render(
-    <PersianKeyboard layout={layout} onKey={onKey} onBackspace={onBackspace} onEnter={onEnter} {...extra} />,
+    <PersianKeyboard
+      layout={layout}
+      onKey={onKey}
+      onBackspace={onBackspace}
+      onEnter={onEnter}
+      {...extra}
+    />,
   )
   const kbd = screen.getByRole('group', { name: 'Persian keyboard' })
   const key = (code: string) => kbd.querySelector<HTMLButtonElement>(`[data-code="${code}"]`)!
@@ -41,31 +52,34 @@ describe('keyFace', () => {
 })
 
 describe('PersianKeyboard', () => {
-  it.each(LAYOUTS)('%s: draws every key of KEYBOARD_ROWS with its character as the name', (layout) => {
-    const { kbd, key } = setup(layout)
-    expect(kbd).toHaveAttribute('lang', 'en')
-    expect(kbd).toHaveAttribute('data-layout', layout)
-    const codes = KEYBOARD_ROWS[layout].flat().filter((c) => c !== HALF_SPACE_CODE)
-    for (const code of codes) {
-      const base = KEYBOARD_LAYOUTS[layout].keys[code]!.base
-      const btn = key(code)
-      expect(btn, code).toBeInstanceOf(HTMLButtonElement)
-      expect(btn).toHaveAttribute('type', 'button')
-      expect(btn).toHaveAccessibleName(expectedName(base))
-      const glyph = btn.querySelector('.zb-kbd__glyph')!
-      expect(glyph).toHaveAttribute('dir', glyph.getAttribute('lang') === 'fa' ? 'rtl' : 'ltr')
-    }
-    // Every lang="fa" element is RTL and never carries an English aria-label.
-    for (const fa of kbd.querySelectorAll('[lang="fa"]')) {
-      expect(fa).toHaveAttribute('dir', 'rtl')
-      expect(fa).not.toHaveAttribute('aria-label')
-    }
-    // The space row is drawn as the bottom row of named keys.
-    for (const name of ['shift', 'half-space', 'space', 'backspace', 'enter']) {
-      expect(within(kbd).getByRole('button', { name })).toBeInTheDocument()
-    }
-    expect(kbd.querySelector(`[data-code="${HALF_SPACE_CODE}"]`)).toBeNull()
-  })
+  it.each(LAYOUTS)(
+    '%s: draws every key of KEYBOARD_ROWS with its character as the name',
+    (layout) => {
+      const { kbd, key } = setup(layout)
+      expect(kbd).toHaveAttribute('lang', 'en')
+      expect(kbd).toHaveAttribute('data-layout', layout)
+      const codes = KEYBOARD_ROWS[layout].flat().filter((c) => c !== HALF_SPACE_CODE)
+      for (const code of codes) {
+        const base = KEYBOARD_LAYOUTS[layout].keys[code]!.base
+        const btn = key(code)
+        expect(btn, code).toBeInstanceOf(HTMLButtonElement)
+        expect(btn).toHaveAttribute('type', 'button')
+        expect(btn).toHaveAccessibleName(expectedName(base))
+        const glyph = btn.querySelector('.zb-kbd__glyph')!
+        expect(glyph).toHaveAttribute('dir', glyph.getAttribute('lang') === 'fa' ? 'rtl' : 'ltr')
+      }
+      // Every lang="fa" element is RTL and never carries an English aria-label.
+      for (const fa of kbd.querySelectorAll('[lang="fa"]')) {
+        expect(fa).toHaveAttribute('dir', 'rtl')
+        expect(fa).not.toHaveAttribute('aria-label')
+      }
+      // The space row is drawn as the bottom row of named keys.
+      for (const name of ['shift', 'half-space', 'space', 'backspace', 'enter']) {
+        expect(within(kbd).getByRole('button', { name })).toBeInTheDocument()
+      }
+      expect(kbd.querySelector(`[data-code="${HALF_SPACE_CODE}"]`)).toBeNull()
+    },
+  )
 
   it('tapping a key types its character', async () => {
     const user = userEvent.setup()
@@ -157,7 +171,11 @@ describe('PersianKeyboard', () => {
     act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
     const row = screen.getByRole('group', { name: 'More letters like ز' })
     expect(key('KeyZ')).toHaveAttribute('aria-expanded', 'true')
-    expect(within(row).getAllByRole('button').map((b) => b.textContent)).toEqual(['ذ', 'ض', 'ظ'])
+    expect(
+      within(row)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['ذ', 'ض', 'ظ'])
     fireEvent.pointerUp(within(row).getByRole('button', { name: 'ض' }))
     expect(onKey.mock.calls).toEqual([['ض']])
     expect(screen.queryByRole('group', { name: /More letters/ })).toBeNull()
@@ -211,7 +229,9 @@ describe('PersianKeyboard', () => {
     expect(onKey).not.toHaveBeenCalled()
 
     fireEvent.keyDown(key('KeyZ'), { key: 'ContextMenu' })
-    expect(within(screen.getByRole('group', { name: 'More letters like ز' })).getAllByRole('button')[0]).toHaveFocus()
+    expect(
+      within(screen.getByRole('group', { name: 'More letters like ز' })).getAllByRole('button')[0],
+    ).toHaveFocus()
     await user.keyboard('{ArrowRight}{Enter}')
     expect(onKey.mock.calls).toEqual([['ض']])
     expect(screen.queryByRole('group', { name: /More letters/ })).toBeNull()
@@ -243,7 +263,14 @@ describe('PersianKeyboard', () => {
 
   it('accepts a custom label and class', () => {
     render(
-      <PersianKeyboard layout="standard" label="Type in Persian" className="extra" onKey={() => {}} onBackspace={() => {}} onEnter={() => {}} />,
+      <PersianKeyboard
+        layout="standard"
+        label="Type in Persian"
+        className="extra"
+        onKey={() => {}}
+        onBackspace={() => {}}
+        onEnter={() => {}}
+      />,
     )
     const kbd = screen.getByRole('group', { name: 'Type in Persian' })
     expect(kbd).toHaveClass('zb-kbd', 'extra')
@@ -254,9 +281,17 @@ describe('PersianKeyboard', () => {
     expect(kbd).not.toHaveAttribute('data-reduce-motion')
     rerender(
       <MotionPreferenceProvider reduce>
-        <PersianKeyboard layout="phonetic" onKey={() => {}} onBackspace={() => {}} onEnter={() => {}} />
+        <PersianKeyboard
+          layout="phonetic"
+          onKey={() => {}}
+          onBackspace={() => {}}
+          onEnter={() => {}}
+        />
       </MotionPreferenceProvider>,
     )
-    expect(screen.getByRole('group', { name: 'Persian keyboard' })).toHaveAttribute('data-reduce-motion', 'true')
+    expect(screen.getByRole('group', { name: 'Persian keyboard' })).toHaveAttribute(
+      'data-reduce-motion',
+      'true',
+    )
   })
 })

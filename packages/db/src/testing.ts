@@ -21,7 +21,14 @@ export interface TestDatabase {
 
 export async function createTestDatabase(): Promise<TestDatabase> {
   const name = `${BASE}_t_${randomBytes(5).toString('hex')}`
-  const admin = postgres({ host: HOST, port: PORT, user: 'supabase_admin', database: 'postgres', max: 1, onnotice: () => {} })
+  const admin = postgres({
+    host: HOST,
+    port: PORT,
+    user: 'supabase_admin',
+    database: 'postgres',
+    max: 1,
+    onnotice: () => {},
+  })
   try {
     await admin.unsafe(`CREATE DATABASE "${name}" TEMPLATE "${BASE}_template"`)
   } finally {
@@ -32,7 +39,14 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     appUrl: `postgres://app_server:app_server_local@${HOST}:${PORT}/${name}`, // pragma: allowlist secret
     adminUrl: `postgres://supabase_admin@${HOST}:${PORT}/${name}`,
     async drop() {
-      const a = postgres({ host: HOST, port: PORT, user: 'supabase_admin', database: 'postgres', max: 1, onnotice: () => {} })
+      const a = postgres({
+        host: HOST,
+        port: PORT,
+        user: 'supabase_admin',
+        database: 'postgres',
+        max: 1,
+        onnotice: () => {},
+      })
       try {
         await a.unsafe(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`)
       } finally {
@@ -43,10 +57,14 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 }
 
 /** Inserts an auth.users row (as Supabase Auth would) and returns its id. */
-export async function createAuthUser(adminUrl: string, opts: { anonymous?: boolean; email?: string } = {}): Promise<string> {
+export async function createAuthUser(
+  adminUrl: string,
+  opts: { anonymous?: boolean; email?: string } = {},
+): Promise<string> {
   const sql = postgres(adminUrl, { max: 1, onnotice: () => {} })
   try {
-    const rows = await sql`INSERT INTO auth.users (is_anonymous, email) VALUES (${opts.anonymous ?? true}, ${opts.email ?? null}) RETURNING id`
+    const rows =
+      await sql`INSERT INTO auth.users (is_anonymous, email) VALUES (${opts.anonymous ?? true}, ${opts.email ?? null}) RETURNING id`
     return rows[0]!.id as string
   } finally {
     await sql.end()
@@ -74,7 +92,8 @@ export async function createTestContext(): Promise<TestContext> {
     h,
     admin,
     async newUser(opts = {}) {
-      const rows = await admin`INSERT INTO auth.users (is_anonymous, email) VALUES (${opts.anonymous ?? true}, ${opts.email ?? null}) RETURNING id`
+      const rows =
+        await admin`INSERT INTO auth.users (is_anonymous, email) VALUES (${opts.anonymous ?? true}, ${opts.email ?? null}) RETURNING id`
       return rows[0]!.id as string
     },
     async close() {

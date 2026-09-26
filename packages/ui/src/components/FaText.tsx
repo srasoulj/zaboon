@@ -67,7 +67,8 @@ export function FaText({
   'aria-label': ariaLabel,
 }: FaTextProps) {
   const list: readonly FaToken[] = tokens ?? splitWords(text ?? '')
-  const showFor = (t: FaToken, i: number) => (typeof translit === 'function' ? translit(t, i) : translit)
+  const showFor = (t: FaToken, i: number) =>
+    typeof translit === 'function' ? translit(t, i) : translit
   const anyTranslit = list.some(showFor)
   const marked = new Set(highlight ?? [])
 
@@ -93,7 +94,12 @@ export function FaText({
       <span key={i} className="zb-fa__token" data-marked={marked.has(i) || undefined}>
         {word}
         {anyTranslit && (
-          <span className="zb-fa__translit" lang="fa-Latn" dir="ltr" aria-hidden={!show || undefined}>
+          <span
+            className="zb-fa__translit"
+            lang="fa-Latn"
+            dir="ltr"
+            aria-hidden={!show || undefined}
+          >
             {show && token.translit ? token.translit : '\u00A0'}
           </span>
         )}

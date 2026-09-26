@@ -59,12 +59,20 @@ export function canonical(graph: AnswerGraph): string {
 }
 
 /** Grades an answer (typed text or word-bank tiles) against a compiled graph. */
-export function grade(graph: AnswerGraph, answer: string | readonly string[], opts: GradeOptions): GradeResult {
+export function grade(
+  graph: AnswerGraph,
+  answer: string | readonly string[],
+  opts: GradeOptions,
+): GradeResult {
   const text = typeof answer === 'string' ? answer : answer.join(' ')
   return { ...gradeText(graph, text, opts), graderVersion: GRADER_VERSION }
 }
 
 /** True when the answer is exactly accepted (after normalization). */
-export function accepts(graph: AnswerGraph, answer: string | readonly string[], lang: Lang): boolean {
+export function accepts(
+  graph: AnswerGraph,
+  answer: string | readonly string[],
+  lang: Lang,
+): boolean {
   return grade(graph, answer, { lang, mode: 'bank' }).verdict === 'correct'
 }

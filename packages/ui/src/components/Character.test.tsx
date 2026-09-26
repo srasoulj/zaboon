@@ -39,7 +39,10 @@ describe('Character', () => {
 
   it('hodhod opens its beak and flares or droops its crest by mood', () => {
     const { container, rerender } = render(<Character name="hodhod" mouthOpen={1} mood="happy" />)
-    expect(container.querySelector('[data-part="mouth-open"]')).toHaveAttribute('transform', 'rotate(20 86 52)')
+    expect(container.querySelector('[data-part="mouth-open"]')).toHaveAttribute(
+      'transform',
+      'rotate(20 86 52)',
+    )
     const flared = container.querySelector('[data-part="crest"] > g')!.getAttribute('transform')
     rerender(<Character name="hodhod" mood="sad" />)
     const drooped = container.querySelector('[data-part="crest"] > g')!.getAttribute('transform')
@@ -60,9 +63,19 @@ describe('Character', () => {
   })
 
   it('accepts a Rive-style renderer with the same inputs', () => {
-    const spy = vi.fn((p: CharacterRendererProps) => <canvas data-mood={RIVE_CONTRACT.mood[p.mood]} />)
-    const { container } = render(<Character name="babak" mood="thinking" mouthOpen={0.5} size={80} renderer={spy} />)
-    expect(spy.mock.calls[0]![0]).toEqual({ name: 'babak', mood: 'thinking', mouthOpen: 0.5, size: 80, animate: true })
+    const spy = vi.fn((p: CharacterRendererProps) => (
+      <canvas data-mood={RIVE_CONTRACT.mood[p.mood]} />
+    ))
+    const { container } = render(
+      <Character name="babak" mood="thinking" mouthOpen={0.5} size={80} renderer={spy} />,
+    )
+    expect(spy.mock.calls[0]![0]).toEqual({
+      name: 'babak',
+      mood: 'thinking',
+      mouthOpen: 0.5,
+      size: 80,
+      animate: true,
+    })
     expect(container.querySelector('canvas')).toHaveAttribute('data-mood', '3')
     expect(RIVE_CONTRACT.stateMachine).toBe('Main')
   })
@@ -95,7 +108,9 @@ describe('Character portraits', () => {
   })
 
   it('uses the custom label as alt, and alt="" when decorative', () => {
-    const { container, rerender } = render(<Character name="leila" image={URL_A} label="Leila the chef" />)
+    const { container, rerender } = render(
+      <Character name="leila" image={URL_A} label="Leila the chef" />,
+    )
     expect(screen.getByRole('img', { name: 'Leila the chef' })).toBeInTheDocument()
     rerender(<Character name="leila" image={URL_A} decorative />)
     expect(container.querySelector('img')).toHaveAttribute('alt', '')

@@ -26,7 +26,9 @@ export const profiles = pgTable('profiles', {
   tzChangedAt: tstz('tz_changed_at'),
   ageConfirmed: boolean('age_confirmed').notNull().default(false),
   onboarded: boolean('onboarded').notNull().default(false),
-  settings: jsonb('settings').notNull().default(sql`'{}'::jsonb`),
+  settings: jsonb('settings')
+    .notNull()
+    .default(sql`'{}'::jsonb`),
   createdAt: tstz('created_at').notNull().defaultNow(),
   updatedAt: tstz('updated_at').notNull().defaultNow(),
 })
@@ -182,7 +184,10 @@ export const sessionAnswers = pgTable(
     idx: integer('idx').notNull(),
     attemptSeq: integer('attempt_seq').notNull(),
     challengeType: text('challenge_type').notNull(),
-    itemRefs: text('item_refs').array().notNull().default(sql`'{}'`),
+    itemRefs: text('item_refs')
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
     contentVersion: integer('content_version').notNull(),
     response: jsonb('response').notNull(),
     verdict: text('verdict').notNull(),
@@ -279,7 +284,10 @@ export const itemStats = pgTable(
     attempts: integer('attempts').notNull().default(0),
     wrong: integer('wrong').notNull().default(0),
     errorRate: doublePrecision('error_rate').notNull().default(0),
-    topWrongAnswers: jsonb('top_wrong_answers').$type<TopWrongAnswer[]>().notNull().default(sql`'[]'::jsonb`),
+    topWrongAnswers: jsonb('top_wrong_answers')
+      .$type<TopWrongAnswer[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     updatedAt: tstz('updated_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.itemRef, t.contentVersion] })],

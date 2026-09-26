@@ -14,7 +14,19 @@ export function keyTokens(text: string, lang: Lang): string[] {
 
 /** Persian subject pronouns that may be dropped sentence-initially (§3.2 merge 3), as loose keys. */
 export const DROPPABLE_PRONOUNS: ReadonlySet<string> = new Set(
-  ['من', 'تو', 'او', 'ما', 'شما', 'آنها', 'آن\u200Cها', 'اون', 'اونا', 'اونها', 'اون\u200Cها'].flatMap((p) => looseTokens(p)),
+  [
+    'من',
+    'تو',
+    'او',
+    'ما',
+    'شما',
+    'آنها',
+    'آن\u200Cها',
+    'اون',
+    'اونا',
+    'اونها',
+    'اون\u200Cها',
+  ].flatMap((p) => looseTokens(p)),
 )
 
 /** The letters of a key token, for the typo length rule (code points; keys carry no ZWNJ). */
@@ -56,7 +68,8 @@ export function editDistance(a: string, b: string, max = Number.POSITIVE_INFINIT
     for (let j = 1; j <= n; j++) {
       const cost = s[i - 1] === t[j - 1] ? 0 : 1
       let v = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + cost)
-      if (i > 1 && j > 1 && s[i - 1] === t[j - 2] && s[i - 2] === t[j - 1]) v = Math.min(v, prev2[j - 2]! + 1)
+      if (i > 1 && j > 1 && s[i - 1] === t[j - 2] && s[i - 2] === t[j - 1])
+        v = Math.min(v, prev2[j - 2]! + 1)
       cur[j] = v
       if (v < rowMin) rowMin = v
     }

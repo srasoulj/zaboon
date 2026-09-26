@@ -4,7 +4,19 @@ import { fileURLToPath } from 'node:url'
 
 // Component gallery (apps/web/app/(dev)/gallery): visual baselines per section and theme, plus a
 // few interaction and accessibility checks. Runs in the configured desktop and mobile projects.
-const SECTIONS = ['buttons', 'choices', 'fatext', 'tiles', 'progress', 'feedback', 'path', 'stats', 'characters', 'overlays', 'keyboard']
+const SECTIONS = [
+  'buttons',
+  'choices',
+  'fatext',
+  'tiles',
+  'progress',
+  'feedback',
+  'path',
+  'stats',
+  'characters',
+  'overlays',
+  'keyboard',
+]
 const THEMES = ['light', 'dark'] as const
 const stylePath = fileURLToPath(new URL('./screenshot.css', import.meta.url))
 
@@ -24,14 +36,23 @@ for (const theme of THEMES) {
     for (const id of SECTIONS) {
       const section = page.getByTestId(`gallery-${id}`)
       await section.scrollIntoViewIfNeeded()
-      await expect(section).toHaveScreenshot(`${id}-${theme}.png`, { maxDiffPixelRatio: 0.01, stylePath })
+      await expect(section).toHaveScreenshot(`${id}-${theme}.png`, {
+        maxDiffPixelRatio: 0.01,
+        stylePath,
+      })
     }
   })
 
   test(`gallery has no WCAG A/AA violations (${theme})`, async ({ page }) => {
     await openGallery(page, theme)
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
-    expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze()
+    expect(
+      results.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`,
+      ),
+    ).toEqual([])
   })
 }
 
@@ -40,7 +61,9 @@ test('Persian text is marked up with lang and dir, words are never split', async
   const fa = page.getByTestId('gallery-fatext').locator('[lang="fa"][dir="rtl"]').first()
   await expect(fa).toBeVisible()
   await expect(page.locator('[lang="fa"]:not([dir="rtl"])')).toHaveCount(0)
-  const splitWords = await page.locator('.zb-fa__word').evaluateAll((els) => els.filter((e) => e.childNodes.length !== 1).length)
+  const splitWords = await page
+    .locator('.zb-fa__word')
+    .evaluateAll((els) => els.filter((e) => e.childNodes.length !== 1).length)
   expect(splitWords).toBe(0)
 })
 
@@ -144,20 +167,32 @@ test.describe('on a 360px phone', () => {
       .include('.zb-kbd')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze()
-    expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([])
+    expect(
+      results.violations.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`,
+      ),
+    ).toEqual([])
   })
 })
 
-test('a character portrait falls back to the placeholder when its image fails', async ({ page }) => {
+test('a character portrait falls back to the placeholder when its image fails', async ({
+  page,
+}) => {
   await openGallery(page)
   const characters = page.getByTestId('gallery-characters')
-  const portrait = characters.getByTestId('portrait-image').getByRole('img', { name: 'Leila', exact: true })
+  const portrait = characters
+    .getByTestId('portrait-image')
+    .getByRole('img', { name: 'Leila', exact: true })
   await expect(portrait).toHaveJSProperty('tagName', 'IMG')
-  await expect.poll(() => portrait.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
+  await expect
+    .poll(() => portrait.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0)
   const box = await portrait.boundingBox()
   expect([box?.width, box?.height]).toEqual([96, 96])
   // The broken URL renders the SVG placeholder in the same box.
-  const fallback = characters.getByTestId('portrait-fallback').getByRole('img', { name: 'Leila, idle', exact: true })
+  const fallback = characters
+    .getByTestId('portrait-fallback')
+    .getByRole('img', { name: 'Leila, idle', exact: true })
   await expect(fallback.locator('svg')).toHaveAttribute('width', '96')
   const fallbackBox = await fallback.locator('svg').boundingBox()
   expect([fallbackBox?.width, fallbackBox?.height]).toEqual([96, 96])
@@ -167,7 +202,9 @@ test('a character portrait falls back to the placeholder when its image fails', 
 test('digit keys pick a choice; the modal traps focus and closes on Escape', async ({ page }) => {
   await openGallery(page)
   await page.keyboard.press('3')
-  await expect(page.getByTestId('gallery-choices').getByRole('button', { name: 'tea' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(
+    page.getByTestId('gallery-choices').getByRole('button', { name: 'tea' }),
+  ).toHaveAttribute('aria-pressed', 'true')
 
   const opener = page.getByRole('button', { name: 'Quit lesson' })
   await opener.click()
@@ -198,7 +235,9 @@ test.describe('in-app reduce-animations toggle', () => {
       ANIMATED,
     )
 
-  test('stops the CSS animations of the START bubble, feedback bar, streak badge and toast', async ({ page }) => {
+  test('stops the CSS animations of the START bubble, feedback bar, streak badge and toast', async ({
+    page,
+  }) => {
     await openGallery(page)
     expect(await animationNames(page)).not.toContain('none')
     await page.getByRole('checkbox', { name: 'Reduce animations' }).check()

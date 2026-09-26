@@ -32,7 +32,19 @@
     --zb-ring-offset: 3px;
     --zb-ring-halo: 0 0 0 calc(var(--zb-ring-offset) + 6px) var(--color-bg);
   }
-  :is(.zb-btn, .zb-choice, .zb-tile, .zb-node__button, .zb-unit__guide, .zb-stat, .zb-fa__tap, .zb-feedback__report, .zb-dialog__close, .zb-toast__close, .zb-kbd__key):focus-visible {
+  :is(
+    .zb-btn,
+    .zb-choice,
+    .zb-tile,
+    .zb-node__button,
+    .zb-unit__guide,
+    .zb-stat,
+    .zb-fa__tap,
+    .zb-feedback__report,
+    .zb-dialog__close,
+    .zb-toast__close,
+    .zb-kbd__key
+  ):focus-visible {
     outline: 3px solid var(--color-ink);
     outline-offset: var(--zb-ring-offset);
     box-shadow: var(--zb-ring-halo);
@@ -1200,9 +1212,20 @@
     animation: none;
   }
 }
-[data-motion='reduce'] :is(.zb-btn, .zb-choice, .zb-tile, .zb-kbd__key, .zb-node__button, .zb-progress__fill) {
+[data-motion='reduce']
+  :is(.zb-btn, .zb-choice, .zb-tile, .zb-kbd__key, .zb-node__button, .zb-progress__fill) {
   transition: none;
 }
-[data-motion='reduce'] :is(.zb-kbd__popover, .zb-node__start, .zb-feedback, .zb-progress__badge, .zb-toast, .zb-char, .zb-char *, .zb-btn__spinner) {
+[data-motion='reduce']
+  :is(
+    .zb-kbd__popover,
+    .zb-node__start,
+    .zb-feedback,
+    .zb-progress__badge,
+    .zb-toast,
+    .zb-char,
+    .zb-char *,
+    .zb-btn__spinner
+  ) {
   animation: none;
 }

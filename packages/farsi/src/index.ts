@@ -52,7 +52,13 @@ export {
   type KeyboardLayout,
   type PhysicalKeyEvent,
 } from './keyboard'
-export { HAZM_AFFIX_SPACING_PATTERNS, HAZM_DIACRITICS, HAZM_SUFFIXES, HAZM_TRANSLATION_DST, HAZM_TRANSLATION_SRC } from './hazm'
+export {
+  HAZM_AFFIX_SPACING_PATTERNS,
+  HAZM_DIACRITICS,
+  HAZM_SUFFIXES,
+  HAZM_TRANSLATION_DST,
+  HAZM_TRANSLATION_SRC,
+} from './hazm'
 
 /** True when the text contains a character from the Arabic block (Persian script). */
 export function isPersian(text: string): boolean {

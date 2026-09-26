@@ -1,6 +1,15 @@
 // Contract tests: MUST pass for both the Wave 0 stub and the real implementation.
 import { describe, expect, it } from 'vitest'
-import { letterForms, looseKey, normalize, tokenize, toAsciiDigits, toPersianDigits, isPersian, ZWNJ } from './index'
+import {
+  letterForms,
+  looseKey,
+  normalize,
+  tokenize,
+  toAsciiDigits,
+  toPersianDigits,
+  isPersian,
+  ZWNJ,
+} from './index'
 
 describe('@zaboon/farsi contract', () => {
   it('normalizes Arabic letter variants and whitespace', () => {

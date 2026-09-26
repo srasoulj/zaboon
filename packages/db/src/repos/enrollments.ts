@@ -21,7 +21,11 @@ function toEnrollment(row: typeof schema.enrollments.$inferSelect): Enrollment {
 const byKey = (userId: string, courseId: string) =>
   and(eq(schema.enrollments.userId, userId), eq(schema.enrollments.courseId, courseId))
 
-export async function getEnrollment(tx: Tx, userId: string, courseId: string): Promise<Enrollment | null> {
+export async function getEnrollment(
+  tx: Tx,
+  userId: string,
+  courseId: string,
+): Promise<Enrollment | null> {
   const [row] = await tx.select().from(schema.enrollments).where(byKey(userId, courseId))
   return row ? toEnrollment(row) : null
 }
@@ -70,7 +74,12 @@ export async function updateEnrollment(
 }
 
 /** Adds XP to the course total (at commit). Returns the new total, or null without an enrollment. */
-export async function addEnrollmentXp(tx: Tx, userId: string, courseId: string, amount: number): Promise<number | null> {
+export async function addEnrollmentXp(
+  tx: Tx,
+  userId: string,
+  courseId: string,
+  amount: number,
+): Promise<number | null> {
   const [row] = await tx
     .update(schema.enrollments)
     .set({ xpTotal: sql`${schema.enrollments.xpTotal} + ${amount}`, updatedAt: sql`now()` })

@@ -42,7 +42,12 @@ export function Button3D({
   return (
     <button
       type={type}
-      className={clsx('btn-3d zb-btn', `zb-btn--${variant}`, fullWidth && 'zb-btn--full', className)}
+      className={clsx(
+        'btn-3d zb-btn',
+        `zb-btn--${variant}`,
+        fullWidth && 'zb-btn--full',
+        className,
+      )}
       aria-disabled={inert || undefined}
       aria-busy={loading || undefined}
       data-variant={variant}

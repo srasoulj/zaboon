@@ -77,19 +77,32 @@ const PIECES = [
 ]
 
 const text = fc.array(fc.constantFrom(...PIECES), { maxLength: 24 }).map((parts) => parts.join(''))
-const anyText = fc.oneof(text, fc.string({ unit: 'grapheme', maxLength: 24 }), fc.string({ maxLength: 24 }))
+const anyText = fc.oneof(
+  text,
+  fc.string({ unit: 'grapheme', maxLength: 24 }),
+  fc.string({ maxLength: 24 }),
+)
 
 describe('normalization properties', () => {
   it('normalize is idempotent', () => {
-    fc.assert(fc.property(anyText, (s) => normalize(normalize(s)) === normalize(s)), { numRuns: 3000 })
+    fc.assert(
+      fc.property(anyText, (s) => normalize(normalize(s)) === normalize(s)),
+      { numRuns: 3000 },
+    )
   })
 
   it('looseKey(normalize(x)) === looseKey(x)', () => {
-    fc.assert(fc.property(anyText, (s) => looseKey(normalize(s)) === looseKey(s)), { numRuns: 3000 })
+    fc.assert(
+      fc.property(anyText, (s) => looseKey(normalize(s)) === looseKey(s)),
+      { numRuns: 3000 },
+    )
   })
 
   it('looseKey is idempotent', () => {
-    fc.assert(fc.property(text, (s) => looseKey(looseKey(s)) === looseKey(s)), { numRuns: 3000 })
+    fc.assert(
+      fc.property(text, (s) => looseKey(looseKey(s)) === looseKey(s)),
+      { numRuns: 3000 },
+    )
   })
 
   it('normalized text has no leading, trailing or doubled spaces and no ZWNJ at a token edge', () => {
@@ -108,6 +121,9 @@ describe('normalization properties', () => {
   })
 
   it('the loose key never contains a ZWNJ', () => {
-    fc.assert(fc.property(anyText, (s) => !looseKey(s).includes('‌')), { numRuns: 2000 })
+    fc.assert(
+      fc.property(anyText, (s) => !looseKey(s).includes('‌')),
+      { numRuns: 2000 },
+    )
   })
 })

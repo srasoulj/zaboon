@@ -22,6 +22,7 @@ step() {
 
 step "typecheck" pnpm -s typecheck
 step "lint" pnpm -s lint
+step "format" pnpm -s format:check
 step "unit + dom tests" pnpm -s test
 step "db tests" pnpm -s test:db
 step "content validate" pnpm -s content validate --fixtures --allow-drafts

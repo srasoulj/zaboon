@@ -13,7 +13,10 @@ let alice: string
 const NOW = new Date(Date.now() + 10 * 60_000).toISOString()
 const offset = (minutes: number) => new Date(Date.parse(NOW) + minutes * 60_000).toISOString()
 
-async function newSession(userId: string, overrides: { expiresAt?: string; contentVersion?: number } = {}) {
+async function newSession(
+  userId: string,
+  overrides: { expiresAt?: string; contentVersion?: number } = {},
+) {
   return withUserLock(ctx.h.db, userId, (tx) =>
     repos.sessions.createSession(tx, userId, {
       courseId: 'fixture',
@@ -35,7 +38,15 @@ const ans = (
   verdict: SessionAnswerInput['verdict'],
   response: SessionAnswerInput['response'],
   itemRefs = ['sentence:s_1'],
-): SessionAnswerInput => ({ idx, attemptSeq: idx, challengeType: 'translate_type', itemRefs, response, verdict, ms: 1000 })
+): SessionAnswerInput => ({
+  idx,
+  attemptSeq: idx,
+  challengeType: 'translate_type',
+  itemRefs,
+  response,
+  verdict,
+  ms: 1000,
+})
 
 beforeAll(async () => {
   ctx = await createTestContext()
@@ -48,11 +59,14 @@ describe('internal.expire_stale_sessions', () => {
     const stale = await newSession(alice, { expiresAt: offset(-60) })
     const fresh = await newSession(alice, { expiresAt: offset(60) })
     const done = await newSession(alice, { expiresAt: offset(-60) })
-    await withUserLock(ctx.h.db, alice, (tx) => repos.sessions.completeSession(tx, alice, done.id, { result: {}, completedAt: NOW }))
+    await withUserLock(ctx.h.db, alice, (tx) =>
+      repos.sessions.completeSession(tx, alice, done.id, { result: {}, completedAt: NOW }),
+    )
 
     const [r] = await ctx.admin`SELECT internal.expire_stale_sessions(${NOW}::timestamptz) AS n`
     expect(r!.n).toBe(1)
-    const rows = await ctx.admin`SELECT id, status FROM public.sessions WHERE id IN (${stale.id}, ${fresh.id}, ${done.id})`
+    const rows =
+      await ctx.admin`SELECT id, status FROM public.sessions WHERE id IN (${stale.id}, ${fresh.id}, ${done.id})`
     const status = Object.fromEntries(rows.map((x) => [x.id, x.status]))
     expect(status).toEqual({ [stale.id]: 'expired', [fresh.id]: 'started', [done.id]: 'completed' })
     const [again] = await ctx.admin`SELECT internal.expire_stale_sessions(${NOW}::timestamptz) AS n`
@@ -68,10 +82,15 @@ describe('internal.rollup_item_stats', () => {
       await repos.sessions.insertSessionAnswers(tx, alice, s1.id, [
         ans(0, 'wrong', { kind: 'text', value: 'man khoobam' }),
         ans(1, 'correct', { kind: 'text', value: 'man khubam' }),
-        ans(2, 'wrong', { kind: 'tiles', value: ['man', 'khoob', 'am'] }, ['sentence:s_1', 'lexeme:lx_khub']),
+        ans(2, 'wrong', { kind: 'tiles', value: ['man', 'khoob', 'am'] }, [
+          'sentence:s_1',
+          'lexeme:lx_khub',
+        ]),
         ans(3, 'skipped', { kind: 'skip' }),
       ])
-      await repos.sessions.insertSessionAnswers(tx, alice, s2.id, [ans(0, 'wrong', { kind: 'text', value: 'man khoobam' })])
+      await repos.sessions.insertSessionAnswers(tx, alice, s2.id, [
+        ans(0, 'wrong', { kind: 'text', value: 'man khoobam' }),
+      ])
     })
 
     const [r] = await ctx.admin`SELECT internal.rollup_item_stats(${NOW}::timestamptz) AS n`
@@ -122,8 +141,13 @@ describe('internal.prune_session_answers', () => {
     expect(r!.n).toBe(1)
     const left = await ctx.admin`SELECT idx FROM public.session_answers WHERE session_id = ${s.id}`
     expect(left.map((x) => x.idx)).toEqual([1])
-    const [stat] = await ctx.admin`SELECT attempts, wrong, top_wrong_answers FROM public.item_stats WHERE item_ref = 'lexeme:lx_old' AND content_version = 2`
-    expect(stat).toEqual({ attempts: 2, wrong: 1, top_wrong_answers: [{ answer: 'choice:3', count: 1 }] })
+    const [stat] =
+      await ctx.admin`SELECT attempts, wrong, top_wrong_answers FROM public.item_stats WHERE item_ref = 'lexeme:lx_old' AND content_version = 2`
+    expect(stat).toEqual({
+      attempts: 2,
+      wrong: 1,
+      top_wrong_answers: [{ answer: 'choice:3', count: 1 }],
+    })
   })
 })
 
@@ -137,7 +161,9 @@ describe('internal.prune_rate_limits / prune_webhook_events', () => {
     const [b] = await ctx.admin`SELECT internal.prune_webhook_events(${NOW}::timestamptz) AS n`
     expect([a!.n, b!.n]).toEqual([1, 1])
     expect((await ctx.admin`SELECT key FROM public.rate_limits`).map((x) => x.key)).toEqual(['new'])
-    expect((await ctx.admin`SELECT event_id FROM public.webhook_events`).map((x) => x.event_id)).toEqual(['evt_new'])
+    expect(
+      (await ctx.admin`SELECT event_id FROM public.webhook_events`).map((x) => x.event_id),
+    ).toEqual(['evt_new'])
   })
 })
 
@@ -164,11 +190,41 @@ describe('pg_cron schedules', () => {
         SELECT jobname, schedule, command, username, active FROM cron.job
         WHERE jobname LIKE 'zaboon-%' ORDER BY jobname`
       expect(jobs.map((j) => ({ ...j }))).toEqual([
-        { jobname: 'zaboon-expire-stale-sessions', schedule: '*/15 * * * *', command: 'SELECT internal.expire_stale_sessions()', username: 'postgres', active: true },
-        { jobname: 'zaboon-prune-rate-limits', schedule: '20 * * * *', command: 'SELECT internal.prune_rate_limits()', username: 'postgres', active: true },
-        { jobname: 'zaboon-prune-session-answers', schedule: '40 3 * * *', command: 'SELECT internal.prune_session_answers()', username: 'postgres', active: true },
-        { jobname: 'zaboon-prune-webhook-events', schedule: '50 3 * * *', command: 'SELECT internal.prune_webhook_events()', username: 'postgres', active: true },
-        { jobname: 'zaboon-rollup-item-stats', schedule: '10 3 * * *', command: 'SELECT internal.rollup_item_stats()', username: 'postgres', active: true },
+        {
+          jobname: 'zaboon-expire-stale-sessions',
+          schedule: '*/15 * * * *',
+          command: 'SELECT internal.expire_stale_sessions()',
+          username: 'postgres',
+          active: true,
+        },
+        {
+          jobname: 'zaboon-prune-rate-limits',
+          schedule: '20 * * * *',
+          command: 'SELECT internal.prune_rate_limits()',
+          username: 'postgres',
+          active: true,
+        },
+        {
+          jobname: 'zaboon-prune-session-answers',
+          schedule: '40 3 * * *',
+          command: 'SELECT internal.prune_session_answers()',
+          username: 'postgres',
+          active: true,
+        },
+        {
+          jobname: 'zaboon-prune-webhook-events',
+          schedule: '50 3 * * *',
+          command: 'SELECT internal.prune_webhook_events()',
+          username: 'postgres',
+          active: true,
+        },
+        {
+          jobname: 'zaboon-rollup-item-stats',
+          schedule: '10 3 * * *',
+          command: 'SELECT internal.rollup_item_stats()',
+          username: 'postgres',
+          active: true,
+        },
       ])
     } finally {
       await main.end()

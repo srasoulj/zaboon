@@ -47,7 +47,11 @@ export async function withUser<T>(db: Db, userId: string, fn: (tx: Tx) => Promis
 }
 
 /** Game-state writes for one user: RLS scope + a transaction-level advisory lock on the user. */
-export async function withUserLock<T>(db: Db, userId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+export async function withUserLock<T>(
+  db: Db,
+  userId: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
   assertUuid(userId)
   return db.transaction(async (tx) => {
     await tx.execute(sql`SELECT set_config('app.user_id', ${userId}, true)`)

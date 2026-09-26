@@ -94,7 +94,8 @@ async function applyAll(database: string, migrations: Migration[]): Promise<numb
 
 /** The template refuses connections, so its build key lives in a database comment. */
 async function templateVersion(admin: postgres.Sql): Promise<string | null> {
-  const rows = await admin`SELECT shobj_description(oid, 'pg_database') AS c FROM pg_database WHERE datname = ${TEMPLATE}`
+  const rows =
+    await admin`SELECT shobj_description(oid, 'pg_database') AS c FROM pg_database WHERE datname = ${TEMPLATE}`
   const comment = (rows[0]?.c as string | null) ?? null
   return comment?.startsWith('migrations:') ? comment.slice('migrations:'.length) : null
 }
@@ -103,8 +104,7 @@ async function rebuildTemplate(migrations: Migration[]) {
   const wanted = templateKey(migrations, SHIM)
   const admin = connect('supabase_admin', 'postgres')
   try {
-    const exists =
-      (await admin`SELECT 1 FROM pg_database WHERE datname = ${TEMPLATE}`).length > 0
+    const exists = (await admin`SELECT 1 FROM pg_database WHERE datname = ${TEMPLATE}`).length > 0
     if (exists && (await templateVersion(admin)) === wanted) return
     if (exists) {
       await admin.unsafe(`ALTER DATABASE "${TEMPLATE}" IS_TEMPLATE false`)

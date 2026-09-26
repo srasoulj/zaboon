@@ -34,7 +34,12 @@ export function ChoiceCard({
   return (
     <button
       type="button"
-      className={clsx('card-3d zb-choice', media !== undefined && 'zb-choice--media', state && `zb-choice--${state}`, className)}
+      className={clsx(
+        'card-3d zb-choice',
+        media !== undefined && 'zb-choice--media',
+        state && `zb-choice--${state}`,
+        className,
+      )}
       aria-pressed={selected}
       aria-keyshortcuts={hint}
       data-state={state}
@@ -61,14 +66,23 @@ export function ChoiceCard({
 
 function isTypingTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false
-  return el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT'
+  return (
+    el.isContentEditable ||
+    el.tagName === 'INPUT' ||
+    el.tagName === 'TEXTAREA' ||
+    el.tagName === 'SELECT'
+  )
 }
 
 /**
  * Digit shortcuts (§8): pressing 1–`count` calls `onPick(index)` with a 1-based index. Ignored while
  * typing in a field, with modifier keys, or during IME composition.
  */
-export function useDigitShortcuts(count: number, onPick: (index: number) => void, enabled = true): void {
+export function useDigitShortcuts(
+  count: number,
+  onPick: (index: number) => void,
+  enabled = true,
+): void {
   const pick = useRef(onPick)
   useEffect(() => {
     pick.current = onPick

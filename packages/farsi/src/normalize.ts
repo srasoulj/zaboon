@@ -49,7 +49,10 @@ const LETTER_MAP: ReadonlyMap<string, string> = (() => {
     const to = dst[i]!
     // Arabic (0600–06FF), Arabic Supplement (0750–077F) and Extended-A (08A0–08FF) only;
     // presentation forms are handled by NFKC below, quotes and spaces by later steps.
-    const inBlock = (cp >= 0x0600 && cp <= 0x06ff) || (cp >= 0x0750 && cp <= 0x077f) || (cp >= 0x08a0 && cp <= 0x08ff)
+    const inBlock =
+      (cp >= 0x0600 && cp <= 0x06ff) ||
+      (cp >= 0x0750 && cp <= 0x077f) ||
+      (cp >= 0x08a0 && cp <= 0x08ff)
     if (!inBlock || ch === 'ە' || ch === to) return
     if (!map.has(ch)) map.set(ch, to)
   })
@@ -70,7 +73,8 @@ const LETTER_MAP_RE = new RegExp(`[${[...LETTER_MAP.keys()].join('')}]`, 'g')
  */
 // Each code point is stripped on its own; the class is not meant to match joined sequences.
 // eslint-disable-next-line no-misleading-character-class
-const STRIP_RE = /[\u200B\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\u061C\uFEFF\u00AD\u0640\u064B-\u0652\u0670]/g
+const STRIP_RE =
+  /[\u200B\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\u061C\uFEFF\u00AD\u0640\u064B-\u0652\u0670]/g
 
 /** Arabic presentation forms (copied from old PDFs): folded to base letters with NFKC. */
 const PRESENTATION_FORMS_RE = /[\uFB50-\uFDFF\uFE70-\uFEFE]/g

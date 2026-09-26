@@ -40,7 +40,12 @@ const SPELLING = 1_000
 /** Tie-break: an edge into a node of the register the learner did not use. */
 const OFF_REGISTER = 1
 
-const MATCH_COST: Readonly<Record<TokenMatch, number>> = { exact: 0, spelling: SPELLING, typo: TYPO, wrong: WRONG }
+const MATCH_COST: Readonly<Record<TokenMatch, number>> = {
+  exact: 0,
+  spelling: SPELLING,
+  typo: TYPO,
+  wrong: WRONG,
+}
 
 /** DP cells (key nodes × answer positions) above which grading falls back to exact membership. */
 export const MAX_CELLS = 2_000_000
@@ -121,7 +126,9 @@ function buildKeyGraph(graph: AnswerGraph, lang: Lang): KeyGraph {
   }
   // Intermediate key nodes inherit the register of their serialized edge's target.
   for (let u = 0; u < size; u++)
-    for (const e of out[u]!) if (!e.last && register[e.to] === REG_NONE) register[e.to] = register[fix(dense(graph.edges[e.orig]!.to))]!
+    for (const e of out[u]!)
+      if (!e.last && register[e.to] === REG_NONE)
+        register[e.to] = register[fix(dense(graph.edges[e.orig]!.to))]!
 
   // Kahn topological order; a cycle is a malformed graph.
   const indeg = new Uint32Array(size)
@@ -136,7 +143,14 @@ function buildKeyGraph(graph: AnswerGraph, lang: Lang): KeyGraph {
   }
   if (order.length !== size) throw new Error('grade: answer graph has a cycle')
 
-  return { size, start, accept: new Set(graph.accept.map((a) => ids.get(a)!)), out, order, register }
+  return {
+    size,
+    start,
+    accept: new Set(graph.accept.map((a) => ids.get(a)!)),
+    out,
+    order,
+    register,
+  }
 }
 
 // --- alignment ----------------------------------------------------------------------------------
@@ -160,7 +174,12 @@ interface Path {
 }
 
 /** Minimum-cost alignment; `prefer` is the register whose nodes cost nothing extra. */
-function align(kg: KeyGraph, answer: readonly string[], classify: (a: string, k: string) => TokenMatch, prefer: number): Path | null {
+function align(
+  kg: KeyGraph,
+  answer: readonly string[],
+  classify: (a: string, k: string) => TokenMatch,
+  prefer: number,
+): Path | null {
   const n = answer.length
   const width = n + 1
   const cells = kg.size * width
@@ -171,7 +190,14 @@ function align(kg: KeyGraph, answer: readonly string[], classify: (a: string, k:
   const how = new Array<TokenMatch>(cells)
   cost[kg.start * width] = 0
 
-  const relax = (cell: number, c: number, from: number, o: number, e: KeyEdge | null, m: TokenMatch) => {
+  const relax = (
+    cell: number,
+    c: number,
+    from: number,
+    o: number,
+    e: KeyEdge | null,
+    m: TokenMatch,
+  ) => {
     if (c < cost[cell]!) {
       cost[cell] = c
       prevCell[cell] = from
@@ -184,7 +210,8 @@ function align(kg: KeyGraph, answer: readonly string[], classify: (a: string, k:
     const row = u * width
     for (let j = 0; j < n; j++) {
       const c = cost[row + j]!
-      if (c !== Number.POSITIVE_INFINITY) relax(row + j + 1, c + WRONG, row + j, OP_EXTRA, null, 'wrong')
+      if (c !== Number.POSITIVE_INFINITY)
+        relax(row + j + 1, c + WRONG, row + j, OP_EXTRA, null, 'wrong')
     }
     for (const e of kg.out[u]!) {
       const reg = kg.register[e.to]!
@@ -216,7 +243,12 @@ function align(kg: KeyGraph, answer: readonly string[], classify: (a: string, k:
   for (let cell = best; prevCell[cell]! >= 0; cell = prevCell[cell]!) {
     const o = op[cell]!
     if (o === OP_NONE) break
-    steps.push({ op: o as Step['op'], edge: via[cell]!, answer: (cell % width) - (o === OP_MATCH || o === OP_EXTRA ? 1 : 0), match: how[cell]! })
+    steps.push({
+      op: o as Step['op'],
+      edge: via[cell]!,
+      answer: (cell % width) - (o === OP_MATCH || o === OP_EXTRA ? 1 : 0),
+      match: how[cell]!,
+    })
   }
   steps.reverse()
   return { cost: cost[best]!, steps }
@@ -237,7 +269,12 @@ function learnerRegister(kg: KeyGraph, path: Path): number {
 
 const SEVERITY: Readonly<Record<Verdict, number>> = { correct: 0, spelling: 1, typo: 2, wrong: 3 }
 
-function render(graph: AnswerGraph, path: Path, answerDisplay: readonly string[], bank: boolean): Alignment {
+function render(
+  graph: AnswerGraph,
+  path: Path,
+  answerDisplay: readonly string[],
+  bank: boolean,
+): Alignment {
   const diff: DiffToken[] = []
   const solution: string[] = []
   let verdict: Verdict = 'correct'
@@ -296,7 +333,15 @@ export function gradeText(graph: AnswerGraph, text: string, opts: GradeOptions):
   const classify = (a: string, k: string): TokenMatch => {
     const id = `${a}\u0000${k}`
     let m = memo.get(id)
-    if (m === undefined) memo.set(id, (m = bank ? (classifyToken(a, k, lang, new Set()) === 'exact' ? 'exact' : 'wrong') : classifyToken(a, k, lang, lexicon)))
+    if (m === undefined)
+      memo.set(
+        id,
+        (m = bank
+          ? classifyToken(a, k, lang, new Set()) === 'exact'
+            ? 'exact'
+            : 'wrong'
+          : classifyToken(a, k, lang, lexicon)),
+      )
     return m
   }
 
@@ -304,7 +349,8 @@ export function gradeText(graph: AnswerGraph, text: string, opts: GradeOptions):
 
   let path = align(kg, answer, classify, REG_COLLOQUIAL)
   if (!path) return { verdict: 'wrong', closestSolution: '', diff: [] }
-  if (graph.registers && learnerRegister(kg, path) === REG_FORMAL) path = align(kg, answer, classify, REG_FORMAL) ?? path
+  if (graph.registers && learnerRegister(kg, path) === REG_FORMAL)
+    path = align(kg, answer, classify, REG_FORMAL) ?? path
   return render(graph, path, answerDisplay, bank)
 }
 
@@ -312,7 +358,12 @@ export function gradeText(graph: AnswerGraph, text: string, opts: GradeOptions):
  * Guard for huge graphs: exact membership by simulating the key graph as an automaton
  * (O(nodes × tokens)); no leniency, and the canonical path as the closest solution.
  */
-function fallback(graph: AnswerGraph, kg: KeyGraph, answer: readonly string[], classify: (a: string, k: string) => TokenMatch): Alignment {
+function fallback(
+  graph: AnswerGraph,
+  kg: KeyGraph,
+  answer: readonly string[],
+  classify: (a: string, k: string) => TokenMatch,
+): Alignment {
   const closure = (set: Set<number>) => {
     const stack = [...set]
     while (stack.length) {
@@ -328,7 +379,9 @@ function fallback(graph: AnswerGraph, kg: KeyGraph, answer: readonly string[], c
   let states = closure(new Set([kg.start]))
   for (const tok of answer) {
     const next = new Set<number>()
-    for (const u of states) for (const e of kg.out[u]!) if (e.key !== null && classify(tok, e.key) === 'exact') next.add(e.to)
+    for (const u of states)
+      for (const e of kg.out[u]!)
+        if (e.key !== null && classify(tok, e.key) === 'exact') next.add(e.to)
     states = closure(next)
     if (states.size === 0) break
   }

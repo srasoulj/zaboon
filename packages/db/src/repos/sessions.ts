@@ -72,14 +72,22 @@ export async function createSession(tx: Tx, userId: string, input: NewSession): 
 }
 
 /** The caller's session, or null if it doesn't exist or belongs to someone else. */
-export async function getSession(tx: Tx, userId: string, sessionId: string): Promise<Session | null> {
+export async function getSession(
+  tx: Tx,
+  userId: string,
+  sessionId: string,
+): Promise<Session | null> {
   if (!isUuid(sessionId)) return null
   const [row] = await tx.select().from(schema.sessions).where(own(userId, sessionId))
   return row ? toSession(row) : null
 }
 
 /** Like getSession, but locks the row until the transaction ends (use inside withUserLock). */
-export async function getSessionForUpdate(tx: Tx, userId: string, sessionId: string): Promise<Session | null> {
+export async function getSessionForUpdate(
+  tx: Tx,
+  userId: string,
+  sessionId: string,
+): Promise<Session | null> {
   if (!isUuid(sessionId)) return null
   const [row] = await tx.select().from(schema.sessions).where(own(userId, sessionId)).for('update')
   return row ? toSession(row) : null
@@ -115,7 +123,11 @@ export async function expireSession(tx: Tx, userId: string, sessionId: string): 
   return rows.length === 1
 }
 
-export async function countCompletedSessions(tx: Tx, userId: string, kind?: SessionKind): Promise<number> {
+export async function countCompletedSessions(
+  tx: Tx,
+  userId: string,
+  kind?: SessionKind,
+): Promise<number> {
   const [row] = await tx
     .select({ n: count() })
     .from(schema.sessions)
@@ -130,7 +142,11 @@ export async function countCompletedSessions(tx: Tx, userId: string, kind?: Sess
 }
 
 /** Sessions started at or after `since` (anti-cheat: sessions per hour). */
-export async function countSessionsStartedSince(tx: Tx, userId: string, since: string): Promise<number> {
+export async function countSessionsStartedSince(
+  tx: Tx,
+  userId: string,
+  since: string,
+): Promise<number> {
   const [row] = await tx
     .select({ n: count() })
     .from(schema.sessions)
@@ -157,7 +173,13 @@ export interface SessionEvent {
 export async function recordSessionEvent(
   tx: Tx,
   userId: string,
-  input: { sessionId: string; attemptSeq: number; challengeIndex: number; kind?: 'wrong'; createdAt?: string },
+  input: {
+    sessionId: string
+    attemptSeq: number
+    challengeIndex: number
+    kind?: 'wrong'
+    createdAt?: string
+  },
 ): Promise<{ duplicate: boolean }> {
   if (!isUuid(input.sessionId)) throw new NotFoundError('session')
   const inserted = await tx.execute<{ attempt_seq: number }>(sql`
@@ -173,12 +195,18 @@ export async function recordSessionEvent(
   return { duplicate: true }
 }
 
-export async function listSessionEvents(tx: Tx, userId: string, sessionId: string): Promise<SessionEvent[]> {
+export async function listSessionEvents(
+  tx: Tx,
+  userId: string,
+  sessionId: string,
+): Promise<SessionEvent[]> {
   if (!isUuid(sessionId)) return []
   const rows = await tx
     .select()
     .from(schema.sessionEvents)
-    .where(and(eq(schema.sessionEvents.sessionId, sessionId), eq(schema.sessionEvents.userId, userId)))
+    .where(
+      and(eq(schema.sessionEvents.sessionId, sessionId), eq(schema.sessionEvents.userId, userId)),
+    )
     .orderBy(schema.sessionEvents.attemptSeq)
   return rows.map((r) => ({
     sessionId: r.sessionId,
@@ -245,12 +273,18 @@ export async function insertSessionAnswers(
   return rows.length
 }
 
-export async function listSessionAnswers(tx: Tx, userId: string, sessionId: string): Promise<SessionAnswer[]> {
+export async function listSessionAnswers(
+  tx: Tx,
+  userId: string,
+  sessionId: string,
+): Promise<SessionAnswer[]> {
   if (!isUuid(sessionId)) return []
   const rows = await tx
     .select()
     .from(schema.sessionAnswers)
-    .where(and(eq(schema.sessionAnswers.sessionId, sessionId), eq(schema.sessionAnswers.userId, userId)))
+    .where(
+      and(eq(schema.sessionAnswers.sessionId, sessionId), eq(schema.sessionAnswers.userId, userId)),
+    )
     .orderBy(schema.sessionAnswers.idx, schema.sessionAnswers.attemptSeq)
   return rows.map((r) => ({
     sessionId: r.sessionId,
