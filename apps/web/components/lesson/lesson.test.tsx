@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import type { Settings } from '@zaboon/contracts'
+import { Challenge, type ChallengeOf, type Settings } from '@zaboon/contracts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ApiClient } from '../../lib/api-client'
 import { AppServicesProvider } from '../../lib/app-services'
@@ -29,6 +29,10 @@ import {
 import { fixture } from '@/components/challenges/testing'
 import { rendererFor } from '@/lib/challenge-registry'
 import { correctResponse, resolveTestRenderer, wrongResponse } from './test-renderers'
+import speakFixture from '@/components/speak/speak-fixture.json'
+import { useSpeechService } from '@/lib/speech/context'
+import { speakPauseKey } from '@/lib/speech/pause'
+import type { SpeechService } from '@/lib/speech/service'
 
 afterEach(() => {
   cleanup()
@@ -742,5 +746,96 @@ describe('Enter on a placed build_word tile', () => {
     expect(tile).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByTestId('lesson-feedback')).toBeNull()
     expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
+  })
+})
+
+// ----------------------------------------------------------------------------------- P2 speak
+describe('LessonPlayer and speaking (P2)', () => {
+  afterEach(() => {
+    localStorage.clear()
+  })
+  const pauseKey = speakPauseKey(USER_ID)
+
+  it("renderers get the session's SpeechService: it transcribes for this session", async () => {
+    const got: { speech: SpeechService | null }[] = []
+    function Probe() {
+      const speech = useSpeechService()
+      got.push({ speech })
+      return <p data-testid="probe">{speech ? 'speech' : 'none'}</p>
+    }
+    const transcript = { transcript: 'سلام', token: 'tok', remaining: 9 }
+    const { calls } = renderPlayer({
+      resolve: (() => Probe) as unknown as RendererResolver,
+      api: { transcribe: async () => transcript },
+    })
+    expect(await screen.findByTestId('probe')).toHaveTextContent('speech')
+    const speech = got.at(-1)!.speech!
+    await expect(
+      speech.transcribe({ index: 1, blob: new Blob(['a']), format: 'm4a', durationMs: 900 }),
+    ).resolves.toEqual(transcript)
+    expect(calls.find((c) => c.name === 'transcribe')!.opts).toEqual({
+      body: {
+        sessionId: testSession().sessionId,
+        index: 1,
+        format: 'm4a',
+        audio: 'YQ==',
+        durationMs: 900,
+      },
+    })
+    expect(localStorage.getItem(pauseKey)).toBeNull()
+    speech.pauseSpeaking()
+    expect(Date.parse(localStorage.getItem(pauseKey)!)).toBeGreaterThan(Date.now())
+  })
+
+  it('the test renderer sees the provider too', async () => {
+    renderPlayer()
+    expect(await screen.findByTestId('test-renderer')).toHaveAttribute('data-speech', 'true')
+  })
+
+  it("creates the session with speakPaused only while this user's pause runs", async () => {
+    const first = renderPlayer()
+    await screen.findByTestId('test-renderer')
+    const plain = first.calls.find((c) => c.name === 'createSession')!.opts as { body: object }
+    expect(plain.body).not.toHaveProperty('speakPaused')
+    first.unmount()
+
+    // Another user's pause does not count.
+    localStorage.setItem(speakPauseKey('someone-else'), '2999-01-01T00:00:00.000Z')
+    const other = renderPlayer()
+    await screen.findByTestId('test-renderer')
+    expect(
+      (other.calls.find((c) => c.name === 'createSession')!.opts as { body: object }).body,
+    ).not.toHaveProperty('speakPaused')
+    other.unmount()
+
+    localStorage.setItem(pauseKey, new Date(Date.now() + 60_000).toISOString())
+    const paused = renderPlayer()
+    await screen.findByTestId('test-renderer')
+    expect(paused.calls.find((c) => c.name === 'createSession')!.opts).toMatchObject({
+      body: { courseId: 'fixture', kind: 'lesson', levelId: 'u01-s0', speakPaused: true },
+    })
+    paused.unmount()
+
+    // An expired pause is gone.
+    localStorage.setItem(pauseKey, new Date(Date.now() - 1).toISOString())
+    const expired = renderPlayer()
+    await screen.findByTestId('test-renderer')
+    expect(
+      (expired.calls.find((c) => c.name === 'createSession')!.opts as { body: object }).body,
+    ).not.toHaveProperty('speakPaused')
+  })
+
+  it('the real speak renderer: "Can\'t speak now" keeps every heart and starts the pause', async () => {
+    const challenge = { ...(Challenge.parse(speakFixture[0]) as ChallengeOf<'speak'>), index: 0 }
+    const { calls } = renderPlayer({
+      session: testSession({ challenges: [challenge] }),
+      resolve: rendererFor,
+    })
+    await screen.findByRole('heading', { name: 'Speak this sentence' })
+    fireEvent.click(screen.getByRole('button', { name: "Can't speak now" }))
+    expect(await screen.findByTestId('lesson-feedback')).toHaveAttribute('data-verdict', 'correct')
+    expect(screen.getByTestId('lesson-hearts')).toHaveAttribute('data-count', '5')
+    expect(calls.some((c) => c.name === 'sessionEvent')).toBe(false)
+    expect(Date.parse(localStorage.getItem(pauseKey)!)).toBeGreaterThan(Date.now())
   })
 })

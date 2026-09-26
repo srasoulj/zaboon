@@ -29,8 +29,17 @@ import {
   type StartOutput,
 } from '../../lib/lesson/machine'
 import { progressValue } from '../../lib/lesson/progress'
-import { exitHref, lessonHref, requestKey, type LessonRequest } from '../../lib/lesson/request'
+import {
+  createSessionBody,
+  exitHref,
+  lessonHref,
+  requestKey,
+  type LessonRequest,
+} from '../../lib/lesson/request'
 import type { HomeBefore } from '../../lib/lesson/summary'
+import { SpeechServiceProvider } from '../../lib/speech/context'
+import { isSpeakPaused, speechNow } from '../../lib/speech/pause'
+import { createSpeechService, type SpeechService } from '../../lib/speech/service'
 import {
   DailyGoalScreen,
   LeagueChangeScreen,
@@ -78,6 +87,7 @@ export interface LessonPlayerProps {
   /** Streak and daily goal before the lesson (for the offline summary); null while unknown. */
   home: HomeBefore | null
   onExit: (href: string) => void
+  /** Epoch ms (tests). Also the clock of the speak pause, which otherwise follows `speechNow`. */
   now?: () => number
 }
 
@@ -134,8 +144,10 @@ export function LessonPlayer({
   flags,
   home,
   onExit,
-  now = Date.now,
+  now: nowProp,
 }: LessonPlayerProps) {
+  const now = nowProp ?? Date.now
+  const pauseNow = nowProp ?? speechNow
   const api = useApi()
   const queryClient = useQueryClient()
   const { snapshots, outbox, audio, resolveRenderer } = useLessonServices()
@@ -167,13 +179,12 @@ export function LessonPlayer({
           }
           const session = await creating.run(`${input.userId}|${requestKey(input.request)}`, () =>
             api('createSession', {
-              body: {
-                courseId: input.request.courseId,
-                kind: input.request.kind,
-                ...(input.request.levelId !== null ? { levelId: input.request.levelId } : {}),
-                ...(input.request.mode !== undefined ? { mode: input.request.mode } : {}),
+              // P2 speak: while "Can't speak now" is pausing speaking for this user, ask for a
+              // session without speak challenges (the key is left out otherwise).
+              body: createSessionBody(input.request, {
                 tz: browserTimeZone(),
-              },
+                speakPaused: isSpeakPaused(input.userId, pauseNow()),
+              }),
             }),
           )
           return { session, resume: null }
@@ -335,6 +346,16 @@ export function LessonPlayer({
     [audio],
   )
 
+  // P2 speak: the session's speech service (transcription + the pause), for the speak renderer.
+  const sessionId = ctx.session?.sessionId ?? null
+  const speech: SpeechService | null = useMemo(
+    () =>
+      sessionId === null ? null : createSpeechService({ api, sessionId, userId, now: pauseNow }),
+    // pauseNow is fixed for the player's lifetime (a prop or the module clock).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [api, sessionId, userId],
+  )
+
   const challenge = currentChallenge(ctx)
 
   const exitNow = () => send({ type: 'CONFIRM_QUIT' })
@@ -407,21 +428,23 @@ export function LessonPlayer({
         data-attempt={ctx.progress?.nextSeq}
       >
         {challenge && (
-          <ChallengeSlot
-            key={`${challenge.index}:${ctx.shownAt}`}
-            resolve={resolveRenderer}
-            props={{
-              challenge,
-              response: ctx.draft,
-              onResponse: (response) => send({ type: 'RESPONSE', response }),
-              onSubmit: () => send({ type: 'CHECK' }),
-              phase: inFeedback ? 'feedback' : 'answering',
-              verdict: inFeedback ? (feedback?.verdict ?? null) : null,
-              display,
-              audio: challengeAudio,
-              onMismatch: () => send({ type: 'MISMATCH' }),
-            }}
-          />
+          <SpeechServiceProvider value={speech}>
+            <ChallengeSlot
+              key={`${challenge.index}:${ctx.shownAt}`}
+              resolve={resolveRenderer}
+              props={{
+                challenge,
+                response: ctx.draft,
+                onResponse: (response) => send({ type: 'RESPONSE', response }),
+                onSubmit: () => send({ type: 'CHECK' }),
+                phase: inFeedback ? 'feedback' : 'answering',
+                verdict: inFeedback ? (feedback?.verdict ?? null) : null,
+                display,
+                audio: challengeAudio,
+                onMismatch: () => send({ type: 'MISMATCH' }),
+              }}
+            />
+          </SpeechServiceProvider>
         )}
       </main>
       <div className="sticky bottom-0 bg-bg">

@@ -467,12 +467,43 @@ function clozeChoice(c: Ctx): ChallengeOf<'cloze_choice'> {
  */
 function listenType(c: Ctx): ChallengeOf<'listen_type'> {
   const { audio, transcript } = listenItem(c)
-  const graph = compile([literalPattern(transcript.fa)], {
+  return {
+    ...c.common,
+    type: 'listen_type',
+    audio,
+    transcript,
+    graph: spokenGraph(c, transcript.fa),
+  }
+}
+
+/**
+ * The key for what was said out loud (dictation, speech transcripts): the spoken text and its
+ * orthography variants (when the view has them), with the grader's typo and spelling leniency and
+ * its normalization (punctuation, digits); no pronoun drop and no register swap.
+ */
+function spokenGraph(c: Ctx, fa: string): AnswerGraph {
+  return compile([literalPattern(fa)], {
     lang: 'fa',
     pronounDrop: false,
     variants: c.ix.view.orthographyVariants ?? [],
   })
-  return { ...c.common, type: 'listen_type', audio, transcript, graph }
+}
+
+/**
+ * Say the sentence (P2, flags.speak): its Persian as the prompt, the English as `translation`.
+ * The recording is transcribed on the server; the transcript is graded against `spokenGraph`.
+ */
+function speak(c: Ctx): ChallengeOf<'speak'> {
+  const id = c.ref.items[0]!
+  if (kindOfId(id) !== 'sentence') throw new ContentError(`speak ${id}: sentences only`)
+  const s = c.ix.sentence(id)
+  return {
+    ...c.common,
+    type: 'speak',
+    prompt: sentenceText(c.ix, s),
+    translation: modelAnswer(s.graphs.en),
+    graph: spokenGraph(c, s.fa),
+  }
 }
 
 /**
@@ -721,6 +752,8 @@ export function buildChallenge(ref: ChallengeRef, index: number, content: Conten
       return clozeType(c)
     case 'letter_trace':
       return letterTrace(c)
+    case 'speak':
+      return speak(c)
     default:
       throw new NotImplementedError(`challenge type not available yet: ${ref.type}`)
   }

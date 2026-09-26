@@ -13,6 +13,7 @@ import {
   PASSING_VERDICTS,
   SessionResult,
   type AppConfig,
+  type Challenge,
   type ChallengeRef,
   type ChallengeResponse,
   type CompleteSessionRequest,
@@ -58,6 +59,7 @@ import {
 } from './content'
 import { ApiError } from './errors'
 import { gradingLexicon, serverVerdict } from './grading'
+import { verifySpeechToken } from './speech/token'
 import { commitEngagement } from './engagement/commit'
 import { applySrs, loadLearnerState } from './learner'
 import {
@@ -80,11 +82,19 @@ export interface Ctx {
   flags?: Readonly<Record<string, boolean>>
 }
 
-/** Wave 3 session-engine features from the request's flags (each off unless its flag is on). */
-export function sessionFeatures(flags: Readonly<Record<string, boolean>> = {}): SessionFeatures {
+/**
+ * P2 session-engine features from the request's flags (each off unless its flag is on). Speak is
+ * also off while the learner's "Can't speak now" pause runs (`speakPaused` from the device).
+ * `speak` is present only when on (absent = off for the engine).
+ */
+export function sessionFeatures(
+  flags: Readonly<Record<string, boolean>> = {},
+  opts: { speakPaused?: boolean | undefined } = {},
+): SessionFeatures {
   return {
     persianTyping: flags.persianKeyboard === true,
     letterTrace: flags.letterTrace === true,
+    ...(flags.speak === true && opts.speakPaused !== true ? { speak: true } : {}),
   }
 }
 
@@ -197,6 +207,8 @@ export async function createSession(
     tz: string
     /** Practice sessions only (the contract enforces it); used while flags.practiceHub is on. */
     mode?: PracticeMode | undefined
+    /** P2 speak: the learner's "Can't speak now" pause runs, so no speak challenges. */
+    speakPaused?: boolean | undefined
   },
 ): Promise<CreateSessionResponse> {
   if (!MVP_KINDS.has(input.kind))
@@ -227,7 +239,7 @@ export async function createSession(
         seed,
         now,
         config,
-        features: sessionFeatures(ctx.flags),
+        features: sessionFeatures(ctx.flags, { speakPaused: input.speakPaused }),
         ...(input.mode && ctx.flags?.practiceHub === true ? { practiceMode: input.mode } : {}),
       })
     } catch (e) {
@@ -339,9 +351,37 @@ function refItems(ref: ChallengeRef): string[] {
 
 const passes = (v: Verdict) => PASSING_VERDICTS.includes(v)
 
-/** A response the learner declined (today a letter trace; later speak): graded, never rated. */
+/**
+ * A response the learner declined ("Can't trace now" / "Can't speak now"): graded, never rated.
+ */
 export const isDeclined = (r: ChallengeResponse): boolean =>
-  r.kind === 'trace' && r.declined === true
+  (r.kind === 'trace' || r.kind === 'audio') && r.declined === true
+
+/**
+ * P2 speak: whether a response to a speak challenge may be graded at all. A skip is a skip, and a
+ * declined answer is graded as declined; anything else needs an audio transcript whose signed
+ * token (POST /api/speech/transcribe) verifies for this user, session, index and transcript.
+ * Without one the server verdict is `wrong`, even inside the grader trust window.
+ */
+export function speechVerified(
+  challenge: Challenge,
+  response: ChallengeResponse,
+  bound: { userId: string; sessionId: string; index: number },
+  now: Date,
+): boolean {
+  if (challenge.type !== 'speak') return true
+  if (response.kind === 'skip') return true
+  if (response.kind !== 'audio') return false
+  if (response.declined === true) return true
+  return verifySpeechToken(response.token, { ...bound, transcript: response.transcript }, now)
+}
+
+/** The response as stored with the answer: a speech token is a credential, never kept. */
+export function storableResponse(r: ChallengeResponse): ChallengeResponse {
+  if (r.kind !== 'audio' || r.token === undefined) return r
+  const { token: _token, ...rest } = r
+  return rest
+}
 
 /**
  * Records one finished lesson of the session's level, if the level still exists at the current
@@ -418,9 +458,20 @@ export async function completeSession(
     const graded = [...input.answers]
       .sort((a, b) => a.attemptSeq - b.attemptSeq)
       .map((a) => {
-        const server = serverVerdict(challenges[a.index]!, a.response, lexicon)
+        const challenge = challenges[a.index]!
+        const verified = speechVerified(
+          challenge,
+          a.response,
+          { userId, sessionId, index: a.index },
+          now,
+        )
+        const server = verified ? serverVerdict(challenge, a.response, lexicon) : 'wrong'
         if (passes(server) !== passes(a.verdict)) graderMismatches++
-        return { ...a, verdict: trustClient ? a.verdict : server }
+        return {
+          ...a,
+          response: storableResponse(a.response),
+          verdict: trustClient && verified ? a.verdict : server,
+        }
       })
     if (graderMismatches > 0)
       console.warn('[grader] client/server verdict mismatch', {

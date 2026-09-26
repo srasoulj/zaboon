@@ -43,7 +43,7 @@ function inlineImage(url: string): string {
   return `data:image/svg+xml;base64,${readFileSync(file).toString('base64')}`
 }
 
-/** The recorded fixture challenges (u01-l1, u01-l2, then the P2 level u01-t1), keyed `<type>-<n>`. */
+/** The recorded fixture challenges (u01-l1, u01-l2, then the P2 levels u01-t1 and u01-v1), keyed `<type>-<n>`. */
 function entries(): GalleryEntry[] {
   const seen = new Map<string, number>()
   return (recorded as unknown[]).map((raw) => {
@@ -58,12 +58,13 @@ function entries(): GalleryEntry[] {
   })
 }
 
-/** P2 challenges (typed Persian, tracing): behind flags in the app, listed after the MVP ones. */
+/** P2 challenges (typed Persian, tracing, speaking): behind flags in the app, after the MVP ones. */
 function isP2(c: Challenge): boolean {
   return (
     c.type === 'listen_type' ||
     c.type === 'cloze_type' ||
     c.type === 'letter_trace' ||
+    c.type === 'speak' ||
     (c.type === 'translate_type' && c.answerLang === 'fa')
   )
 }
