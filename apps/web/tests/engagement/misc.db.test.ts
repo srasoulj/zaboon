@@ -42,7 +42,8 @@ describe('GET /api/practice', () => {
       modes: [
         { mode: 'mixed', available: true, count: 0 },
         { mode: 'mistakes', available: false, count: 0 },
-        { mode: 'listening', available: true, count: null },
+        // fa-en has no audio yet, so a listening drill has nothing to play.
+        { mode: 'listening', available: false, count: null },
         { mode: 'typing', available: false, count: null },
       ],
     })
@@ -98,5 +99,45 @@ describe('guest → member merge', () => {
     const memberQuests = await h.sql`
       SELECT local_date::text AS d, quest_id, progress, claimed FROM user_quests WHERE user_id = ${member.id} ORDER BY 2`
     expect(memberQuests.map((r) => ({ ...r }))).toEqual(guestQuests.map((r) => ({ ...r })))
+  })
+
+  it('keeps wallet = ledger and the guest net coins when their quest credits overlap', async () => {
+    const guest = await h.guest()
+    const member = await h.member()
+    await lesson(h, guest, { now })
+    await lesson(h, member, { now })
+    const ledger = async (userId: string, rows: [number, string, string][]) => {
+      for (const [amount, reason, ref] of rows)
+        await h.sql`INSERT INTO coin_ledger (user_id, amount, reason, ref) VALUES (${userId}, ${amount}, ${reason}, ${ref})`
+      const [sum] =
+        await h.sql`SELECT coalesce(sum(amount), 0)::int AS n FROM coin_ledger WHERE user_id = ${userId}`
+      await h.sql`INSERT INTO wallet (user_id, coins) VALUES (${userId}, ${sum!.n})
+                  ON CONFLICT (user_id) DO UPDATE SET coins = excluded.coins`
+    }
+    // Both claimed the same quest on the same day; the guest also earned 100 and spent it.
+    await ledger(guest.id, [
+      [10, 'quest', '2031-05-07:xp_20'],
+      [100, 'test_grant', 'g'],
+      [-100, 'streak_freeze', crypto.randomUUID()],
+    ])
+    await ledger(member.id, [[10, 'quest', '2031-05-07:xp_20']])
+    const guestNet = (await coinsOf(h, guest.id)).ledger
+    expect(guestNet).toBe(10)
+
+    const res = await h.call(api.merge, {
+      path: '/api/account/merge',
+      user: member,
+      now,
+      body: { guestToken: guest.token },
+    })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(await coinsOf(h, member.id)).toEqual({ wallet: 10 + guestNet, ledger: 10 + guestNet })
+    const [balancing] =
+      await h.sql`SELECT amount FROM coin_ledger WHERE user_id = ${member.id} AND reason = 'merge'`
+    expect(balancing!.amount).toBe(10)
+    // The guest's purchase moved with its purchaseId.
+    const [bought] =
+      await h.sql`SELECT count(*)::int AS n FROM coin_ledger WHERE user_id = ${member.id} AND reason = 'streak_freeze'`
+    expect(bought!.n).toBe(1)
   })
 })

@@ -101,7 +101,7 @@ const MODES: Record<PracticeMode, { title: string; body: string }> = {
   mixed: { title: 'Mixed review', body: 'A bit of everything, due words first.' },
   mistakes: { title: 'Mistakes', body: 'Go over the things you got wrong.' },
   listening: { title: 'Listening', body: 'Train your ear with audio challenges.' },
-  typing: { title: 'Typing', body: 'Type your answers in Persian.' },
+  typing: { title: 'Typing', body: 'Type the translation yourself, with no word bank.' },
 }
 
 /** P2 practice hub: one card per mode, with its count and whether it can start now. */

@@ -19,7 +19,7 @@ import {
 } from '@zaboon/game-rules'
 import type { AuthUser } from '../auth'
 import { engagementFlags, showsCoins, type Flags } from './flags'
-import { rankCohort } from './leagues'
+import { rankCohort, tierFor } from './leagues'
 import { questDefs, questDtos, questsOfDay } from './quests'
 
 export interface CommitInput {
@@ -54,13 +54,15 @@ export async function commitEngagement(tx: Tx, input: CommitInput): Promise<Enga
   if (f.leagues && !user.isAnonymous) {
     let row = await repos.leagues.getWeek(tx, week.startsAt)
     const before = row ? await repos.leagues.getMembership(tx, userId, row.id) : null
-    const tier = before?.tier ?? (await repos.leagues.getTier(tx, userId))
     const step = leagueXpStep({
       member: before ? { weeklyXp: before.weeklyXp } : null,
       linked: true,
       sessionXp: input.xp,
       flagged: input.flagged,
     })
+    // A member plays their cohort's tier; a learner joining now plays the tier their last week
+    // earned, even when the rollover hasn't closed that week yet (tierFor).
+    const tier = before?.tier ?? (await tierFor(tx, userId, week, cfg, { lock: step.join }))
     const rankIn = async (weekId: number) =>
       rankCohort(await repos.leagues.listMyCohort(tx, userId, weekId), tier, cfg).find(
         (r) => r.userId === userId,
@@ -132,7 +134,9 @@ export async function commitEngagement(tx: Tx, input: CommitInput): Promise<Enga
         at,
       )
     }
-    grants = applied.grants
+    // AppConfig allows quests.rewardCoins = 0: the quest is still claimed, but a 0-coin grant is
+    // no ledger row (coin_ledger.amount <> 0).
+    grants = applied.grants.filter((g) => g.amount > 0)
     const dtos = questDtos(daily, applied.quests, cfg)
     out.quests = dtos.map((d) => ({
       ...d,

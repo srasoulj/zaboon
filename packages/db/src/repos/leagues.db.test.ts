@@ -126,4 +126,34 @@ describe('leagues', () => {
     await Promise.all([commit, rollover])
     expect(order).toEqual(['commit', 'rollover'])
   })
+
+  it('lockLiveProfiles skips deleted accounts and holds off a deletion until the rollover commits', async () => {
+    const dan = await ctx.newUser({ anonymous: false })
+    const gone = await ctx.newUser({ anonymous: false })
+    await ctx.admin`DELETE FROM auth.users WHERE id = ${gone}`
+    await expect(
+      withUser(ctx.h.db, dan, (tx) => leagues.lockLiveProfiles(tx, [dan])),
+    ).rejects.toBeInstanceOf(ScopeError)
+    const order: string[] = []
+    let release!: () => void
+    const held = new Promise<void>((r) => (release = r))
+    let locked!: () => void
+    const isLocked = new Promise<void>((r) => (locked = r))
+    const rollover = withSystem(ctx.h.db, async (tx) => {
+      const live = await leagues.lockLiveProfiles(tx, [dan, gone])
+      expect([...live]).toEqual([dan])
+      locked()
+      await held
+      order.push('rollover')
+    })
+    await isLocked
+    const deletion = ctx.admin`DELETE FROM auth.users WHERE id = ${dan}`.then(() => {
+      order.push('delete')
+    })
+    await new Promise((r) => setTimeout(r, 100))
+    expect(order).toEqual([])
+    release()
+    await Promise.all([rollover, deletion])
+    expect(order).toEqual(['rollover', 'delete'])
+  })
 })

@@ -146,6 +146,68 @@ export function applyActivity(state: StreakState, date: string, cfg: AppConfig):
 }
 
 /**
+ * Settles the days missed up to `today` without an activity (before a streak freeze is bought, so a
+ * bought freeze only covers future days; repairing a broken streak is a Plus feature, ARCHITECTURE
+ * §12). A gap the held freezes cover changes nothing (the next activity consumes them, as in
+ * `applyActivity`). A gap they can't cover breaks the streak now, the way `applyActivity` would:
+ * the held freezes are consumed on the first missed days and the streak restarts from zero
+ * (`lastActiveDate` null, so the next activity starts a new streak).
+ */
+export function settleStreak(
+  state: StreakState,
+  today: string,
+): { state: StreakState; broken: boolean; frozenDates: string[] } {
+  const unchanged = { state, broken: false, frozenDates: [] }
+  if (state.lastActiveDate === null) return unchanged
+  const gap = daysBetween(state.lastActiveDate, today) - 1
+  if (gap <= state.freezes) return unchanged
+  const frozenDates: string[] = []
+  for (let i = 1; i <= state.freezes; i++) frozenDates.push(addDays(state.lastActiveDate, i))
+  return {
+    state: { current: 0, longest: state.longest, lastActiveDate: null, freezes: 0 },
+    broken: true,
+    frozenDates,
+  }
+}
+
+/**
+ * Rebuilds a streak from scratch (an account merge): the days with sessions and the local dates of
+ * bought streak freezes, in date order. A purchase settles the missed days first and then adds its
+ * freeze (capped at `maxFreezes`), as `settleStreak` + game-rules `purchase` did when it was bought;
+ * on a date with both, the purchase comes first. Without purchases it is exactly replaying
+ * `applyActivity` from `initialStreak`.
+ */
+export function replayStreak(
+  activeDates: readonly string[],
+  freezePurchaseDates: readonly string[],
+  cfg: AppConfig,
+): { state: StreakState; frozenDates: string[] } {
+  const events = [
+    ...freezePurchaseDates.map((date) => ({ date, purchase: true })),
+    ...activeDates.map((date) => ({ date, purchase: false })),
+  ].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : Number(b.purchase) - Number(a.purchase),
+  )
+  let state = initialStreak(cfg)
+  const frozenDates: string[] = []
+  for (const e of events) {
+    if (e.purchase) {
+      const settled = settleStreak(state, e.date)
+      frozenDates.push(...settled.frozenDates)
+      state = {
+        ...settled.state,
+        freezes: Math.min(cfg.streak.maxFreezes, settled.state.freezes + 1),
+      }
+    } else {
+      const r = applyActivity(state, e.date, cfg)
+      frozenDates.push(...r.frozenDates)
+      state = r.state
+    }
+  }
+  return { state, frozenDates }
+}
+
+/**
  * Read-only display state. Never mutates. `freezes` is the stored count (pending consumption is
  * written at the next commit). A lastActiveDate after `today` (westward tz change) reads as extended.
  */
